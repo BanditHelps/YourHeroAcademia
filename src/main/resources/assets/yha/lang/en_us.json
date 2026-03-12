@@ -1,0 +1,19 @@
+{
+  "itemGroup.yourheroacademia": "Example Mod Tab",
+  "block.yourheroacademia.example_block": "Example Block",
+  "item.yourheroacademia.example_item": "Example Item",
+
+
+  "ability.yha.dash": "Dash",
+
+
+
+  "yourheroacademia.configuration.title": "Your Hero Academia Configs",
+  "yourheroacademia.configuration.section.yourheroacademia.common.toml": "Your Hero Academia Configs",
+  "yourheroacademia.configuration.section.yourheroacademia.common.toml.title": "Your Hero Academia Configs",
+  "yourheroacademia.configuration.items": "Item List",
+  "yourheroacademia.configuration.logDirtBlock": "Log Dirt Block",
+  "yourheroacademia.configuration.magicNumberIntroduction": "Magic Number Text",
+  "yourheroacademia.configuration.magicNumber": "Magic Number",
+  "yha.gui.example_title": "Example Screen"
+}
