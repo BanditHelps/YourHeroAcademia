@@ -1,4 +1,4 @@
-package com.github.bandithelps.utils;
+package com.github.bandithelps.utils.stamina;
 
 import com.github.bandithelps.YourHeroAcademia;
 import net.neoforged.bus.api.SubscribeEvent;

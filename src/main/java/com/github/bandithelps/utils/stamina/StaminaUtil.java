@@ -1,4 +1,4 @@
-package com.github.bandithelps.utils;
+package com.github.bandithelps.utils.stamina;
 
 import com.github.bandithelps.capabilities.stamina.IStaminaData;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;

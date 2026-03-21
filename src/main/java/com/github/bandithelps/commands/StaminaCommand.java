@@ -1,6 +1,6 @@
 package com.github.bandithelps.commands;
 
-import com.github.bandithelps.utils.StaminaUtil;
+import com.github.bandithelps.utils.stamina.StaminaUtil;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
