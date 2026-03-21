@@ -3,9 +3,13 @@ package com.github.bandithelps.utils.stamina;
 import com.github.bandithelps.capabilities.stamina.IStaminaData;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaSyncEvents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.GameType;
 
+import static com.github.bandithelps.values.StaminaConstants.EXHAUSTION_LEVELS;
 import static com.github.bandithelps.values.StaminaConstants.STAMINA_REGEN_RATE;
 
 /**
@@ -41,10 +45,26 @@ public class StaminaUtil {
             double regenRate = STAMINA_REGEN_RATE[stamina.getExhaustionLevel()];
 
             // If not exhausted, just linearly increase the stamina
-            if (regenRate >= 1) {
+            if (regenRate >= 1 || player.getRandom().nextFloat() <= regenRate) {
                 int newCurrent = Math.min(current + regenAmount, max);
                 stamina.setCurrentStamina(newCurrent);
+
+                if (newCurrent <= 0) {
+                    int exhaustLevel = stamina.getExhaustionLevel();
+                    int newExhaustionLevel = calculateExhaustionLevel(newCurrent);
+
+                    // Notify the player of a decrease in exhaustion
+                    if (newExhaustionLevel < exhaustLevel) {
+//                        player.level().playSound(player, player.getX(), player.getY(), player.getZ(), SoundEvents.BAMBOO_BREAK, SoundSource.PLAYERS, 5, 1);
+                         player.sendSystemMessage(Component.literal("Updated exhaustion"));
+                    }
+
+                    stamina.setExhaustionLevel(newExhaustionLevel);
+                }
+
             }
+
+
 
         }
 
@@ -67,14 +87,32 @@ public class StaminaUtil {
         IStaminaData stamina = StaminaAttachments.get(player);
 
         int newCurrent = stamina.getCurrentStamina() - amount;
-
-        if (newCurrent <= 0) {
-            // disable the powers
-        }
+        int newExhaustionLevel = calculateExhaustionLevel(newCurrent);
 
         stamina.setCurrentStamina(newCurrent);
+        stamina.setExhaustionLevel(newExhaustionLevel);
         StaminaSyncEvents.syncNow(player);
     }
+
+    /**
+     * Check the new stamina value, and see if it falls into one of the exhaustion levels.
+     * Return the index (or level 0-based) of the exhaustion.
+     * @param stamina - the stamina value to check the level of (will usually be negative if exhausted)
+     * @return
+     */
+    private static int calculateExhaustionLevel(int stamina) {
+        for (int i = 0; i < EXHAUSTION_LEVELS.length - 1; i++) {
+            if (stamina >= EXHAUSTION_LEVELS[i]) return i;
+        }
+
+        return EXHAUSTION_LEVELS.length - 1;
+    }
+
+    /*
+    =============================================
+    |              Debug Functions              |
+    =============================================
+     */
 
     /**
      * Alternative stamina use functions primarily used for testing. Bypasses creative player protections.
@@ -87,6 +125,7 @@ public class StaminaUtil {
         IStaminaData stamina = StaminaAttachments.get(player);
         int newCurrent = stamina.getCurrentStamina() - amount;
         stamina.setCurrentStamina(newCurrent);
+        stamina.setExhaustionLevel(calculateExhaustionLevel(newCurrent));
         StaminaSyncEvents.syncNow(player);
     }
 
@@ -97,6 +136,7 @@ public class StaminaUtil {
             case "regenAmount" -> stamina.setRegenAmount(amount);
             case "current" -> stamina.setCurrentStamina(amount);
             case "max" -> stamina.setMaxStamina(amount);
+            case "exhaustionLevel" -> stamina.setExhaustionLevel(amount);
         }
 
         StaminaSyncEvents.syncNow(player);

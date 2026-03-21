@@ -79,7 +79,7 @@ public class StaminaData implements IStaminaData {
 
     @Override
     public void setCurrentStamina(int stamina) {
-        currentStamina = Math.max(0, Math.min(stamina, maxStamina));
+        currentStamina = Math.min(stamina, maxStamina);
     }
 
     @Override

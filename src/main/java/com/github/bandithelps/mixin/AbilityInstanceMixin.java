@@ -46,13 +46,13 @@ public abstract class AbilityInstanceMixin<T extends Ability> {
         StaminaProperties stamina = StaminaProperties.of(properties);
 
         int initialStamina = stamina.yha$getInitialStamina();
-        if (this.enabledTicks == 1 && initialStamina > 0) {
+        if (this.enabledTicks == 1) {
             StaminaUtil.useStamina(serverPlayer, initialStamina);
         }
 
         int interval = stamina.yha$getStaminaInterval();
         int intervalCost = stamina.yha$getStaminaIntervalCost();
-        if (interval > 0 && intervalCost > 0 && this.enabledTicks % interval == 0) {
+        if (interval > 0 && this.enabledTicks % interval == 0) {
             StaminaUtil.useStamina(serverPlayer, intervalCost);
         }
     }

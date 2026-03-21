@@ -17,6 +17,6 @@ public final class ClientStaminaState {
 
     public static void set(int current, int max) {
         maxStamina = Math.max(1, max);
-        currentStamina = Math.max(0, Math.min(current, maxStamina));
+        currentStamina = Math.min(current, maxStamina);
     }
 }

@@ -16,7 +16,7 @@ public class StaminaCommand {
     public static void register(LiteralArgumentBuilder<CommandSourceStack> builder, CommandBuildContext context) {
         builder.then(Commands.literal("stamina")
                 .then(Commands.literal("use")
-                        .then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                        .then(Commands.argument("amount", IntegerArgumentType.integer(-9999))
                                 .executes(c -> useStamina(
                                         c.getSource(),
                                         IntegerArgumentType.getInteger(c, "amount"),
@@ -36,6 +36,14 @@ public class StaminaCommand {
                                                 IntegerArgumentType.getInteger(c, "amount"),
                                                 c.getSource().getPlayerOrException(),
                                                 "regenAmount"
+                                        ))))
+                        .then(Commands.literal("exhaustionLevel")
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(0, 4))
+                                        .executes(c -> setStaminaValue(
+                                                c.getSource(),
+                                                IntegerArgumentType.getInteger(c, "amount"),
+                                                c.getSource().getPlayerOrException(),
+                                                "exhaustionLevel"
                                         ))))));
     }
 
