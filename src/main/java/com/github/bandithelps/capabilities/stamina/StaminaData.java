@@ -10,6 +10,7 @@ public class StaminaData implements IStaminaData {
     private static final String MAX_STAMINA_KEY = "maxStamina";
     private static final String USAGE_TOTAL_KEY = "usageTotal";
     private static final String REGEN_COOLDOWN_KEY = "regenCooldown";
+    private static final String REGEN_AMOUNT_KEY = "regenAmount";
     private static final String EXHAUSTION_LEVEL_KEY = "exhaustionLevel";
     private static final String LAST_HURRAH_USED_KEY = "lastHurrahUsed";
     private static final String POWERS_DISABLED_KEY = "powersDisabled";
@@ -21,6 +22,7 @@ public class StaminaData implements IStaminaData {
     private int maxStamina = 100;
     private int usageTotal;
     private int regenCooldown;
+    private int regenAmount = 1;
     private int exhaustionLevel;
     private boolean lastHurrahUsed;
     private boolean powersDisabled;
@@ -33,6 +35,7 @@ public class StaminaData implements IStaminaData {
             Codec.INT.fieldOf(MAX_STAMINA_KEY).forGetter(StaminaData::getMaxStamina),
             Codec.INT.fieldOf(USAGE_TOTAL_KEY).forGetter(StaminaData::getUsageTotal),
             Codec.INT.fieldOf(REGEN_COOLDOWN_KEY).forGetter(StaminaData::getRegenCooldown),
+            Codec.INT.fieldOf(REGEN_AMOUNT_KEY).forGetter(StaminaData::getRegenAmount),
             Codec.INT.fieldOf(EXHAUSTION_LEVEL_KEY).forGetter(StaminaData::getExhaustionLevel),
             Codec.BOOL.fieldOf(LAST_HURRAH_USED_KEY).forGetter(StaminaData::getLastHurrahUsed),
             Codec.BOOL.fieldOf(POWERS_DISABLED_KEY).forGetter(StaminaData::isPowersDisabled),
@@ -46,6 +49,7 @@ public class StaminaData implements IStaminaData {
             int maxStamina,
             int usageTotal,
             int regenCooldown,
+            int regenAmount,
             int exhaustionLevel,
             boolean lastHurrahUsed,
             boolean powersDisabled,
@@ -58,6 +62,7 @@ public class StaminaData implements IStaminaData {
         data.setCurrentStamina(currentStamina);
         data.setUsageTotal(usageTotal);
         data.setRegenCooldown(regenCooldown);
+        data.setRegenAmount(regenAmount);
         data.setExhaustionLevel(exhaustionLevel);
         data.setLastHurrahUsed(lastHurrahUsed);
         data.setPowersDisabled(powersDisabled);
@@ -109,6 +114,12 @@ public class StaminaData implements IStaminaData {
     public void setRegenCooldown(int cooldown) {
         regenCooldown = Math.max(0, cooldown);
     }
+
+    @Override
+    public int getRegenAmount() { return regenAmount; }
+
+    @Override
+    public void setRegenAmount(int amount) { regenAmount = Math.max(0, amount); }
 
     @Override
     public int getExhaustionLevel() {
@@ -176,6 +187,7 @@ public class StaminaData implements IStaminaData {
         nbt.putInt(MAX_STAMINA_KEY, maxStamina);
         nbt.putInt(USAGE_TOTAL_KEY, usageTotal);
         nbt.putInt(REGEN_COOLDOWN_KEY, regenCooldown);
+        nbt.putInt(REGEN_AMOUNT_KEY, regenAmount);
         nbt.putInt(EXHAUSTION_LEVEL_KEY, exhaustionLevel);
         nbt.putBoolean(LAST_HURRAH_USED_KEY, lastHurrahUsed);
         nbt.putBoolean(POWERS_DISABLED_KEY, powersDisabled);
@@ -190,6 +202,7 @@ public class StaminaData implements IStaminaData {
         setCurrentStamina(nbt.getInt(CURRENT_STAMINA_KEY).orElse(currentStamina));
         setUsageTotal(nbt.getInt(USAGE_TOTAL_KEY).orElse(usageTotal));
         setRegenCooldown(nbt.getInt(REGEN_COOLDOWN_KEY).orElse(regenCooldown));
+        setRegenAmount(nbt.getInt(REGEN_AMOUNT_KEY).orElse(regenAmount));
         setExhaustionLevel(nbt.getInt(EXHAUSTION_LEVEL_KEY).orElse(exhaustionLevel));
         setLastHurrahUsed(nbt.getBoolean(LAST_HURRAH_USED_KEY).orElse(lastHurrahUsed));
         setPowersDisabled(nbt.getBoolean(POWERS_DISABLED_KEY).orElse(powersDisabled));

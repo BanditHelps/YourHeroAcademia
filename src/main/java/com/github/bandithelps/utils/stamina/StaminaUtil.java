@@ -6,6 +6,8 @@ import com.github.bandithelps.capabilities.stamina.StaminaSyncEvents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
 
+import static com.github.bandithelps.values.StaminaConstants.STAMINA_REGEN_RATE;
+
 /**
  * Utility for accessing the player's stamina capability and doing all the functions it requires.
  */
@@ -28,9 +30,22 @@ public class StaminaUtil {
 
         int current = stamina.getCurrentStamina();
         int max = stamina.getMaxStamina();
+        int cooldown = stamina.getRegenCooldown();
+        int regenAmount = stamina.getRegenAmount();
 
-        if (current < max) {
-            stamina.setCurrentStamina(current + 1);
+        // If the regeneration cooldown is active, obv don't try to give them more stamina
+        if (cooldown > 0) {
+            stamina.setRegenCooldown(cooldown - 1);
+        } else if (current < max) {
+            // The regeneration rate is dependent on the current exhaustion level of the player
+            double regenRate = STAMINA_REGEN_RATE[stamina.getExhaustionLevel()];
+
+            // If not exhausted, just linearly increase the stamina
+            if (regenRate >= 1) {
+                int newCurrent = Math.min(current + regenAmount, max);
+                stamina.setCurrentStamina(newCurrent);
+            }
+
         }
 
         // Always need to sync to the player
@@ -72,6 +87,18 @@ public class StaminaUtil {
         IStaminaData stamina = StaminaAttachments.get(player);
         int newCurrent = stamina.getCurrentStamina() - amount;
         stamina.setCurrentStamina(newCurrent);
+        StaminaSyncEvents.syncNow(player);
+    }
+
+    public static void forceSetStaminaData(ServerPlayer player, int amount, String dataName) {
+        IStaminaData stamina = StaminaAttachments.get(player);
+
+        switch (dataName) {
+            case "regenAmount" -> stamina.setRegenAmount(amount);
+            case "current" -> stamina.setCurrentStamina(amount);
+            case "max" -> stamina.setMaxStamina(amount);
+        }
+
         StaminaSyncEvents.syncNow(player);
     }
 

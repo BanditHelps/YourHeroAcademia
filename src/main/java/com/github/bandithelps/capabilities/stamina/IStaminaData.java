@@ -15,6 +15,9 @@ public interface IStaminaData {
     int getRegenCooldown();
     void setRegenCooldown(int cooldown);
 
+    int getRegenAmount();
+    void setRegenAmount(int amount);
+
     int getExhaustionLevel();
     void setExhaustionLevel(int level);
 

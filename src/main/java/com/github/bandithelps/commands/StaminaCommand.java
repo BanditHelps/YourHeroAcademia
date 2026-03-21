@@ -27,12 +27,27 @@ public class StaminaCommand {
                                                 c.getSource(),
                                                 IntegerArgumentType.getInteger(c, "amount"),
                                                 EntityArgument.getPlayer(c, "player")
+                                        )))))
+                .then(Commands.literal("set")
+                        .then(Commands.literal("regenAmount")
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                        .executes(c -> setStaminaValue(
+                                                c.getSource(),
+                                                IntegerArgumentType.getInteger(c, "amount"),
+                                                c.getSource().getPlayerOrException(),
+                                                "regenAmount"
                                         ))))));
     }
 
     private static int useStamina(CommandSourceStack source, int amount, ServerPlayer player) throws CommandSyntaxException {
         StaminaUtil.forceUseStamina(player, amount);
         source.sendSuccess(() -> Component.literal("Used " + amount + " stamina for " + player.getName().getString() + "."), true);
+        return 1;
+    }
+
+    private static int setStaminaValue(CommandSourceStack source, int amount, ServerPlayer player, String dataName) throws CommandSyntaxException {
+        StaminaUtil.forceSetStaminaData(player, amount, dataName);
+        source.sendSuccess(() -> Component.literal("Set the value of " + dataName + " for " + player.getName().getString() + " to " + amount), true);
         return 1;
     }
 }
