@@ -4,6 +4,7 @@ import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.commands.RegisterYhaCommandsEvent;
 import com.github.bandithelps.commands.ScreenCommand;
+import com.github.bandithelps.commands.StaminaCommand;
 import com.github.bandithelps.commands.YhaCommand;
 import com.github.bandithelps.network.YhaNetwork;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -143,5 +144,6 @@ public final class YourHeroAcademia {
     @SubscribeEvent
     static void yhaCommands(RegisterYhaCommandsEvent event) {
         ScreenCommand.register(event.getBuilder(), event.getBuildContext());
+        StaminaCommand.register(event.getBuilder(), event.getBuildContext());
     }
 }

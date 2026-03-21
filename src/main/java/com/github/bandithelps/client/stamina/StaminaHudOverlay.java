@@ -14,7 +14,7 @@ public final class StaminaHudOverlay {
     private static final int BAR_WIDTH = 96;
     private static final int BAR_HEIGHT = 10;
     private static final int LEFT_MARGIN = 10;
-    private static final int BOTTOM_MARGIN = 28;
+    private static final int BOTTOM_MARGIN = 18;
 
     private StaminaHudOverlay() {
     }
