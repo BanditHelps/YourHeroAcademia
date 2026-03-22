@@ -1,6 +1,7 @@
 package com.github.bandithelps;
 
 import com.github.bandithelps.abilities.AbilityRegister;
+import com.github.bandithelps.attributes.QuirkAttributes;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.commands.RegisterYhaCommandsEvent;
 import com.github.bandithelps.commands.ScreenCommand;
@@ -97,6 +98,7 @@ public final class YourHeroAcademia {
         CREATIVE_MODE_TABS.register(modEventBus);
 
         AbilityRegister.ABILITIES.register(modEventBus);
+        QuirkAttributes.ATTRIBUTES.register(modEventBus);
         StaminaAttachments.ATTACHMENTS.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in.
