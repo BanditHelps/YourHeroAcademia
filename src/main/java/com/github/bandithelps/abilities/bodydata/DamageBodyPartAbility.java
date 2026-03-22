@@ -50,20 +50,22 @@ public class DamageBodyPartAbility extends Ability {
             IBodyData body = BodyAttachments.get(player);
 
             float damage = this.damage.getAsFloat(DataContext.forEntity(entity));
-            boolean requireSync = false;
 
-            for (String partId : this.parts) {
-                BodyPart part = BodyPart.fromId(partId);
-                if (part != null) {
-                    body.damagePart(player, part, damage);
-                    requireSync = true;
+            if (damage > 0) {
+                boolean requireSync = false;
+
+                for (String partId : this.parts) {
+                    BodyPart part = BodyPart.fromId(partId);
+                    if (part != null) {
+                        body.damagePart(player, part, damage);
+                        requireSync = true;
+                    }
+                }
+
+                if (requireSync) {
+                    BodySyncEvents.syncNow(player);
                 }
             }
-
-            if (requireSync) {
-                BodySyncEvents.syncNow(player);
-            }
-
         }
         return super.tick(entity, abilityInstance, enabled);
     }
