@@ -58,7 +58,8 @@ public final class StaminaSyncEvents {
                 stamina.isPowersDisabled(),
                 stamina.isInitialized(),
                 stamina.getUpgradePoints(),
-                stamina.getPointsProgress()
+                stamina.getPointsProgress(),
+                stamina.getUpgradeProgressCooldown()
         );
         Snapshot previous = LAST_SENT.get(player.getUUID());
         if (!force && next.equals(previous)) {
@@ -77,7 +78,8 @@ public final class StaminaSyncEvents {
                 next.powersDisabled(),
                 next.initialized(),
                 next.upgradePoints(),
-                next.pointsProgress()
+                next.pointsProgress(),
+                next.upgradeProgressCooldown()
         ));
     }
 
@@ -92,7 +94,8 @@ public final class StaminaSyncEvents {
             boolean powersDisabled,
             boolean initialized,
             int upgradePoints,
-            int pointsProgress
+            int pointsProgress,
+            int upgradeProgressCooldown
     ) {
     }
 }

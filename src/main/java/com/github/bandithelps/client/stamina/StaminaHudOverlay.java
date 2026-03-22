@@ -67,7 +67,8 @@ public final class StaminaHudOverlay {
                 "powersDisabled: " + ClientStaminaState.isPowersDisabled(),
                 "initialized: " + ClientStaminaState.isInitialized(),
                 "upgradePoints: " + ClientStaminaState.getUpgradePoints(),
-                "pointsProgress: " + ClientStaminaState.getPointsProgress()
+                "pointsProgress: " + ClientStaminaState.getPointsProgress(),
+                "upgradeProgressCooldown: " + ClientStaminaState.getUpgradeProgressCooldown()
         };
 
         int yPos = DEBUG_TOP_MARGIN;

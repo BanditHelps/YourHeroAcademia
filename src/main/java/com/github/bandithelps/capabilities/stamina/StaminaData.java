@@ -17,6 +17,7 @@ public class StaminaData implements IStaminaData {
     private static final String INITIALIZED_KEY = "initialized";
     private static final String UPGRADE_POINTS_KEY = "upgradePoints";
     private static final String POINTS_PROGRESS_KEY = "pointsProgress";
+    private static final String UPGRADE_PROGRESS_COOLDOWN_KEY = "upgradeProgressCooldown";
 
     private int currentStamina = 100;
     private int maxStamina = 100;
@@ -29,6 +30,7 @@ public class StaminaData implements IStaminaData {
     private boolean initialized;
     private int upgradePoints;
     private int pointsProgress;
+    private int upgradeProgressCooldown;
 
     public static final MapCodec<StaminaData> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Codec.INT.fieldOf(CURRENT_STAMINA_KEY).forGetter(StaminaData::getCurrentStamina),
@@ -41,7 +43,8 @@ public class StaminaData implements IStaminaData {
             Codec.BOOL.fieldOf(POWERS_DISABLED_KEY).forGetter(StaminaData::isPowersDisabled),
             Codec.BOOL.fieldOf(INITIALIZED_KEY).forGetter(StaminaData::isInitialized),
             Codec.INT.fieldOf(UPGRADE_POINTS_KEY).forGetter(StaminaData::getUpgradePoints),
-            Codec.INT.fieldOf(POINTS_PROGRESS_KEY).forGetter(StaminaData::getPointsProgress)
+            Codec.INT.fieldOf(POINTS_PROGRESS_KEY).forGetter(StaminaData::getPointsProgress),
+            Codec.INT.optionalFieldOf(UPGRADE_PROGRESS_COOLDOWN_KEY, 0).forGetter(StaminaData::getUpgradeProgressCooldown)
     ).apply(instance, StaminaData::fromCodec));
 
     private static StaminaData fromCodec(
@@ -55,7 +58,8 @@ public class StaminaData implements IStaminaData {
             boolean powersDisabled,
             boolean initialized,
             int upgradePoints,
-            int pointsProgress
+            int pointsProgress,
+            int upgradeProgressCooldown
     ) {
         StaminaData data = new StaminaData();
         data.setMaxStamina(maxStamina);
@@ -69,6 +73,7 @@ public class StaminaData implements IStaminaData {
         data.setInitialized(initialized);
         data.setUpgradePoints(upgradePoints);
         data.setPointsProgress(pointsProgress);
+        data.setUpgradeProgressCooldown(upgradeProgressCooldown);
         return data;
     }
 
@@ -182,6 +187,16 @@ public class StaminaData implements IStaminaData {
     }
 
     @Override
+    public int getUpgradeProgressCooldown() {
+        return upgradeProgressCooldown;
+    }
+
+    @Override
+    public void setUpgradeProgressCooldown(int cooldown) {
+        upgradeProgressCooldown = Math.max(0, cooldown);
+    }
+
+    @Override
     public void saveNBTData(CompoundTag nbt) {
         nbt.putInt(CURRENT_STAMINA_KEY, currentStamina);
         nbt.putInt(MAX_STAMINA_KEY, maxStamina);
@@ -194,6 +209,7 @@ public class StaminaData implements IStaminaData {
         nbt.putBoolean(INITIALIZED_KEY, initialized);
         nbt.putInt(UPGRADE_POINTS_KEY, upgradePoints);
         nbt.putInt(POINTS_PROGRESS_KEY, pointsProgress);
+        nbt.putInt(UPGRADE_PROGRESS_COOLDOWN_KEY, upgradeProgressCooldown);
     }
 
     @Override
@@ -209,5 +225,6 @@ public class StaminaData implements IStaminaData {
         setInitialized(nbt.getBoolean(INITIALIZED_KEY).orElse(initialized));
         setUpgradePoints(nbt.getInt(UPGRADE_POINTS_KEY).orElse(upgradePoints));
         setPointsProgress(nbt.getInt(POINTS_PROGRESS_KEY).orElse(pointsProgress));
+        setUpgradeProgressCooldown(nbt.getInt(UPGRADE_PROGRESS_COOLDOWN_KEY).orElse(upgradeProgressCooldown));
     }
 }

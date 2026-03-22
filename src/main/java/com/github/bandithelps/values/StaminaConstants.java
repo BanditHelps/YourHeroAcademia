@@ -12,6 +12,7 @@ public class StaminaConstants {
     public static int EXHAUSTION_DEATH_LEVEL = 4; // The level the player will die if they attempt to surpass
     public static float STAMINA_GAIN_PERCENTAGE = 0.33f; // The percent that the stamina must be below to "gain" upgrade progress
     public static int UPGRADE_POINT_COST = 500; // The amount of "progress" required to redeem an upgrade point
+    public static int UPGRADE_PROGRESS_COOLDOWN = 60; // Cooldown in stamina ticks (1 tick = 1 second)
     public static double STAMINA_GAIN_CHANCE = 0.05; // Chance to gain an extra max stamina point
     public static double STAMINA_GAIN_EXHAUSTED_CHANCE = 0.1; // Chance to gain an extra max stamina point when exhausted
     // How much stamina needs to be used in order to have a chance at increasing the max value

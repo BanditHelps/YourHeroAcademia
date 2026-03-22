@@ -12,6 +12,7 @@ public final class ClientStaminaState {
     private static volatile boolean initialized;
     private static volatile int upgradePoints;
     private static volatile int pointsProgress;
+    private static volatile int upgradeProgressCooldown;
     private static volatile boolean debugOverlayEnabled;
 
     private ClientStaminaState() {
@@ -61,6 +62,10 @@ public final class ClientStaminaState {
         return pointsProgress;
     }
 
+    public static int getUpgradeProgressCooldown() {
+        return upgradeProgressCooldown;
+    }
+
     public static boolean isDebugOverlayEnabled() {
         return debugOverlayEnabled;
     }
@@ -80,7 +85,8 @@ public final class ClientStaminaState {
             boolean disabled,
             boolean hasInitialized,
             int points,
-            int progress
+            int progress,
+            int upgradeProgressTimer
     ) {
         maxStamina = Math.max(1, max);
         currentStamina = Math.min(current, maxStamina);
@@ -93,5 +99,6 @@ public final class ClientStaminaState {
         initialized = hasInitialized;
         upgradePoints = Math.max(0, points);
         pointsProgress = Math.max(0, progress);
+        upgradeProgressCooldown = Math.max(0, upgradeProgressTimer);
     }
 }

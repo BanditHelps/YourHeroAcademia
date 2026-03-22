@@ -53,6 +53,7 @@ public class StaminaUtil {
         int max = stamina.getMaxStamina();
         int cooldown = stamina.getRegenCooldown();
         int regenAmount = stamina.getRegenAmount();
+        int upgradeProgressCooldown = stamina.getUpgradeProgressCooldown();
 
         // If the regeneration cooldown is active, obv don't try to give them more stamina
         if (cooldown > 0) {
@@ -85,6 +86,11 @@ public class StaminaUtil {
                     }
                 }
             }
+        }
+
+        if (upgradeProgressCooldown > 0) {
+            stamina.setUpgradeProgressCooldown(upgradeProgressCooldown - 1);
+            shouldSync = true;
         }
 
         // We re-get this to ensure it is updated to the current stamina value
@@ -246,24 +252,23 @@ public class StaminaUtil {
      */
     private static boolean calcUpgradeProgress(ServerPlayer player, int currentStamina, int maxStamina, int curProgress, int staminaUsed, int exhaustLevel, IStaminaData stamina) {
         if (maxStamina <= 0) return false;
+        if (staminaUsed <= 0) return false;
+        if (stamina.getUpgradeProgressCooldown() > 0) return false;
 
         // Only award upgrade if they are below a certain percentage of their max stamina
         if (((float) currentStamina / maxStamina) <= STAMINA_GAIN_PERCENTAGE) {
             int progressGain = (int) Math.floor(staminaUsed * EXHAUSTION_MULTIPLIERS[exhaustLevel]);
             int newProgress = progressGain + curProgress;
-
-            int pointsToAward = newProgress / UPGRADE_POINT_COST;
-            int finalProgress = newProgress % UPGRADE_POINT_COST;
             boolean changed = false;
 
-            if (stamina.getPointsProgress() != finalProgress) {
-                stamina.setPointsProgress(finalProgress);
+            if (newProgress >= UPGRADE_POINT_COST) {
+                // Award one point, then start cooldown and clear carryover progress to prevent immediate chaining.
+                stamina.setUpgradePoints(stamina.getUpgradePoints() + 1);
+                stamina.setPointsProgress(0);
+                stamina.setUpgradeProgressCooldown(UPGRADE_PROGRESS_COOLDOWN);
                 changed = true;
-            }
-
-            if (pointsToAward > 0) {
-                // TODO add a ding or something to tell them they upgraded
-                stamina.setUpgradePoints(stamina.getUpgradePoints() + pointsToAward);
+            } else if (stamina.getPointsProgress() != newProgress) {
+                stamina.setPointsProgress(newProgress);
                 changed = true;
             }
 
@@ -346,10 +351,27 @@ public class StaminaUtil {
         IStaminaData stamina = StaminaAttachments.get(player);
 
         switch (dataName) {
+            case "currentStamina", "current" -> stamina.setCurrentStamina(amount);
+            case "maxStamina", "max" -> stamina.setMaxStamina(amount);
+            case "usageTotal" -> stamina.setUsageTotal(amount);
+            case "regenCooldown" -> stamina.setRegenCooldown(amount);
             case "regenAmount" -> stamina.setRegenAmount(amount);
-            case "current" -> stamina.setCurrentStamina(amount);
-            case "max" -> stamina.setMaxStamina(amount);
             case "exhaustionLevel" -> stamina.setExhaustionLevel(amount);
+            case "upgradePoints" -> stamina.setUpgradePoints(amount);
+            case "pointsProgress" -> stamina.setPointsProgress(amount);
+            case "upgradeProgressCooldown" -> stamina.setUpgradeProgressCooldown(amount);
+        }
+
+        StaminaSyncEvents.syncNow(player);
+    }
+
+    public static void forceSetStaminaData(ServerPlayer player, boolean value, String dataName) {
+        IStaminaData stamina = StaminaAttachments.get(player);
+
+        switch (dataName) {
+            case "lastHurrahUsed" -> stamina.setLastHurrahUsed(value);
+            case "powersDisabled" -> stamina.setPowersDisabled(value);
+            case "initialized" -> stamina.setInitialized(value);
         }
 
         StaminaSyncEvents.syncNow(player);

@@ -36,6 +36,9 @@ public interface IStaminaData {
     int getPointsProgress();
     void setPointsProgress(int progress);
 
+    int getUpgradeProgressCooldown();
+    void setUpgradeProgressCooldown(int cooldown);
+
     void saveNBTData(CompoundTag nbt);
     void loadNBTData(CompoundTag nbt);
 }

@@ -20,7 +20,8 @@ public record StaminaSyncPayload(
         boolean powersDisabled,
         boolean initialized,
         int upgradePoints,
-        int pointsProgress
+        int pointsProgress,
+        int upgradeProgressCooldown
 ) implements CustomPacketPayload {
     public static final Type<StaminaSyncPayload> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "stamina_sync"));
@@ -48,6 +49,8 @@ public record StaminaSyncPayload(
             StaminaSyncPayload::upgradePoints,
             ByteBufCodecs.VAR_INT,
             StaminaSyncPayload::pointsProgress,
+            ByteBufCodecs.VAR_INT,
+            StaminaSyncPayload::upgradeProgressCooldown,
             StaminaSyncPayload::new
     );
 
@@ -68,7 +71,8 @@ public record StaminaSyncPayload(
                 payload.powersDisabled(),
                 payload.initialized(),
                 payload.upgradePoints(),
-                payload.pointsProgress()
+                payload.pointsProgress(),
+                payload.upgradeProgressCooldown()
         ));
     }
 }
