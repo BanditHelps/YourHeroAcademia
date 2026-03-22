@@ -116,44 +116,33 @@ public class StaminaUtil {
         if (!player.isAlive()) return;
 
         IStaminaData stamina = StaminaAttachments.get(player);
-        boolean shouldSync = false;
 
         int currentStamina = stamina.getCurrentStamina();
         int exhaustionLevel = stamina.getExhaustionLevel();
         int newCurrent = currentStamina - amount;
         int newExhaustionLevel = calculateExhaustionLevel(newCurrent);
 
-        if (newCurrent != currentStamina) {
-            stamina.setCurrentStamina(newCurrent);
-            shouldSync = true;
-        }
+        stamina.setCurrentStamina(newCurrent);
 
         if (newExhaustionLevel != exhaustionLevel) {
             removeExhaustionEffects(player);
             stamina.setExhaustionLevel(newExhaustionLevel);
             applyExhaustionEffects(player, newExhaustionLevel);
-            shouldSync = true;
         }
 
         int regenCooldown = STAMINA_REGEN_COOLDOWNS[newExhaustionLevel];
         if (stamina.getRegenCooldown() != regenCooldown) {
             stamina.setRegenCooldown(regenCooldown);
-            shouldSync = true;
         }
 
-        if (calcUpgradeProgress(player, newCurrent, stamina.getMaxStamina(), stamina.getPointsProgress(), amount, exhaustionLevel, stamina)) {
-            shouldSync = true;
-        }
+        calcUpgradeProgress(player, newCurrent, stamina.getMaxStamina(), stamina.getPointsProgress(), amount, exhaustionLevel, stamina);
 
         int newUsageTotal = stamina.getUsageTotal() + amount;
         if (stamina.getUsageTotal() != newUsageTotal) {
             stamina.setUsageTotal(newUsageTotal);
-            shouldSync = true;
         }
 
-        if (handleMaxStaminaIncrease(player, exhaustionLevel, stamina.getUsageTotal(), stamina)) {
-            shouldSync = true;
-        }
+        handleMaxStaminaIncrease(player, exhaustionLevel, stamina.getUsageTotal(), stamina);
 
         // Check to see if the player is at the death level for exhaustion
         if (exhaustionLevel == EXHAUSTION_DEATH_LEVEL) {
@@ -164,9 +153,7 @@ public class StaminaUtil {
             ModDamageTypes.applyExhaustionDamage(player, EXHAUSTION_DAMAGE_LEVELS[exhaustionLevel]);
         }
 
-        if (shouldSync) {
-            StaminaSyncEvents.syncNow(player);
-        }
+        StaminaSyncEvents.syncNow(player); // Always sync as this function only gets ran based on a change
     }
 
     /**
