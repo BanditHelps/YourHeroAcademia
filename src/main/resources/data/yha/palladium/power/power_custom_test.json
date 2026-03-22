@@ -82,10 +82,15 @@
       }
     },
     "ability_4": {
-      "type": "palladium:dummy",
+      "type": "yha:heal_body_part",
+      "heal_amount": 50.0,
+      "parts": [
+        "main_arm",
+        "off_arm"
+      ],
       "properties": {
-        "title": "Ability 4",
-        "icon": "minecraft:diamond",
+        "title": "Heal Arms",
+        "icon": "minecraft:leather_leggings",
         "hidden_in_bar": false
       },
       "state": {
