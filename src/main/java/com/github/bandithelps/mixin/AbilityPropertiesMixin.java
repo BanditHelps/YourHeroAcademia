@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * This mixin allows us to add in 3 properties into any and every palladium ability.
- * Adds "initial_stamina", "stamina_interval", and "stamina_interval_cost".
+ * Adds "activation_stamina", "stamina_interval", and "stamina_interval_cost".
  * Gets a little confusing because we needed to add them into the Codec, but basically just combines the existing codec
  * with the new one. (Used AI to help with the Codec unpacking/repacking logic cause I haven't used them before)
  */
@@ -31,7 +31,7 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties {
     public static Codec<AbilityProperties> CODEC;
 
     @Unique
-    private static final String YHA_INITIAL_STAMINA_KEY = "initial_stamina";
+    private static final String YHA_ACTIVATION_STAMINA_KEY = "activation_stamina";
 
     @Unique
     private static final String YHA_STAMINA_INTERVAL_KEY = "stamina_interval";
@@ -40,7 +40,7 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties {
     private static final String YHA_STAMINA_INTERVAL_COST_KEY = "stamina_interval_cost";
 
     @Unique
-    private int yha$initialStamina = 0;
+    private int yha$activationStamina = 0;
 
     @Unique
     private int yha$staminaInterval = 0;
@@ -57,7 +57,7 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties {
                 return baseCodec.decode(ops, input).map((decoded) -> {
                     AbilityProperties properties = decoded.getFirst();
                     StaminaProperties staminaProperties = StaminaProperties.of(properties);
-                    staminaProperties.yha$setInitialStamina(yha$readInt(ops, input, YHA_INITIAL_STAMINA_KEY, 0));
+                    staminaProperties.yha$setActivationStamina(yha$readInt(ops, input, YHA_ACTIVATION_STAMINA_KEY, 0));
                     staminaProperties.yha$setStaminaInterval(yha$readInt(ops, input, YHA_STAMINA_INTERVAL_KEY, 0));
                     staminaProperties.yha$setStaminaIntervalCost(yha$readInt(ops, input, YHA_STAMINA_INTERVAL_COST_KEY, 0));
                     return decoded;
@@ -68,7 +68,7 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties {
             public <T> DataResult<T> encode(AbilityProperties input, DynamicOps<T> ops, T prefix) {
                 StaminaProperties staminaProperties = StaminaProperties.of(input);
                 return baseCodec.encode(input, ops, prefix).flatMap((encoded) ->
-                        yha$writeInt(ops, encoded, YHA_INITIAL_STAMINA_KEY, staminaProperties.yha$getInitialStamina())
+                        yha$writeInt(ops, encoded, YHA_ACTIVATION_STAMINA_KEY, staminaProperties.yha$getActivationStamina())
                                 .flatMap((withInitial) ->
                                         yha$writeInt(ops, withInitial, YHA_STAMINA_INTERVAL_KEY, staminaProperties.yha$getStaminaInterval())
                                                 .flatMap((withInterval) ->
@@ -99,13 +99,13 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties {
     }
 
     @Override
-    public int yha$getInitialStamina() {
-        return this.yha$initialStamina;
+    public int yha$getActivationStamina() {
+        return this.yha$activationStamina;
     }
 
     @Override
-    public void yha$setInitialStamina(int value) {
-        this.yha$initialStamina = Math.max(0, value);
+    public void yha$setActivationStamina(int value) {
+        this.yha$activationStamina = Math.max(0, value);
     }
 
     @Override

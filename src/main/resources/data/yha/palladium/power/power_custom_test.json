@@ -12,7 +12,7 @@
         "icon": "minecraft:feather",
         "hidden_in_bar": false,
         "list_index": 0,
-        "initial_stamina": 20
+        "activation_stamina": 20
       },
       "state": {
         "enabling": {

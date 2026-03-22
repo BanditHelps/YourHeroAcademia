@@ -8,9 +8,9 @@ public interface StaminaProperties {
         return (StaminaProperties) properties;
     }
 
-    int yha$getInitialStamina();
+    int yha$getActivationStamina();
 
-    void yha$setInitialStamina(int value);
+    void yha$setActivationStamina(int value);
 
     int yha$getStaminaInterval();
 
