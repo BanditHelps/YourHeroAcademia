@@ -11,5 +11,6 @@ public final class YhaNetwork {
         PayloadRegistrar registrar = event.registrar("1");
         registrar.playToClient(OpenGeneExperimentScreenPayload.TYPE, OpenGeneExperimentScreenPayload.STREAM_CODEC, OpenGeneExperimentScreenPayload::handle);
         registrar.playToClient(StaminaSyncPayload.TYPE, StaminaSyncPayload.STREAM_CODEC, StaminaSyncPayload::handle);
+        registrar.playToClient(StaminaDebugOverlayPayload.TYPE, StaminaDebugOverlayPayload.STREAM_CODEC, StaminaDebugOverlayPayload::handle);
     }
 }

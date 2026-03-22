@@ -47,16 +47,52 @@ public final class StaminaSyncEvents {
 
     private static void syncIfChanged(ServerPlayer player, boolean force) {
         IStaminaData stamina = StaminaAttachments.get(player);
-        Snapshot next = new Snapshot(stamina.getCurrentStamina(), Math.max(1, stamina.getMaxStamina()));
+        Snapshot next = new Snapshot(
+                stamina.getCurrentStamina(),
+                Math.max(1, stamina.getMaxStamina()),
+                stamina.getUsageTotal(),
+                stamina.getRegenCooldown(),
+                stamina.getRegenAmount(),
+                stamina.getExhaustionLevel(),
+                stamina.getLastHurrahUsed(),
+                stamina.isPowersDisabled(),
+                stamina.isInitialized(),
+                stamina.getUpgradePoints(),
+                stamina.getPointsProgress()
+        );
         Snapshot previous = LAST_SENT.get(player.getUUID());
         if (!force && next.equals(previous)) {
             return;
         }
 
         LAST_SENT.put(player.getUUID(), next);
-        PacketDistributor.sendToPlayer(player, new StaminaSyncPayload(next.current(), next.max()));
+        PacketDistributor.sendToPlayer(player, new StaminaSyncPayload(
+                next.current(),
+                next.max(),
+                next.usageTotal(),
+                next.regenCooldown(),
+                next.regenAmount(),
+                next.exhaustionLevel(),
+                next.lastHurrahUsed(),
+                next.powersDisabled(),
+                next.initialized(),
+                next.upgradePoints(),
+                next.pointsProgress()
+        ));
     }
 
-    private record Snapshot(int current, int max) {
+    private record Snapshot(
+            int current,
+            int max,
+            int usageTotal,
+            int regenCooldown,
+            int regenAmount,
+            int exhaustionLevel,
+            boolean lastHurrahUsed,
+            boolean powersDisabled,
+            boolean initialized,
+            int upgradePoints,
+            int pointsProgress
+    ) {
     }
 }

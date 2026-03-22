@@ -15,6 +15,9 @@ public final class StaminaHudOverlay {
     private static final int BAR_HEIGHT = 10;
     private static final int LEFT_MARGIN = 10;
     private static final int BOTTOM_MARGIN = 18;
+    private static final int DEBUG_TOP_MARGIN = 8;
+    private static final int DEBUG_RIGHT_MARGIN = 8;
+    private static final int DEBUG_LINE_HEIGHT = 10;
 
     private StaminaHudOverlay() {
     }
@@ -47,5 +50,31 @@ public final class StaminaHudOverlay {
 
         String label = "STA " + current + "/" + max;
         graphics.drawString(minecraft.font, label, x, y - 10, 0xFFFFFFFF, true);
+
+        if (!ClientStaminaState.isDebugOverlayEnabled()) {
+            return;
+        }
+
+        String[] lines = new String[] {
+                "YHA Stamina Debug",
+                "currentStamina: " + ClientStaminaState.getCurrentStamina(),
+                "maxStamina: " + ClientStaminaState.getMaxStamina(),
+                "usageTotal: " + ClientStaminaState.getUsageTotal(),
+                "regenCooldown: " + ClientStaminaState.getRegenCooldown(),
+                "regenAmount: " + ClientStaminaState.getRegenAmount(),
+                "exhaustionLevel: " + ClientStaminaState.getExhaustionLevel(),
+                "lastHurrahUsed: " + ClientStaminaState.getLastHurrahUsed(),
+                "powersDisabled: " + ClientStaminaState.isPowersDisabled(),
+                "initialized: " + ClientStaminaState.isInitialized(),
+                "upgradePoints: " + ClientStaminaState.getUpgradePoints(),
+                "pointsProgress: " + ClientStaminaState.getPointsProgress()
+        };
+
+        int yPos = DEBUG_TOP_MARGIN;
+        for (String line : lines) {
+            int xPos = screenWidth - DEBUG_RIGHT_MARGIN - minecraft.font.width(line);
+            graphics.drawString(minecraft.font, line, xPos, yPos, 0xFFFFFFFF, true);
+            yPos += DEBUG_LINE_HEIGHT;
+        }
     }
 }
