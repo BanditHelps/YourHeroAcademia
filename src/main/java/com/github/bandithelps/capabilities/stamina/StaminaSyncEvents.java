@@ -13,6 +13,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.github.bandithelps.values.StaminaConstants.STAMINA_STARTING_MAX;
+import static com.github.bandithelps.values.StaminaConstants.STAMINA_STARTING_MIN;
+
 @EventBusSubscriber(modid = YourHeroAcademia.MODID)
 public final class StaminaSyncEvents {
     private static final Map<UUID, Snapshot> LAST_SENT = new ConcurrentHashMap<>();
@@ -32,6 +35,7 @@ public final class StaminaSyncEvents {
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            initializePlayerStamina(player);
             syncIfChanged(player, true);
         }
     }
@@ -43,6 +47,21 @@ public final class StaminaSyncEvents {
 
     public static void syncNow(ServerPlayer player) {
         syncIfChanged(player, true);
+    }
+
+    private static void initializePlayerStamina(ServerPlayer player) {
+        IStaminaData stamina = StaminaAttachments.get(player);
+        if (stamina.isInitialized()) {
+            return;
+        }
+
+        int min = Math.min(STAMINA_STARTING_MIN, STAMINA_STARTING_MAX);
+        int max = Math.max(STAMINA_STARTING_MIN, STAMINA_STARTING_MAX);
+        int initialMax = min + player.getRandom().nextInt(max - min + 1);
+
+        stamina.setMaxStamina(initialMax);
+        stamina.setCurrentStamina(initialMax);
+        stamina.setInitialized(true);
     }
 
     private static void syncIfChanged(ServerPlayer player, boolean force) {

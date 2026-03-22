@@ -20,6 +20,10 @@ public class StaminaConstants {
     // The maximum amount that the stamina can increase after using STAMINA_GAIN_REQ total stamina
     public static int STAMINA_MAX_INCREASE = 3;
 
+    // Initial max stamina range assigned on first login
+    public static int STAMINA_STARTING_MIN = 80;
+    public static int STAMINA_STARTING_MAX = 120;
+
     public static double[] EXHAUSTION_SLOWNESS_MODIFIERS = {0, -0.15, -0.25, -0.35, -0.45}; // The slowness attribute scaling
     public static double[] EXHAUSTION_WEAKNESS_MODIFIERS = {0, -0.25, -0.50, -0.75, -1};
     public static double[] EXHAUSTION_DIG_SLOW_MODIFIERS = {0, -0.25, -0.50, -0.75, -1};
