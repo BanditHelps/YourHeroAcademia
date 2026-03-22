@@ -8,10 +8,11 @@
       "strength": 0.5,
       "block_vertical": true,
       "properties": {
-        "title": "Dash Horizontal",
+        "title": "Dash Horizontal : Stam",
         "icon": "minecraft:feather",
         "hidden_in_bar": false,
-        "list_index": 0
+        "list_index": 0,
+        "activation_stamina": 20
       },
       "state": {
         "enabling": {
@@ -110,13 +111,15 @@
       "properties": {
         "title": "Ability 6",
         "icon": "minecraft:nether_star",
-        "hidden_in_bar": false
+        "hidden_in_bar": false,
+        "stamina_interval": 20,
+        "stamina_interval_cost": 5
       },
       "state": {
         "enabling": {
           "type": "palladium:key_bind",
-          "behaviour": "action",
-          "cooldown": 20
+          "behaviour": "held",
+          "cooldown": 200
         }
       }
     }

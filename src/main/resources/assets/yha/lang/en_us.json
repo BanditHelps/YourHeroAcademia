@@ -1,10 +1,14 @@
 {
   "itemGroup.yourheroacademia": "Example Mod Tab",
   "block.yourheroacademia.example_block": "Example Block",
+  "block.yha.treadmill": "Treadmill",
+  "item.yha.treadmill": "Treadmill",
   "item.yourheroacademia.example_item": "Example Item",
 
 
   "ability.yha.dash": "Dash",
+
+  "death.attack.exhaustion": "%1$s overexerted themselves and paid the price.",
 
 
 

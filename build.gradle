@@ -149,7 +149,7 @@ configurations {
 dependencies {
 
     // Development Palladium Version
-    implementation "maven.modrinth:palladium-previews:4314e25+1.21.11"
+    implementation "maven.modrinth:palladium-previews:ce27442+1.21.11"
 
     // Custom MoLang Queries
     implementation("com.zigythebird:mochafloats:4.1.1") {
