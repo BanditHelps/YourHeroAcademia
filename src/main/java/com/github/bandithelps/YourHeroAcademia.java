@@ -2,8 +2,10 @@ package com.github.bandithelps;
 
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.attributes.QuirkAttributes;
+import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.commands.RegisterYhaCommandsEvent;
+import com.github.bandithelps.commands.BodyCommand;
 import com.github.bandithelps.commands.ScreenCommand;
 import com.github.bandithelps.commands.StaminaCommand;
 import com.github.bandithelps.commands.YhaCommand;
@@ -100,6 +102,7 @@ public final class YourHeroAcademia {
         AbilityRegister.ABILITIES.register(modEventBus);
         QuirkAttributes.ATTRIBUTES.register(modEventBus);
         StaminaAttachments.ATTACHMENTS.register(modEventBus);
+        BodyAttachments.ATTACHMENTS.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in.
         // Note that this is necessary if and only if we want *this* class (YourHeroAcademia) to respond directly to events.
@@ -158,5 +161,6 @@ public final class YourHeroAcademia {
     static void yhaCommands(RegisterYhaCommandsEvent event) {
         ScreenCommand.register(event.getBuilder(), event.getBuildContext());
         StaminaCommand.register(event.getBuilder(), event.getBuildContext());
+        BodyCommand.register(event.getBuilder(), event.getBuildContext());
     }
 }
