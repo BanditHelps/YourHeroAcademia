@@ -7,6 +7,8 @@ public class StaminaConstants {
 
     public static int[] EXHAUSTION_LEVELS = {0, -10, -35, -60, -80};
     public static double[] EXHAUSTION_MULTIPLIERS = {1.0, 1.2, 1.5, 2.0, 3.0};
+    public static float[] EXHAUSTION_DAMAGE_LEVELS = {0f, 0f, 3.0f, 6.0f, 20.0f};
+    public static int EXHAUSTION_DEATH_LEVEL = 4; // The level the player will die if they attempt to surpass
 
     public static double[] EXHAUSTION_SLOWNESS_MODIFIERS = {0, -0.15, -0.25, -0.35, -0.45}; // The slowness attribute scaling
     public static double[] EXHAUSTION_WEAKNESS_MODIFIERS = {0, -0.25, -0.50, -0.75, -1};

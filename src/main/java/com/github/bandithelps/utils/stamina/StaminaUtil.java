@@ -1,15 +1,12 @@
 package com.github.bandithelps.utils.stamina;
 
-import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.capabilities.stamina.IStaminaData;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaSyncEvents;
+import com.github.bandithelps.values.ModDamageTypes;
 import com.github.bandithelps.values.StaminaConstants;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.ai.attributes.AttributeMap;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -92,8 +89,20 @@ public class StaminaUtil {
         if (amount == 0) return;
         // Creative players should not use stamina
         if (player.gameMode.getGameModeForPlayer() == GameType.CREATIVE) return;
+        if (!player.isAlive()) return;
 
         IStaminaData stamina = StaminaAttachments.get(player);
+
+        int exhaustionLevel = stamina.getExhaustionLevel();
+
+        // Check to see if the player is at the death level for exhaustion
+        if (exhaustionLevel == EXHAUSTION_DEATH_LEVEL) {
+            // Always use normal damage application so vanilla death/respawn flow remains intact.
+            ModDamageTypes.applyExhaustionDamage(player, Float.MAX_VALUE);
+            return;
+        } else if (exhaustionLevel > 1) { // Otherwise, see if they just take normal damage
+            ModDamageTypes.applyExhaustionDamage(player, EXHAUSTION_DAMAGE_LEVELS[exhaustionLevel]);
+        }
 
         int newCurrent = stamina.getCurrentStamina() - amount;
         int newExhaustionLevel = calculateExhaustionLevel(newCurrent);
@@ -142,7 +151,6 @@ public class StaminaUtil {
         Objects.requireNonNull(attributes.getInstance(Attributes.ATTACK_DAMAGE)).addOrUpdateTransientModifier(weaknessModifier);
     }
 
-
     /**
      * Removes all the exhaustion attributes so that they can be reapplied when the exhaustion level changes
      * @param player
@@ -156,7 +164,21 @@ public class StaminaUtil {
         Objects.requireNonNull(attributes.getInstance(Attributes.ATTACK_DAMAGE)).removeModifier(EXHAUSTION_WEAKNESS_ATTRIBUTE);
     }
 
+    /**
+     * This function resets all the stamina values to their baseline values, primarily used when a player dies
+     * @param player
+     */
+    public static void handlePlayerDeath(ServerPlayer player) {
+        IStaminaData stamina = StaminaAttachments.get(player);
 
+        stamina.setCurrentStamina(stamina.getMaxStamina());
+        stamina.setRegenCooldown(0);
+        stamina.setExhaustionLevel(0);
+        stamina.setLastHurrahUsed(false);
+        stamina.setPointsProgress(0);
+        stamina.setPowersDisabled(false);
+        StaminaSyncEvents.syncNow(player);
+    }
 
 
     /*

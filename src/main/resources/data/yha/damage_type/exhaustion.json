@@ -1,0 +1,7 @@
+{
+  "message_id": "exhaustion",
+  "scaling": "never",
+  "exhaustion": 0.3,
+  "effects": "hurt",
+  "death_message_type": "default"
+}
