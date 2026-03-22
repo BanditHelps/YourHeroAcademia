@@ -5,6 +5,7 @@ import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaSyncEvents;
 import com.github.bandithelps.values.ModDamageTypes;
 import com.github.bandithelps.values.StaminaConstants;
+import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.AttributeMap;
@@ -21,6 +22,17 @@ import static com.github.bandithelps.values.StaminaConstants.*;
  */
 public class StaminaUtil {
 
+    private static final AttributeModifier[] EXHAUSTION_ATTACK_SPEED_MODIFIERS =
+            createExhaustionModifiers(EXHAUSTION_ATTACK_SLOW_ATTRIBUTE, EXHAUSTION_ATTACK_SLOW_MODIFIERS);
+    private static final AttributeModifier[] EXHAUSTION_MOVE_SPEED_MODIFIERS =
+            createExhaustionModifiers(EXHAUSTION_MOVE_SLOW_ATTRIBUTE, EXHAUSTION_SLOWNESS_MODIFIERS);
+    private static final AttributeModifier[] EXHAUSTION_DIG_SPEED_MODIFIERS =
+            createExhaustionModifiers(EXHAUSTION_DIG_SLOW_ATTRIBUTE, EXHAUSTION_DIG_SLOW_MODIFIERS);
+    private static final AttributeModifier[] EXHAUSTION_JUMP_STRENGTH_MODIFIERS =
+            createExhaustionModifiers(EXHAUSTION_JUMP_ATTRIBUTE, EXHAUSTION_JUMP_MODIFIERS);
+    private static final AttributeModifier[] EXHAUSTION_ATTACK_DAMAGE_MODIFIERS =
+            createExhaustionModifiers(EXHAUSTION_WEAKNESS_ATTRIBUTE, EXHAUSTION_WEAKNESS_MODIFIERS);
+
     public void test(ServerPlayer player) {
         IStaminaData stamina = StaminaAttachments.get(player);
         int current = stamina.getCurrentStamina();
@@ -35,6 +47,7 @@ public class StaminaUtil {
      */
     public static void handleStaminaTick(ServerPlayer player) {
         IStaminaData stamina = StaminaAttachments.get(player);
+        boolean shouldSync = false;
 
         int current = stamina.getCurrentStamina();
         int max = stamina.getMaxStamina();
@@ -44,6 +57,7 @@ public class StaminaUtil {
         // If the regeneration cooldown is active, obv don't try to give them more stamina
         if (cooldown > 0) {
             stamina.setRegenCooldown(cooldown - 1);
+            shouldSync = true;
         } else if (current < max) {
             // The regeneration rate is dependent on the current exhaustion level of the player
             double regenRate = STAMINA_REGEN_RATE[stamina.getExhaustionLevel()];
@@ -51,21 +65,24 @@ public class StaminaUtil {
             // If not exhausted, just linearly increase the stamina
             if (regenRate >= 1 || player.getRandom().nextFloat() <= regenRate) {
                 int newCurrent = Math.min(current + regenAmount, max);
-                stamina.setCurrentStamina(newCurrent);
+                int exhaustLevel = stamina.getExhaustionLevel();
+                int newExhaustionLevel = calculateExhaustionLevel(newCurrent);
 
-                if (newCurrent <= 0) {
-                    int exhaustLevel = stamina.getExhaustionLevel();
-                    int newExhaustionLevel = calculateExhaustionLevel(newCurrent);
+                if (newCurrent != current) {
+                    stamina.setCurrentStamina(newCurrent);
+                    shouldSync = true;
+                }
 
-                    if (exhaustLevel != newExhaustionLevel) { removeExhaustionEffects(player); }
+                if (exhaustLevel != newExhaustionLevel) {
+                    removeExhaustionEffects(player);
+                    stamina.setExhaustionLevel(newExhaustionLevel);
+                    shouldSync = true;
 
                     // Notify the player of a decrease in exhaustion
                     if (newExhaustionLevel < exhaustLevel) {
                         // TODO add in some better indication of the exhaustion changing
-                         player.sendSystemMessage(Component.literal("Updated exhaustion"));
+                        player.sendSystemMessage(Component.literal("Updated exhaustion"));
                     }
-
-                    stamina.setExhaustionLevel(newExhaustionLevel);
                 }
             }
         }
@@ -74,8 +91,9 @@ public class StaminaUtil {
         int exhaustLevel = stamina.getExhaustionLevel();
         applyExhaustionEffects(player, exhaustLevel);
 
-        // Always need to sync to the player
-        StaminaSyncEvents.syncNow(player);
+        if (shouldSync) {
+            StaminaSyncEvents.syncNow(player);
+        }
 
     }
 
@@ -92,20 +110,44 @@ public class StaminaUtil {
         if (!player.isAlive()) return;
 
         IStaminaData stamina = StaminaAttachments.get(player);
+        boolean shouldSync = false;
 
+        int currentStamina = stamina.getCurrentStamina();
         int exhaustionLevel = stamina.getExhaustionLevel();
-        int newCurrent = stamina.getCurrentStamina() - amount;
+        int newCurrent = currentStamina - amount;
         int newExhaustionLevel = calculateExhaustionLevel(newCurrent);
 
-        calcUpgradeProgress(player, newCurrent, stamina.getMaxStamina(), stamina.getPointsProgress(), amount, exhaustionLevel, stamina);
+        if (newCurrent != currentStamina) {
+            stamina.setCurrentStamina(newCurrent);
+            shouldSync = true;
+        }
 
-        stamina.setCurrentStamina(newCurrent);
-        stamina.setExhaustionLevel(newExhaustionLevel);
-        stamina.setRegenCooldown(STAMINA_REGEN_COOLDOWNS[newExhaustionLevel]);
-        stamina.setUsageTotal(stamina.getUsageTotal() + amount);
+        if (newExhaustionLevel != exhaustionLevel) {
+            removeExhaustionEffects(player);
+            stamina.setExhaustionLevel(newExhaustionLevel);
+            applyExhaustionEffects(player, newExhaustionLevel);
+            shouldSync = true;
+        }
 
-        handleMaxStaminaIncrease(player, exhaustionLevel, stamina.getUsageTotal(), stamina);
+        int regenCooldown = STAMINA_REGEN_COOLDOWNS[newExhaustionLevel];
+        if (stamina.getRegenCooldown() != regenCooldown) {
+            stamina.setRegenCooldown(regenCooldown);
+            shouldSync = true;
+        }
 
+        if (calcUpgradeProgress(player, newCurrent, stamina.getMaxStamina(), stamina.getPointsProgress(), amount, exhaustionLevel, stamina)) {
+            shouldSync = true;
+        }
+
+        int newUsageTotal = stamina.getUsageTotal() + amount;
+        if (stamina.getUsageTotal() != newUsageTotal) {
+            stamina.setUsageTotal(newUsageTotal);
+            shouldSync = true;
+        }
+
+        if (handleMaxStaminaIncrease(player, exhaustionLevel, stamina.getUsageTotal(), stamina)) {
+            shouldSync = true;
+        }
 
         // Check to see if the player is at the death level for exhaustion
         if (exhaustionLevel == EXHAUSTION_DEATH_LEVEL) {
@@ -114,6 +156,37 @@ public class StaminaUtil {
             return;
         } else if (exhaustionLevel > 1) { // Otherwise, see if they just take normal damage
             ModDamageTypes.applyExhaustionDamage(player, EXHAUSTION_DAMAGE_LEVELS[exhaustionLevel]);
+        }
+
+        if (shouldSync) {
+            StaminaSyncEvents.syncNow(player);
+        }
+    }
+
+    /**
+     * Dedicated helper for restoring stamina outside passive stamina regen ticks.
+     * Useful for abilities, items, and scripted recovery effects.
+     * @param player
+     * @param amount
+     */
+    public static void restoreStamina(ServerPlayer player, int amount) {
+        if (amount <= 0 || !player.isAlive()) return;
+
+        IStaminaData stamina = StaminaAttachments.get(player);
+        int current = stamina.getCurrentStamina();
+        int max = stamina.getMaxStamina();
+        int newCurrent = Math.min(current + amount, max);
+
+        if (newCurrent == current) return;
+
+        int oldExhaustionLevel = stamina.getExhaustionLevel();
+        int newExhaustionLevel = calculateExhaustionLevel(newCurrent);
+
+        stamina.setCurrentStamina(newCurrent);
+        if (oldExhaustionLevel != newExhaustionLevel) {
+            removeExhaustionEffects(player);
+            stamina.setExhaustionLevel(newExhaustionLevel);
+            applyExhaustionEffects(player, newExhaustionLevel);
         }
 
         StaminaSyncEvents.syncNow(player);
@@ -141,21 +214,14 @@ public class StaminaUtil {
      * @param exhaustLevel
      */
     private static void applyExhaustionEffects(ServerPlayer player, int exhaustLevel) {
+        int clampedExhaustionLevel = Math.max(0, Math.min(exhaustLevel, EXHAUSTION_LEVELS.length - 1));
         AttributeMap attributes = player.getAttributes();
 
-        // Slowness gets applied at every level, so do it at this level
-        AttributeModifier attackSpeedModifier = new AttributeModifier(EXHAUSTION_ATTACK_SLOW_ATTRIBUTE, EXHAUSTION_ATTACK_SLOW_MODIFIERS[exhaustLevel], AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
-        AttributeModifier slownessModifier = new AttributeModifier(EXHAUSTION_MOVE_SLOW_ATTRIBUTE, EXHAUSTION_SLOWNESS_MODIFIERS[exhaustLevel], AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
-        AttributeModifier digSlowModifier = new AttributeModifier(EXHAUSTION_DIG_SLOW_ATTRIBUTE, EXHAUSTION_DIG_SLOW_MODIFIERS[exhaustLevel], AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
-        AttributeModifier jumpModifier = new AttributeModifier(EXHAUSTION_JUMP_ATTRIBUTE, EXHAUSTION_JUMP_MODIFIERS[exhaustLevel], AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
-        AttributeModifier weaknessModifier = new AttributeModifier(EXHAUSTION_WEAKNESS_ATTRIBUTE, EXHAUSTION_WEAKNESS_MODIFIERS[exhaustLevel], AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
-
-
-        Objects.requireNonNull(attributes.getInstance(Attributes.ATTACK_SPEED)).addOrUpdateTransientModifier(attackSpeedModifier);
-        Objects.requireNonNull(attributes.getInstance(Attributes.MOVEMENT_SPEED)).addOrUpdateTransientModifier(slownessModifier);
-        Objects.requireNonNull(attributes.getInstance(Attributes.BLOCK_BREAK_SPEED)).addOrUpdateTransientModifier(digSlowModifier);
-        Objects.requireNonNull(attributes.getInstance(Attributes.JUMP_STRENGTH)).addOrUpdateTransientModifier(jumpModifier);
-        Objects.requireNonNull(attributes.getInstance(Attributes.ATTACK_DAMAGE)).addOrUpdateTransientModifier(weaknessModifier);
+        Objects.requireNonNull(attributes.getInstance(Attributes.ATTACK_SPEED)).addOrUpdateTransientModifier(EXHAUSTION_ATTACK_SPEED_MODIFIERS[clampedExhaustionLevel]);
+        Objects.requireNonNull(attributes.getInstance(Attributes.MOVEMENT_SPEED)).addOrUpdateTransientModifier(EXHAUSTION_MOVE_SPEED_MODIFIERS[clampedExhaustionLevel]);
+        Objects.requireNonNull(attributes.getInstance(Attributes.BLOCK_BREAK_SPEED)).addOrUpdateTransientModifier(EXHAUSTION_DIG_SPEED_MODIFIERS[clampedExhaustionLevel]);
+        Objects.requireNonNull(attributes.getInstance(Attributes.JUMP_STRENGTH)).addOrUpdateTransientModifier(EXHAUSTION_JUMP_STRENGTH_MODIFIERS[clampedExhaustionLevel]);
+        Objects.requireNonNull(attributes.getInstance(Attributes.ATTACK_DAMAGE)).addOrUpdateTransientModifier(EXHAUSTION_ATTACK_DAMAGE_MODIFIERS[clampedExhaustionLevel]);
     }
 
     /**
@@ -178,7 +244,9 @@ public class StaminaUtil {
      * @param staminaUsed
      * @param exhaustLevel
      */
-    private static void calcUpgradeProgress(ServerPlayer player, int currentStamina, int maxStamina, int curProgress, int staminaUsed, int exhaustLevel, IStaminaData stamina) {
+    private static boolean calcUpgradeProgress(ServerPlayer player, int currentStamina, int maxStamina, int curProgress, int staminaUsed, int exhaustLevel, IStaminaData stamina) {
+        if (maxStamina <= 0) return false;
+
         // Only award upgrade if they are below a certain percentage of their max stamina
         if (((float) currentStamina / maxStamina) <= STAMINA_GAIN_PERCENTAGE) {
             int progressGain = (int) Math.floor(staminaUsed * EXHAUSTION_MULTIPLIERS[exhaustLevel]);
@@ -186,16 +254,23 @@ public class StaminaUtil {
 
             int pointsToAward = newProgress / UPGRADE_POINT_COST;
             int finalProgress = newProgress % UPGRADE_POINT_COST;
+            boolean changed = false;
 
-            stamina.setPointsProgress(finalProgress);
+            if (stamina.getPointsProgress() != finalProgress) {
+                stamina.setPointsProgress(finalProgress);
+                changed = true;
+            }
 
             if (pointsToAward > 0) {
                 // TODO add a ding or something to tell them they upgraded
                 stamina.setUpgradePoints(stamina.getUpgradePoints() + pointsToAward);
+                changed = true;
             }
 
-            StaminaSyncEvents.syncNow(player);
+            return changed;
         }
+
+        return false;
     }
 
     /**
@@ -206,15 +281,17 @@ public class StaminaUtil {
      * @param newUsageTotal
      * @param stamina
      */
-    private static void handleMaxStaminaIncrease(ServerPlayer player, int exhuastLevel, int newUsageTotal, IStaminaData stamina) {
+    private static boolean handleMaxStaminaIncrease(ServerPlayer player, int exhuastLevel, int newUsageTotal, IStaminaData stamina) {
         double chanceToIncrease = exhuastLevel > 0 ? STAMINA_GAIN_EXHAUSTED_CHANCE : STAMINA_GAIN_CHANCE;
 
         if (newUsageTotal >= STAMINA_GAIN_REQ && player.getRandom().nextFloat() < chanceToIncrease) {
             int maxIncrease = (int) Math.floor(player.getRandom().nextFloat() * STAMINA_MAX_INCREASE) + 1;
             stamina.setMaxStamina(stamina.getMaxStamina() + maxIncrease);
             stamina.setUsageTotal(0);
-            StaminaSyncEvents.syncNow(player);
+            return true;
         }
+
+        return false;
     }
 
     /**
@@ -223,6 +300,7 @@ public class StaminaUtil {
      */
     public static void handlePlayerDeath(ServerPlayer player) {
         IStaminaData stamina = StaminaAttachments.get(player);
+        removeExhaustionEffects(player);
 
         stamina.setCurrentStamina(stamina.getMaxStamina());
         stamina.setRegenCooldown(0);
@@ -232,6 +310,14 @@ public class StaminaUtil {
         stamina.setPointsProgress(0);
         stamina.setPowersDisabled(false);
         StaminaSyncEvents.syncNow(player);
+    }
+
+    private static AttributeModifier[] createExhaustionModifiers(Identifier modifierId, double[] values) {
+        AttributeModifier[] modifiers = new AttributeModifier[values.length];
+        for (int i = 0; i < values.length; i++) {
+            modifiers[i] = new AttributeModifier(modifierId, values[i], AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+        }
+        return modifiers;
     }
 
 
