@@ -7,6 +7,8 @@
 
 
   "ability.yha.dash": "Dash",
+  "ability.yha.damage_body_part": "Damage Body Part",
+
   "attribute.yha.quirk_factor": "Quirk Factor",
 
   "death.attack.exhaustion": "%1$s overexerted themselves and paid the price.",

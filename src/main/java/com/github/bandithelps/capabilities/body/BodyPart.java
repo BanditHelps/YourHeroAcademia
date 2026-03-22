@@ -2,12 +2,12 @@ package com.github.bandithelps.capabilities.body;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
+import net.threetag.palladium.entity.PlayerSlot;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 public enum BodyPart {
     HEAD("head", true),
@@ -80,5 +80,26 @@ public enum BodyPart {
             return player.getMainArm() == HumanoidArm.LEFT ? RIGHT_ARM : LEFT_ARM;
         }
         return requested;
+    }
+
+    /**
+     * Used to reference inside the documentation the valid parts
+     * @return
+     */
+    public static Collection<String> exampleValues() {
+        List<String> parts = new ArrayList();
+        parts.add(HEAD.getId());
+        parts.add(CHEST.getId());
+        parts.add(LEFT_ARM.getId());
+        parts.add(RIGHT_ARM.getId());
+        parts.add(LEFT_HAND.getId());
+        parts.add(RIGHT_HAND.getId());
+        parts.add(LEFT_LEG.getId());
+        parts.add(RIGHT_LEG.getId());
+        parts.add(LEFT_FOOT.getId());
+        parts.add(RIGHT_FOOT.getId());
+        parts.add(MAIN_ARM.getId());
+        parts.add(OFF_ARM.getId());
+        return parts;
     }
 }

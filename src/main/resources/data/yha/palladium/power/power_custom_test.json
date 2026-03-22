@@ -62,10 +62,15 @@
       }
     },
     "ability_3": {
-      "type": "palladium:dummy",
+      "type": "yha:damage_body_part",
+      "damage": 10.0,
+      "parts": [
+        "main_arm",
+        "left_leg"
+      ],
       "properties": {
-        "title": "Ability 3",
-        "icon": "minecraft:gold_ingot",
+        "title": "Hurt Chest",
+        "icon": "minecraft:diamond_chestplate",
         "hidden_in_bar": false
       },
       "state": {
