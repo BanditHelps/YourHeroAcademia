@@ -157,6 +157,23 @@ public class StaminaUtil {
     }
 
     /**
+     * Adds stamina usage progress without draining current stamina.
+     * Useful for passive training mechanics (e.g. treadmill block).
+     * @param player
+     * @param amount
+     */
+    public static void addPassiveUsage(ServerPlayer player, int amount) {
+        if (amount <= 0 || !player.isAlive()) return;
+
+        IStaminaData stamina = StaminaAttachments.get(player);
+        int newUsageTotal = stamina.getUsageTotal() + amount;
+        stamina.setUsageTotal(newUsageTotal);
+
+        handleMaxStaminaIncrease(player, stamina.getExhaustionLevel(), newUsageTotal, stamina);
+        StaminaSyncEvents.syncNow(player);
+    }
+
+    /**
      * Dedicated helper for restoring stamina outside passive stamina regen ticks.
      * Useful for abilities, items, and scripted recovery effects.
      * @param player
