@@ -1,6 +1,9 @@
 package com.github.bandithelps.queries;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.attributes.QuirkAttributes;
+import com.github.bandithelps.utils.quirk.QuirkFactorUtil;
+import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.threetag.palladium.event.RegisterMoLangQueriesEvent;
@@ -38,7 +41,12 @@ public class YourHeroAcademiaQueries implements ObjectValue {
     }
 
     @Binding({"quirk_factor"})
-    public double quirk_factor() { return (double) 4.0; }
+    public double quirk_factor() {
+        if (context.entity() instanceof Player player) {
+            return QuirkFactorUtil.getQuirkFactor(player);
+        }
+        return QuirkAttributes.QUIRK_FACTOR_DEFAULT;
+    }
 
     @Override
     public @Nullable ObjectProperty getProperty(@NotNull String name) {
