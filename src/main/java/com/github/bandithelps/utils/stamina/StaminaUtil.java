@@ -1,16 +1,23 @@
 package com.github.bandithelps.utils.stamina;
 
+import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.capabilities.stamina.IStaminaData;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaSyncEvents;
+import com.github.bandithelps.values.StaminaConstants;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.ai.attributes.AttributeMap;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.GameType;
 
-import static com.github.bandithelps.values.StaminaConstants.EXHAUSTION_LEVELS;
-import static com.github.bandithelps.values.StaminaConstants.STAMINA_REGEN_RATE;
+import java.util.Objects;
+
+import static com.github.bandithelps.values.StaminaConstants.*;
 
 /**
  * Utility for accessing the player's stamina capability and doing all the functions it requires.
@@ -53,20 +60,22 @@ public class StaminaUtil {
                     int exhaustLevel = stamina.getExhaustionLevel();
                     int newExhaustionLevel = calculateExhaustionLevel(newCurrent);
 
+                    if (exhaustLevel != newExhaustionLevel) { removeExhaustionEffects(player); }
+
                     // Notify the player of a decrease in exhaustion
                     if (newExhaustionLevel < exhaustLevel) {
-//                        player.level().playSound(player, player.getX(), player.getY(), player.getZ(), SoundEvents.BAMBOO_BREAK, SoundSource.PLAYERS, 5, 1);
+                        // TODO add in some better indication of the exhaustion changing
                          player.sendSystemMessage(Component.literal("Updated exhaustion"));
                     }
 
                     stamina.setExhaustionLevel(newExhaustionLevel);
                 }
-
             }
-
-
-
         }
+
+        // We re-get this to ensure it is updated to the current stamina value
+        int exhaustLevel = stamina.getExhaustionLevel();
+        applyExhaustionEffects(player, exhaustLevel);
 
         // Always need to sync to the player
         StaminaSyncEvents.syncNow(player);
@@ -107,6 +116,48 @@ public class StaminaUtil {
 
         return EXHAUSTION_LEVELS.length - 1;
     }
+
+    /**
+     * This function is responsible for applying the negative effects based on the level of exhaustion that the player
+     * has. These range from slowness to physical damage, with the idea that they increase in strength, the higher
+     * the value goes.
+     * @param player
+     * @param exhaustLevel
+     */
+    private static void applyExhaustionEffects(ServerPlayer player, int exhaustLevel) {
+        AttributeMap attributes = player.getAttributes();
+
+        // Slowness gets applied at every level, so do it at this level
+        AttributeModifier attackSpeedModifier = new AttributeModifier(EXHAUSTION_ATTACK_SLOW_ATTRIBUTE, EXHAUSTION_ATTACK_SLOW_MODIFIERS[exhaustLevel], AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+        AttributeModifier slownessModifier = new AttributeModifier(EXHAUSTION_MOVE_SLOW_ATTRIBUTE, EXHAUSTION_SLOWNESS_MODIFIERS[exhaustLevel], AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+        AttributeModifier digSlowModifier = new AttributeModifier(EXHAUSTION_DIG_SLOW_ATTRIBUTE, EXHAUSTION_DIG_SLOW_MODIFIERS[exhaustLevel], AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+        AttributeModifier jumpModifier = new AttributeModifier(EXHAUSTION_JUMP_ATTRIBUTE, EXHAUSTION_JUMP_MODIFIERS[exhaustLevel], AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+        AttributeModifier weaknessModifier = new AttributeModifier(EXHAUSTION_WEAKNESS_ATTRIBUTE, EXHAUSTION_WEAKNESS_MODIFIERS[exhaustLevel], AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+
+
+        Objects.requireNonNull(attributes.getInstance(Attributes.ATTACK_SPEED)).addOrUpdateTransientModifier(attackSpeedModifier);
+        Objects.requireNonNull(attributes.getInstance(Attributes.MOVEMENT_SPEED)).addOrUpdateTransientModifier(slownessModifier);
+        Objects.requireNonNull(attributes.getInstance(Attributes.BLOCK_BREAK_SPEED)).addOrUpdateTransientModifier(digSlowModifier);
+        Objects.requireNonNull(attributes.getInstance(Attributes.JUMP_STRENGTH)).addOrUpdateTransientModifier(jumpModifier);
+        Objects.requireNonNull(attributes.getInstance(Attributes.ATTACK_DAMAGE)).addOrUpdateTransientModifier(weaknessModifier);
+    }
+
+
+    /**
+     * Removes all the exhaustion attributes so that they can be reapplied when the exhaustion level changes
+     * @param player
+     */
+    private static void removeExhaustionEffects(ServerPlayer player) {
+        AttributeMap attributes = player.getAttributes();
+        Objects.requireNonNull(attributes.getInstance(Attributes.ATTACK_SPEED)).removeModifier(EXHAUSTION_ATTACK_SLOW_ATTRIBUTE);
+        Objects.requireNonNull(attributes.getInstance(Attributes.MOVEMENT_SPEED)).removeModifier(EXHAUSTION_MOVE_SLOW_ATTRIBUTE);
+        Objects.requireNonNull(attributes.getInstance(Attributes.BLOCK_BREAK_SPEED)).removeModifier(EXHAUSTION_DIG_SLOW_ATTRIBUTE);
+        Objects.requireNonNull(attributes.getInstance(Attributes.JUMP_STRENGTH)).removeModifier(EXHAUSTION_JUMP_ATTRIBUTE);
+        Objects.requireNonNull(attributes.getInstance(Attributes.ATTACK_DAMAGE)).removeModifier(EXHAUSTION_WEAKNESS_ATTRIBUTE);
+    }
+
+
+
 
     /*
     =============================================
