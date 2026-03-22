@@ -94,6 +94,18 @@ public class StaminaUtil {
         IStaminaData stamina = StaminaAttachments.get(player);
 
         int exhaustionLevel = stamina.getExhaustionLevel();
+        int newCurrent = stamina.getCurrentStamina() - amount;
+        int newExhaustionLevel = calculateExhaustionLevel(newCurrent);
+
+        calcUpgradeProgress(player, newCurrent, stamina.getMaxStamina(), stamina.getPointsProgress(), amount, exhaustionLevel, stamina);
+
+        stamina.setCurrentStamina(newCurrent);
+        stamina.setExhaustionLevel(newExhaustionLevel);
+        stamina.setRegenCooldown(STAMINA_REGEN_COOLDOWNS[newExhaustionLevel]);
+        stamina.setUsageTotal(stamina.getUsageTotal() + amount);
+
+        handleMaxStaminaIncrease(player, exhaustionLevel, stamina.getUsageTotal(), stamina);
+
 
         // Check to see if the player is at the death level for exhaustion
         if (exhaustionLevel == EXHAUSTION_DEATH_LEVEL) {
@@ -104,11 +116,6 @@ public class StaminaUtil {
             ModDamageTypes.applyExhaustionDamage(player, EXHAUSTION_DAMAGE_LEVELS[exhaustionLevel]);
         }
 
-        int newCurrent = stamina.getCurrentStamina() - amount;
-        int newExhaustionLevel = calculateExhaustionLevel(newCurrent);
-
-        stamina.setCurrentStamina(newCurrent);
-        stamina.setExhaustionLevel(newExhaustionLevel);
         StaminaSyncEvents.syncNow(player);
     }
 
@@ -165,6 +172,52 @@ public class StaminaUtil {
     }
 
     /**
+     * Based on the amount of stamina that the player used and their exhaustion level, increase their stamina progress
+     * accordingly. They only get progress if their stamina is below the progress gain threshold
+     * @param player
+     * @param staminaUsed
+     * @param exhaustLevel
+     */
+    private static void calcUpgradeProgress(ServerPlayer player, int currentStamina, int maxStamina, int curProgress, int staminaUsed, int exhaustLevel, IStaminaData stamina) {
+        // Only award upgrade if they are below a certain percentage of their max stamina
+        if (((float) currentStamina / maxStamina) <= STAMINA_GAIN_PERCENTAGE) {
+            int progressGain = (int) Math.floor(staminaUsed * EXHAUSTION_MULTIPLIERS[exhaustLevel]);
+            int newProgress = progressGain + curProgress;
+
+            int pointsToAward = newProgress / UPGRADE_POINT_COST;
+            int finalProgress = newProgress % UPGRADE_POINT_COST;
+
+            stamina.setPointsProgress(finalProgress);
+
+            if (pointsToAward > 0) {
+                // TODO add a ding or something to tell them they upgraded
+                stamina.setUpgradePoints(stamina.getUpgradePoints() + pointsToAward);
+            }
+
+            StaminaSyncEvents.syncNow(player);
+        }
+    }
+
+    /**
+     * When the player has used more than STAMINA_GAIN_REQ stamina, randomly check to see if they are awarded more
+     * stamina.
+     * @param player
+     * @param exhuastLevel
+     * @param newUsageTotal
+     * @param stamina
+     */
+    private static void handleMaxStaminaIncrease(ServerPlayer player, int exhuastLevel, int newUsageTotal, IStaminaData stamina) {
+        double chanceToIncrease = exhuastLevel > 0 ? STAMINA_GAIN_EXHAUSTED_CHANCE : STAMINA_GAIN_CHANCE;
+
+        if (newUsageTotal >= STAMINA_GAIN_REQ && player.getRandom().nextFloat() < chanceToIncrease) {
+            int maxIncrease = (int) Math.floor(player.getRandom().nextFloat() * STAMINA_MAX_INCREASE) + 1;
+            stamina.setMaxStamina(stamina.getMaxStamina() + maxIncrease);
+            stamina.setUsageTotal(0);
+            StaminaSyncEvents.syncNow(player);
+        }
+    }
+
+    /**
      * This function resets all the stamina values to their baseline values, primarily used when a player dies
      * @param player
      */
@@ -175,6 +228,7 @@ public class StaminaUtil {
         stamina.setRegenCooldown(0);
         stamina.setExhaustionLevel(0);
         stamina.setLastHurrahUsed(false);
+        stamina.setUsageTotal(0);
         stamina.setPointsProgress(0);
         stamina.setPowersDisabled(false);
         StaminaSyncEvents.syncNow(player);
