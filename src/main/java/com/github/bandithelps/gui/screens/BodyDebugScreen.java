@@ -87,6 +87,11 @@ public class BodyDebugScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+
     private void drawLegend(GuiGraphics graphics, int x, int y) {
         graphics.drawString(this.font, Component.literal("State Colors"), x, y, 0xFFFFFF, false);
         drawLegendRow(graphics, x, y + 14, "Healthy", 0xAA1FA85A);

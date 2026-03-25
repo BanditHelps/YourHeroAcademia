@@ -36,9 +36,9 @@ public class HealBodyPartAbility extends Ability {
     public final Value healAmount;
     public final List<String> parts;
 
-    public HealBodyPartAbility(Value damage, List<String> parts, AbilityProperties properties, AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
+    public HealBodyPartAbility(Value healAmount, List<String> parts, AbilityProperties properties, AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
-        this.healAmount = damage;
+        this.healAmount = healAmount;
         this.parts = parts;
     }
 
@@ -70,7 +70,7 @@ public class HealBodyPartAbility extends Ability {
 
     @Override
     public AbilitySerializer<?> getSerializer() {
-        return AbilityRegister.DAMAGE_BODY_PART.get();
+        return AbilityRegister.HEAL_BODY_PART.get();
     }
 
     /*

@@ -69,7 +69,7 @@
         "left_leg"
       ],
       "properties": {
-        "title": "Hurt Chest",
+        "title": "Hurt Arm",
         "icon": "minecraft:diamond_chestplate",
         "hidden_in_bar": false
       },
@@ -131,6 +131,29 @@
           "behaviour": "held",
           "cooldown": 200
         }
+      }
+    },
+    "passive_gain": {
+      "type": "yha:change_body_value",
+      "amount": {
+        "type": "palladium:molang_float",
+        "molang": "yha.quirk_factor()"
+      },
+      "tick_rate": 20,
+      "key": "smoke_capacity",
+      "min_value": 0,
+      "max_value": {
+        "type": "palladium:molang_float",
+        "molang": "yha.quirk_factor() * 400"
+      },
+      "parts": [
+        "chest"
+      ],
+      "properties": {
+        "title": "Passive Gain",
+        "icon": "minecraft:nether_star",
+        "hidden": true,
+        "hidden_in_bar": true
       }
     }
   }
