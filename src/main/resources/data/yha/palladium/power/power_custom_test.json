@@ -200,6 +200,30 @@
           }
         ]
       }
+    },
+    "test_chest_float": {
+      "type": "palladium:command",
+      "commands": [],
+      "first_tick_commands": "say Smoke is at Max",
+      "last_tick_commands": "",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
+      },
+      "state": {
+        "enabling": [
+          {
+            "type": "yha:body_float",
+            "key": "smoke_capacity",
+            "part": "chest",
+            "operator": "=",
+            "target": {
+              "type": "palladium:molang_float",
+              "molang": "yha.quirk_factor() * 400"
+            }
+          }
+        ]
+      }
     }
   }
 }
