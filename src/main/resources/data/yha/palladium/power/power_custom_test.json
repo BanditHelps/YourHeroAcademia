@@ -193,7 +193,10 @@
             "check_type": "value",
             "part": "right_arm",
             "operator": "<",
-            "target": 99
+            "target": {
+              "type": "palladium:molang_float",
+              "molang": "yha.right_foot_health()"
+            }
           }
         ]
       }
