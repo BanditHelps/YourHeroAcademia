@@ -1,5 +1,9 @@
 package com.github.bandithelps.capabilities.body;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 public enum DamageState {
     HEALTHY,
     SPRAINED,
@@ -20,5 +24,28 @@ public enum DamageState {
             return SPRAINED;
         }
         return HEALTHY;
+    }
+
+    public static DamageState fromId(String id) {
+        return switch(id) {
+            case "destroyed" -> DESTROYED;
+            case "broken" -> BROKEN;
+            case "sprained" -> SPRAINED;
+            case "healthy" -> HEALTHY;
+            default -> null;
+        };
+    }
+
+    /**
+     * Used to reference inside the documentation the valid parts
+     * @return
+     */
+    public static Collection<String> exampleValues() {
+        List<String> parts = new ArrayList();
+        parts.add("healthy");
+        parts.add("sprained");
+        parts.add("broken");
+        parts.add("destroyed");
+        return parts;
     }
 }

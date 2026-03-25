@@ -8,6 +8,9 @@
 
   "ability.yha.dash": "Dash",
   "ability.yha.damage_body_part": "Damage Body Part",
+  "ability.yha.change_body_value": "Change Body Value",
+
+  "condition.yha.body_health": "Check Body Health",
 
   "attribute.yha.quirk_factor": "Quirk Factor",
 

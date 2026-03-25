@@ -113,6 +113,5 @@ public class BodyPartValueTickAbility extends Ability {
                     .add("parts", ModSettingTypes.TYPE_BODY_PART, "The body part values to increase")
                     .addExampleObject(new BodyPartValueTickAbility(new StaticValue(5.0f), 20, new StaticValue(0.0f), new StaticValue(100.0f), "example_key", List.of(BodyPart.CHEST.getId()), AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
-
     }
 }

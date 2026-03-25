@@ -9,6 +9,7 @@ import com.github.bandithelps.commands.BodyCommand;
 import com.github.bandithelps.commands.ScreenCommand;
 import com.github.bandithelps.commands.StaminaCommand;
 import com.github.bandithelps.commands.YhaCommand;
+import com.github.bandithelps.conditions.ConditionRegister;
 import com.github.bandithelps.network.YhaNetwork;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -100,6 +101,7 @@ public final class YourHeroAcademia {
         CREATIVE_MODE_TABS.register(modEventBus);
 
         AbilityRegister.ABILITIES.register(modEventBus);
+        ConditionRegister.CONDITIONS.register(modEventBus);
         QuirkAttributes.ATTRIBUTES.register(modEventBus);
         StaminaAttachments.ATTACHMENTS.register(modEventBus);
         BodyAttachments.ATTACHMENTS.register(modEventBus);

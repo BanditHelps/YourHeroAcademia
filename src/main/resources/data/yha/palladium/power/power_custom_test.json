@@ -155,6 +155,48 @@
         "hidden": true,
         "hidden_in_bar": true
       }
+    },
+    "left_leg_destroyed": {
+      "type": "palladium:command",
+      "commands": [],
+      "first_tick_commands": "say Left Leg destroyed",
+      "last_tick_commands": "",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
+      },
+      "state": {
+        "enabling": [
+          {
+            "type": "yha:body_health",
+            "check_type": "state",
+            "part": "left_leg",
+            "state": "destroyed",
+            "operator": "="
+          }
+        ]
+      }
+    },
+    "right_arm_kinda_hurt": {
+      "type": "palladium:command",
+      "commands": [],
+      "first_tick_commands": "say Owie",
+      "last_tick_commands": "",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
+      },
+      "state": {
+        "enabling": [
+          {
+            "type": "yha:body_health",
+            "check_type": "value",
+            "part": "right_arm",
+            "operator": "<",
+            "target": 99
+          }
+        ]
+      }
     }
   }
 }
