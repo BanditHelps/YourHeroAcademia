@@ -4,6 +4,7 @@ import com.github.bandithelps.cloud.CloudCellDelta;
 import com.github.bandithelps.cloud.CloudCellPos;
 import com.github.bandithelps.cloud.CloudMode;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,7 @@ public final class ClientCloudVolume {
     private CloudMode mode;
     private int ttl;
     private final Map<CloudCellPos, Float> cells = new HashMap<>();
+    private final Map<CloudCellPos, Double> particleCarry = new HashMap<>();
 
     public ClientCloudVolume(UUID id, BlockPos origin, double cellSize, CloudMode mode, int ttl) {
         this.id = id;
@@ -60,6 +62,7 @@ public final class ClientCloudVolume {
 
     public void setCells(List<CloudCellDelta> deltas) {
         this.cells.clear();
+        this.particleCarry.clear();
         applyDeltas(deltas);
     }
 
@@ -67,9 +70,27 @@ public final class ClientCloudVolume {
         for (CloudCellDelta delta : deltas) {
             if (delta.density() <= 0.0F) {
                 this.cells.remove(delta.pos());
+                this.particleCarry.remove(delta.pos());
             } else {
                 this.cells.put(delta.pos(), delta.density());
             }
         }
+    }
+
+    public int consumeParticleCarry(CloudCellPos pos, double desiredParticles) {
+        if (desiredParticles <= 0.0D) {
+            return 0;
+        }
+
+        double next = this.particleCarry.getOrDefault(pos, 0.0D) + desiredParticles;
+        int attempts = Mth.floor(next);
+        next -= attempts;
+
+        if (next <= 0.0001D) {
+            this.particleCarry.remove(pos);
+        } else {
+            this.particleCarry.put(pos, next);
+        }
+        return Math.max(0, attempts);
     }
 }
