@@ -12,7 +12,8 @@ import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 @EventBusSubscriber(modid = YourHeroAcademia.MODID, value = Dist.CLIENT)
 public final class StaminaHudOverlay {
@@ -37,7 +38,11 @@ public final class StaminaHudOverlay {
     }
 
     @SubscribeEvent
-    public static void onRenderHud(RenderGuiEvent.Post event) {
+    public static void onRenderHud(RenderGuiLayerEvent.Pre event) {
+        if (!VanillaGuiLayers.CHAT.equals(event.getName())) {
+            return;
+        }
+
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.options.hideGui) {
             return;
