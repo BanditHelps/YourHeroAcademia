@@ -82,6 +82,10 @@ public final class CloudSimConfig {
         return Math.max(0.001D, Config.CLOUD_MANAGED_DISPERSE_IMPULSE_STRENGTH.get());
     }
 
+    public static int managedDisperseSpawnSuppressTicks() {
+        return Math.max(0, Config.CLOUD_MANAGED_DISPERSE_SPAWN_SUPPRESS_TICKS.get());
+    }
+
     public static boolean debugLogging() {
         return Config.CLOUD_DEBUG_LOGGING.get();
     }

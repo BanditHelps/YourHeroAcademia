@@ -51,8 +51,8 @@
     },
     "dome_dispersal": {
       "type": "yha:disperse_cloud_dome",
-      "radius": 10.0,
-      "strength": 1.0,
+      "radius": 8.0,
+      "strength": 120.0,
       "properties": {
         "title": "Dome Dispersal",
         "icon": "minecraft:tnt",

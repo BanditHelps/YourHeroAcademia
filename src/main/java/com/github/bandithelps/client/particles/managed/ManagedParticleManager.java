@@ -5,6 +5,7 @@ import com.github.bandithelps.cloud.CloudSimConfig;
 import com.github.bandithelps.particles.ManagedSmokeParticle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 
@@ -167,8 +168,8 @@ public final class ManagedParticleManager {
             return;
         }
 
-        Vec3 normalized = direction.lengthSqr() > 0.00001D ? direction.normalize() : new Vec3(0.0D, 0.1D, 0.0D);
-        Vec3 impulse = normalized.scale(Math.max(0.001D, strength));
+        Vec3 blastDirection = normalizeBlastDirection(direction);
+        Vec3 impulse = blastDirection.scale(Mth.clamp(strength, 0.001D, 0.35D));
         int impulseTicks = CloudSimConfig.managedDisperseImpulseTicks();
         for (ManagedParticleInstance instance : owned) {
             if (!instance.isAlive()) {
@@ -183,17 +184,30 @@ public final class ManagedParticleManager {
         applyDisperseImpulse(new ManagedParticleOwnerKey(volumeId, cellPos), direction, strength);
     }
 
-    public void removeOwner(ManagedParticleOwnerKey ownerKey) {
-        List<ManagedParticleInstance> owned = this.byOwner.remove(ownerKey);
-        if (owned == null) {
+    public void applyDisperseImpulseForVolume(UUID volumeId, Vec3 center, double strength) {
+        if (this.byOwner.isEmpty()) {
             return;
         }
-        for (ManagedParticleInstance instance : owned) {
-            instance.particle().remove();
+
+        int impulseTicks = CloudSimConfig.managedDisperseImpulseTicks();
+        for (Map.Entry<ManagedParticleOwnerKey, List<ManagedParticleInstance>> entry : this.byOwner.entrySet()) {
+            ManagedParticleOwnerKey key = entry.getKey();
+            if (!key.volumeId().equals(volumeId)) {
+                continue;
+            }
+            for (ManagedParticleInstance instance : entry.getValue()) {
+                if (!instance.isAlive()) {
+                    continue;
+                }
+                Vec3 direction = instance.particle().managedPosition().subtract(center);
+                Vec3 blastDirection = normalizeBlastDirection(direction);
+                instance.setImpulse(blastDirection.scale(Mth.clamp(strength, 0.001D, 0.35D)), impulseTicks);
+                this.impulsesThisTick++;
+            }
         }
     }
 
-    public void removeVolume(UUID volumeId) {
+    public void releaseVolume(UUID volumeId) {
         List<ManagedParticleOwnerKey> removals = new ArrayList<>();
         for (ManagedParticleOwnerKey key : this.byOwner.keySet()) {
             if (key.volumeId().equals(volumeId)) {
@@ -201,8 +215,22 @@ public final class ManagedParticleManager {
             }
         }
         for (ManagedParticleOwnerKey key : removals) {
-            removeOwner(key);
+            this.byOwner.remove(key);
         }
+    }
+
+    public void despawnVolume(UUID volumeId) {
+        Iterator<ManagedParticleInstance> iterator = this.active.iterator();
+        while (iterator.hasNext()) {
+            ManagedParticleInstance instance = iterator.next();
+            ManagedParticleOwnerKey ownerKey = instance.ownerKey();
+            if (ownerKey == null || !ownerKey.volumeId().equals(volumeId)) {
+                continue;
+            }
+            instance.particle().remove();
+            iterator.remove();
+        }
+        releaseVolume(volumeId);
     }
 
     public void clear() {
@@ -239,5 +267,14 @@ public final class ManagedParticleManager {
         if (owned.isEmpty()) {
             this.byOwner.remove(instance.ownerKey());
         }
+    }
+
+    private static Vec3 normalizeBlastDirection(Vec3 direction) {
+        Vec3 horizontal = new Vec3(direction.x, 0.0D, direction.z);
+        if (horizontal.lengthSqr() < 0.000001D) {
+            return new Vec3(0.0D, 0.08D, 0.0D);
+        }
+        Vec3 normalized = horizontal.normalize();
+        return new Vec3(normalized.x, 0.08D, normalized.z).normalize();
     }
 }

@@ -118,7 +118,7 @@ public final class CloudVolume {
         CloudCellPos centerCell = CloudCellPos.fromWorld(center, this.cellSize, this.origin);
 
         for (int dx = -radiusCells; dx <= radiusCells; dx++) {
-            for (int dy = 0; dy <= radiusCells; dy++) {
+            for (int dy = -radiusCells; dy <= radiusCells; dy++) {
                 for (int dz = -radiusCells; dz <= radiusCells; dz++) {
                     double dist = Math.sqrt((dx * dx) + (dy * dy) + (dz * dz)) * this.cellSize;
                     if (dist > radius) {
@@ -135,6 +135,88 @@ public final class CloudVolume {
                     setDensity(pos, existing - (strength * falloff));
                 }
             }
+        }
+    }
+
+    public void disperseFront(Vec3 origin, Vec3 forward, double width, double height, double depth, float strength) {
+        if (depth <= 0.0D || width <= 0.0D || height <= 0.0D) {
+            return;
+        }
+
+        Vec3 normalizedForward = normalizeOrDefault(forward, new Vec3(0.0D, 0.0D, 1.0D));
+        Vec3 worldUp = new Vec3(0.0D, 1.0D, 0.0D);
+        Vec3 right = normalizedForward.cross(worldUp);
+        if (right.lengthSqr() < 0.000001D) {
+            right = new Vec3(1.0D, 0.0D, 0.0D);
+        } else {
+            right = right.normalize();
+        }
+        Vec3 up = right.cross(normalizedForward).normalize();
+
+        double halfWidth = width * 0.5D;
+        double halfHeight = height * 0.5D;
+        List<CloudCellPos> cells = List.copyOf(this.densityByCell.keySet());
+        for (CloudCellPos pos : cells) {
+            float existing = this.densityByCell.getOrDefault(pos, 0.0F);
+            if (existing <= 0.0F) {
+                continue;
+            }
+            Vec3 cellCenter = pos.toWorldCenter(this.origin, this.cellSize);
+            Vec3 toCell = cellCenter.subtract(origin);
+            double forwardDist = toCell.dot(normalizedForward);
+            if (forwardDist < 0.0D || forwardDist > depth) {
+                continue;
+            }
+
+            double sideDist = Math.abs(toCell.dot(right));
+            double upDist = Math.abs(toCell.dot(up));
+            if (sideDist > halfWidth || upDist > halfHeight) {
+                continue;
+            }
+
+            float depthFalloff = (float) (1.0D - (forwardDist / depth));
+            float sideFalloff = (float) (1.0D - (sideDist / halfWidth));
+            float upFalloff = (float) (1.0D - (upDist / halfHeight));
+            float falloff = Mth.clamp(depthFalloff * sideFalloff * upFalloff, 0.0F, 1.0F);
+            setDensity(pos, existing - (strength * falloff));
+        }
+    }
+
+    public void disperseCone(Vec3 origin, Vec3 forward, double length, double halfAngleDegrees, float strength) {
+        if (length <= 0.0D) {
+            return;
+        }
+
+        Vec3 normalizedForward = normalizeOrDefault(forward, new Vec3(0.0D, 0.0D, 1.0D));
+        double clampedHalfAngle = Mth.clamp(halfAngleDegrees, 1.0D, 89.0D);
+        double cosHalfAngle = Math.cos(Math.toRadians(clampedHalfAngle));
+
+        List<CloudCellPos> cells = List.copyOf(this.densityByCell.keySet());
+        for (CloudCellPos pos : cells) {
+            float existing = this.densityByCell.getOrDefault(pos, 0.0F);
+            if (existing <= 0.0F) {
+                continue;
+            }
+
+            Vec3 toCell = pos.toWorldCenter(this.origin, this.cellSize).subtract(origin);
+            double distSqr = toCell.lengthSqr();
+            if (distSqr <= 0.000001D) {
+                continue;
+            }
+            double dist = Math.sqrt(distSqr);
+            if (dist > length) {
+                continue;
+            }
+
+            double alignment = toCell.scale(1.0D / dist).dot(normalizedForward);
+            if (alignment < cosHalfAngle) {
+                continue;
+            }
+
+            float radialFalloff = (float) (1.0D - (dist / length));
+            float angleFalloff = (float) ((alignment - cosHalfAngle) / (1.0D - cosHalfAngle));
+            float falloff = Mth.clamp(radialFalloff * angleFalloff, 0.0F, 1.0F);
+            setDensity(pos, existing - (strength * falloff));
         }
     }
 
@@ -343,5 +425,12 @@ public final class CloudVolume {
         BlockPos blockPos = BlockPos.containing(center);
         BlockState state = this.level.getBlockState(blockPos);
         return !state.blocksMotion();
+    }
+
+    private static Vec3 normalizeOrDefault(Vec3 value, Vec3 defaultValue) {
+        if (value.lengthSqr() < 0.000001D) {
+            return defaultValue;
+        }
+        return value.normalize();
     }
 }

@@ -32,12 +32,13 @@ public final class ClientCloudState {
         volume.applyDeltas(deltas);
         if (volume.cellsView().isEmpty()) {
             VOLUMES.remove(id);
+            ManagedParticleManager.get().despawnVolume(id);
         }
     }
 
     public static void remove(UUID id) {
         VOLUMES.remove(id);
-        ManagedParticleManager.get().removeVolume(id);
+        ManagedParticleManager.get().despawnVolume(id);
     }
 
     public static void clear() {

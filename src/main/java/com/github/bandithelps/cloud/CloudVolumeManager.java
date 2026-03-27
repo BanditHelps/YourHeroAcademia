@@ -89,6 +89,18 @@ public final class CloudVolumeManager {
         }
     }
 
+    public void disperseFront(Vec3 origin, Vec3 forward, double width, double height, double depth, float strength) {
+        for (CloudVolume volume : this.volumes.values()) {
+            volume.disperseFront(origin, forward, width, height, depth, strength);
+        }
+    }
+
+    public void disperseCone(Vec3 origin, Vec3 forward, double length, double halfAngleDegrees, float strength) {
+        for (CloudVolume volume : this.volumes.values()) {
+            volume.disperseCone(origin, forward, length, halfAngleDegrees, strength);
+        }
+    }
+
     public void tick() {
         this.metrics.resetFrame();
         if (this.volumes.isEmpty()) {

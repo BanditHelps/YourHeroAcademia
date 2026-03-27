@@ -104,11 +104,15 @@ public class Config {
 
     public static final ModConfigSpec.DoubleValue CLOUD_MANAGED_DISPERSE_TRIGGER_DENSITY_DROP = BUILDER
             .comment("Minimum client-observed density drop required to trigger dispersal impulse.")
-            .defineInRange("cloud.managed.disperseTriggerDensityDrop", 0.12D, 0.01D, 1.0D);
+            .defineInRange("cloud.managed.disperseTriggerDensityDrop", 0.03D, 0.01D, 1.0D);
 
     public static final ModConfigSpec.DoubleValue CLOUD_MANAGED_DISPERSE_IMPULSE_STRENGTH = BUILDER
             .comment("Base strength multiplier applied to inferred dispersal impulses.")
-            .defineInRange("cloud.managed.disperseImpulseStrength", 0.12D, 0.001D, 4.0D);
+            .defineInRange("cloud.managed.disperseImpulseStrength", 0.08D, 0.001D, 4.0D);
+
+    public static final ModConfigSpec.IntValue CLOUD_MANAGED_DISPERSE_SPAWN_SUPPRESS_TICKS = BUILDER
+            .comment("How many client ticks cloud cells stop spawning particles after dispersal.")
+            .defineInRange("cloud.managed.disperseSpawnSuppressTicks", 12, 0, 200);
 
     public static final ModConfigSpec.BooleanValue CLOUD_DEBUG_LOGGING = BUILDER
             .comment("Whether to periodically log cloud simulation metrics.")
