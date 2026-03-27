@@ -41,19 +41,17 @@ public final class BodyCommand {
     private static final DynamicCommandExceptionType INVALID_PART_EXCEPTION = new DynamicCommandExceptionType(value ->
             Component.literal("Unknown body part '" + value + "'. Valid parts: " + validPartsCsv())
     );
-    private static final DynamicCommandExceptionType INVALID_DISPLAY_BAR_TYPE_EXCEPTION = new DynamicCommandExceptionType(value ->
-            Component.literal("Unknown display bar type '" + value + "'. Valid types: " + validDisplayBarTypesCsv())
-    );
     private static final DynamicCommandExceptionType INVALID_HEX_COLOR_EXCEPTION = new DynamicCommandExceptionType(value ->
             Component.literal("Invalid hex color '" + value + "'. Use #RRGGBB, RRGGBB, or 0xRRGGBB.")
+    );
+    private static final DynamicCommandExceptionType DISPLAY_BAR_NOT_FOUND_EXCEPTION = new DynamicCommandExceptionType(value ->
+            Component.literal("Display bar '" + value + "' was not found for that player.")
     );
     private static final SimpleCommandExceptionType INVALID_BAR_RANGE_EXCEPTION = new SimpleCommandExceptionType(
             Component.literal("Display bar max must be greater than min.")
     );
     private static final SuggestionProvider<CommandSourceStack> BODY_PART_SUGGESTIONS = (context, builder) ->
             SharedSuggestionProvider.suggest(Arrays.stream(BodyPart.values()).map(BodyPart::getId), builder);
-    private static final SuggestionProvider<CommandSourceStack> DISPLAY_BAR_TYPE_SUGGESTIONS = (context, builder) ->
-            SharedSuggestionProvider.suggest(Arrays.stream(BodyDisplayBarType.values()).map(BodyDisplayBarType::getId), builder);
 
     private BodyCommand() {
     }
@@ -147,38 +145,10 @@ public final class BodyCommand {
         builder.then(body);
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> buildDisplayBarCommand() {
-        LiteralArgumentBuilder<CommandSourceStack> displayBars = Commands.literal("displaybar");
-
-        var colorArgument = Commands.argument("color", StringArgumentType.word())
-                .executes(c -> addDisplayBar(
-                        c.getSource(),
-                        c.getSource().getPlayerOrException(),
-                        StringArgumentType.getString(c, "id"),
-                        StringArgumentType.getString(c, "label"),
-                        parseBodyPart(c, "part"),
-                        StringArgumentType.getString(c, "key"),
-                        FloatArgumentType.getFloat(c, "min"),
-                        FloatArgumentType.getFloat(c, "max"),
-                        StringArgumentType.getString(c, "color"),
-                        BodyDisplayBarType.FILL
-                ))
-                .then(Commands.argument("player", EntityArgument.player())
-                        .executes(c -> addDisplayBar(
-                                c.getSource(),
-                                EntityArgument.getPlayer(c, "player"),
-                                StringArgumentType.getString(c, "id"),
-                                StringArgumentType.getString(c, "label"),
-                                parseBodyPart(c, "part"),
-                                StringArgumentType.getString(c, "key"),
-                                FloatArgumentType.getFloat(c, "min"),
-                                FloatArgumentType.getFloat(c, "max"),
-                                StringArgumentType.getString(c, "color"),
-                                BodyDisplayBarType.FILL
-                        )))
-                .then(Commands.argument("type", StringArgumentType.word())
-                        .suggests(DISPLAY_BAR_TYPE_SUGGESTIONS)
-                        .executes(c -> addDisplayBar(
+    private static LiteralArgumentBuilder<CommandSourceStack> buildDisplayBarAddCommand() {
+        var barBranch = Commands.literal("bar")
+                .then(Commands.argument("color", StringArgumentType.word())
+                        .executes(c -> addBarDisplayBar(
                                 c.getSource(),
                                 c.getSource().getPlayerOrException(),
                                 StringArgumentType.getString(c, "id"),
@@ -187,11 +157,10 @@ public final class BodyCommand {
                                 StringArgumentType.getString(c, "key"),
                                 FloatArgumentType.getFloat(c, "min"),
                                 FloatArgumentType.getFloat(c, "max"),
-                                StringArgumentType.getString(c, "color"),
-                                parseDisplayBarType(c, "type")
+                                StringArgumentType.getString(c, "color")
                         ))
                         .then(Commands.argument("player", EntityArgument.player())
-                                .executes(c -> addDisplayBar(
+                                .executes(c -> addBarDisplayBar(
                                         c.getSource(),
                                         EntityArgument.getPlayer(c, "player"),
                                         StringArgumentType.getString(c, "id"),
@@ -200,18 +169,55 @@ public final class BodyCommand {
                                         StringArgumentType.getString(c, "key"),
                                         FloatArgumentType.getFloat(c, "min"),
                                         FloatArgumentType.getFloat(c, "max"),
-                                        StringArgumentType.getString(c, "color"),
-                                        parseDisplayBarType(c, "type")
+                                        StringArgumentType.getString(c, "color")
                                 ))));
 
-        displayBars.then(Commands.literal("add")
+        var sliderBranch = Commands.literal("slider")
+                .then(Commands.argument("sliderColor", StringArgumentType.word())
+                        .then(Commands.argument("gradientLeft", StringArgumentType.word())
+                                .then(Commands.argument("gradientRight", StringArgumentType.word())
+                                        .executes(c -> addSliderDisplayBar(
+                                                c.getSource(),
+                                                c.getSource().getPlayerOrException(),
+                                                StringArgumentType.getString(c, "id"),
+                                                StringArgumentType.getString(c, "label"),
+                                                parseBodyPart(c, "part"),
+                                                StringArgumentType.getString(c, "key"),
+                                                FloatArgumentType.getFloat(c, "min"),
+                                                FloatArgumentType.getFloat(c, "max"),
+                                                StringArgumentType.getString(c, "sliderColor"),
+                                                StringArgumentType.getString(c, "gradientLeft"),
+                                                StringArgumentType.getString(c, "gradientRight")
+                                        ))
+                                        .then(Commands.argument("player", EntityArgument.player())
+                                                .executes(c -> addSliderDisplayBar(
+                                                        c.getSource(),
+                                                        EntityArgument.getPlayer(c, "player"),
+                                                        StringArgumentType.getString(c, "id"),
+                                                        StringArgumentType.getString(c, "label"),
+                                                        parseBodyPart(c, "part"),
+                                                        StringArgumentType.getString(c, "key"),
+                                                        FloatArgumentType.getFloat(c, "min"),
+                                                        FloatArgumentType.getFloat(c, "max"),
+                                                        StringArgumentType.getString(c, "sliderColor"),
+                                                        StringArgumentType.getString(c, "gradientLeft"),
+                                                        StringArgumentType.getString(c, "gradientRight")
+                                                ))))));
+
+        return Commands.literal("add")
                 .then(Commands.argument("id", StringArgumentType.word())
                         .then(Commands.argument("label", StringArgumentType.string())
                                 .then(bodyPartArgument("part")
                                         .then(Commands.argument("key", StringArgumentType.word())
                                                 .then(Commands.argument("min", FloatArgumentType.floatArg())
                                                         .then(Commands.argument("max", FloatArgumentType.floatArg())
-                                                                .then(colorArgument))))))));
+                                                                .then(barBranch)
+                                                                .then(sliderBranch)))))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> buildDisplayBarCommand() {
+        LiteralArgumentBuilder<CommandSourceStack> displayBars = Commands.literal("displaybar");
+        displayBars.then(buildDisplayBarAddCommand());
 
         displayBars.then(Commands.literal("remove")
                 .then(Commands.argument("id", StringArgumentType.word())
@@ -223,6 +229,32 @@ public final class BodyCommand {
                 .executes(c -> listDisplayBars(c.getSource(), c.getSource().getPlayerOrException()))
                 .then(Commands.argument("player", EntityArgument.player())
                         .executes(c -> listDisplayBars(c.getSource(), EntityArgument.getPlayer(c, "player")))));
+
+        displayBars.then(Commands.literal("setsliderstyle")
+                .then(Commands.argument("id", StringArgumentType.word())
+                        .then(Commands.argument("sliderColor", StringArgumentType.word())
+                                .then(Commands.argument("barColor", StringArgumentType.word())
+                                        .then(Commands.argument("gradientLeft", StringArgumentType.word())
+                                                .then(Commands.argument("gradientRight", StringArgumentType.word())
+                                                        .executes(c -> setSliderStyle(
+                                                                c.getSource(),
+                                                                c.getSource().getPlayerOrException(),
+                                                                StringArgumentType.getString(c, "id"),
+                                                                StringArgumentType.getString(c, "sliderColor"),
+                                                                StringArgumentType.getString(c, "barColor"),
+                                                                StringArgumentType.getString(c, "gradientLeft"),
+                                                                StringArgumentType.getString(c, "gradientRight")
+                                                        ))
+                                                        .then(Commands.argument("player", EntityArgument.player())
+                                                                .executes(c -> setSliderStyle(
+                                                                        c.getSource(),
+                                                                        EntityArgument.getPlayer(c, "player"),
+                                                                        StringArgumentType.getString(c, "id"),
+                                                                        StringArgumentType.getString(c, "sliderColor"),
+                                                                        StringArgumentType.getString(c, "barColor"),
+                                                                        StringArgumentType.getString(c, "gradientLeft"),
+                                                                        StringArgumentType.getString(c, "gradientRight")
+                                                                )))))))));
 
         return displayBars;
     }
@@ -308,7 +340,7 @@ public final class BodyCommand {
         return 1;
     }
 
-    private static int addDisplayBar(
+    private static int addBarDisplayBar(
             CommandSourceStack source,
             ServerPlayer player,
             String id,
@@ -317,25 +349,83 @@ public final class BodyCommand {
             String key,
             float min,
             float max,
-            String colorHex,
-            BodyDisplayBarType type
+            String colorHex
     ) throws CommandSyntaxException {
         if (max <= min) {
             throw INVALID_BAR_RANGE_EXCEPTION.create();
         }
 
         int color = parseHexColor(colorHex);
-        BodyDisplayBar displayBar = new BodyDisplayBar(id, label, part, key, min, max, color, type);
+        BodyDisplayBar displayBar = new BodyDisplayBar(
+                id,
+                label,
+                part,
+                key,
+                min,
+                max,
+                color,
+                BodyDisplayBarType.FILL
+        );
         BodyAttachments.get(player).setDisplayBar(displayBar);
         BodySyncEvents.syncNow(player);
         source.sendSuccess(() -> Component.literal(
                 "Set display bar '" + displayBar.id() + "' for " + player.getName().getString()
-                        + " (part=" + displayBar.part().getId()
+                        + " (mode=bar"
+                        + ", part=" + displayBar.part().getId()
                         + ", key=" + displayBar.key()
                         + ", min=" + displayBar.minValue()
                         + ", max=" + displayBar.maxValue()
-                        + ", color=#" + String.format("%06X", displayBar.colorRgb())
-                        + ", type=" + displayBar.type().getId() + ")."
+                        + ", color=#" + String.format("%06X", displayBar.colorRgb()) + ")."
+        ), true);
+        return 1;
+    }
+
+    private static int addSliderDisplayBar(
+            CommandSourceStack source,
+            ServerPlayer player,
+            String id,
+            String label,
+            BodyPart part,
+            String key,
+            float min,
+            float max,
+            String sliderColorHex,
+            String gradientLeftHex,
+            String gradientRightHex
+    ) throws CommandSyntaxException {
+        if (max <= min) {
+            throw INVALID_BAR_RANGE_EXCEPTION.create();
+        }
+
+        int sliderColor = parseHexColor(sliderColorHex);
+        int gradientLeft = parseHexColor(gradientLeftHex);
+        int gradientRight = parseHexColor(gradientRightHex);
+        BodyDisplayBar displayBar = new BodyDisplayBar(
+                id,
+                label,
+                part,
+                key,
+                min,
+                max,
+                sliderColor,
+                sliderColor,
+                BodyDisplayBar.DEFAULT_SLIDER_TRACK_COLOR_RGB,
+                gradientLeft,
+                gradientRight,
+                BodyDisplayBarType.SLIDER
+        );
+        BodyAttachments.get(player).setDisplayBar(displayBar);
+        BodySyncEvents.syncNow(player);
+        source.sendSuccess(() -> Component.literal(
+                "Set display bar '" + displayBar.id() + "' for " + player.getName().getString()
+                        + " (mode=slider"
+                        + ", part=" + displayBar.part().getId()
+                        + ", key=" + displayBar.key()
+                        + ", min=" + displayBar.minValue()
+                        + ", max=" + displayBar.maxValue()
+                        + ", slider=#" + String.format("%06X", displayBar.sliderColorRgb())
+                        + ", left=#" + String.format("%06X", displayBar.gradientLeftColorRgb())
+                        + ", right=#" + String.format("%06X", displayBar.gradientRightColorRgb()) + ")."
         ), true);
         return 1;
     }
@@ -344,6 +434,39 @@ public final class BodyCommand {
         BodyAttachments.get(player).removeDisplayBar(id);
         BodySyncEvents.syncNow(player);
         source.sendSuccess(() -> Component.literal("Removed display bar '" + id + "' for " + player.getName().getString() + "."), true);
+        return 1;
+    }
+
+    private static int setSliderStyle(
+            CommandSourceStack source,
+            ServerPlayer player,
+            String id,
+            String sliderColorHex,
+            String barColorHex,
+            String gradientLeftHex,
+            String gradientRightHex
+    ) throws CommandSyntaxException {
+        Map<String, BodyDisplayBar> displayBars = BodyAttachments.get(player).getDisplayBarsView();
+        BodyDisplayBar existing = displayBars.get(id);
+        if (existing == null) {
+            throw DISPLAY_BAR_NOT_FOUND_EXCEPTION.create(id);
+        }
+
+        int sliderColor = parseHexColor(sliderColorHex);
+        int barColor = parseHexColor(barColorHex);
+        int gradientLeft = parseHexColor(gradientLeftHex);
+        int gradientRight = parseHexColor(gradientRightHex);
+
+        BodyDisplayBar updated = existing.withSliderStyle(sliderColor, barColor, gradientLeft, gradientRight);
+        BodyAttachments.get(player).setDisplayBar(updated);
+        BodySyncEvents.syncNow(player);
+        source.sendSuccess(() -> Component.literal(
+                "Updated slider style for display bar '" + updated.id() + "' on " + player.getName().getString()
+                        + " (slider=#" + String.format("%06X", updated.sliderColorRgb())
+                        + ", bar=#" + String.format("%06X", updated.barColorRgb())
+                        + ", left=#" + String.format("%06X", updated.gradientLeftColorRgb())
+                        + ", right=#" + String.format("%06X", updated.gradientRightColorRgb()) + ")."
+        ), true);
         return 1;
     }
 
@@ -364,6 +487,10 @@ public final class BodyCommand {
                             + " | min=" + displayBar.minValue()
                             + " | max=" + displayBar.maxValue()
                             + " | color=#" + String.format("%06X", displayBar.colorRgb())
+                            + " | slider=#" + String.format("%06X", displayBar.sliderColorRgb())
+                            + " | bar=#" + String.format("%06X", displayBar.barColorRgb())
+                            + " | left=#" + String.format("%06X", displayBar.gradientLeftColorRgb())
+                            + " | right=#" + String.format("%06X", displayBar.gradientRightColorRgb())
                             + " | type=" + displayBar.type().getId()
             ), false);
         }
@@ -408,15 +535,6 @@ public final class BodyCommand {
             throw INVALID_PART_EXCEPTION.create(rawValue);
         }
         return part;
-    }
-
-    private static BodyDisplayBarType parseDisplayBarType(CommandContext<CommandSourceStack> context, String argumentName) throws CommandSyntaxException {
-        String rawValue = StringArgumentType.getString(context, argumentName);
-        BodyDisplayBarType type = BodyDisplayBarType.fromId(rawValue);
-        if (type == null) {
-            throw INVALID_DISPLAY_BAR_TYPE_EXCEPTION.create(rawValue);
-        }
-        return type;
     }
 
     private static RequiredArgumentBuilder<CommandSourceStack, String> bodyPartArgument(String name) {
@@ -496,10 +614,4 @@ public final class BodyCommand {
         }
     }
 
-    private static String validDisplayBarTypesCsv() {
-        return Arrays.stream(BodyDisplayBarType.values())
-                .map(BodyDisplayBarType::getId)
-                .sorted()
-                .collect(Collectors.joining(", "));
-    }
 }

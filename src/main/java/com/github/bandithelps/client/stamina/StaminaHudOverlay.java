@@ -25,8 +25,8 @@ public final class StaminaHudOverlay {
     private static final int BODY_BAR_HEIGHT = 6;
     private static final int BODY_LEFT_MARGIN = 82;
     private static final int STACK_GAP = 1;
-    private static final int BODY_ICON_SIZE = 8;
-    private static final int BODY_ICON_GAP = 1;
+    private static final int BODY_ICON_SIZE = 6;
+    private static final int BODY_ICON_GAP = 0;
     private static final String BODY_ICON_TEXTURE_FOLDER = "textures/gui/body_bars/";
 
     private static final int DEBUG_TOP_MARGIN = 8;
@@ -102,7 +102,7 @@ public final class StaminaHudOverlay {
 
             drawBarFrame(graphics, x, y);
             if (displayBar.type() == BodyDisplayBarType.SLIDER) {
-                drawSlider(graphics, x, y, ratio, displayBar.colorRgb());
+                drawSlider(graphics, x, y, ratio, displayBar);
             } else {
                 drawFillBar(graphics, x, y, ratio, displayBar.colorRgb());
             }
@@ -129,11 +129,27 @@ public final class StaminaHudOverlay {
         graphics.fill(x + 1, y + 1, x + 1 + fillWidth, y + BODY_BAR_HEIGHT - 1, argbColor);
     }
 
-    private static void drawSlider(GuiGraphics graphics, int x, int y, float ratio, int rgbColor) {
+    private static void drawSlider(GuiGraphics graphics, int x, int y, float ratio, BodyDisplayBar displayBar) {
         int innerWidth = BODY_BAR_WIDTH - 2;
+        int innerX = x + 1;
+
+        int gradientTop = y + 1;
+        int gradientBottom = y + (BODY_BAR_HEIGHT > 2 ? BODY_BAR_HEIGHT - 1 : BODY_BAR_HEIGHT);
+        if (gradientBottom > gradientTop) {
+            drawHorizontalGradient(
+                    graphics,
+                    innerX,
+                    gradientTop,
+                    innerWidth,
+                    gradientBottom - gradientTop,
+                    displayBar.gradientLeftColorRgb(),
+                    displayBar.gradientRightColorRgb()
+            );
+        }
+
         int markerHalfWidth = 1;
-        int markerCenter = x + 1 + Math.round(innerWidth * ratio);
-        int markerColor = 0xFF000000 | rgbColor;
+        int markerCenter = innerX + Math.round(innerWidth * ratio);
+        int markerColor = 0xFF000000 | displayBar.sliderColorRgb();
         graphics.fill(
                 markerCenter - markerHalfWidth,
                 y + 1,
@@ -141,6 +157,44 @@ public final class StaminaHudOverlay {
                 y + BODY_BAR_HEIGHT - 1,
                 markerColor
         );
+    }
+
+    private static void drawHorizontalGradient(
+            GuiGraphics graphics,
+            int x,
+            int y,
+            int width,
+            int height,
+            int leftRgb,
+            int rightRgb
+    ) {
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+        if (width == 1) {
+            graphics.fill(x, y, x + 1, y + height, 0xFF000000 | leftRgb);
+            return;
+        }
+
+        for (int i = 0; i < width; i++) {
+            float t = (float) i / (float) (width - 1);
+            int gradientColor = 0xFF000000 | lerpRgb(leftRgb, rightRgb, t);
+            graphics.fill(x + i, y, x + i + 1, y + height, gradientColor);
+        }
+    }
+
+    private static int lerpRgb(int leftRgb, int rightRgb, float t) {
+        int lr = (leftRgb >> 16) & 0xFF;
+        int lg = (leftRgb >> 8) & 0xFF;
+        int lb = leftRgb & 0xFF;
+        int rr = (rightRgb >> 16) & 0xFF;
+        int rg = (rightRgb >> 8) & 0xFF;
+        int rb = rightRgb & 0xFF;
+
+        int r = Mth.floor(Mth.lerp(t, lr, rr));
+        int g = Mth.floor(Mth.lerp(t, lg, rg));
+        int b = Mth.floor(Mth.lerp(t, lb, rb));
+        return (r << 16) | (g << 8) | b;
     }
 
     private static void drawBarFrame(GuiGraphics graphics, int x, int y) {
@@ -158,7 +212,7 @@ public final class StaminaHudOverlay {
         }
 
         int iconX = barX - BODY_ICON_SIZE - BODY_ICON_GAP;
-        int iconY = barY - 1 + (BODY_BAR_HEIGHT - BODY_ICON_SIZE) / 2;
+        int iconY = barY + (BODY_BAR_HEIGHT - BODY_ICON_SIZE) / 2;
         graphics.blit(
                 RenderPipelines.GUI_TEXTURED,
                 iconTexture,

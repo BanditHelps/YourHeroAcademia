@@ -56,6 +56,10 @@ public class BodyData implements IBodyData {
                 Codec.FLOAT.fieldOf("min").forGetter(BodyDisplayBar::minValue),
                 Codec.FLOAT.fieldOf("max").forGetter(BodyDisplayBar::maxValue),
                 Codec.INT.fieldOf("colorRgb").forGetter(BodyDisplayBar::colorRgb),
+                Codec.INT.optionalFieldOf("sliderColorRgb", BodyDisplayBar.DEFAULT_SLIDER_COLOR_RGB).forGetter(BodyDisplayBar::sliderColorRgb),
+                Codec.INT.optionalFieldOf("barColorRgb", BodyDisplayBar.DEFAULT_SLIDER_TRACK_COLOR_RGB).forGetter(BodyDisplayBar::barColorRgb),
+                Codec.INT.optionalFieldOf("gradientLeftColorRgb", 0x2ECC71).forGetter(BodyDisplayBar::gradientLeftColorRgb),
+                Codec.INT.optionalFieldOf("gradientRightColorRgb", 0x2ECC71).forGetter(BodyDisplayBar::gradientRightColorRgb),
                 Codec.STRING.optionalFieldOf("type", BodyDisplayBarType.FILL.getId())
                         .xmap(
                                 value -> {
@@ -274,6 +278,10 @@ public class BodyData implements IBodyData {
             barTag.putFloat("min", displayBar.minValue());
             barTag.putFloat("max", displayBar.maxValue());
             barTag.putInt("colorRgb", displayBar.colorRgb());
+            barTag.putInt("sliderColorRgb", displayBar.sliderColorRgb());
+            barTag.putInt("barColorRgb", displayBar.barColorRgb());
+            barTag.putInt("gradientLeftColorRgb", displayBar.gradientLeftColorRgb());
+            barTag.putInt("gradientRightColorRgb", displayBar.gradientRightColorRgb());
             barTag.putString("type", displayBar.type().getId());
             displayBarsTag.put(displayBar.id(), barTag);
         }
@@ -322,6 +330,10 @@ public class BodyData implements IBodyData {
                     barTag.getFloat("min").orElse(0.0F),
                     barTag.getFloat("max").orElse(100.0F),
                     barTag.getInt("colorRgb").orElse(0x2ECC71),
+                    barTag.getInt("sliderColorRgb").orElse(BodyDisplayBar.DEFAULT_SLIDER_COLOR_RGB),
+                    barTag.getInt("barColorRgb").orElse(barTag.getInt("colorRgb").orElse(0x2ECC71)),
+                    barTag.getInt("gradientLeftColorRgb").orElse(barTag.getInt("colorRgb").orElse(0x2ECC71)),
+                    barTag.getInt("gradientRightColorRgb").orElse(barTag.getInt("colorRgb").orElse(0x2ECC71)),
                     type == null ? BodyDisplayBarType.FILL : type
             );
             displayBars.put(displayBar.id(), displayBar);
