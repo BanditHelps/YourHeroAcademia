@@ -5,8 +5,8 @@ import com.github.bandithelps.client.cloud.ClientCloudState;
 import com.github.bandithelps.client.cloud.ClientCloudVolume;
 import com.github.bandithelps.cloud.CloudCellPos;
 import com.github.bandithelps.cloud.CloudSimConfig;
+import com.github.bandithelps.particles.YhaParticles;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -66,26 +66,28 @@ public final class CloudClientRenderEvents {
                 float smoothedDensity = smoothDensity(cells, entry.getKey(), density);
                 double distanceFactor = 1.0D - Math.min(1.0D, Math.sqrt(distSqr) / maxDistance);
                 double shapedDistanceFactor = (distanceFactor * 0.75D) + 0.25D;
-                double desiredParticles = (smoothedDensity * shapedDistanceFactor * 4.25D) + (density * 0.06D);
-                int attempts = Math.min(volume.consumeParticleCarry(entry.getKey(), desiredParticles), 4);
+                // Keep smoke mostly stagnant by favoring long-lived particles and lower spawn cadence.
+                double desiredParticles = (smoothedDensity * shapedDistanceFactor * 0.16D) + (density * 0.01D);
+                int attempts = Math.min(volume.consumeParticleCarry(entry.getKey(), desiredParticles), 2);
                 if (attempts <= 0) {
                     continue;
                 }
 
                 for (int i = 0; i < attempts && spawned < budget; i++) {
-                    double jitterRange = Math.max(0.22D, volume.cellSize() * 0.5D);
+                    double jitterRange = Math.max(0.18D, volume.cellSize() * 0.45D);
                     double px = cellCenter.x + gaussianJitter(minecraft.level.random.nextGaussian(), jitterRange);
                     double py = cellCenter.y + gaussianJitter(minecraft.level.random.nextGaussian(), jitterRange);
                     double pz = cellCenter.z + gaussianJitter(minecraft.level.random.nextGaussian(), jitterRange);
+                    double driftScale = 0.0015D;
 
                     minecraft.level.addParticle(
-                            minecraft.level.random.nextBoolean() ? ParticleTypes.SMOKE : ParticleTypes.LARGE_SMOKE,
+                            YhaParticles.STAGNANT_SMOKE.get(),
                             px,
                             py,
                             pz,
-                            (minecraft.level.random.nextDouble() - 0.5D) * 0.01D,
-                            (minecraft.level.random.nextDouble() * 0.008D) + 0.001D,
-                            (minecraft.level.random.nextDouble() - 0.5D) * 0.01D
+                            (minecraft.level.random.nextDouble() - 0.5D) * driftScale,
+                            0.0D,
+                            (minecraft.level.random.nextDouble() - 0.5D) * driftScale
                     );
                     spawned++;
                 }

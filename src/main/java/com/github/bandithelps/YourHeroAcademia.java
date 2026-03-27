@@ -12,6 +12,7 @@ import com.github.bandithelps.commands.StaminaCommand;
 import com.github.bandithelps.commands.YhaCommand;
 import com.github.bandithelps.conditions.ConditionRegister;
 import com.github.bandithelps.network.YhaNetwork;
+import com.github.bandithelps.particles.YhaParticles;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import org.slf4j.Logger;
@@ -103,6 +104,7 @@ public final class YourHeroAcademia {
 
         AbilityRegister.ABILITIES.register(modEventBus);
         ConditionRegister.CONDITIONS.register(modEventBus);
+        YhaParticles.PARTICLES.register(modEventBus);
         QuirkAttributes.ATTRIBUTES.register(modEventBus);
         StaminaAttachments.ATTACHMENTS.register(modEventBus);
         BodyAttachments.ATTACHMENTS.register(modEventBus);
