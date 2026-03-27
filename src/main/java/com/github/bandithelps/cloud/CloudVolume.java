@@ -373,6 +373,8 @@ public final class CloudVolume {
             return;
         }
 
+        System.out.println("apply radial");
+
         int radiusCells = Math.max(1, (int) Math.ceil(radius / this.cellSize));
         CloudCellPos centerCell = CloudCellPos.fromWorld(center, this.cellSize, this.origin);
         for (int dx = -radiusCells; dx <= radiusCells; dx++) {

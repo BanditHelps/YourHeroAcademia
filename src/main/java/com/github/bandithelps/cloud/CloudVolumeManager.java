@@ -80,6 +80,7 @@ public final class CloudVolumeManager {
     public void disperseSphere(Vec3 center, double radius, float strength) {
         for (CloudVolume volume : this.volumes.values()) {
             volume.disperseSphere(center, radius, strength);
+            System.out.println("Disperse Sphere");
         }
     }
 
