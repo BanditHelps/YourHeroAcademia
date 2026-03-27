@@ -224,6 +224,41 @@
           }
         ]
       }
+    },
+    "body_display_bar_solid": {
+      "type": "yha:display_body_bar",
+      "id": "smoke_capacity",
+      "label": "Smoke",
+      "part": "chest",
+      "key": "smoke_capacity",
+      "min": 0,
+      "max": {
+        "type": "palladium:molang_float",
+        "molang": "yha.quirk_factor() * 400"
+      },
+      "left_color": "#b200ed",
+      "right_color": "#b210ed",
+      "bar_type": "bar",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
+      }
+    },
+    "body_display_bar_slider": {
+      "type": "yha:display_body_bar",
+      "id": "temp",
+      "label": "Temp",
+      "part": "chest",
+      "key": "temp",
+      "min": 0,
+      "max": 10,
+      "left_color": "#4bb5be",
+      "right_color": "#8b2a36",
+      "bar_type": "slider",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
+      }
     }
   }
 }
