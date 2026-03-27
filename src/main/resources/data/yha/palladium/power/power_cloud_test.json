@@ -1,0 +1,72 @@
+{
+  "name": "Cloud System Test",
+  "icon": "minecraft:campfire",
+  "gui_display_type": "tree",
+  "abilities": {
+    "spawn_smoke_cloud": {
+      "type": "yha:create_smoke_cloud",
+      "radius": 7.0,
+      "density": 0.9,
+      "cell_size": 1.0,
+      "mode": "diffuse",
+      "lifetime_ticks": 2400,
+      "properties": {
+        "title": "Spawn Smoke Cloud",
+        "icon": "minecraft:campfire",
+        "hidden_in_bar": false,
+        "list_index": 0,
+        "activation_stamina": 15
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "action",
+          "cooldown": 40
+        }
+      }
+    },
+    "spawn_flood_fill_smoke": {
+      "type": "yha:create_smoke_cloud",
+      "radius": 4.0,
+      "density": 0.8,
+      "cell_size": 1.0,
+      "mode": "flood_fill",
+      "lifetime_ticks": 2200,
+      "projection_range": 18.0,
+      "projection_step": 0.7,
+      "properties": {
+        "title": "Flood Fill Smoke",
+        "icon": "minecraft:gray_dye",
+        "hidden_in_bar": false,
+        "list_index": 1,
+        "activation_stamina": 20
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "action",
+          "cooldown": 60
+        }
+      }
+    },
+    "dome_dispersal": {
+      "type": "yha:disperse_cloud_dome",
+      "radius": 10.0,
+      "strength": 1.0,
+      "properties": {
+        "title": "Dome Dispersal",
+        "icon": "minecraft:tnt",
+        "hidden_in_bar": false,
+        "list_index": 2,
+        "activation_stamina": 10
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "action",
+          "cooldown": 20
+        }
+      }
+    }
+  }
+}

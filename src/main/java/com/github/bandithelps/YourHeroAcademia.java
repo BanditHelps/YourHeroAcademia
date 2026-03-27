@@ -6,6 +6,7 @@ import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.commands.RegisterYhaCommandsEvent;
 import com.github.bandithelps.commands.BodyCommand;
+import com.github.bandithelps.commands.CloudCommand;
 import com.github.bandithelps.commands.ScreenCommand;
 import com.github.bandithelps.commands.StaminaCommand;
 import com.github.bandithelps.commands.YhaCommand;
@@ -164,5 +165,6 @@ public final class YourHeroAcademia {
         ScreenCommand.register(event.getBuilder(), event.getBuildContext());
         StaminaCommand.register(event.getBuilder(), event.getBuildContext());
         BodyCommand.register(event.getBuilder(), event.getBuildContext());
+        CloudCommand.register(event.getBuilder(), event.getBuildContext());
     }
 }

@@ -14,5 +14,8 @@ public final class YhaNetwork {
         registrar.playToClient(StaminaSyncPayload.TYPE, StaminaSyncPayload.STREAM_CODEC, StaminaSyncPayload::handle);
         registrar.playToClient(StaminaDebugOverlayPayload.TYPE, StaminaDebugOverlayPayload.STREAM_CODEC, StaminaDebugOverlayPayload::handle);
         registrar.playToClient(BodySyncPayload.TYPE, BodySyncPayload.STREAM_CODEC, BodySyncPayload::handle);
+        registrar.playToClient(CloudVolumeSpawnPayload.TYPE, CloudVolumeSpawnPayload.STREAM_CODEC, CloudVolumeSpawnPayload::handle);
+        registrar.playToClient(CloudVolumeDeltaPayload.TYPE, CloudVolumeDeltaPayload.STREAM_CODEC, CloudVolumeDeltaPayload::handle);
+        registrar.playToClient(CloudVolumeRemovePayload.TYPE, CloudVolumeRemovePayload.STREAM_CODEC, CloudVolumeRemovePayload::handle);
     }
 }

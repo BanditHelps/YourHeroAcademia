@@ -34,6 +34,54 @@ public class Config {
             .comment("A list of items to log on common setup.")
             .defineListAllowEmpty("items", List.of("minecraft:iron_ingot"), () -> "", Config::validateItemName);
 
+    public static final ModConfigSpec.IntValue CLOUD_SIM_INTERVAL_TICKS = BUILDER
+            .comment("How often cloud simulation steps run. Lower is smoother but heavier.")
+            .defineInRange("cloud.simulationIntervalTicks", 2, 1, 20);
+
+    public static final ModConfigSpec.IntValue CLOUD_MAX_ACTIVE_VOLUMES = BUILDER
+            .comment("Maximum number of cloud volumes that may exist per level.")
+            .defineInRange("cloud.maxActiveVolumes", 32, 1, 512);
+
+    public static final ModConfigSpec.IntValue CLOUD_MAX_CELLS_PER_VOLUME = BUILDER
+            .comment("Maximum active cells per cloud volume.")
+            .defineInRange("cloud.maxCellsPerVolume", 4096, 16, 200000);
+
+    public static final ModConfigSpec.IntValue CLOUD_MAX_CELL_CHANGES_PER_TICK = BUILDER
+            .comment("Maximum number of diffuse propagation operations per simulation step.")
+            .defineInRange("cloud.maxCellChangesPerTick", 512, 16, 500000);
+
+    public static final ModConfigSpec.IntValue CLOUD_MAX_FLOODFILL_EXPANSIONS_PER_TICK = BUILDER
+            .comment("Maximum flood-fill expansions per simulation step.")
+            .defineInRange("cloud.maxFloodFillExpansionsPerTick", 128, 8, 100000);
+
+    public static final ModConfigSpec.DoubleValue CLOUD_PASSIVE_DECAY_PER_STEP = BUILDER
+            .comment("Density removed from each cell on every simulation step.")
+            .defineInRange("cloud.passiveDecayPerStep", 0.0035D, 0.0D, 1.0D);
+
+    public static final ModConfigSpec.DoubleValue CLOUD_DIFFUSION_FACTOR = BUILDER
+            .comment("Fraction of density a cell attempts to diffuse to neighbors each step.")
+            .defineInRange("cloud.diffusionFactor", 0.15D, 0.0D, 1.0D);
+
+    public static final ModConfigSpec.IntValue CLOUD_DEFAULT_LIFETIME_TICKS = BUILDER
+            .comment("Default cloud lifetime used by abilities when unspecified.")
+            .defineInRange("cloud.defaultLifetimeTicks", 20 * 60, 20, 20 * 60 * 30);
+
+    public static final ModConfigSpec.IntValue CLOUD_SYNC_DISTANCE_BLOCKS = BUILDER
+            .comment("Maximum player distance for server cloud sync packets.")
+            .defineInRange("cloud.syncDistanceBlocks", 96, 16, 512);
+
+    public static final ModConfigSpec.IntValue CLOUD_CLIENT_PARTICLE_BUDGET = BUILDER
+            .comment("Maximum cloud particles spawned per client tick.")
+            .defineInRange("cloud.clientParticleBudget", 180, 0, 4000);
+
+    public static final ModConfigSpec.DoubleValue CLOUD_CLIENT_PARTICLE_DISTANCE = BUILDER
+            .comment("Maximum distance for cloud particle rendering on clients.")
+            .defineInRange("cloud.clientParticleDistance", 48.0D, 8.0D, 256.0D);
+
+    public static final ModConfigSpec.BooleanValue CLOUD_DEBUG_LOGGING = BUILDER
+            .comment("Whether to periodically log cloud simulation metrics.")
+            .define("cloud.debugLogging", false);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     private static boolean validateItemName(final Object obj) {
