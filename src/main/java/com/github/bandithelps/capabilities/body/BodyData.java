@@ -8,24 +8,30 @@ import net.minecraft.world.entity.player.Player;
 
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class BodyData implements IBodyData {
     private static final String PARTS_KEY = "parts";
+    private static final String DISPLAY_BARS_KEY = "displayBars";
 
     public static final MapCodec<BodyData> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Codec.unboundedMap(BodyPart.CODEC, BodyPartData.CODEC)
                     .optionalFieldOf(PARTS_KEY, defaultPartMap())
-                    .forGetter(BodyData::copyPartMap)
+                    .forGetter(BodyData::copyPartMap),
+            Codec.unboundedMap(Codec.STRING, displayBarCodec())
+                    .optionalFieldOf(DISPLAY_BARS_KEY, Map.of())
+                    .forGetter(BodyData::copyDisplayBarMap)
     ).apply(instance, BodyData::fromCodec));
 
     private final EnumMap<BodyPart, BodyPartData> parts = new EnumMap<>(BodyPart.class);
+    private final LinkedHashMap<String, BodyDisplayBar> displayBars = new LinkedHashMap<>();
 
     public BodyData() {
         initializeDefaults();
     }
 
-    private static BodyData fromCodec(Map<BodyPart, BodyPartData> decodedParts) {
+    private static BodyData fromCodec(Map<BodyPart, BodyPartData> decodedParts, Map<String, BodyDisplayBar> decodedDisplayBars) {
         BodyData data = new BodyData();
         for (Map.Entry<BodyPart, BodyPartData> entry : decodedParts.entrySet()) {
             BodyPart part = entry.getKey();
@@ -34,7 +40,32 @@ public class BodyData implements IBodyData {
             }
             data.parts.put(part, entry.getValue().copy());
         }
+        for (Map.Entry<String, BodyDisplayBar> entry : decodedDisplayBars.entrySet()) {
+            BodyDisplayBar displayBar = entry.getValue();
+            data.displayBars.put(displayBar.id(), displayBar);
+        }
         return data;
+    }
+
+    private static Codec<BodyDisplayBar> displayBarCodec() {
+        return RecordCodecBuilder.create(instance -> instance.group(
+                Codec.STRING.fieldOf("id").forGetter(BodyDisplayBar::id),
+                Codec.STRING.fieldOf("label").forGetter(BodyDisplayBar::label),
+                BodyPart.CODEC.fieldOf("part").forGetter(BodyDisplayBar::part),
+                Codec.STRING.fieldOf("key").forGetter(BodyDisplayBar::key),
+                Codec.FLOAT.fieldOf("min").forGetter(BodyDisplayBar::minValue),
+                Codec.FLOAT.fieldOf("max").forGetter(BodyDisplayBar::maxValue),
+                Codec.INT.fieldOf("colorRgb").forGetter(BodyDisplayBar::colorRgb),
+                Codec.STRING.optionalFieldOf("type", BodyDisplayBarType.FILL.getId())
+                        .xmap(
+                                value -> {
+                                    BodyDisplayBarType resolved = BodyDisplayBarType.fromId(value);
+                                    return resolved == null ? BodyDisplayBarType.FILL : resolved;
+                                },
+                                BodyDisplayBarType::getId
+                        )
+                        .forGetter(BodyDisplayBar::type)
+        ).apply(instance, BodyDisplayBar::new));
     }
 
     private static Map<BodyPart, BodyPartData> defaultPartMap() {
@@ -58,6 +89,10 @@ public class BodyData implements IBodyData {
             copy.put(part, getPartData(part).copy());
         }
         return copy;
+    }
+
+    private Map<String, BodyDisplayBar> copyDisplayBarMap() {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(displayBars));
     }
 
     @Override
@@ -185,6 +220,24 @@ public class BodyData implements IBodyData {
     }
 
     @Override
+    public void setDisplayBar(BodyDisplayBar displayBar) {
+        displayBars.put(displayBar.id(), displayBar);
+    }
+
+    @Override
+    public void removeDisplayBar(String id) {
+        if (id == null) {
+            return;
+        }
+        displayBars.remove(id.trim());
+    }
+
+    @Override
+    public Map<String, BodyDisplayBar> getDisplayBarsView() {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(displayBars));
+    }
+
+    @Override
     public void saveNBTData(CompoundTag nbt) {
         CompoundTag partRoot = new CompoundTag();
         for (BodyPart part : BodyPart.physicalParts()) {
@@ -210,11 +263,27 @@ public class BodyData implements IBodyData {
             partRoot.put(part.getId(), partTag);
         }
         nbt.put(PARTS_KEY, partRoot);
+
+        CompoundTag displayBarsTag = new CompoundTag();
+        for (BodyDisplayBar displayBar : displayBars.values()) {
+            CompoundTag barTag = new CompoundTag();
+            barTag.putString("id", displayBar.id());
+            barTag.putString("label", displayBar.label());
+            barTag.putString("part", displayBar.part().getId());
+            barTag.putString("key", displayBar.key());
+            barTag.putFloat("min", displayBar.minValue());
+            barTag.putFloat("max", displayBar.maxValue());
+            barTag.putInt("colorRgb", displayBar.colorRgb());
+            barTag.putString("type", displayBar.type().getId());
+            displayBarsTag.put(displayBar.id(), barTag);
+        }
+        nbt.put(DISPLAY_BARS_KEY, displayBarsTag);
     }
 
     @Override
     public void loadNBTData(CompoundTag nbt) {
         initializeDefaults();
+        displayBars.clear();
         CompoundTag partRoot = nbt.getCompound(PARTS_KEY).orElse(new CompoundTag());
         for (BodyPart part : BodyPart.physicalParts()) {
             CompoundTag partTag = partRoot.getCompound(part.getId()).orElse(new CompoundTag());
@@ -233,6 +302,29 @@ public class BodyData implements IBodyData {
             for (String key : stringTag.keySet()) {
                 data.setCustomString(key, stringTag.getString(key).orElse(""));
             }
+        }
+
+        CompoundTag displayBarsTag = nbt.getCompound(DISPLAY_BARS_KEY).orElse(new CompoundTag());
+        for (String id : displayBarsTag.keySet()) {
+            CompoundTag barTag = displayBarsTag.getCompound(id).orElse(new CompoundTag());
+            String savedPart = barTag.getString("part").orElse(BodyPart.CHEST.getId());
+            BodyPart part = BodyPart.fromId(savedPart);
+            if (part == null) {
+                continue;
+            }
+            String typeId = barTag.getString("type").orElse(BodyDisplayBarType.FILL.getId());
+            BodyDisplayBarType type = BodyDisplayBarType.fromId(typeId);
+            BodyDisplayBar displayBar = new BodyDisplayBar(
+                    barTag.getString("id").orElse(id),
+                    barTag.getString("label").orElse(id),
+                    part,
+                    barTag.getString("key").orElse("value"),
+                    barTag.getFloat("min").orElse(0.0F),
+                    barTag.getFloat("max").orElse(100.0F),
+                    barTag.getInt("colorRgb").orElse(0x2ECC71),
+                    type == null ? BodyDisplayBarType.FILL : type
+            );
+            displayBars.put(displayBar.id(), displayBar);
         }
     }
 }

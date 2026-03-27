@@ -1,8 +1,13 @@
 package com.github.bandithelps.client.stamina;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.capabilities.body.BodyDisplayBar;
+import com.github.bandithelps.capabilities.body.BodyDisplayBarType;
+import com.github.bandithelps.client.body.ClientBodyState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -11,10 +16,19 @@ import net.neoforged.neoforge.client.event.RenderGuiEvent;
 
 @EventBusSubscriber(modid = YourHeroAcademia.MODID, value = Dist.CLIENT)
 public final class StaminaHudOverlay {
-    private static final int BAR_WIDTH = 96;
-    private static final int BAR_HEIGHT = 10;
+    private static final int BAR_WIDTH = 144;
+    private static final int BAR_HEIGHT = 14;
     private static final int LEFT_MARGIN = 10;
-    private static final int BOTTOM_MARGIN = 18;
+    private static final int BOTTOM_MARGIN = 5;
+
+    private static final int BODY_BAR_WIDTH = 72;
+    private static final int BODY_BAR_HEIGHT = 6;
+    private static final int BODY_LEFT_MARGIN = 82;
+    private static final int STACK_GAP = 1;
+    private static final int BODY_ICON_SIZE = 8;
+    private static final int BODY_ICON_GAP = 1;
+    private static final String BODY_ICON_TEXTURE_FOLDER = "textures/gui/body_bars/";
+
     private static final int DEBUG_TOP_MARGIN = 8;
     private static final int DEBUG_RIGHT_MARGIN = 8;
     private static final int DEBUG_LINE_HEIGHT = 10;
@@ -50,6 +64,7 @@ public final class StaminaHudOverlay {
 
         String label = "STA " + current + "/" + max;
         graphics.drawString(minecraft.font, label, x, y - 10, 0xFFFFFFFF, true);
+        renderBodyDisplayBars(graphics, minecraft, BODY_LEFT_MARGIN, y - BODY_BAR_HEIGHT - STACK_GAP);
 
         if (!ClientStaminaState.isDebugOverlayEnabled()) {
             return;
@@ -77,5 +92,88 @@ public final class StaminaHudOverlay {
             graphics.drawString(minecraft.font, line, xPos, yPos, 0xFFFFFFFF, true);
             yPos += DEBUG_LINE_HEIGHT;
         }
+    }
+
+    private static void renderBodyDisplayBars(GuiGraphics graphics, Minecraft minecraft, int x, int startY) {
+        int y = startY;
+        for (BodyDisplayBar displayBar : ClientBodyState.getDisplayBars().values()) {
+            float currentValue = ClientBodyState.getCustomFloat(displayBar.part(), displayBar.key(), displayBar.minValue());
+            float ratio = getRatio(displayBar, currentValue);
+
+            drawBarFrame(graphics, x, y);
+            if (displayBar.type() == BodyDisplayBarType.SLIDER) {
+                drawSlider(graphics, x, y, ratio, displayBar.colorRgb());
+            } else {
+                drawFillBar(graphics, x, y, ratio, displayBar.colorRgb());
+            }
+            renderBarIconIfPresent(graphics, minecraft, displayBar.id(), x, y);
+
+            if (ClientStaminaState.isDebugOverlayEnabled()) {
+                String text = displayBar.label() + " " + String.format("%.1f", currentValue);
+                graphics.drawString(minecraft.font, text, x + 2, y + 1, 0xFFFFFFFF, false);
+            }
+
+            y -= BODY_BAR_HEIGHT + STACK_GAP;
+        }
+    }
+
+    private static float getRatio(BodyDisplayBar displayBar, float value) {
+        float range = Math.max(0.0001F, displayBar.maxValue() - displayBar.minValue());
+        return Mth.clamp((value - displayBar.minValue()) / range, 0.0F, 1.0F);
+    }
+
+    private static void drawFillBar(GuiGraphics graphics, int x, int y, float ratio, int rgbColor) {
+        int innerWidth = BODY_BAR_WIDTH - 2;
+        int fillWidth = Math.round(innerWidth * ratio);
+        int argbColor = 0xFF000000 | rgbColor;
+        graphics.fill(x + 1, y + 1, x + 1 + fillWidth, y + BODY_BAR_HEIGHT - 1, argbColor);
+    }
+
+    private static void drawSlider(GuiGraphics graphics, int x, int y, float ratio, int rgbColor) {
+        int innerWidth = BODY_BAR_WIDTH - 2;
+        int markerHalfWidth = 1;
+        int markerCenter = x + 1 + Math.round(innerWidth * ratio);
+        int markerColor = 0xFF000000 | rgbColor;
+        graphics.fill(
+                markerCenter - markerHalfWidth,
+                y + 1,
+                markerCenter + markerHalfWidth + 1,
+                y + BODY_BAR_HEIGHT - 1,
+                markerColor
+        );
+    }
+
+    private static void drawBarFrame(GuiGraphics graphics, int x, int y) {
+        graphics.fill(x, y, x + BODY_BAR_WIDTH, y + BODY_BAR_HEIGHT, 0xCC101018);
+        graphics.fill(x, y, x + BODY_BAR_WIDTH, y + 1, 0xFF304050);
+        graphics.fill(x, y + BODY_BAR_HEIGHT - 1, x + BODY_BAR_WIDTH, y + BODY_BAR_HEIGHT, 0xFF304050);
+        graphics.fill(x, y, x + 1, y + BODY_BAR_HEIGHT, 0xFF304050);
+        graphics.fill(x + BODY_BAR_WIDTH - 1, y, x + BODY_BAR_WIDTH, y + BODY_BAR_HEIGHT, 0xFF304050);
+    }
+
+    private static void renderBarIconIfPresent(GuiGraphics graphics, Minecraft minecraft, String displayBarId, int barX, int barY) {
+        Identifier iconTexture = getIconTexture(displayBarId);
+        if (minecraft.getResourceManager().getResource(iconTexture).isEmpty()) {
+            return;
+        }
+
+        int iconX = barX - BODY_ICON_SIZE - BODY_ICON_GAP;
+        int iconY = barY - 1 + (BODY_BAR_HEIGHT - BODY_ICON_SIZE) / 2;
+        graphics.blit(
+                RenderPipelines.GUI_TEXTURED,
+                iconTexture,
+                iconX,
+                iconY,
+                0.0F,
+                0.0F,
+                BODY_ICON_SIZE,
+                BODY_ICON_SIZE,
+                BODY_ICON_SIZE,
+                BODY_ICON_SIZE
+        );
+    }
+
+    private static Identifier getIconTexture(String displayBarId) {
+        return Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, BODY_ICON_TEXTURE_FOLDER + displayBarId + ".png");
     }
 }

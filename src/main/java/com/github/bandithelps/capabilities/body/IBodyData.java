@@ -39,6 +39,10 @@ public interface IBodyData {
     void removeCustomString(Player player, BodyPart part, String key);
     Map<String, String> getCustomStrings(Player player, BodyPart part);
 
+    void setDisplayBar(BodyDisplayBar displayBar);
+    void removeDisplayBar(String id);
+    Map<String, BodyDisplayBar> getDisplayBarsView();
+
     void saveNBTData(CompoundTag nbt);
     void loadNBTData(CompoundTag nbt);
 }
