@@ -1,7 +1,6 @@
 package com.github.bandithelps.abilities.bodydata;
 
 import com.github.bandithelps.abilities.AbilityRegister;
-import com.github.bandithelps.abilities.movement.DashAbility;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.body.BodyPart;
 import com.github.bandithelps.capabilities.body.BodySyncEvents;
@@ -14,7 +13,6 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
-import net.threetag.palladium.entity.PlayerSlot;
 import net.threetag.palladium.logic.context.DataContext;
 import net.threetag.palladium.logic.value.StaticValue;
 import net.threetag.palladium.logic.value.Value;

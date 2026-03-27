@@ -71,7 +71,6 @@ public class DisplayBodyBarAbility extends Ability {
     @Override
     public void firstTick(LivingEntity entity, AbilityInstance<?> abilityInstance) {
         if (entity instanceof ServerPlayer player) {
-            // error checking for a bad bar
             float minValue = this.min.getAsFloat(DataContext.forEntity(entity));
             float maxValue = this.max.getAsFloat(DataContext.forEntity(entity));
 
@@ -106,7 +105,6 @@ public class DisplayBodyBarAbility extends Ability {
 
     /*
      * Cleanup the display bar, and remove it.
-     *
      */
     @Override
     public void lastTick(LivingEntity entity, AbilityInstance<?> abilityInstance) {

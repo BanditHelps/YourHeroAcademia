@@ -31,11 +31,11 @@ public class BodyPartValueTickAbility extends Ability {
 
     public static final MapCodec<BodyPartValueTickAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
-                    Value.CODEC.optionalFieldOf("amount", new StaticValue(2.0f)).forGetter((ab) -> ab.amount),
+                    Value.CODEC.fieldOf("amount").forGetter((ab) -> ab.amount),
                     ExtraCodecs.NON_NEGATIVE_INT.optionalFieldOf("tick_rate", 20).forGetter((ab) -> ab.tickRate),
                     Value.CODEC.optionalFieldOf("max_value", new StaticValue(100.0f)).forGetter((ab) -> ab.maxValue),
                     Value.CODEC.optionalFieldOf("min_value", new StaticValue(0.0f)).forGetter((ab) -> ab.minValue),
-                    ExtraCodecs.NON_EMPTY_STRING.optionalFieldOf("key", "example_key").forGetter((ab) -> ab.key),
+                    ExtraCodecs.NON_EMPTY_STRING.fieldOf("key").forGetter((ab) -> ab.key),
                     PalladiumCodecs.listOrPrimitive(Codec.STRING).fieldOf("parts").forGetter((ab) -> ab.parts),
                     propertiesCodec(),
                     stateCodec(),
