@@ -17,5 +17,6 @@ public final class YhaNetwork {
         registrar.playToClient(CloudVolumeSpawnPayload.TYPE, CloudVolumeSpawnPayload.STREAM_CODEC, CloudVolumeSpawnPayload::handle);
         registrar.playToClient(CloudVolumeDeltaPayload.TYPE, CloudVolumeDeltaPayload.STREAM_CODEC, CloudVolumeDeltaPayload::handle);
         registrar.playToClient(CloudVolumeRemovePayload.TYPE, CloudVolumeRemovePayload.STREAM_CODEC, CloudVolumeRemovePayload::handle);
+        registrar.playToClient(ManagedParticleSizePayload.TYPE, ManagedParticleSizePayload.STREAM_CODEC, ManagedParticleSizePayload::handle);
     }
 }

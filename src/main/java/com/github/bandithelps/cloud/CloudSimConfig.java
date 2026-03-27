@@ -50,6 +50,38 @@ public final class CloudSimConfig {
         return Math.max(8.0D, Config.CLOUD_CLIENT_PARTICLE_DISTANCE.get());
     }
 
+    public static int managedMaxActiveParticles() {
+        return Math.max(0, Config.CLOUD_MANAGED_MAX_ACTIVE_PARTICLES.get());
+    }
+
+    public static int managedMaxUpdatesPerTick() {
+        return Math.max(0, Config.CLOUD_MANAGED_MAX_UPDATES_PER_TICK.get());
+    }
+
+    public static int managedDisperseImpulseTicks() {
+        return Math.max(1, Config.CLOUD_MANAGED_DISPERSE_IMPULSE_TICKS.get());
+    }
+
+    public static double managedDisperseImpulseDamping() {
+        return Math.max(0.0D, Math.min(1.0D, Config.CLOUD_MANAGED_DISPERSE_IMPULSE_DAMPING.get()));
+    }
+
+    public static float managedDisperseDrag() {
+        return (float) Math.max(0.0D, Math.min(1.0D, Config.CLOUD_MANAGED_DISPERSE_DRAG.get()));
+    }
+
+    public static int managedDisperseLifetimeTicks() {
+        return Math.max(1, Config.CLOUD_MANAGED_DISPERSE_LIFETIME_TICKS.get());
+    }
+
+    public static float managedDisperseTriggerDensityDrop() {
+        return Math.max(0.01F, Config.CLOUD_MANAGED_DISPERSE_TRIGGER_DENSITY_DROP.get().floatValue());
+    }
+
+    public static double managedDisperseImpulseStrength() {
+        return Math.max(0.001D, Config.CLOUD_MANAGED_DISPERSE_IMPULSE_STRENGTH.get());
+    }
+
     public static boolean debugLogging() {
         return Config.CLOUD_DEBUG_LOGGING.get();
     }

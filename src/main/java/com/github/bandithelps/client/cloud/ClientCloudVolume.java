@@ -1,10 +1,14 @@
 package com.github.bandithelps.client.cloud;
 
+import com.github.bandithelps.client.particles.managed.ManagedParticleManager;
 import com.github.bandithelps.cloud.CloudCellDelta;
 import com.github.bandithelps.cloud.CloudCellPos;
 import com.github.bandithelps.cloud.CloudMode;
+import com.github.bandithelps.cloud.CloudSimConfig;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
 import java.util.List;
@@ -67,7 +71,24 @@ public final class ClientCloudVolume {
     }
 
     public void applyDeltas(List<CloudCellDelta> deltas) {
+        Minecraft minecraft = Minecraft.getInstance();
+        Vec3 playerPos = minecraft.player != null ? minecraft.player.position() : this.origin.getCenter();
+        ManagedParticleManager managedParticleManager = ManagedParticleManager.get();
+        float triggerDrop = CloudSimConfig.managedDisperseTriggerDensityDrop();
+        double baseImpulse = CloudSimConfig.managedDisperseImpulseStrength();
+
         for (CloudCellDelta delta : deltas) {
+            float previousDensity = this.cells.getOrDefault(delta.pos(), 0.0F);
+            float nextDensity = Math.max(0.0F, delta.density());
+            float densityDrop = previousDensity - nextDensity;
+
+            if (densityDrop >= triggerDrop) {
+                Vec3 cellCenter = delta.pos().toWorldCenter(this.origin, this.cellSize);
+                Vec3 direction = cellCenter.subtract(playerPos);
+                double impulseStrength = baseImpulse * densityDrop;
+                managedParticleManager.applyDisperseImpulseForCell(this.id, delta.pos(), direction, impulseStrength);
+            }
+
             if (delta.density() <= 0.0F) {
                 this.cells.remove(delta.pos());
                 this.particleCarry.remove(delta.pos());

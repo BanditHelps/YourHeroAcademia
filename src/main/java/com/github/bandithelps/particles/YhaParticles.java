@@ -13,6 +13,8 @@ public final class YhaParticles {
 
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> STAGNANT_SMOKE =
             PARTICLES.register("stagnant_smoke", () -> new SimpleParticleType(false));
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> MANAGED_SMOKE =
+            PARTICLES.register("managed_smoke", () -> new SimpleParticleType(false));
 
     private YhaParticles() {
     }

@@ -3,6 +3,7 @@ package com.github.bandithelps.commands;
 import com.github.bandithelps.cloud.CloudMode;
 import com.github.bandithelps.cloud.CloudVolume;
 import com.github.bandithelps.cloud.CloudVolumeManager;
+import com.github.bandithelps.network.ManagedParticleSizePayload;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -14,13 +15,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public final class CloudCommand {
     private CloudCommand() {
     }
 
     public static void register(LiteralArgumentBuilder<CommandSourceStack> builder, CommandBuildContext context) {
-        builder.then(Commands.literal("cloud")
+        LiteralArgumentBuilder<CommandSourceStack> cloud = Commands.literal("cloud")
                 .then(Commands.literal("list").executes(c -> listClouds(c.getSource())))
                 .then(Commands.literal("clear").executes(c -> clearClouds(c.getSource())))
                 .then(Commands.literal("stats").executes(c -> printStats(c.getSource())))
@@ -47,7 +49,19 @@ public final class CloudCommand {
                                                 c.getSource(),
                                                 DoubleArgumentType.getDouble(c, "radius"),
                                                 FloatArgumentType.getFloat(c, "strength")
-                                        ))))));
+                                        )))))
+                .then(Commands.literal("particlesize")
+                        .then(Commands.literal("all")
+                                .then(Commands.argument("size", FloatArgumentType.floatArg(0.05F, 6.0F))
+                                        .executes(c -> setParticleSize(c.getSource(), "all", FloatArgumentType.getFloat(c, "size")))))
+                        .then(Commands.literal("cloud")
+                                .then(Commands.argument("size", FloatArgumentType.floatArg(0.05F, 6.0F))
+                                        .executes(c -> setParticleSize(c.getSource(), "cloud", FloatArgumentType.getFloat(c, "size")))))
+                        .then(Commands.literal("beam")
+                                .then(Commands.argument("size", FloatArgumentType.floatArg(0.05F, 6.0F))
+                                        .executes(c -> setParticleSize(c.getSource(), "beam", FloatArgumentType.getFloat(c, "size"))))));
+
+        builder.then(cloud);
     }
 
     private static int listClouds(CommandSourceStack source) {
@@ -115,6 +129,20 @@ public final class CloudCommand {
 
         CloudVolumeManager.forLevel((ServerLevel) player.level()).disperseDome(player.position(), radius, strength);
         source.sendSuccess(() -> Component.literal("Dispersed cloud in dome radius " + radius), true);
+        return 1;
+    }
+
+    private static int setParticleSize(CommandSourceStack source, String target, float size) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception exception) {
+            source.sendFailure(Component.literal("This command must be used by a player."));
+            return 0;
+        }
+
+        PacketDistributor.sendToPlayer(player, new ManagedParticleSizePayload(target, size));
+        source.sendSuccess(() -> Component.literal("Set managed particle size [" + target + "] to " + String.format("%.2f", size)), false);
         return 1;
     }
 }

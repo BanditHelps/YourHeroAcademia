@@ -14,5 +14,6 @@ public final class YhaParticleClientEvents {
     @SubscribeEvent
     public static void registerProviders(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(YhaParticles.STAGNANT_SMOKE.get(), StagnantSmokeParticle.Provider::new);
+        event.registerSpriteSet(YhaParticles.MANAGED_SMOKE.get(), ManagedSmokeParticle.Provider::new);
     }
 }

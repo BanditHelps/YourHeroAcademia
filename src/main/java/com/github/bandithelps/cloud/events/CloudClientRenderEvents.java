@@ -3,9 +3,10 @@ package com.github.bandithelps.cloud.events;
 import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.client.cloud.ClientCloudState;
 import com.github.bandithelps.client.cloud.ClientCloudVolume;
+import com.github.bandithelps.client.particles.managed.ManagedParticleManager;
+import com.github.bandithelps.client.particles.managed.ManagedParticleOwnerKey;
 import com.github.bandithelps.cloud.CloudCellPos;
 import com.github.bandithelps.cloud.CloudSimConfig;
-import com.github.bandithelps.particles.YhaParticles;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.Mth;
@@ -30,6 +31,8 @@ public final class CloudClientRenderEvents {
         if (minecraft.level == null || minecraft.player == null || minecraft.isPaused()) {
             return;
         }
+        ManagedParticleManager managedParticleManager = ManagedParticleManager.get();
+        managedParticleManager.tick(minecraft);
 
         int budget = CloudSimConfig.maxParticleSpawnPerTick();
         if (budget <= 0) {
@@ -80,16 +83,20 @@ public final class CloudClientRenderEvents {
                     double pz = cellCenter.z + gaussianJitter(minecraft.level.random.nextGaussian(), jitterRange);
                     double driftScale = 0.0015D;
 
-                    minecraft.level.addParticle(
-                            YhaParticles.STAGNANT_SMOKE.get(),
-                            px,
-                            py,
-                            pz,
+                    Vec3 velocity = new Vec3(
                             (minecraft.level.random.nextDouble() - 0.5D) * driftScale,
                             0.0D,
                             (minecraft.level.random.nextDouble() - 0.5D) * driftScale
                     );
-                    spawned++;
+                    if (managedParticleManager.spawnCloudSmoke(
+                            minecraft.level,
+                            new Vec3(px, py, pz),
+                            velocity,
+                            260 + minecraft.level.random.nextInt(120),
+                            new ManagedParticleOwnerKey(volume.id(), entry.getKey())
+                    )) {
+                        spawned++;
+                    }
                 }
             }
         }

@@ -78,6 +78,38 @@ public class Config {
             .comment("Maximum distance for cloud particle rendering on clients.")
             .defineInRange("cloud.clientParticleDistance", 48.0D, 8.0D, 256.0D);
 
+    public static final ModConfigSpec.IntValue CLOUD_MANAGED_MAX_ACTIVE_PARTICLES = BUILDER
+            .comment("Maximum managed smoke particles that can be active on a client.")
+            .defineInRange("cloud.managed.maxActiveParticles", 4500, 0, 100000);
+
+    public static final ModConfigSpec.IntValue CLOUD_MANAGED_MAX_UPDATES_PER_TICK = BUILDER
+            .comment("Maximum managed particles updated each client tick.")
+            .defineInRange("cloud.managed.maxUpdatesPerTick", 3500, 0, 100000);
+
+    public static final ModConfigSpec.IntValue CLOUD_MANAGED_DISPERSE_IMPULSE_TICKS = BUILDER
+            .comment("How many ticks dispersal impulse continues to affect managed particles.")
+            .defineInRange("cloud.managed.disperseImpulseTicks", 10, 1, 200);
+
+    public static final ModConfigSpec.DoubleValue CLOUD_MANAGED_DISPERSE_IMPULSE_DAMPING = BUILDER
+            .comment("Velocity damping applied to dispersal impulse each tick.")
+            .defineInRange("cloud.managed.disperseImpulseDamping", 0.84D, 0.0D, 1.0D);
+
+    public static final ModConfigSpec.DoubleValue CLOUD_MANAGED_DISPERSE_DRAG = BUILDER
+            .comment("Drag used by managed particles while dispersal impulse is active.")
+            .defineInRange("cloud.managed.disperseDrag", 0.94D, 0.0D, 1.0D);
+
+    public static final ModConfigSpec.IntValue CLOUD_MANAGED_DISPERSE_LIFETIME_TICKS = BUILDER
+            .comment("Maximum remaining lifetime for particles that get dispersed.")
+            .defineInRange("cloud.managed.disperseLifetimeTicks", 60, 1, 6000);
+
+    public static final ModConfigSpec.DoubleValue CLOUD_MANAGED_DISPERSE_TRIGGER_DENSITY_DROP = BUILDER
+            .comment("Minimum client-observed density drop required to trigger dispersal impulse.")
+            .defineInRange("cloud.managed.disperseTriggerDensityDrop", 0.12D, 0.01D, 1.0D);
+
+    public static final ModConfigSpec.DoubleValue CLOUD_MANAGED_DISPERSE_IMPULSE_STRENGTH = BUILDER
+            .comment("Base strength multiplier applied to inferred dispersal impulses.")
+            .defineInRange("cloud.managed.disperseImpulseStrength", 0.12D, 0.001D, 4.0D);
+
     public static final ModConfigSpec.BooleanValue CLOUD_DEBUG_LOGGING = BUILDER
             .comment("Whether to periodically log cloud simulation metrics.")
             .define("cloud.debugLogging", false);

@@ -1,5 +1,6 @@
 package com.github.bandithelps.client.cloud;
 
+import com.github.bandithelps.client.particles.managed.ManagedParticleManager;
 import com.github.bandithelps.cloud.CloudCellDelta;
 import com.github.bandithelps.cloud.CloudMode;
 import net.minecraft.core.BlockPos;
@@ -36,10 +37,12 @@ public final class ClientCloudState {
 
     public static void remove(UUID id) {
         VOLUMES.remove(id);
+        ManagedParticleManager.get().removeVolume(id);
     }
 
     public static void clear() {
         VOLUMES.clear();
+        ManagedParticleManager.get().clear();
     }
 
     public static Collection<ClientCloudVolume> volumes() {
