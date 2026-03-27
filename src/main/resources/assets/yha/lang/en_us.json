@@ -7,6 +7,15 @@
 
 
   "ability.yha.dash": "Dash",
+  "ability.yha.damage_body_part": "Damage Body Part",
+  "ability.yha.change_body_value": "Change Body Value",
+  "ability.yha.display_body_bar": "Display Body Bar",
+  "ability.yha.heal_body_bar": "Heal Body Bar",
+
+  "condition.yha.body_health": "Body Health",
+  "condition.yha.body_float": "Body String",
+  "condition.yha.body_string": "Body String",
+
   "attribute.yha.quirk_factor": "Quirk Factor",
 
   "death.attack.exhaustion": "%1$s overexerted themselves and paid the price.",

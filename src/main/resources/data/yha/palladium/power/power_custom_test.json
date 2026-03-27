@@ -62,10 +62,15 @@
       }
     },
     "ability_3": {
-      "type": "palladium:dummy",
+      "type": "yha:damage_body_part",
+      "damage": 10.0,
+      "parts": [
+        "main_arm",
+        "left_leg"
+      ],
       "properties": {
-        "title": "Ability 3",
-        "icon": "minecraft:gold_ingot",
+        "title": "Hurt Arm",
+        "icon": "minecraft:diamond_chestplate",
         "hidden_in_bar": false
       },
       "state": {
@@ -77,10 +82,15 @@
       }
     },
     "ability_4": {
-      "type": "palladium:dummy",
+      "type": "yha:heal_body_part",
+      "heal_amount": 50.0,
+      "parts": [
+        "main_arm",
+        "off_arm"
+      ],
       "properties": {
-        "title": "Ability 4",
-        "icon": "minecraft:diamond",
+        "title": "Heal Arms",
+        "icon": "minecraft:leather_leggings",
         "hidden_in_bar": false
       },
       "state": {
@@ -121,6 +131,154 @@
           "behaviour": "held",
           "cooldown": 200
         }
+      }
+    },
+    "passive_gain": {
+      "type": "yha:change_body_value",
+      "amount": {
+        "type": "palladium:molang_float",
+        "molang": "yha.quirk_factor()"
+      },
+      "tick_rate": 20,
+      "key": "smoke_capacity",
+      "min_value": 0,
+      "max_value": {
+        "type": "palladium:molang_float",
+        "molang": "yha.quirk_factor() * 400"
+      },
+      "parts": [
+        "chest"
+      ],
+      "properties": {
+        "title": "Passive Gain",
+        "icon": "minecraft:nether_star",
+        "hidden": true,
+        "hidden_in_bar": true
+      }
+    },
+    "left_leg_destroyed": {
+      "type": "palladium:command",
+      "commands": [],
+      "first_tick_commands": "say Left Leg destroyed",
+      "last_tick_commands": "",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
+      },
+      "state": {
+        "enabling": [
+          {
+            "type": "yha:body_health",
+            "check_type": "state",
+            "part": "left_leg",
+            "state": "destroyed",
+            "operator": "="
+          }
+        ]
+      }
+    },
+    "right_arm_kinda_hurt": {
+      "type": "palladium:command",
+      "commands": [],
+      "first_tick_commands": "say Owie",
+      "last_tick_commands": "",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
+      },
+      "state": {
+        "enabling": [
+          {
+            "type": "yha:body_health",
+            "check_type": "value",
+            "part": "right_arm",
+            "operator": "<",
+            "target": {
+              "type": "palladium:molang_float",
+              "molang": "yha.right_foot_health()"
+            }
+          }
+        ]
+      }
+    },
+    "test_chest_float": {
+      "type": "palladium:command",
+      "commands": [],
+      "first_tick_commands": "say Smoke is at Max",
+      "last_tick_commands": "",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
+      },
+      "state": {
+        "enabling": [
+          {
+            "type": "yha:body_float",
+            "key": "smoke_capacity",
+            "part": "chest",
+            "operator": "=",
+            "target": {
+              "type": "palladium:molang_float",
+              "molang": "yha.quirk_factor() * 400"
+            }
+          }
+        ]
+      }
+    },
+    "test_chest_string": {
+      "type": "palladium:command",
+      "commands": [],
+      "first_tick_commands": "say State is Expected",
+      "last_tick_commands": "",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
+      },
+      "state": {
+        "enabling": [
+          {
+            "type": "yha:body_string",
+            "key": "charging_state",
+            "part": "chest",
+            "operator": "equals",
+            "target": "maxed"
+          }
+        ]
+      }
+    },
+    "body_display_bar_solid": {
+      "type": "yha:display_body_bar",
+      "id": "smoke_capacity",
+      "label": "Smoke",
+      "part": "chest",
+      "key": "smoke_capacity",
+      "min": 0,
+      "max": {
+        "type": "palladium:molang_float",
+        "molang": "yha.quirk_factor() * 400"
+      },
+      "left_color": "#b200ed",
+      "right_color": "#b210ed",
+      "bar_type": "bar",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
+      }
+    },
+    "body_display_bar_slider": {
+      "type": "yha:display_body_bar",
+      "id": "temp",
+      "label": "Temp",
+      "part": "chest",
+      "key": "temp",
+      "min": 0,
+      "max": 10,
+      "left_color": "#4bb5be",
+      "right_color": "#8b2a36",
+      "bar_type": "slider",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
       }
     }
   }
