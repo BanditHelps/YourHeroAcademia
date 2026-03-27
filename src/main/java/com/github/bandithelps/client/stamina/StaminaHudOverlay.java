@@ -104,7 +104,7 @@ public final class StaminaHudOverlay {
             if (displayBar.type() == BodyDisplayBarType.SLIDER) {
                 drawSlider(graphics, x, y, ratio, displayBar);
             } else {
-                drawFillBar(graphics, x, y, ratio, displayBar.colorRgb());
+                drawFillBar(graphics, x, y, ratio, displayBar);
             }
             renderBarIconIfPresent(graphics, minecraft, displayBar.id(), x, y);
 
@@ -122,11 +122,21 @@ public final class StaminaHudOverlay {
         return Mth.clamp((value - displayBar.minValue()) / range, 0.0F, 1.0F);
     }
 
-    private static void drawFillBar(GuiGraphics graphics, int x, int y, float ratio, int rgbColor) {
+    private static void drawFillBar(GuiGraphics graphics, int x, int y, float ratio, BodyDisplayBar displayBar) {
         int innerWidth = BODY_BAR_WIDTH - 2;
         int fillWidth = Math.round(innerWidth * ratio);
-        int argbColor = 0xFF000000 | rgbColor;
-        graphics.fill(x + 1, y + 1, x + 1 + fillWidth, y + BODY_BAR_HEIGHT - 1, argbColor);
+        if (fillWidth <= 0) {
+            return;
+        }
+        drawHorizontalGradient(
+                graphics,
+                x + 1,
+                y + 1,
+                fillWidth,
+                BODY_BAR_HEIGHT - 2,
+                displayBar.gradientLeftColorRgb(),
+                displayBar.gradientRightColorRgb()
+        );
     }
 
     private static void drawSlider(GuiGraphics graphics, int x, int y, float ratio, BodyDisplayBar displayBar) {

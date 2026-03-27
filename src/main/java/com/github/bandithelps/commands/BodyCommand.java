@@ -147,7 +147,7 @@ public final class BodyCommand {
 
     private static LiteralArgumentBuilder<CommandSourceStack> buildDisplayBarAddCommand() {
         var barBranch = Commands.literal("bar")
-                .then(Commands.argument("color", StringArgumentType.word())
+                .then(Commands.argument("leftColor", StringArgumentType.word())
                         .executes(c -> addBarDisplayBar(
                                 c.getSource(),
                                 c.getSource().getPlayerOrException(),
@@ -157,7 +157,8 @@ public final class BodyCommand {
                                 StringArgumentType.getString(c, "key"),
                                 FloatArgumentType.getFloat(c, "min"),
                                 FloatArgumentType.getFloat(c, "max"),
-                                StringArgumentType.getString(c, "color")
+                                StringArgumentType.getString(c, "leftColor"),
+                                null
                         ))
                         .then(Commands.argument("player", EntityArgument.player())
                                 .executes(c -> addBarDisplayBar(
@@ -169,8 +170,36 @@ public final class BodyCommand {
                                         StringArgumentType.getString(c, "key"),
                                         FloatArgumentType.getFloat(c, "min"),
                                         FloatArgumentType.getFloat(c, "max"),
-                                        StringArgumentType.getString(c, "color")
-                                ))));
+                                        StringArgumentType.getString(c, "leftColor"),
+                                        null
+                                )))
+                        .then(Commands.literal("to")
+                                .then(Commands.argument("rightColor", StringArgumentType.word())
+                                        .executes(c -> addBarDisplayBar(
+                                                c.getSource(),
+                                                c.getSource().getPlayerOrException(),
+                                                StringArgumentType.getString(c, "id"),
+                                                StringArgumentType.getString(c, "label"),
+                                                parseBodyPart(c, "part"),
+                                                StringArgumentType.getString(c, "key"),
+                                                FloatArgumentType.getFloat(c, "min"),
+                                                FloatArgumentType.getFloat(c, "max"),
+                                                StringArgumentType.getString(c, "leftColor"),
+                                                StringArgumentType.getString(c, "rightColor")
+                                        ))
+                                        .then(Commands.argument("player", EntityArgument.player())
+                                                .executes(c -> addBarDisplayBar(
+                                                        c.getSource(),
+                                                        EntityArgument.getPlayer(c, "player"),
+                                                        StringArgumentType.getString(c, "id"),
+                                                        StringArgumentType.getString(c, "label"),
+                                                        parseBodyPart(c, "part"),
+                                                        StringArgumentType.getString(c, "key"),
+                                                        FloatArgumentType.getFloat(c, "min"),
+                                                        FloatArgumentType.getFloat(c, "max"),
+                                                        StringArgumentType.getString(c, "leftColor"),
+                                                        StringArgumentType.getString(c, "rightColor")
+                                                ))))));
 
         var sliderBranch = Commands.literal("slider")
                 .then(Commands.argument("sliderColor", StringArgumentType.word())
@@ -349,13 +378,15 @@ public final class BodyCommand {
             String key,
             float min,
             float max,
-            String colorHex
+            String leftColorHex,
+            String rightColorHex
     ) throws CommandSyntaxException {
         if (max <= min) {
             throw INVALID_BAR_RANGE_EXCEPTION.create();
         }
 
-        int color = parseHexColor(colorHex);
+        int leftColor = parseHexColor(leftColorHex);
+        int rightColor = rightColorHex == null ? leftColor : parseHexColor(rightColorHex);
         BodyDisplayBar displayBar = new BodyDisplayBar(
                 id,
                 label,
@@ -363,7 +394,11 @@ public final class BodyCommand {
                 key,
                 min,
                 max,
-                color,
+                leftColor,
+                BodyDisplayBar.DEFAULT_SLIDER_COLOR_RGB,
+                leftColor,
+                leftColor,
+                rightColor,
                 BodyDisplayBarType.FILL
         );
         BodyAttachments.get(player).setDisplayBar(displayBar);
@@ -375,7 +410,8 @@ public final class BodyCommand {
                         + ", key=" + displayBar.key()
                         + ", min=" + displayBar.minValue()
                         + ", max=" + displayBar.maxValue()
-                        + ", color=#" + String.format("%06X", displayBar.colorRgb()) + ")."
+                        + ", left=#" + String.format("%06X", displayBar.gradientLeftColorRgb())
+                        + ", right=#" + String.format("%06X", displayBar.gradientRightColorRgb()) + ")."
         ), true);
         return 1;
     }
