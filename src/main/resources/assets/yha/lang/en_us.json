@@ -10,7 +10,8 @@
   "ability.yha.damage_body_part": "Damage Body Part",
   "ability.yha.change_body_value": "Change Body Value",
   "ability.yha.display_body_bar": "Display Body Bar",
-  "ability.yha.heal_body_bar": "Heal Body Bar",
+  "ability.yha.heal_body_part": "Heal Body Bar",
+  "ability.yha.bd_shockwave": "Shockwave Effect",
 
   "condition.yha.body_health": "Body Health",
   "condition.yha.body_float": "Body String",

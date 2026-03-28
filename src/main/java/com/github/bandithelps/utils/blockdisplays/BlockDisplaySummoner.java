@@ -28,7 +28,6 @@ public class BlockDisplaySummoner {
             Blocks.MANGROVE_ROOTS.defaultBlockState(),
             Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState(),
             Blocks.BLACK_STAINED_GLASS.defaultBlockState()
-
     };
 
     private record PendingTransform(BetterBlockDisplay display, Vector3f translation, int applyAtTick) {}
@@ -37,8 +36,6 @@ public class BlockDisplaySummoner {
     public static void summonShockwave(ServerLevel level, ServerPlayer player, double endRadius, double num) {
 
         RandomSource random = player.getRandom();
-
-
 
         double centerX = player.getX();
         double centerY = player.getY();

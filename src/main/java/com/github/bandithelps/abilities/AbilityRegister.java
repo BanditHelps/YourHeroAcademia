@@ -1,6 +1,7 @@
 package com.github.bandithelps.abilities;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.abilities.blockdisplayanims.BDShockwaveAbility;
 import com.github.bandithelps.abilities.bodydata.DisplayBodyBarAbility;
 import com.github.bandithelps.abilities.bodydata.BodyPartValueTickAbility;
 import com.github.bandithelps.abilities.bodydata.DamageBodyPartAbility;
@@ -19,6 +20,7 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, HealBodyPartAbility.Serializer> HEAL_BODY_PART;
     public static final DeferredHolder<AbilitySerializer<?>, BodyPartValueTickAbility.Serializer> CHANGE_BODY_VALUE;
     public static final DeferredHolder<AbilitySerializer<?>, DisplayBodyBarAbility.Serializer> DISPLAY_BODY_BAR;
+    public static final DeferredHolder<AbilitySerializer<?>, BDShockwaveAbility.Serializer> BD_SHOCKWAVE;
 
     static {
         ABILITIES = DeferredRegister.create(PalladiumRegistryKeys.ABILITY_SERIALIZER, YourHeroAcademia.MODID);
@@ -27,6 +29,7 @@ public class AbilityRegister {
         HEAL_BODY_PART = ABILITIES.register("heal_body_part", HealBodyPartAbility.Serializer::new);
         CHANGE_BODY_VALUE = ABILITIES.register("change_body_value", BodyPartValueTickAbility.Serializer::new);
         DISPLAY_BODY_BAR = ABILITIES.register("display_body_bar", DisplayBodyBarAbility.Serializer::new);
+        BD_SHOCKWAVE = ABILITIES.register("bd_shockwave", BDShockwaveAbility.Serializer::new);
     }
 
 }
