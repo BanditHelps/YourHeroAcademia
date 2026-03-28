@@ -8,6 +8,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -42,13 +43,45 @@ public class BlockDisplaySummoner {
             Vector3f finalScale,
             int lifetime,
             boolean randomDecay,
-            boolean randomRotation) {
+            boolean randomRotation,
+            boolean useRelative) {
 
         RandomSource random = player.getRandom();
 
-        double centerX = player.getX() + locationOffset.get(0);
-        double centerY = player.getY() + locationOffset.get(1);
-        double centerZ = player.getZ() + locationOffset.get(2);
+        double centerX, centerY, centerZ;
+
+        // If using relative coordinates, it is the same as doing ^ ^ ^ instead of ~ ~ ~
+        if (useRelative) {
+            Vec3 forward = player.getLookAngle().normalize();
+
+            // Up
+            Vec3 up = new Vec3(0, 1, 0);
+
+            // Right
+            Vec3 right = forward.cross(up).normalize();
+
+            // recompute up so it is the real one
+            up = right.cross(forward).normalize();
+
+            double relativeX = locationOffset.x;
+            double relativeY = locationOffset.y;
+            double relativeZ = locationOffset.z;
+
+            Vec3 offset =
+                    right.scale(relativeX)
+                            .add(up.scale(relativeY))
+                                    .add(forward.scale(relativeZ));
+
+            centerX = player.getX() + offset.x;
+            centerY = player.getY() + offset.y;
+            centerZ = player.getZ() + offset.z;
+        } else {
+            centerX = player.getX() + locationOffset.get(0);
+            centerY = player.getY() + locationOffset.get(1);
+            centerZ = player.getZ() + locationOffset.get(2);
+        }
+
+
 
         double endPoint = 2 * Math.PI; // Full rotation of the circle
         double step = endPoint / density;

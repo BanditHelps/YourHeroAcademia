@@ -40,7 +40,7 @@ public class BdCommand {
             Blocks.BLACK_STAINED_GLASS.defaultBlockState()
         };
 
-        BlockDisplaySummoner.summonShockwave(player.level(), player, (float)radius, 40, num, Arrays.asList(palette), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0.6f, 0.6f, 0.6f), 40, true, true);
+        BlockDisplaySummoner.summonShockwave(player.level(), player, (float)radius, 40, num, Arrays.asList(palette), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0.6f, 0.6f, 0.6f), 40, true, true, false);
         return 1;
     }
 }

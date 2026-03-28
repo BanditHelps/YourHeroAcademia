@@ -40,7 +40,7 @@
         0.2, 0.2, 0.2
       ],
       "location_offset": [
-        2, 2, 0
+        0, 0, 2
       ],
       "rotation_offset": [
         0, 0, 90
@@ -50,6 +50,7 @@
         "minecraft:light_gray_glass"
       ],
       "lifetime": 35,
+      "relative": true,
       "properties": {
         "title": "Punch Shockwave",
         "icon": "minecraft:wooden_sword",
