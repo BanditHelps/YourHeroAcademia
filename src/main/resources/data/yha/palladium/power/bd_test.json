@@ -28,6 +28,42 @@
         }
       }
     },
+    "punch_shockwave": {
+      "type": "yha:bd_shockwave",
+      "radius": 5,
+      "tick_speed": 35,
+      "density": 200,
+      "initial_scale": [
+        0, 0, 0
+      ],
+      "final_scale": [
+        0.2, 0.2, 0.2
+      ],
+      "location_offset": [
+        2, 2, 0
+      ],
+      "rotation_offset": [
+        0, 0, 90
+      ],
+      "palette": [
+        "minecraft:light_gray_concrete",
+        "minecraft:light_gray_glass"
+      ],
+      "lifetime": 35,
+      "properties": {
+        "title": "Punch Shockwave",
+        "icon": "minecraft:wooden_sword",
+        "hidden_in_bar": false,
+        "list_index": 2
+      },
+      "state":{
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "action",
+          "cooldown": 0
+        }
+      }
+    },
     "speedy_shockwave": {
       "type": "yha:bd_shockwave",
       "radius": 50,

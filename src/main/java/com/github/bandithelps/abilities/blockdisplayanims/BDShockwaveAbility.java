@@ -54,7 +54,7 @@ public class BDShockwaveAbility extends Ability {
                     PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("palette", Arrays.asList(Identifier.parse("minecraft:diamond_block"))).forGetter((ab) -> ab.palette),
                     PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("location_offset", new Vector3f(0.0f, 0.0f, 0.0f)).forGetter((ab) -> ab.locationOffset),
                     PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("rotation_offset", new Vector3f(0.0f, 0.0f, 0.0f)).forGetter((ab) -> ab.rotationOffset),
-                    PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("intial_scale", new Vector3f(0.3f, 0.3f, 0.3f)).forGetter((ab) -> ab.initialScale),
+                    PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("initial_scale", new Vector3f(0.3f, 0.3f, 0.3f)).forGetter((ab) -> ab.initialScale),
                     PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("final_scale", new Vector3f(0.6f, 0.6f, 0.6f)).forGetter((ab) -> ab.finalScale),
                     Value.CODEC.optionalFieldOf("lifetime", new StaticValue(40.0f)).forGetter((ab) -> ab.lifetime),
                     Codec.BOOL.optionalFieldOf("random_decay", true).forGetter((ab) -> ab.randomDecay),

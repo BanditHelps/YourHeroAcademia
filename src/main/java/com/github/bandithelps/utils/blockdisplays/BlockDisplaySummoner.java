@@ -53,6 +53,13 @@ public class BlockDisplaySummoner {
         double endPoint = 2 * Math.PI; // Full rotation of the circle
         double step = endPoint / density;
 
+        Quaternionf rotation = new Quaternionf()
+                .rotateXYZ(
+                        (float)Math.toRadians(rotationOffset.x()),
+                        (float)Math.toRadians(rotationOffset.y()),
+                        (float)Math.toRadians(rotationOffset.z())
+                );
+
         // h = horizontal distance from the center - center point of x
         // k = vertical distance from the center - center point of z
         // x = h + r*cos(theta)
@@ -63,13 +70,31 @@ public class BlockDisplaySummoner {
         for (double theta = 0; theta < endPoint; theta += step) {
             BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
 
-            double initialX = centerX + INITIAL_RADIUS * Math.cos(theta);
-            double initialZ = centerZ + INITIAL_RADIUS * Math.sin(theta);
+            // Define these offsets in able to rotate them by the rotational offset passed above
+            Vector3f beginningOffset = new Vector3f(
+                    (float)(INITIAL_RADIUS * Math.cos(theta)),
+                    0f,
+                    (float)(INITIAL_RADIUS * Math.sin(theta))
+            );
 
-            double endX = centerX + endRadius * Math.cos(theta);
-            double endZ = centerZ + endRadius * Math.sin(theta);
+            Vector3f endingOffset = new Vector3f(
+                    (float)(endRadius * Math.cos(theta)),
+                    0f,
+                    (float)(endRadius * Math.sin(theta))
+            );
 
-            display.setPos(initialX, centerY, initialZ);
+            beginningOffset.rotate(rotation);
+            endingOffset.rotate(rotation);
+
+            double initialX = centerX + beginningOffset.x;
+            double initialY = centerY + beginningOffset.y;
+            double initialZ = centerZ + beginningOffset.z;
+
+            double endX = centerX + endingOffset.x;;
+            double endY = centerY + endingOffset.y;
+            double endZ = centerZ + endingOffset.z;;
+
+            display.setPos(initialX, initialY, initialZ);
             display.setBlock(palette.get(random.nextInt(palette.size())));
             display.setScale(initialScale);
             display.setTranslation(new Vector3f(CENTER_OFFSET_VECTOR));
@@ -88,9 +113,10 @@ public class BlockDisplaySummoner {
             }
 
 
-            Vector3f startPos = new Vector3f((float)initialX, (float)centerY, (float)initialZ);
-            Vector3f endPos = new Vector3f((float)endX, (float)centerY, (float)endZ);
-            Vector3f translation = endPos.sub(startPos, new Vector3f());
+            Vector3f startPos = new Vector3f((float)initialX, (float)initialY, (float)initialZ);
+            Vector3f endPos = new Vector3f((float)endX, (float)endY, (float)endZ);
+
+            Vector3f translation = endPos.sub(startPos, new Vector3f()); // the movement required to get from the inner radius to the outer radius
 
 
             level.addFreshEntity(display);
