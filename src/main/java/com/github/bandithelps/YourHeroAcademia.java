@@ -4,11 +4,7 @@ import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.attributes.QuirkAttributes;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
-import com.github.bandithelps.commands.RegisterYhaCommandsEvent;
-import com.github.bandithelps.commands.BodyCommand;
-import com.github.bandithelps.commands.ScreenCommand;
-import com.github.bandithelps.commands.StaminaCommand;
-import com.github.bandithelps.commands.YhaCommand;
+import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
 import com.github.bandithelps.network.YhaNetwork;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -164,5 +160,6 @@ public final class YourHeroAcademia {
         ScreenCommand.register(event.getBuilder(), event.getBuildContext());
         StaminaCommand.register(event.getBuilder(), event.getBuildContext());
         BodyCommand.register(event.getBuilder(), event.getBuildContext());
+        BdCommand.register(event.getBuilder(), event.getBuildContext());
     }
 }
