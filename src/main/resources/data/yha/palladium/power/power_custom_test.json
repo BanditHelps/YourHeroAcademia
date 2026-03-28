@@ -280,6 +280,28 @@
         "hidden": true,
         "hidden_in_bar": true
       }
+    },
+    "shockwave": {
+      "type": "palladium:command",
+      "commands": [],
+      "first_tick_commands": "",
+      "last_tick_commands": "execute as Dev run yha bd summon 6 500",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
+      },
+      "state": {
+        "enabling": [
+          {
+            "type": "palladium:not",
+            "conditions": [
+              {
+                "type": "palladium:on_ground"
+              }
+            ]
+          }
+        ]
+      }
     }
   }
 }

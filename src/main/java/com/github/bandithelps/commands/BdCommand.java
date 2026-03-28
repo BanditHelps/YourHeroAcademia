@@ -28,7 +28,7 @@ public class BdCommand {
     }
 
     private static int summonBd(CommandSourceStack source, ServerPlayer player, double radius, double num) throws CommandSyntaxException {
-        BlockDisplaySummoner.summonRing(player.level(), player, radius, num);
+        BlockDisplaySummoner.summonShockwave(player.level(), player, radius, num);
         return 1;
     }
 }

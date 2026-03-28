@@ -6,11 +6,14 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.joml.Vector3fc;
 
 public class BetterBlockDisplay extends Display.BlockDisplay{
+
+    private int lifetime;
+
     public BetterBlockDisplay(EntityType<?> type, Level level) {
         super(type, level);
+        this.lifetime = -1;
     }
 
     public void setBlock(BlockState state) {
@@ -29,7 +32,18 @@ public class BetterBlockDisplay extends Display.BlockDisplay{
 
     public void setInterpolation(int interpolation) { this.getEntityData().set(DATA_TRANSFORMATION_INTERPOLATION_DURATION_ID, interpolation); }
 
-    public void startInterpolation() {
-        this.getEntityData().set(DATA_TRANSFORMATION_INTERPOLATION_START_DELTA_TICKS_ID, -1, true);
+    public void startInterpolation() { this.getEntityData().set(DATA_TRANSFORMATION_INTERPOLATION_START_DELTA_TICKS_ID, -1, true); }
+
+    public void setLifetime(int lifetime) { this.lifetime = lifetime; }
+
+    @Override
+    public void tick() {
+        super.tick();
+
+        if (this.lifetime > 0) {
+            this.lifetime--;
+        } else if (this.lifetime != -1){
+            this.discard();
+        }
     }
 }

@@ -4,8 +4,10 @@ import com.github.bandithelps.YourHeroAcademia;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -21,10 +23,22 @@ public class BlockDisplaySummoner {
     private static final Vector3f CENTER_OFFSET_VECTOR = new Vector3f(-0.25f, 0, -0.2f);
     private static final List<PendingTransform> PENDING_TRANSFORMS = new ArrayList<>();
 
+    private static final BlockState[] palette = {
+            Blocks.DIRT.defaultBlockState(),
+            Blocks.MANGROVE_ROOTS.defaultBlockState(),
+            Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState(),
+            Blocks.BLACK_STAINED_GLASS.defaultBlockState()
+
+    };
+
     private record PendingTransform(BetterBlockDisplay display, Vector3f translation, int applyAtTick) {}
 
     // Shockwave at the player's feet
-    public static void summonRing(ServerLevel level, ServerPlayer player, double endRadius, double num) {
+    public static void summonShockwave(ServerLevel level, ServerPlayer player, double endRadius, double num) {
+
+        RandomSource random = player.getRandom();
+
+
 
         double centerX = player.getX();
         double centerY = player.getY();
@@ -55,11 +69,12 @@ public class BlockDisplaySummoner {
             double endZ = centerZ + endRadius * Math.sin(theta);
 
             display.setPos(initialX, centerY, initialZ);
-            display.setBlock(Blocks.DIAMOND_BLOCK.defaultBlockState());
+            display.setBlock(palette[random.nextInt(palette.length)]);
             display.setScale(new Vector3f(0.3f, 0.3f, 0.3f));
             display.setTranslation(new Vector3f(CENTER_OFFSET_VECTOR));
-            display.setRightRotation(new Quaternionf(Math.random(),Math.random(),Math.random(),0.5));
-            display.setInterpolation(60);
+            display.setRightRotation(new Quaternionf(random.nextDouble(),random.nextDouble(),random.nextDouble(),0.5));
+            display.setInterpolation(40);
+            display.setLifetime(random.nextInt(40));
 
 
             Vector3f startPos = new Vector3f((float)initialX, (float)centerY, (float)initialZ);
@@ -93,6 +108,7 @@ public class BlockDisplaySummoner {
 
             if (!pending.display().isRemoved()) {
                 pending.display().setTranslation(new Vector3f(CENTER_OFFSET_VECTOR).add(pending.translation()));
+                pending.display().setScale(new Vector3f(0.6f, 0.6f, 0.6f));
                 pending.display().startInterpolation();
             }
 
