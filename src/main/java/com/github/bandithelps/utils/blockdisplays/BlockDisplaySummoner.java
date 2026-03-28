@@ -49,6 +49,7 @@ public class BlockDisplaySummoner {
         RandomSource random = player.getRandom();
 
         double centerX, centerY, centerZ;
+        Quaternionf rotation, playerRotation;
 
         // If using relative coordinates, it is the same as doing ^ ^ ^ instead of ~ ~ ~
         if (useRelative) {
@@ -75,10 +76,32 @@ public class BlockDisplaySummoner {
             centerX = player.getX() + offset.x;
             centerY = player.getY() + offset.y;
             centerZ = player.getZ() + offset.z;
+
+            playerRotation = new Quaternionf()
+                    .rotateY((float)Math.toRadians(-player.getYRot())) // yaw
+                    .rotateX((float) Math.toRadians(player.getXRot())); // pitch
+
+            rotation = new Quaternionf()
+                    .rotateXYZ(
+                            (float)Math.toRadians(rotationOffset.x()),
+                            (float)Math.toRadians(rotationOffset.y()),
+                            (float)Math.toRadians(rotationOffset.z())
+                    );
+
+            rotation = new Quaternionf(playerRotation).mul(rotation);
+
+
         } else {
             centerX = player.getX() + locationOffset.get(0);
             centerY = player.getY() + locationOffset.get(1);
             centerZ = player.getZ() + locationOffset.get(2);
+
+            rotation = new Quaternionf()
+                    .rotateXYZ(
+                            (float)Math.toRadians(rotationOffset.x()),
+                            (float)Math.toRadians(rotationOffset.y()),
+                            (float)Math.toRadians(rotationOffset.z())
+                    );
         }
 
 
@@ -86,12 +109,9 @@ public class BlockDisplaySummoner {
         double endPoint = 2 * Math.PI; // Full rotation of the circle
         double step = endPoint / density;
 
-        Quaternionf rotation = new Quaternionf()
-                .rotateXYZ(
-                        (float)Math.toRadians(rotationOffset.x()),
-                        (float)Math.toRadians(rotationOffset.y()),
-                        (float)Math.toRadians(rotationOffset.z())
-                );
+
+
+
 
         // h = horizontal distance from the center - center point of x
         // k = vertical distance from the center - center point of z

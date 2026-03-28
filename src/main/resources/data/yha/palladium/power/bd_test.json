@@ -40,10 +40,10 @@
         0.2, 0.2, 0.2
       ],
       "location_offset": [
-        0, 0, 2
+        0, 1.5, 2
       ],
       "rotation_offset": [
-        0, 0, 90
+        90, 0, 0
       ],
       "palette": [
         "minecraft:light_gray_concrete",
