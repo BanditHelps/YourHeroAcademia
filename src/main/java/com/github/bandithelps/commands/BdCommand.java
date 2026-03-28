@@ -8,6 +8,11 @@ import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import org.joml.Vector3f;
+
+import java.util.Arrays;
 
 public class BdCommand {
 
@@ -28,7 +33,14 @@ public class BdCommand {
     }
 
     private static int summonBd(CommandSourceStack source, ServerPlayer player, double radius, double num) throws CommandSyntaxException {
-        BlockDisplaySummoner.summonShockwave(player.level(), player, radius, num);
+        BlockState[] palette = {
+            Blocks.DIRT.defaultBlockState(),
+            Blocks.MANGROVE_ROOTS.defaultBlockState(),
+            Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState(),
+            Blocks.BLACK_STAINED_GLASS.defaultBlockState()
+        };
+
+        BlockDisplaySummoner.summonShockwave(player.level(), player, (float)radius, 40, num, Arrays.asList(palette), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0.6f, 0.6f, 0.6f), 40, true, true);
         return 1;
     }
 }

@@ -20,58 +20,72 @@ import java.util.List;
 
 @EventBusSubscriber(modid = YourHeroAcademia.MODID)
 public class BlockDisplaySummoner {
-    private static final Vector3f CENTER_OFFSET_VECTOR = new Vector3f(-0.25f, 0, -0.2f);
+
+    private static final double INITIAL_RADIUS = 0.25;
+
+    private static final Vector3f CENTER_OFFSET_VECTOR = new Vector3f(-0.25f, 0, -0.2f); // Because for some reason, it is not centered
     private static final List<PendingTransform> PENDING_TRANSFORMS = new ArrayList<>();
 
-    private static final BlockState[] palette = {
-            Blocks.DIRT.defaultBlockState(),
-            Blocks.MANGROVE_ROOTS.defaultBlockState(),
-            Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState(),
-            Blocks.BLACK_STAINED_GLASS.defaultBlockState()
-    };
+    private record PendingTransform(BetterBlockDisplay display, Vector3f translation, Vector3f scale, int applyAtTick) {}
 
-    private record PendingTransform(BetterBlockDisplay display, Vector3f translation, int applyAtTick) {}
-
-    // Shockwave at the player's feet
-    public static void summonShockwave(ServerLevel level, ServerPlayer player, double endRadius, double num) {
+    // TODO add scale
+    public static void summonShockwave(
+            ServerLevel level,
+            ServerPlayer player,
+            float endRadius,
+            int tickSpeed,
+            double density,
+            List<BlockState> palette,
+            Vector3f locationOffset,
+            Vector3f rotationOffset,
+            Vector3f initialScale,
+            Vector3f finalScale,
+            int lifetime,
+            boolean randomDecay,
+            boolean randomRotation) {
 
         RandomSource random = player.getRandom();
 
-        double centerX = player.getX();
-        double centerY = player.getY();
-        double centerZ = player.getZ();
+        double centerX = player.getX() + locationOffset.get(0);
+        double centerY = player.getY() + locationOffset.get(1);
+        double centerZ = player.getZ() + locationOffset.get(2);
 
-        player.sendSystemMessage(Component.literal((float) centerX + " " + (float) centerY + " " + (float) centerZ));
-
-
-        double endPoint = 2 * Math.PI;
-        double step = endPoint / num;
+        double endPoint = 2 * Math.PI; // Full rotation of the circle
+        double step = endPoint / density;
 
         // h = horizontal distance from the center - center point of x
         // k = vertical distance from the center - center point of z
         // x = h + r*cos(theta)
         // z = k + r * sin(theta)
 
-        double initialRadius = 0.5;
-
         // Spawn on the inner ring and apply transform one tick later.
         // This gives clients a true "previous" state to interpolate from.
         for (double theta = 0; theta < endPoint; theta += step) {
             BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
 
-            double initialX = centerX + initialRadius * Math.cos(theta);
-            double initialZ = centerZ + initialRadius * Math.sin(theta);
+            double initialX = centerX + INITIAL_RADIUS * Math.cos(theta);
+            double initialZ = centerZ + INITIAL_RADIUS * Math.sin(theta);
 
             double endX = centerX + endRadius * Math.cos(theta);
             double endZ = centerZ + endRadius * Math.sin(theta);
 
             display.setPos(initialX, centerY, initialZ);
-            display.setBlock(palette[random.nextInt(palette.length)]);
-            display.setScale(new Vector3f(0.3f, 0.3f, 0.3f));
+            display.setBlock(palette.get(random.nextInt(palette.size())));
+            display.setScale(initialScale);
             display.setTranslation(new Vector3f(CENTER_OFFSET_VECTOR));
-            display.setRightRotation(new Quaternionf(random.nextDouble(),random.nextDouble(),random.nextDouble(),0.5));
-            display.setInterpolation(40);
-            display.setLifetime(random.nextInt(40));
+
+            if (randomRotation) {
+                display.setRightRotation(new Quaternionf(random.nextDouble(),random.nextDouble(),random.nextDouble(),0.5));
+            }
+
+            display.setInterpolation(tickSpeed);
+
+
+            if (randomDecay) {
+                display.setLifetime(random.nextInt(lifetime));
+            } else {
+                display.setLifetime(lifetime);
+            }
 
 
             Vector3f startPos = new Vector3f((float)initialX, (float)centerY, (float)initialZ);
@@ -81,7 +95,7 @@ public class BlockDisplaySummoner {
 
             level.addFreshEntity(display);
 
-            PENDING_TRANSFORMS.add(new PendingTransform(display, translation, level.getServer().getTickCount() + 1));
+            PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + 1));
         }
     }
 
@@ -105,7 +119,7 @@ public class BlockDisplaySummoner {
 
             if (!pending.display().isRemoved()) {
                 pending.display().setTranslation(new Vector3f(CENTER_OFFSET_VECTOR).add(pending.translation()));
-                pending.display().setScale(new Vector3f(0.6f, 0.6f, 0.6f));
+                pending.display().setScale(pending.scale());
                 pending.display().startInterpolation();
             }
 

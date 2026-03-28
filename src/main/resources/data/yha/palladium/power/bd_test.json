@@ -10,7 +10,7 @@
       "density": 50,
       "location_offset": [
         0,
-        -1,
+        0,
         0
       ],
       "lifetime": 40,
@@ -25,6 +25,40 @@
           "type": "palladium:key_bind",
           "behaviour": "action",
           "cooldown": 0
+        }
+      }
+    },
+    "speedy_shockwave": {
+      "type": "yha:bd_shockwave",
+      "radius": 50,
+      "tick_speed": 200,
+      "density": 100,
+      "location_offset": [
+        0,
+        0,
+        0
+      ],
+      "initial_scale": [
+        0, 0, 0
+      ],
+      "final_scale": [
+        15, 15, 15
+      ],
+      "palette": [
+        "minecraft:dirt",
+        "minecraft:sandstone"
+      ],
+      "lifetime": 200,
+      "properties": {
+        "title": "Run Dust",
+        "icon": "minecraft:iron_boots",
+        "hidden_in_bar": false,
+        "list_index": 1
+      },
+      "state":{
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "toggle"
         }
       }
     }
