@@ -98,6 +98,33 @@
           "behaviour": "toggle"
         }
       }
+    },
+    "emitter": {
+      "type": "yha:bd_body_part_emitter",
+      "parts": ["left_hand", "right_hand"],
+      "tick_rate": 2,
+      "palette": ["minecraft:blue_stained_glass", "minecraft:light_blue_stained_glass"],
+      "location_offset": [0.0, 0.0, 0.0],
+      "drift_offset": [0.0, 0.08, 0.0],
+      "initial_scale": [0.22, 0.22, 0.22],
+      "final_scale": [0.0, 0.0, 0.0],
+      "interpolation_ticks": 5,
+      "lifetime": 14,
+      "relative_vectors": true,
+      "random_decay": true,
+      "random_rotation": true,
+      "properties": {
+        "title": "Emitter",
+        "icon": "minecraft:iron_boots",
+        "hidden_in_bar": true,
+        "list_index": -1
+      },
+      "state":{
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "toggle"
+        }
+      }
     }
   }
 }

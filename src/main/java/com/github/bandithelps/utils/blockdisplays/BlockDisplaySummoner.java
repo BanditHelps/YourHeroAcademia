@@ -29,7 +29,13 @@ public class BlockDisplaySummoner {
 
     private record PendingTransform(BetterBlockDisplay display, Vector3f translation, Vector3f scale, int applyAtTick) {}
 
-    // TODO add scale
+    private static BlockState randomPaletteBlock(RandomSource random, List<BlockState> palette) {
+        if (palette == null || palette.isEmpty()) {
+            return Blocks.STONE.defaultBlockState();
+        }
+        return palette.get(random.nextInt(palette.size()));
+    }
+
     public static void summonShockwave(
             ServerLevel level,
             ServerPlayer player,
@@ -148,7 +154,7 @@ public class BlockDisplaySummoner {
             double endZ = centerZ + endingOffset.z;;
 
             display.setPos(initialX, initialY, initialZ);
-            display.setBlock(palette.get(random.nextInt(palette.size())));
+            display.setBlock(randomPaletteBlock(random, palette));
             display.setScale(initialScale);
             display.setTranslation(new Vector3f(CENTER_OFFSET_VECTOR));
 
@@ -177,6 +183,57 @@ public class BlockDisplaySummoner {
             PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + 1));
         }
     }
+
+    public static void summonEmitterDisplay(
+            ServerLevel level,
+            Vec3 position,
+            int interpolationTicks,
+            List<BlockState> palette,
+            Vector3f initialScale,
+            Vector3f finalScale,
+            Vector3f driftOffset,
+            int lifetime,
+            boolean randomDecay,
+            boolean randomRotation) {
+        if (level == null || position == null) {
+            return;
+        }
+
+        RandomSource random = level.getRandom();
+        BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
+        display.setPos(position.x, position.y, position.z);
+        display.setBlock(randomPaletteBlock(random, palette));
+        display.setScale(initialScale);
+        display.setTranslation(new Vector3f(CENTER_OFFSET_VECTOR));
+
+        if (randomRotation) {
+            display.setRightRotation(new Quaternionf(random.nextFloat(), random.nextFloat(), random.nextFloat(), 0.5f));
+        }
+
+        display.setInterpolation(Math.max(0, interpolationTicks));
+
+        if (randomDecay) {
+            display.setLifetime(Math.max(1, random.nextInt(Math.max(1, lifetime))));
+        } else {
+            display.setLifetime(Math.max(1, lifetime));
+        }
+
+        level.addFreshEntity(display);
+        PENDING_TRANSFORMS.add(
+                new PendingTransform(
+                        display,
+                        driftOffset == null ? new Vector3f() : new Vector3f(driftOffset),
+                        finalScale == null ? new Vector3f(1.0f, 1.0f, 1.0f) : new Vector3f(finalScale),
+                        level.getServer().getTickCount() + 1
+                )
+        );
+    }
+
+
+
+
+
+    // TODO Summon Implosion
 
     /**
      * We have to schedule the block displays update of the "start_interpolation" value, because otherwise it doesn't move
