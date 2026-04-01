@@ -23,22 +23,13 @@ import net.threetag.palladium.power.energybar.EnergyBarUsage;
 import net.threetag.palladium.util.PalladiumCodecs;
 import org.joml.Vector3f;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-/*
- * radius
- * speed
- * palette
- * location (player relative)
- * rotation
- * decay time
- * scaling stuff
- */
-
-
-public class BDShockwaveAbility extends Ability {
-    public static final MapCodec<BDShockwaveAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+public class BDDomeAbility extends Ability {
+    public static final MapCodec<BDDomeAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("radius", new StaticValue(5.0)).forGetter((ab) -> ab.radius),
                     Value.CODEC.optionalFieldOf("tick_speed", new StaticValue(40)).forGetter((ab) -> ab.tickSpeed),
@@ -54,7 +45,7 @@ public class BDShockwaveAbility extends Ability {
                     Codec.BOOL.optionalFieldOf("relative", false).forGetter((ab) -> ab.useRelative),
                     propertiesCodec(),
                     stateCodec(),
-                    energyBarUsagesCodec()).apply(instance, BDShockwaveAbility::new));
+                    energyBarUsagesCodec()).apply(instance, BDDomeAbility::new));
 
     public final Value radius;
     public final Value tickSpeed;
@@ -69,7 +60,7 @@ public class BDShockwaveAbility extends Ability {
     public final boolean randomRotation;
     public final boolean useRelative;
 
-    public BDShockwaveAbility(Value radius, Value tickSpeed, Value density, List<Identifier> palette, Vector3f locationOffset, Vector3f rotationOffset, Vector3f initialScale, Vector3f finalScale, Value lifetime, boolean randomDecay, boolean randomRotation, boolean useRelative, AbilityProperties properties, AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
+    public BDDomeAbility(Value radius, Value tickSpeed, Value density, List<Identifier> palette, Vector3f locationOffset, Vector3f rotationOffset, Vector3f initialScale, Vector3f finalScale, Value lifetime, boolean randomDecay, boolean randomRotation, boolean useRelative, AbilityProperties properties, AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.radius = radius;
         this.tickSpeed = tickSpeed;
@@ -101,7 +92,7 @@ public class BDShockwaveAbility extends Ability {
                 paletteBlocks.add(block.defaultBlockState());
             }
 
-            BlockDisplaySummoner.summonShockwave(
+            BlockDisplaySummoner.summonDome(
                     player.level(),
                     player,
                     radius,
@@ -128,10 +119,10 @@ public class BDShockwaveAbility extends Ability {
     /*
      * Serializer for the documentation
      */
-    public static class Serializer extends AbilitySerializer<BDShockwaveAbility> {
-        public MapCodec<BDShockwaveAbility> codec() { return BDShockwaveAbility.CODEC; }
+    public static class Serializer extends AbilitySerializer<BDDomeAbility> {
+        public MapCodec<BDDomeAbility> codec() { return BDDomeAbility.CODEC; }
 
-        public void addDocumentation(CodecDocumentationBuilder<Ability, BDShockwaveAbility> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<Ability, BDDomeAbility> builder, HolderLookup.Provider provider) {
             builder.setDescription("Creates a configurable block display shock wave at a specific point")
                     .add("radius", TYPE_VALUE, "The ending radius of the growing shock wave")
                     .add("tick_speed", TYPE_VALUE, "How many ticks it takes to reach the end radius of the shock wave")
@@ -145,7 +136,7 @@ public class BDShockwaveAbility extends Ability {
                     .add("random_decay", TYPE_BOOLEAN, "Whether or not the block displays disappear randomly or all at the same time")
                     .add("random_rotation", TYPE_BOOLEAN, "Whether or not the block displays spawn with a randomized right_rotation value")
                     .add("relative", TYPE_BOOLEAN, "Controls if the location_offset is based on the player's relative coordinates. i.e ^ ^ ^ instead of ~ ~ ~")
-                    .addExampleObject(new BDShockwaveAbility(new StaticValue(5.0f), new StaticValue(40), new StaticValue(50.0f), Arrays.asList(Identifier.parse("minecraft:diamond_block")), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0.3f, 0.3f, 0.3f), new Vector3f(0.6f, 0.6f, 0.6f), new StaticValue(40f), true, true, false, AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
+                    .addExampleObject(new BDDomeAbility(new StaticValue(5.0f), new StaticValue(40), new StaticValue(50.0f), Arrays.asList(Identifier.parse("minecraft:diamond_block")), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0.3f, 0.3f, 0.3f), new Vector3f(0.6f, 0.6f, 0.6f), new StaticValue(40f), true, true, false, AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
 
     }

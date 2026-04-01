@@ -99,6 +99,40 @@
         }
       }
     },
+    "dome_test": {
+      "type": "yha:bd_dome",
+      "radius": 25,
+      "tick_speed": 50,
+      "density": 100,
+      "location_offset": [
+        0,
+        0,
+        0
+      ],
+      "initial_scale": [
+        0.5, 0.5, 0.5
+      ],
+      "final_scale": [
+        0.5, 0.5, 0.5
+      ],
+      "random_rotation": true,
+      "palette": [
+        "minecraft:diamond_block"
+      ],
+      "lifetime": 200,
+      "properties": {
+        "title": "Dome Test",
+        "icon": "minecraft:iron_boots",
+        "hidden_in_bar": false,
+        "list_index": 4
+      },
+      "state":{
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "action"
+        }
+      }
+    },
     "emitter": {
       "type": "yha:bd_body_part_emitter",
       "parts": ["left_hand", "right_hand"],

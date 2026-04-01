@@ -230,7 +230,92 @@ public class BlockDisplaySummoner {
     }
 
 
+    public static void summonDome(
+            ServerLevel level,
+            ServerPlayer player,
+            float endRadius,
+            int tickSpeed,
+            double density,
+            List<BlockState> palette,
+            Vector3f locationOffset,
+            Vector3f rotationOffset,
+            Vector3f initialScale,
+            Vector3f finalScale,
+            int lifetime,
+            boolean randomDecay,
+            boolean randomRotation,
+            boolean useRelative
+    ) {
 
+        RandomSource random = player.getRandom();
+
+        double centerX = player.getX();
+        double centerY = player.getY();
+        double centerZ = player.getZ();
+
+
+        double verticalSteps = 30;
+        double horizontalSteps = 70;
+
+
+        // Track the vertical slice
+            // horizontal slices ->
+        for (int i = 0; i <= verticalSteps; i++) {
+            double theta = (i / verticalSteps) * Math.PI / 2;
+
+            for (int j = 0; j < horizontalSteps; j++) {
+                double phi = (j / horizontalSteps) * 2 * Math.PI;
+
+                double x = centerX + endRadius * Math.sin(theta) * Math.cos(phi);
+                double y = centerY + endRadius * Math.sin(theta) * Math.sin(phi);
+                double z = centerZ + endRadius * Math.cos(theta);
+
+                double dx = x - centerX;
+                double dy = y - centerY;
+                double dz = z - centerZ;
+
+                double newY = dz;
+                double newZ = dy;
+
+                BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
+                display.setPos(centerX, centerY, centerZ);
+                display.setBlock(randomPaletteBlock(random, palette));
+                display.setScale(initialScale);
+                display.setLifetime(200);
+                display.setInterpolation(tickSpeed);
+
+                if (randomRotation) {
+                    display.setRightRotation(new Quaternionf(random.nextDouble(),random.nextDouble(),random.nextDouble(),0.5));
+                }
+
+                level.addFreshEntity(display);
+
+//                Vector3f translation = new Vector3f(
+//                        (float) ((float)centerX + dx),
+//                        (float) ((float)centerY + newY),
+//                        (float) ((float)centerZ + newZ)
+//                );
+
+                Vector3f startPos = new Vector3f((float)centerX, (float)centerY, (float)centerZ);
+                Vector3f endPos = new Vector3f((float) ((float)centerX + dx), (float) ((float)centerY + newY), (float) ((float)centerZ + newZ));
+
+                Vector3f translation = endPos.sub(startPos, endPos);
+
+
+                PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + 1));
+
+
+//                BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
+//                display.setPos(centerX + dx, centerY + newY, centerZ + newZ);
+//                display.setBlock(randomPaletteBlock(random, palette));
+//                display.setScale(initialScale);
+//                display.setLifetime(200);
+
+//                level.addFreshEntity(display);
+            }
+        }
+
+    }
 
 
     // TODO Summon Implosion
