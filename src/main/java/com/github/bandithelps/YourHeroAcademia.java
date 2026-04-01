@@ -4,12 +4,17 @@ import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.attributes.QuirkAttributes;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
+import com.github.bandithelps.client.renderers.entity.PotionGeneratorEntityRenderer;
 import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
 import com.github.bandithelps.effects.ModEffects;
+import com.github.bandithelps.entities.ModEntities;
+import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
 import com.github.bandithelps.network.YhaNetwork;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -104,6 +109,7 @@ public final class YourHeroAcademia {
         BodyAttachments.ATTACHMENTS.register(modEventBus);
 
         ModEffects.MOD_EFFECTS.register(modEventBus);
+        ModEntities.ENTITY_TYPES.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in.
         // Note that this is necessary if and only if we want *this* class (YourHeroAcademia) to respond directly to events.
@@ -164,5 +170,15 @@ public final class YourHeroAcademia {
         StaminaCommand.register(event.getBuilder(), event.getBuildContext());
         BodyCommand.register(event.getBuilder(), event.getBuildContext());
         BdCommand.register(event.getBuilder(), event.getBuildContext());
+    }
+
+    @SubscribeEvent
+    public static void onAttributeCreate(EntityAttributeCreationEvent event) {
+        event.put(ModEntities.POTION_GENERATOR.get(), PotionEffectGeneratorEntity.createAttributes().build());
+    }
+
+    @SubscribeEvent
+    public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(ModEntities.POTION_GENERATOR.get(), PotionGeneratorEntityRenderer::new);
     }
 }
