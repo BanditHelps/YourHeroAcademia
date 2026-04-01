@@ -92,7 +92,7 @@ public class BDDomeAbility extends Ability {
                 paletteBlocks.add(block.defaultBlockState());
             }
 
-            BlockDisplaySummoner.summonDome(
+            BlockDisplaySummoner.summonFilledDome(
                     player.level(),
                     player,
                     radius,

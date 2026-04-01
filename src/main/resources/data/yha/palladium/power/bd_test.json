@@ -103,7 +103,7 @@
       "type": "yha:bd_dome",
       "radius": 25,
       "tick_speed": 50,
-      "density": 100,
+      "density": 10,
       "location_offset": [
         0,
         0,
@@ -113,11 +113,15 @@
         0.5, 0.5, 0.5
       ],
       "final_scale": [
-        0.5, 0.5, 0.5
+        2, 2, 2
       ],
       "random_rotation": true,
+      "random_decay": true,
       "palette": [
-        "minecraft:diamond_block"
+        "minecraft:purple_stained_glass",
+        "minecraft:purple_concrete",
+        "minecraft:purple_concrete_powder",
+        "minecraft:purple_wool"
       ],
       "lifetime": 200,
       "properties": {
