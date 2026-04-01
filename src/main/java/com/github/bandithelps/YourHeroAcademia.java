@@ -6,6 +6,7 @@ import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
+import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.network.YhaNetwork;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -101,6 +102,8 @@ public final class YourHeroAcademia {
         QuirkAttributes.ATTRIBUTES.register(modEventBus);
         StaminaAttachments.ATTACHMENTS.register(modEventBus);
         BodyAttachments.ATTACHMENTS.register(modEventBus);
+
+        ModEffects.MOD_EFFECTS.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in.
         // Note that this is necessary if and only if we want *this* class (YourHeroAcademia) to respond directly to events.
