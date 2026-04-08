@@ -1,0 +1,167 @@
+package com.github.bandithelps.abilities.common;
+
+import com.github.bandithelps.abilities.AbilityRegister;
+import com.github.bandithelps.entities.ModEntities;
+import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
+import net.threetag.palladium.documentation.CodecDocumentationBuilder;
+import net.threetag.palladium.logic.context.DataContext;
+import net.threetag.palladium.logic.value.StaticValue;
+import net.threetag.palladium.logic.value.Value;
+import net.threetag.palladium.power.ability.Ability;
+import net.threetag.palladium.power.ability.AbilityInstance;
+import net.threetag.palladium.power.ability.AbilityProperties;
+import net.threetag.palladium.power.ability.AbilitySerializer;
+import net.threetag.palladium.power.ability.AbilityStateManager;
+import net.threetag.palladium.power.energybar.EnergyBarUsage;
+import net.threetag.palladium.util.PalladiumCodecs;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+public class PotionGeneratorAbility extends Ability {
+
+    public static final MapCodec<PotionGeneratorAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+            instance.group(
+                    Value.CODEC.optionalFieldOf("health", new StaticValue(20.0f)).forGetter((ab) -> ab.health),
+                    Value.CODEC.optionalFieldOf("duration", new StaticValue(20)).forGetter((ab) -> ab.duration),
+                    Value.CODEC.optionalFieldOf("amplifier", new StaticValue(0)).forGetter((ab) -> ab.amplifier),
+                    Value.CODEC.optionalFieldOf("radius", new StaticValue(5.0f)).forGetter((ab) -> ab.radius),
+                    Codec.BOOL.optionalFieldOf("effect_visible", true).forGetter((ab) -> ab.effectVisible),
+                    PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("effects", Arrays.asList(Identifier.parse("minecraft:slowness"))).forGetter((ab) -> ab.effects),
+                    propertiesCodec(),
+                    stateCodec(),
+                    energyBarUsagesCodec()
+            ).apply(instance, PotionGeneratorAbility::new));
+
+    public final Value health;
+    public final Value duration;
+    public final Value amplifier;
+    public final Value radius;
+    public final boolean effectVisible;
+    public final List<Identifier> effects;
+
+    private final Map<UUID, UUID> activeGeneratorsByOwner = new HashMap<>();
+
+    public PotionGeneratorAbility(
+            Value health,
+            Value duration,
+            Value amplifier,
+            Value radius,
+            boolean effectVisible,
+            List<Identifier> effects,
+            AbilityProperties properties,
+            AbilityStateManager conditions,
+            List<EnergyBarUsage> energyBarUsages) {
+        super(properties, conditions, energyBarUsages);
+        this.health = health;
+        this.duration = duration;
+        this.amplifier = amplifier;
+        this.radius = radius;
+        this.effectVisible = effectVisible;
+        this.effects = effects;
+    }
+
+    @Override
+    public void firstTick(LivingEntity entity, AbilityInstance<?> abilityInstance) {
+        if (!(entity.level() instanceof ServerLevel serverLevel)) return;
+
+        UUID ownerId = entity.getUUID();
+        UUID oldGeneratorId = this.activeGeneratorsByOwner.remove(ownerId);
+        if (oldGeneratorId != null) {
+            Entity oldGenerator = serverLevel.getEntity(oldGeneratorId);
+            if (oldGenerator != null) {
+                oldGenerator.discard();
+            }
+        }
+
+        float radius = this.radius.getAsFloat(DataContext.forEntity(entity));
+        float health = this.health.getAsFloat(DataContext.forEntity(entity));
+        int duration = this.duration.getAsInt(DataContext.forEntity(entity));
+        int amplifier = this.amplifier.getAsInt(DataContext.forEntity(entity));
+
+        List<Holder<MobEffect>> effectsToApply = new ArrayList<>();
+        for (Identifier id : this.effects) {
+            Holder<MobEffect> effect = BuiltInRegistries.MOB_EFFECT.get(id)
+                    .map(holder -> (Holder<MobEffect>) holder)
+                    .orElse(MobEffects.SLOWNESS);
+            effectsToApply.add(effect);
+        }
+
+        PotionEffectGeneratorEntity potionGen = new PotionEffectGeneratorEntity(ModEntities.POTION_GENERATOR.get(), entity.level());
+        potionGen.setRadius(radius);
+        potionGen.setDuration(duration);
+        potionGen.setGeneratorHealth(health);
+        potionGen.setAmplifier(amplifier);
+        potionGen.setEffects(effectsToApply);
+        potionGen.setEffectVisible(this.effectVisible);
+        potionGen.setInvisible(true);
+        potionGen.setNoGravity(true);
+        potionGen.setPos(new Vec3(entity.getX(), entity.getY(), entity.getZ()));
+
+        serverLevel.addFreshEntity(potionGen);
+        this.activeGeneratorsByOwner.put(ownerId, potionGen.getUUID());
+    }
+
+    @Override
+    public void lastTick(LivingEntity entity, AbilityInstance<?> abilityInstance) {
+        if (!(entity.level() instanceof ServerLevel serverLevel)) return;
+
+        UUID generatorId = this.activeGeneratorsByOwner.remove(entity.getUUID());
+        if (generatorId == null) return;
+
+        Entity generator = serverLevel.getEntity(generatorId);
+        if (generator != null) {
+            generator.discard();
+        }
+    }
+
+    @Override
+    public AbilitySerializer<?> getSerializer() {
+        return AbilityRegister.POTION_GEN.get();
+    }
+
+    public static class Serializer extends AbilitySerializer<PotionGeneratorAbility> {
+        public MapCodec<PotionGeneratorAbility> codec() {
+            return PotionGeneratorAbility.CODEC;
+        }
+
+        public void addDocumentation(CodecDocumentationBuilder<Ability, PotionGeneratorAbility> builder, HolderLookup.Provider provider) {
+            builder.setDescription("Summons an invisible stationary potion field generator that periodically applies configured effects in a radius.")
+                    .add("health", TYPE_VALUE, "Health to assign to the generated entity.")
+                    .add("duration", TYPE_VALUE, "Duration (ticks) of each applied effect.")
+                    .add("amplifier", TYPE_VALUE, "Amplifier level for each applied effect.")
+                    .add("radius", TYPE_VALUE, "Radius around the generator to search for targets.")
+                    .add("effect_visible", TYPE_BOOLEAN, "Whether particles are shown for the applied potion effects.")
+                    .add("effects", TYPE_IDENTIFIER, "A list of mob effect ids to apply.")
+                    .addExampleObject(new PotionGeneratorAbility(
+                            new StaticValue(20.0f),
+                            new StaticValue(20),
+                            new StaticValue(0),
+                            new StaticValue(5.0f),
+                            true,
+                            Arrays.asList(Identifier.fromNamespaceAndPath("minecraft", "slowness")),
+                            AbilityProperties.BASIC,
+                            AbilityStateManager.EMPTY,
+                            Collections.emptyList()
+                    ));
+        }
+    }
+}
