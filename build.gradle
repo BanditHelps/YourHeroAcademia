@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.140'
+    id 'net.neoforged.moddev' version '2.0.141'
     id 'idea'
 }
 
@@ -30,6 +30,7 @@ repositories {
         }
     }
 
+    // player animation
     maven {
         name = "RedlanceMinecraft"
         url = "https://repo.redlance.org/public"
@@ -47,12 +48,33 @@ repositories {
         }
     }
 
-    maven {
-        name = "Geckolib"
-        url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
-        content {
-            includeGroup("software.bernie.geckolib")
+    // GeckoLib
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'GeckoLib'
+                url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+            }
         }
+        filter { includeGroupAndSubgroups('com.geckolib') }
+    }
+
+    // Curios
+    maven {
+        name = "Illusive Soulworks maven"
+        url = "https://maven.theillusivec4.top/"
+    }
+
+    // JEI
+    maven {
+        // location of the maven that hosts JEI files since January 2023
+        name = "Jared's maven"
+        url = "https://maven.blamejared.com/"
+    }
+
+    // Terrablender
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net/' }
     }
 }
 
@@ -60,17 +82,12 @@ base {
     archivesName = mod_id
 }
 
-// Mojang ships Java 21 to end users in 1.21.11, so mods should target Java 21.
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+// Minecraft 26.1 uses Java 25, so mods should target Java 25.
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 neoForge {
     // Specify the version of NeoForge to use.
     version = project.neo_version
-
-    parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
-    }
 
     // This line is optional. Access Transformers are automatically detected
     // accessTransformers = project.files('src/main/resources/META-INF/accesstransformer.cfg')
@@ -149,12 +166,27 @@ configurations {
 dependencies {
 
     // Development Palladium Version
-    implementation "maven.modrinth:palladium-previews:ce27442+1.21.11"
+    implementation "maven.modrinth:palladium-previews:3b6d6a9+26.1"
 
-    // Custom MoLang Queries
-    implementation("com.zigythebird:mochafloats:4.1.1") {
-        transitive = false
+    // Player Animation Library
+    // temporary fix
+    compileOnly("com.zigythebird.playeranim:PlayerAnimationLibNeo:$player_animation_lib_version") {
+        exclude group: 'com.zigythebird', module: 'mochafloats'
     }
+    implementation("com.zigythebird:mochafloats:4.1.1") {
+        exclude group: 'io.netty', module: 'netty-buffer'
+    }
+    implementation files('libs/PlayerAnimationLibNeo-bigjar.jar')
+    // Curios
+    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
+    runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+
+    // Terrablender
+    jarJar(implementation("com.github.glitchfiend:TerraBlender-neoforge:${minecraft_version}-${terrablender_version}"))
+
+    // GeckoLib
+    implementation "com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
+    interfaceInjectionData "com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 
 }
 

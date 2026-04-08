@@ -5,7 +5,7 @@ import com.github.bandithelps.capabilities.body.BodyDisplayBar;
 import com.github.bandithelps.capabilities.body.BodyDisplayBarType;
 import com.github.bandithelps.client.body.ClientBodyState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
@@ -59,7 +59,7 @@ public final class StaminaHudOverlay {
         int innerWidth = BAR_WIDTH - 2;
         int fillWidth = Math.round(innerWidth * ratio);
 
-        GuiGraphics graphics = event.getGuiGraphics();
+        GuiGraphicsExtractor graphics = event.getGuiGraphics();
         graphics.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, 0xCC101018);
         graphics.fill(x + 1, y + 1, x + 1 + fillWidth, y + BAR_HEIGHT - 1, 0xFF2ECC71);
         graphics.fill(x, y, x + BAR_WIDTH, y + 1, 0xFF304050);
@@ -68,7 +68,7 @@ public final class StaminaHudOverlay {
         graphics.fill(x + BAR_WIDTH - 1, y, x + BAR_WIDTH, y + BAR_HEIGHT, 0xFF304050);
 
         String label = "STA " + current + "/" + max;
-        graphics.drawString(minecraft.font, label, x, y - 10, 0xFFFFFFFF, true);
+        graphics.text(minecraft.font, label, x, y - 10, 0xFFFFFFFF, true);
         renderBodyDisplayBars(graphics, minecraft, BODY_LEFT_MARGIN, y - BODY_BAR_HEIGHT - STACK_GAP);
 
         if (!ClientStaminaState.isDebugOverlayEnabled()) {
@@ -94,12 +94,12 @@ public final class StaminaHudOverlay {
         int yPos = DEBUG_TOP_MARGIN;
         for (String line : lines) {
             int xPos = screenWidth - DEBUG_RIGHT_MARGIN - minecraft.font.width(line);
-            graphics.drawString(minecraft.font, line, xPos, yPos, 0xFFFFFFFF, true);
+            graphics.text(minecraft.font, line, xPos, yPos, 0xFFFFFFFF, true);
             yPos += DEBUG_LINE_HEIGHT;
         }
     }
 
-    private static void renderBodyDisplayBars(GuiGraphics graphics, Minecraft minecraft, int x, int startY) {
+    private static void renderBodyDisplayBars(GuiGraphicsExtractor graphics, Minecraft minecraft, int x, int startY) {
         int y = startY;
         for (BodyDisplayBar displayBar : ClientBodyState.getDisplayBars().values()) {
             float currentValue = ClientBodyState.getCustomFloat(displayBar.part(), displayBar.key(), displayBar.minValue());
@@ -115,7 +115,7 @@ public final class StaminaHudOverlay {
 
             if (ClientStaminaState.isDebugOverlayEnabled()) {
                 String text = displayBar.label() + " " + String.format("%.1f", currentValue);
-                graphics.drawString(minecraft.font, text, x + 2, y + 1, 0xFFFFFFFF, false);
+                graphics.text(minecraft.font, text, x + 2, y + 1, 0xFFFFFFFF, false);
             }
 
             y -= BODY_BAR_HEIGHT + STACK_GAP;
@@ -127,7 +127,7 @@ public final class StaminaHudOverlay {
         return Mth.clamp((value - displayBar.minValue()) / range, 0.0F, 1.0F);
     }
 
-    private static void drawFillBar(GuiGraphics graphics, int x, int y, float ratio, BodyDisplayBar displayBar) {
+    private static void drawFillBar(GuiGraphicsExtractor graphics, int x, int y, float ratio, BodyDisplayBar displayBar) {
         int innerWidth = BODY_BAR_WIDTH - 2;
         int fillWidth = Math.round(innerWidth * ratio);
         if (fillWidth <= 0) {
@@ -144,7 +144,7 @@ public final class StaminaHudOverlay {
         );
     }
 
-    private static void drawSlider(GuiGraphics graphics, int x, int y, float ratio, BodyDisplayBar displayBar) {
+    private static void drawSlider(GuiGraphicsExtractor graphics, int x, int y, float ratio, BodyDisplayBar displayBar) {
         int innerWidth = BODY_BAR_WIDTH - 2;
         int innerX = x + 1;
 
@@ -175,7 +175,7 @@ public final class StaminaHudOverlay {
     }
 
     private static void drawHorizontalGradient(
-            GuiGraphics graphics,
+            GuiGraphicsExtractor graphics,
             int x,
             int y,
             int width,
@@ -212,7 +212,7 @@ public final class StaminaHudOverlay {
         return (r << 16) | (g << 8) | b;
     }
 
-    private static void drawBarFrame(GuiGraphics graphics, int x, int y) {
+    private static void drawBarFrame(GuiGraphicsExtractor graphics, int x, int y) {
         graphics.fill(x, y, x + BODY_BAR_WIDTH, y + BODY_BAR_HEIGHT, 0xCC101018);
         graphics.fill(x, y, x + BODY_BAR_WIDTH, y + 1, 0xFF304050);
         graphics.fill(x, y + BODY_BAR_HEIGHT - 1, x + BODY_BAR_WIDTH, y + BODY_BAR_HEIGHT, 0xFF304050);
@@ -220,7 +220,7 @@ public final class StaminaHudOverlay {
         graphics.fill(x + BODY_BAR_WIDTH - 1, y, x + BODY_BAR_WIDTH, y + BODY_BAR_HEIGHT, 0xFF304050);
     }
 
-    private static void renderBarIconIfPresent(GuiGraphics graphics, Minecraft minecraft, String displayBarId, int barX, int barY) {
+    private static void renderBarIconIfPresent(GuiGraphicsExtractor graphics, Minecraft minecraft, String displayBarId, int barX, int barY) {
         Identifier iconTexture = getIconTexture(displayBarId);
         if (minecraft.getResourceManager().getResource(iconTexture).isEmpty()) {
             return;

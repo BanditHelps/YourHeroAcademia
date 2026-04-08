@@ -11,7 +11,7 @@ import com.github.bandithelps.gui.gene.model.GenePort;
 import com.github.bandithelps.gui.gene.model.NodeKind;
 import com.github.bandithelps.gui.gene.model.PortDirection;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 
@@ -31,7 +31,7 @@ public final class GraphCanvasRenderer {
     private static final int MACHINE_FRAME_BORDER = 0xFF3C3C3C;
 
     public void render(
-            GuiGraphics graphics,
+            GuiGraphicsExtractor graphics,
             Font font,
             GeneGraphDocument graph,
             GraphViewport viewport,
@@ -49,21 +49,21 @@ public final class GraphCanvasRenderer {
         renderMarquee(graphics, viewport, selection, canvasX, canvasY);
     }
 
-    private void renderGrid(GuiGraphics graphics, GraphViewport viewport, int canvasX, int canvasY, int canvasWidth, int canvasHeight) {
+    private void renderGrid(GuiGraphicsExtractor graphics, GraphViewport viewport, int canvasX, int canvasY, int canvasWidth, int canvasHeight) {
         int spacing = Math.max(8, (int) Math.round(16 * viewport.zoom()));
         int originX = (int) Math.round(canvasX + viewport.panX());
         int originY = (int) Math.round(canvasY + viewport.panY());
 
         for (int x = originX % spacing; x < canvasWidth; x += spacing) {
-            graphics.vLine(canvasX + x, canvasY, canvasY + canvasHeight, GRID_COLOR);
+            graphics.verticalLine(canvasX + x, canvasY, canvasY + canvasHeight, GRID_COLOR);
         }
         for (int y = originY % spacing; y < canvasHeight; y += spacing) {
-            graphics.hLine(canvasX, canvasX + canvasWidth, canvasY + y, GRID_COLOR);
+            graphics.horizontalLine(canvasX, canvasX + canvasWidth, canvasY + y, GRID_COLOR);
         }
     }
 
     private void renderNodes(
-            GuiGraphics graphics,
+            GuiGraphicsExtractor graphics,
             Font font,
             GeneGraphDocument graph,
             GraphViewport viewport,
@@ -81,17 +81,17 @@ public final class GraphCanvasRenderer {
 
             if (node.kind() == NodeKind.MACHINE) {
                 GeneUiStyle.drawBevelPanel(graphics, x, y, width, height, NODE_BACKGROUND);
-                graphics.renderOutline(x, y, width, height, borderColor);
+                graphics.outline(x, y, width, height, borderColor);
 
                 int iconFrameSize = Math.max(20, Math.min(32, (int) Math.round(24 * viewport.zoom())));
                 int iconFrameX = x + (width - iconFrameSize) / 2;
                 int iconFrameY = y + (height - iconFrameSize) / 2;
                 graphics.fill(iconFrameX, iconFrameY, iconFrameX + iconFrameSize, iconFrameY + iconFrameSize, MACHINE_FRAME_BG);
-                graphics.renderOutline(iconFrameX, iconFrameY, iconFrameSize, iconFrameSize, MACHINE_FRAME_BORDER);
-                graphics.renderItem(machineIconForNode(node), iconFrameX + 3, iconFrameY + 3);
+                graphics.outline(iconFrameX, iconFrameY, iconFrameSize, iconFrameSize, MACHINE_FRAME_BORDER);
+                graphics.item(machineIconForNode(node), iconFrameX + 3, iconFrameY + 3);
             } else {
                 GeneUiStyle.drawBevelPanel(graphics, x, y, width, height, NODE_BACKGROUND);
-                graphics.renderOutline(x, y, width, height, borderColor);
+                graphics.outline(x, y, width, height, borderColor);
                 graphics.fill(x, y, x + width, y + headerHeight, node.color());
                 int titleMaxWidth = width - 12;
                 if (titleMaxWidth > 8) {
@@ -100,7 +100,7 @@ public final class GraphCanvasRenderer {
                         renderedTitle = renderedTitle.substring(0, renderedTitle.length() - 1) + "...";
                     }
                     int titleY = y + Math.max(2, (headerHeight - font.lineHeight) / 2);
-                    graphics.drawString(font, renderedTitle, x + 6, titleY, 0xFF1E1E1E, false);
+                    graphics.text(font, renderedTitle, x + 6, titleY, 0xFF1E1E1E, false);
                 }
             }
 
@@ -110,7 +110,7 @@ public final class GraphCanvasRenderer {
     }
 
     private void drawPorts(
-            GuiGraphics graphics,
+            GuiGraphicsExtractor graphics,
             GeneNode node,
             GraphViewport viewport,
             int canvasX,
@@ -129,7 +129,7 @@ public final class GraphCanvasRenderer {
         }
     }
 
-    private void renderEdges(GuiGraphics graphics, GeneGraphDocument graph, GraphViewport viewport, int canvasX, int canvasY) {
+    private void renderEdges(GuiGraphicsExtractor graphics, GeneGraphDocument graph, GraphViewport viewport, int canvasX, int canvasY) {
         for (GeneEdge edge : graph.edges()) {
             GeneNode fromNode = graph.nodeById(edge.fromNodeId());
             GeneNode toNode = graph.nodeById(edge.toNodeId());
@@ -152,7 +152,7 @@ public final class GraphCanvasRenderer {
     }
 
     private void renderDraftConnection(
-            GuiGraphics graphics,
+            GuiGraphicsExtractor graphics,
             GeneGraphDocument graph,
             GraphViewport viewport,
             ConnectionDraft draft,
@@ -179,7 +179,7 @@ public final class GraphCanvasRenderer {
         drawLine(graphics, x1, y1, x2, y2, draft.validTargetHover() ? EDGE_COLOR : EDGE_INVALID_COLOR);
     }
 
-    private void renderMarquee(GuiGraphics graphics, GraphViewport viewport, SelectionState selection, int canvasX, int canvasY) {
+    private void renderMarquee(GuiGraphicsExtractor graphics, GraphViewport viewport, SelectionState selection, int canvasX, int canvasY) {
         if (!selection.isMarqueeActive()) {
             return;
         }
@@ -194,10 +194,10 @@ public final class GraphCanvasRenderer {
         int maxX = Math.max(x1, x2);
         int maxY = Math.max(y1, y2);
         graphics.fill(minX, minY, maxX, maxY, 0x33E0D3A1);
-        graphics.renderOutline(minX, minY, maxX - minX, maxY - minY, 0xFFC8B874);
+        graphics.outline(minX, minY, maxX - minX, maxY - minY, 0xFFC8B874);
     }
 
-    private void drawLine(GuiGraphics graphics, int x1, int y1, int x2, int y2, int color) {
+    private void drawLine(GuiGraphicsExtractor graphics, int x1, int y1, int x2, int y2, int color) {
         int steps = Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1));
         if (steps == 0) {
             graphics.fill(x1, y1, x1 + 1, y1 + 1, color);

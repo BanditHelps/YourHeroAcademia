@@ -23,7 +23,7 @@ import com.github.bandithelps.gui.ui.UiRect;
 import com.github.bandithelps.gui.ui.UiRoot;
 import com.github.bandithelps.gui.ui.UiTextButton;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -120,16 +120,16 @@ public class GeneExperimentsScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         layoutPanels();
         this.dragMouseX = mouseX;
         this.dragMouseY = mouseY;
 
-        this.renderTransparentBackground(graphics);
+        this.extractBackground(graphics, mouseX, mouseY, partialTick);
         GeneUiStyle.drawTiledTexture(graphics, GeneUiStyle.FRAME_TEXTURE, this.frameX, this.frameY, this.frameW, this.frameH);
         GeneUiStyle.drawBevelPanel(graphics, this.frameX, this.frameY, this.frameW, this.frameH, GeneUiStyle.FRAME_BG);
         int titleWidth = this.font.width(this.title);
-        graphics.drawString(this.font, this.title, this.frameX + (this.frameW - titleWidth) / 2, this.frameY + 6, 0xFF2A2A2A, false);
+        graphics.text(this.font, this.title, this.frameX + (this.frameW - titleWidth) / 2, this.frameY + 6, 0xFF2A2A2A, false);
 
         renderPanel(graphics, this.leftPanelX, this.leftPanelY, this.leftPanelW, this.leftPanelH, "Library");
         renderPanel(graphics, this.canvasX, this.canvasY, this.canvasW, this.canvasH, "Node Editor");
@@ -166,7 +166,7 @@ public class GeneExperimentsScreen extends Screen {
         }
         renderHints(graphics);
 
-        super.render(graphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
@@ -352,7 +352,7 @@ public class GeneExperimentsScreen extends Screen {
                     (slot, graphics, font, mouseX, mouseY) -> {
                         UiRect rect = slot.bounds();
                         GeneUiStyle.drawSlot(graphics, rect.x(), rect.y(), rect.width(), rect.height(), slot.isHovered(), false);
-                        graphics.renderItem(machineIconForTemplate(slot.data()), rect.x() + 1, rect.y() + 1);
+                        graphics.item(machineIconForTemplate(slot.data()), rect.x() + 1, rect.y() + 1);
                     },
                     (slot, button, mouseX, mouseY) -> {
                         if (button != 0 || !slot.contains(mouseX, mouseY)) {
@@ -448,13 +448,13 @@ public class GeneExperimentsScreen extends Screen {
         this.uiRoot.addChild(genesButton);
     }
 
-    private void renderPanel(GuiGraphics graphics, int x, int y, int width, int height, String title) {
+    private void renderPanel(GuiGraphicsExtractor graphics, int x, int y, int width, int height, String title) {
         GeneUiStyle.drawTiledTexture(graphics, GeneUiStyle.FRAME_TEXTURE, x, y, width, height);
         GeneUiStyle.drawBevelPanel(graphics, x, y, width, height, GeneUiStyle.PANEL_BG);
-        graphics.drawString(this.font, title, x + 4, y + 5, 0xFF202020, false);
+        graphics.text(this.font, title, x + 4, y + 5, 0xFF202020, false);
     }
 
-    private void renderGeneList(GuiGraphics graphics) {
+    private void renderGeneList(GuiGraphicsExtractor graphics) {
         graphics.enableScissor(this.leftPanelX + 6, this.geneListStartY - 1, this.leftPanelX + this.leftPanelW - 6, this.geneListEndY + 1);
         for (UiListItem<GeneListRow> item : this.geneItems) {
             item.updateHover(this.dragMouseX, this.dragMouseY);
@@ -470,7 +470,7 @@ public class GeneExperimentsScreen extends Screen {
         renderGeneScrollBar(graphics);
     }
 
-    private void renderGeneRowItem(UiListItem<GeneListRow> item, GuiGraphics graphics, net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
+    private void renderGeneRowItem(UiListItem<GeneListRow> item, GuiGraphicsExtractor graphics, net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
         GeneListRow row = item.data();
         UiRect rect = item.bounds();
         if (row.groupHeader()) {
@@ -479,7 +479,7 @@ public class GeneExperimentsScreen extends Screen {
             String arrow = expanded ? "v " : "> ";
             String title = arrow + row.template().title() + " (" + row.availableCount() + "/" + row.totalCount() + ")";
             String clipped = font.plainSubstrByWidth(title, Math.max(8, rect.width() - 6));
-            graphics.drawString(font, clipped, rect.x() + 4, rect.y() + 4, 0xFF181818, false);
+            graphics.text(font, clipped, rect.x() + 4, rect.y() + 4, 0xFF181818, false);
             return;
         }
 
@@ -489,11 +489,11 @@ public class GeneExperimentsScreen extends Screen {
 
         String title = font.plainSubstrByWidth(row.template().title(), Math.max(8, rect.width() - 46));
         int textColor = used ? 0xFF7A7A7A : 0xFF1B1B1B;
-        graphics.drawString(font, title, rect.x() + 10, rect.y() + 4, textColor, false);
+        graphics.text(font, title, rect.x() + 10, rect.y() + 4, textColor, false);
 
         String pct = row.qualityPercent() + "%";
         int pctColor = used ? 0xFF8A8A8A : 0xFF2D2D2D;
-        graphics.drawString(font, pct, rect.x() + rect.width() - font.width(pct) - 4, rect.y() + 4, pctColor, false);
+        graphics.text(font, pct, rect.x() + rect.width() - font.width(pct) - 4, rect.y() + 4, pctColor, false);
     }
 
     private Component geneItemTooltip(UiListItem<GeneListRow> item) {
@@ -506,13 +506,13 @@ public class GeneExperimentsScreen extends Screen {
         return Component.literal(row.template().title() + " (" + row.qualityPercent() + "%) - " + tip);
     }
 
-    private void renderDraggedTemplateGhost(GuiGraphics graphics, NodeTemplate template, int mouseX, int mouseY) {
+    private void renderDraggedTemplateGhost(GuiGraphicsExtractor graphics, NodeTemplate template, int mouseX, int mouseY) {
         if (template.kind() == NodeKind.MACHINE) {
             int size = 24;
             int x = mouseX - size / 2;
             int y = mouseY - size / 2;
             GeneUiStyle.drawSlot(graphics, x, y, size, size, false, true);
-            graphics.renderItem(machineIconForTemplate(template), x + 4, y + 4);
+            graphics.item(machineIconForTemplate(template), x + 4, y + 4);
             return;
         }
         int width = 112;
@@ -521,18 +521,18 @@ public class GeneExperimentsScreen extends Screen {
         int y = mouseY - height / 2;
         GeneUiStyle.drawSlot(graphics, x, y, width, height, false, true);
         graphics.fill(x, y, x + 5, y + height, template.color());
-        graphics.drawString(this.font, template.title(), x + 8, y + 7, GeneUiStyle.TEXT_BRIGHT, false);
+        graphics.text(this.font, template.title(), x + 8, y + 7, GeneUiStyle.TEXT_BRIGHT, false);
     }
 
-    private void renderHints(GuiGraphics graphics) {
+    private void renderHints(GuiGraphicsExtractor graphics) {
         GeneUiStyle.drawBevelPanel(graphics, this.frameX + OUTER_PADDING, this.footerY, this.frameW - (OUTER_PADDING * 2), 14, GeneUiStyle.PANEL_BG);
         String line = this.draggedTemplate != null
                 ? "Release on canvas to place node"
                 : "LMB select/drag | Shift multi | RMB pan | Wheel zoom";
-        graphics.drawCenteredString(this.font, line, this.frameX + this.frameW / 2, this.footerY + 3, 0xFFD6D6D6);
+        graphics.centeredText(this.font, line, this.frameX + this.frameW / 2, this.footerY + 3, 0xFFD6D6D6);
     }
 
-    private void renderCanvasTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderCanvasTooltips(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         if (!isInsideCanvas(mouseX, mouseY)) {
             return;
         }
@@ -717,7 +717,7 @@ public class GeneExperimentsScreen extends Screen {
                 && mouseY <= this.geneListEndY;
     }
 
-    private void renderGeneScrollBar(GuiGraphics graphics) {
+    private void renderGeneScrollBar(GuiGraphicsExtractor graphics) {
         if (this.geneTotalRows <= this.geneVisibleRows) {
             return;
         }

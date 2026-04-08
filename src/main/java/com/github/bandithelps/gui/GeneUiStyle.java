@@ -1,6 +1,6 @@
 package com.github.bandithelps.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 
 public final class GeneUiStyle {
@@ -23,22 +23,22 @@ public final class GeneUiStyle {
     private GeneUiStyle() {
     }
 
-    public static void drawBevelPanel(GuiGraphics graphics, int x, int y, int width, int height, int fill) {
+    public static void drawBevelPanel(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int fill) {
         graphics.fill(x, y, x + width, y + height, fill);
         drawInsetOutline(graphics, x, y, width, height, FRAME_BORDER_LIGHT, FRAME_BORDER_DARK);
     }
 
-    public static void drawTiledTexture(GuiGraphics graphics, Identifier texture, int x, int y, int width, int height) {
+    public static void drawTiledTexture(GuiGraphicsExtractor graphics, Identifier texture, int x, int y, int width, int height) {
         // Placeholder textures are not authored as scalable GUI atlases yet.
         // Keep the hook for future assets, but skip blitting to avoid sampling artifacts.
     }
 
-    public static void drawInsetPanel(GuiGraphics graphics, int x, int y, int width, int height) {
+    public static void drawInsetPanel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
         graphics.fill(x, y, x + width, y + height, INSET_BG);
         drawInsetOutline(graphics, x, y, width, height, FRAME_BORDER_DARK, FRAME_BORDER_LIGHT);
     }
 
-    public static void drawSlot(GuiGraphics graphics, int x, int y, int width, int height, boolean hovered, boolean active) {
+    public static void drawSlot(GuiGraphicsExtractor graphics, int x, int y, int width, int height, boolean hovered, boolean active) {
         int fill = active ? SLOT_ACTIVE : (hovered ? SLOT_HOVER : SLOT_BG);
         drawTiledTexture(graphics, SLOT_TEXTURE, x, y, width, height);
         graphics.fill(x, y, x + width, y + height, fill);
@@ -46,7 +46,7 @@ public final class GeneUiStyle {
     }
 
     private static void drawInsetOutline(
-            GuiGraphics graphics,
+            GuiGraphicsExtractor graphics,
             int x,
             int y,
             int width,
@@ -54,9 +54,9 @@ public final class GeneUiStyle {
             int topLeftColor,
             int bottomRightColor
     ) {
-        graphics.hLine(x, x + width - 1, y, topLeftColor);
-        graphics.vLine(x, y, y + height - 1, topLeftColor);
-        graphics.hLine(x, x + width - 1, y + height - 1, bottomRightColor);
-        graphics.vLine(x + width - 1, y, y + height - 1, bottomRightColor);
+        graphics.horizontalLine(x, x + width - 1, y, topLeftColor);
+        graphics.verticalLine(x, y, y + height - 1, topLeftColor);
+        graphics.horizontalLine(x, x + width - 1, y + height - 1, bottomRightColor);
+        graphics.verticalLine(x + width - 1, y, y + height - 1, bottomRightColor);
     }
 }

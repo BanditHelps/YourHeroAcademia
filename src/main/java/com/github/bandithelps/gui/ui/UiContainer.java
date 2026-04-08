@@ -1,7 +1,7 @@
 package com.github.bandithelps.gui.ui;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ public class UiContainer extends AbstractUiElement {
     }
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int mouseX, int mouseY) {
+    public void render(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
         for (AbstractUiElement child : this.children) {
             child.updateHover(mouseX, mouseY);
             if (child.isVisible()) {

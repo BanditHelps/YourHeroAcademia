@@ -1,7 +1,7 @@
 package com.github.bandithelps.gui.ui;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import java.util.function.Supplier;
@@ -19,13 +19,13 @@ public class UiTextLabel extends AbstractUiElement {
     }
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int mouseX, int mouseY) {
+    public void render(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
         UiRect rect = bounds();
         Component text = this.textSupplier.get();
         if (this.centered) {
-            graphics.drawCenteredString(font, text, rect.x() + rect.width() / 2, rect.y(), this.color);
+            graphics.centeredText(font, text, rect.x() + rect.width() / 2, rect.y(), this.color);
             return;
         }
-        graphics.drawString(font, text, rect.x(), rect.y(), this.color, false);
+        graphics.text(font, text, rect.x(), rect.y(), this.color, false);
     }
 }

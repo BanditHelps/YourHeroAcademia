@@ -1,7 +1,7 @@
 package com.github.bandithelps.gui.ui;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public abstract class AbstractUiElement {
@@ -66,5 +66,5 @@ public abstract class AbstractUiElement {
         return false;
     }
 
-    public abstract void render(GuiGraphics graphics, Font font, int mouseX, int mouseY);
+    public abstract void render(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY);
 }

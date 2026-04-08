@@ -1,6 +1,6 @@
 package com.github.bandithelps.gui.screens;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -33,7 +33,7 @@ public class ExampleScreen extends Screen {
 
     private void onTestButtonPressed(int index) {
         if (this.minecraft != null && this.minecraft.player != null) {
-            this.minecraft.player.displayClientMessage(Component.literal("Pressed test button " + index), false);
+            this.minecraft.player.sendSystemMessage(Component.literal("Pressed test button " + index));
         }
     }
 
@@ -44,10 +44,10 @@ public class ExampleScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderTransparentBackground(graphics);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        this.extractBackground(graphics, mouseX, mouseY, partialTick);
         graphics.fill(0, 0, this.width / 2, this.height / 2, 0xFF333333);
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
-        super.render(graphics, mouseX, mouseY, partialTick);
+        graphics.centeredText(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 }

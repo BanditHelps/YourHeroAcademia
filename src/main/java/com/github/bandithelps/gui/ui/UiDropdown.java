@@ -2,7 +2,7 @@ package com.github.bandithelps.gui.ui;
 
 import com.github.bandithelps.gui.GeneUiStyle;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -102,12 +102,12 @@ public class UiDropdown extends AbstractUiElement {
     }
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int mouseX, int mouseY) {
+    public void render(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
         UiRect rect = bounds();
         String selected = this.selectedSupplier.get();
         String label = "Category: " + (selected == null ? "None" : selected) + (this.expanded ? " ^" : " v");
         GeneUiStyle.drawSlot(graphics, rect.x(), rect.y(), rect.width(), rect.height(), isHovered(), this.expanded);
-        graphics.drawString(font, label, rect.x() + 4, rect.y() + 3, 0xFF1F1F1F, false);
+        graphics.text(font, label, rect.x() + 4, rect.y() + 3, 0xFF1F1F1F, false);
 
         if (!this.expanded) {
             return;
@@ -121,7 +121,7 @@ public class UiDropdown extends AbstractUiElement {
             UiRect optionRect = new UiRect(popup.x(), optionTop, popup.width(), this.rowHeight);
             boolean hovered = optionRect.contains(mouseX, mouseY);
             GeneUiStyle.drawSlot(graphics, optionRect.x(), optionRect.y(), optionRect.width(), optionRect.height(), hovered, false);
-            graphics.drawString(font, option, optionRect.x() + 4, optionRect.y() + 3, 0xFF1F1F1F, false);
+            graphics.text(font, option, optionRect.x() + 4, optionRect.y() + 3, 0xFF1F1F1F, false);
             optionTop += this.rowHeight + 2;
         }
     }

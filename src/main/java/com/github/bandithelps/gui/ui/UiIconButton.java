@@ -2,7 +2,7 @@ package com.github.bandithelps.gui.ui;
 
 import com.github.bandithelps.gui.GeneUiStyle;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import java.util.function.Supplier;
@@ -34,9 +34,9 @@ public class UiIconButton extends AbstractUiElement {
     }
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int mouseX, int mouseY) {
+    public void render(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
         UiRect rect = bounds();
         GeneUiStyle.drawSlot(graphics, rect.x(), rect.y(), rect.width(), rect.height(), isHovered(), false);
-        graphics.drawCenteredString(font, this.iconSupplier.get(), rect.x() + rect.width() / 2, rect.y() + 2, 0xFF161616);
+        graphics.centeredText(font, this.iconSupplier.get(), rect.x() + rect.width() / 2, rect.y() + 2, 0xFF161616);
     }
 }

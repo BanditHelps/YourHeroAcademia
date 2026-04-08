@@ -1,7 +1,7 @@
 package com.github.bandithelps.gui.ui;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import java.util.function.Function;
@@ -9,7 +9,7 @@ import java.util.function.Function;
 public class UiListItem<T> extends AbstractUiElement {
     @FunctionalInterface
     public interface ItemRenderer<T> {
-        void render(UiListItem<T> item, GuiGraphics graphics, Font font, int mouseX, int mouseY);
+        void render(UiListItem<T> item, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY);
     }
 
     @FunctionalInterface
@@ -51,7 +51,7 @@ public class UiListItem<T> extends AbstractUiElement {
     }
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int mouseX, int mouseY) {
+    public void render(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
         this.renderer.render(this, graphics, font, mouseX, mouseY);
     }
 }

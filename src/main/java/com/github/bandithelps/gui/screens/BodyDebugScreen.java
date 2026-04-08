@@ -4,7 +4,7 @@ import com.github.bandithelps.capabilities.body.BodyPart;
 import com.github.bandithelps.capabilities.body.BodyPartData;
 import com.github.bandithelps.capabilities.body.DamageState;
 import com.github.bandithelps.client.body.ClientBodyState;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
@@ -48,9 +48,9 @@ public class BodyDebugScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderTransparentBackground(graphics);
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, 10, 0xFFFFFF);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        this.extractBackground(graphics, mouseX, mouseY, partialTick);
+        graphics.centeredText(this.font, this.title, this.width / 2, 10, 0xFFFFFF);
 
         int modelX = this.width / 2 - 90;
         int modelY = this.height / 2 - 80;
@@ -74,7 +74,7 @@ public class BodyDebugScreen extends Screen {
             int barWidth = Math.max(0, Math.min(region.width(), Math.round(region.width() * percent)));
             graphics.fill(x1, y2 - 3, x1 + barWidth, y2 - 1, 0xAA00FF66);
 
-            graphics.drawCenteredString(this.font, Component.literal(shortName(region.part())), x1 + region.width() / 2, y1 + 2, 0xFFFFFF);
+            graphics.centeredText(this.font, Component.literal(shortName(region.part())), x1 + region.width() / 2, y1 + 2, 0xFFFFFF);
             if (isMouseInside(mouseX, mouseY, x1, y1, x2, y2)) {
                 hovered = region;
             }
@@ -84,7 +84,7 @@ public class BodyDebugScreen extends Screen {
         if (hovered != null) {
             drawHoverPanel(graphics, mouseX, mouseY, hovered.part(), getPartData(hovered.part()));
         }
-        super.render(graphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
@@ -92,24 +92,24 @@ public class BodyDebugScreen extends Screen {
         return false;
     }
 
-    private void drawLegend(GuiGraphics graphics, int x, int y) {
-        graphics.drawString(this.font, Component.literal("State Colors"), x, y, 0xFFFFFF, false);
+    private void drawLegend(GuiGraphicsExtractor graphics, int x, int y) {
+        graphics.text(this.font, Component.literal("State Colors"), x, y, 0xFFFFFF, false);
         drawLegendRow(graphics, x, y + 14, "Healthy", 0xAA1FA85A);
         drawLegendRow(graphics, x, y + 28, "Sprained", 0xAAC4B72D);
         drawLegendRow(graphics, x, y + 42, "Broken", 0xAAD97C28);
         drawLegendRow(graphics, x, y + 56, "Destroyed", 0xAA9E2F2F);
     }
 
-    private void drawLegendRow(GuiGraphics graphics, int x, int y, String label, int color) {
+    private void drawLegendRow(GuiGraphicsExtractor graphics, int x, int y, String label, int color) {
         graphics.fill(x, y + 2, x + 10, y + 12, color);
         graphics.fill(x, y + 2, x + 10, y + 3, 0xFF000000);
         graphics.fill(x, y + 11, x + 10, y + 12, 0xFF000000);
         graphics.fill(x, y + 2, x + 1, y + 12, 0xFF000000);
         graphics.fill(x + 9, y + 2, x + 10, y + 12, 0xFF000000);
-        graphics.drawString(this.font, Component.literal(label), x + 14, y + 2, 0xFFFFFF, false);
+        graphics.text(this.font, Component.literal(label), x + 14, y + 2, 0xFFFFFF, false);
     }
 
-    private void drawHoverPanel(GuiGraphics graphics, int mouseX, int mouseY, BodyPart part, BodyPartData data) {
+    private void drawHoverPanel(GuiGraphicsExtractor graphics, int mouseX, int mouseY, BodyPart part, BodyPartData data) {
         List<Component> lines = new ArrayList<>();
         lines.add(Component.literal(formatPartName(part)));
         float maxHealth = Math.max(1.0F, data.getMaxHealth());
@@ -137,7 +137,7 @@ public class BodyDebugScreen extends Screen {
                 .flatMap(line -> this.font.split(line, 240).stream())
                 .map(ClientTooltipComponent::create)
                 .collect(Collectors.toList());
-        graphics.renderTooltip(this.font, tooltipLines, mouseX, mouseY, DefaultTooltipPositioner.INSTANCE, (Identifier) null);
+        graphics.tooltip(this.font, tooltipLines, mouseX, mouseY, DefaultTooltipPositioner.INSTANCE, (Identifier) null);
     }
 
     private BodyPartData getPartData(BodyPart part) {
