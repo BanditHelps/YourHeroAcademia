@@ -1,0 +1,103 @@
+{
+  "type": "yha:anchored_multi_column",
+  "gap": 0,
+  "anchor_index": 1,
+  "x_offset": -400,
+  "layouts": [
+    {
+      "width": 120,
+      "height": 168,
+      "padding": 7,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/modal_with_footer"
+      },
+      "components": [
+        {
+          "type": "palladium:player_display",
+          "follow_mouse": false,
+          "mimic_player": false,
+          "rotation": [15, 40, 0],
+          "scale": 45,
+          "render_layers": [
+          ],
+          "properties": {
+            "alignment": "center",
+            "width": 106,
+            "height": 154
+          }
+        }
+      ]
+    },
+    {
+      "width": 340,
+      "height": 168,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/modal_with_header"
+      },
+      "padding": 7,
+      "components": [
+        {
+          "type": "palladium:text",
+          "text": "Power Tree",
+          "properties": {
+            "alignment": "top_left"
+          }
+        },
+        {
+          "type": "palladium:power_tree",
+          "power": "yha:smokescreen",
+          "background": {
+            "type": "palladium:repeating_texture",
+            "texture": "minecraft:textures/block/purple_stained_glass.png"
+          },
+          "properties": {
+            "alignment": "center",
+            "width": 325,
+            "height": 128
+          }
+        }
+      ]
+    },
+    {
+      "width": 70,
+      "height": 25,
+      "padding": 2,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/default"
+      },
+      "components": [
+        {
+          "type": "palladium:icon",
+          "icon": "minecraft:command_block",
+          "properties": {
+            "alignment": "middle_left",
+            "x": 4,
+            "width": 16,
+            "height": 16
+          }
+        },
+        {
+          "type": "yha:upgrade_points",
+          "properties": {
+            "alignment": "middle_left",
+            "x": 24,
+            "y": 2
+          }
+        }
+      ]
+    },
+    {
+      "width": 240,
+      "height": 168,
+      "background": {
+        "type": "palladium:empty"
+      },
+      "components": [
+      ]
+    }
+  ]
+
+}

@@ -1,0 +1,61 @@
+{
+  "name": "Smokescreen",
+  "parent": "yha:quirk",
+  "screen": "yha:power/smokescreen",
+  "icon": "yha:textures/icons/smokescreen/smokescreen_title.png",
+  "gui_display_type": "tree",
+  "abilities": {
+    "quirk_info": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Smokescreen",
+        "description": "The power to vape your enemies",
+        "hidden": false,
+        "hidden_in_bar": true,
+        "gui_position": [0, 0]
+      }
+    },
+    "register_smoke_bar": {
+      "type": "yha:display_body_bar",
+      "id": "smoke_capacity",
+      "label": "Smoke",
+      "part": "chest",
+      "key": "smoke_capacity",
+      "min": 0,
+      "max": {
+        "type": "palladium:molang_float",
+        "molang": "yha.quirk_factor() * 400"
+      },
+      "left_color": "#b200ed",
+      "right_color": "#b210ed",
+      "bar_type": "bar",
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": true
+      }
+    },
+    "passive_gain_stage_1": {
+      "type": "yha:change_body_value",
+      "amount": {
+        "type": "palladium:molang_float",
+        "molang": "yha.quirk_factor()"
+      },
+      "tick_rate": 20,
+      "key": "smoke_capacity",
+      "min_value": 0,
+      "max_value": {
+        "type": "palladium:molang_float",
+        "molang": "yha.quirk_factor() * 400"
+      },
+      "parts": [
+        "chest"
+      ],
+      "properties": {
+        "title": "Passive Gain",
+        "icon": "yha:textures/icons/smokescreen/smoke_generation_1.png",
+        "hidden": true,
+        "hidden_in_bar": true
+      }
+    }
+  }
+}

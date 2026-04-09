@@ -30,5 +30,8 @@
   "yourheroacademia.configuration.logDirtBlock": "Log Dirt Block",
   "yourheroacademia.configuration.magicNumberIntroduction": "Magic Number Text",
   "yourheroacademia.configuration.magicNumber": "Magic Number",
-  "yha.gui.example_title": "Example Screen"
+  "yha.gui.example_title": "Example Screen",
+
+  "yha:quirk#startup": "Startup"
+
 }

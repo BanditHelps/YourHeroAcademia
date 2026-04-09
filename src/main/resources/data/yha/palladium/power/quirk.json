@@ -1,0 +1,21 @@
+{
+  "name": "Base Upgrades",
+  "icon": "minecraft:iron_sword",
+  "gui_display_type": "tree",
+  "abilities": {
+    "startup": {
+      "type": "palladium:command",
+      "commands": [],
+      "first_tick_commands": "say Power Enabled!",
+      "properties": {
+        "title": "Physical Tree",
+        "description": {
+          "locked": "This ability is still locked!",
+          "unlocked": "This ability was unlocked! Hooray!!!"
+        },
+        "hidden": false,
+        "hidden_in_bar": true
+      }
+    }
+  }
+}

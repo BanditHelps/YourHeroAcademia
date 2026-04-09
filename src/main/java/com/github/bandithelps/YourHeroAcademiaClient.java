@@ -1,5 +1,7 @@
 package com.github.bandithelps;
 
+import com.github.bandithelps.gui.ui.components.YhaUiComponentSerializers;
+import com.github.bandithelps.gui.ui.layouts.YhaUiLayoutSerializers;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -20,6 +22,8 @@ public class YourHeroAcademiaClient {
         // The config screen is accessed by going to the Mods screen > clicking on your mod > clicking on config.
         // Do not forget to add translations for your config options to the en_us.json file.
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+        YhaUiComponentSerializers.init();
+        YhaUiLayoutSerializers.init();
     }
 
     @SubscribeEvent
