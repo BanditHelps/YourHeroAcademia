@@ -12,7 +12,7 @@
       "components": [
         {
           "type": "palladium:text_box",
-          "text": "Quirk Factor",
+          "text": "Smokescreen",
           "properties": {
             "alignment": "top_center",
             "width": 86,
@@ -20,10 +20,24 @@
           }
         },
         {
+          "type": "yha:body_display_bar",
+          "id": "smoke_capacity",
+          "show_icon": true,
+          "show_label": true,
+          "description": "Tracks your body's internal smoke reserves.",
+          "properties": {
+            "alignment": "top_center",
+            "x": 3,
+            "y": 36,
+            "width": 72,
+            "height": 8
+          }
+        },
+        {
           "type": "palladium:button",
           "text": "Awaken",
           "properties": {
-            "alignment": "top_center",
+            "alignment": "bottom_center",
             "width": 80,
             "action": {
               "type": "palladium:open_screen",
