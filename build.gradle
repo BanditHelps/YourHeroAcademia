@@ -166,7 +166,7 @@ configurations {
 dependencies {
 
     // Development Palladium Version
-    implementation "maven.modrinth:palladium-previews:3b6d6a9+26.1"
+    implementation "maven.modrinth:palladium-previews:abe513a+26.1"
 
     // Player Animation Library
     // temporary fix
