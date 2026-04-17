@@ -1,6 +1,7 @@
 {
   "name": "Base Upgrades",
   "icon": "minecraft:iron_sword",
+  "screen": "yha:power/quirk",
   "gui_display_type": "tree",
   "abilities": {
     "startup": {

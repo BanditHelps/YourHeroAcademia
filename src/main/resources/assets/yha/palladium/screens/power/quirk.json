@@ -39,10 +39,10 @@
       "components": [
         {
           "type": "palladium:power_tree",
-          "power": "yha:smokescreen",
+          "power": "yha:quirk",
           "background": {
             "type": "palladium:repeating_texture",
-            "texture": "minecraft:textures/block/purple_stained_glass.png"
+            "texture": "minecraft:textures/block/white_concrete.png"
           },
           "properties": {
             "alignment": "center",
