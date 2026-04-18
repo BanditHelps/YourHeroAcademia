@@ -125,7 +125,6 @@ public class GeneExperimentsScreen extends Screen {
         this.dragMouseX = mouseX;
         this.dragMouseY = mouseY;
 
-        this.extractBackground(graphics, mouseX, mouseY, partialTick);
         GeneUiStyle.drawTiledTexture(graphics, GeneUiStyle.FRAME_TEXTURE, this.frameX, this.frameY, this.frameW, this.frameH);
         GeneUiStyle.drawBevelPanel(graphics, this.frameX, this.frameY, this.frameW, this.frameH, GeneUiStyle.FRAME_BG);
         int titleWidth = this.font.width(this.title);

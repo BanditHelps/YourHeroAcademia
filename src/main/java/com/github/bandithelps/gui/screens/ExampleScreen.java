@@ -45,7 +45,6 @@ public class ExampleScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        this.extractBackground(graphics, mouseX, mouseY, partialTick);
         graphics.fill(0, 0, this.width / 2, this.height / 2, 0xFF333333);
         graphics.centeredText(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
