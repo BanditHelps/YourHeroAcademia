@@ -4,6 +4,27 @@
   "screen": "yha:power/quirk",
   "gui_display_type": "tree",
   "abilities": {
+    "speed_upgrade_1": {
+      "type": "palladium:attribute_modifier",
+      "modifiers": [
+        {
+          "attribute": "minecraft:movement_speed",
+          "amount": 0.005,
+          "operation": "add_value"
+        }
+      ],
+      "properties": {
+        "title": "Speed Upgrade (+0.005)",
+        "description": {
+          "locked": "Adds +0.005 to Movement Speed",
+          "unlocked": "+0.005 Movement Speed"
+        },
+        "icon": "yha:textures/icons/physical/speed_upgrade_1.png",
+        "hidden": false,
+        "hidden_in_bar": true,
+        "gui_position": [0, 0]
+      }
+    },
     "strength_upgrade_1": {
       "type": "palladium:attribute_modifier",
       "modifiers": [
@@ -22,7 +43,7 @@
         "icon": "yha:textures/icons/physical/strength_upgrade_1.png",
         "hidden": false,
         "hidden_in_bar": true,
-        "gui_position": [0.25, 0]
+        "gui_position": [0.90, 0]
       },
       "state": {
         "unlocking": {
@@ -49,9 +70,10 @@
         "icon": "yha:textures/icons/physical/armor_upgrade_1.png",
         "hidden": false,
         "hidden_in_bar": true,
-        "gui_position": [0.75, 0]
+        "gui_position": [1.87, 0]
       }
     },
+
     "health_upgrade_1": {
       "type": "palladium:attribute_modifier",
       "modifiers": [
@@ -70,28 +92,7 @@
         "icon": "yha:textures/icons/physical/health_upgrade_1.png",
         "hidden": false,
         "hidden_in_bar": true,
-        "gui_position": [1.25, 0]
-      }
-    },
-    "speed_upgrade_1": {
-      "type": "palladium:attribute_modifier",
-      "modifiers": [
-        {
-          "attribute": "minecraft:movement_speed",
-          "amount": 0.005,
-          "operation": "add_value"
-        }
-      ],
-      "properties": {
-        "title": "Speed Upgrade (+0.005)",
-        "description": {
-          "locked": "Adds +0.005 to Movement Speed",
-          "unlocked": "+0.005 Movement Speed"
-        },
-        "icon": "yha:textures/icons/physical/speed_upgrade_1.png",
-        "hidden": false,
-        "hidden_in_bar": true,
-        "gui_position": [-0.25, 0]
+        "gui_position": [2.83, 0]
       }
     },
     "toughness_upgrade_1": {
@@ -112,7 +113,7 @@
         "icon": "minecraft:diamond_chestplate",
         "hidden": false,
         "hidden_in_bar": true,
-        "gui_position": [1.75, 0]
+        "gui_position": [3.8, 0]
       }
     }
   }

@@ -257,16 +257,180 @@
       "height": 200,
       "components": [
         {
-          "type": "palladium:power_tree",
+          "type": "yha:vertical_segment_bar",
+          "label": "",
+          "part": "chest",
+          "current_key": "speed_current",
+          "max_key": "speed_max",
+          "width": 16,
+          "height": 92,
+          "show_value": true,
+          "properties": {
+            "alignment": "top_center",
+            "x": -96,
+            "y": 8,
+            "width": 16,
+            "height": 92
+          }
+        },
+        {
+          "type": "palladium:button",
+          "text": "+",
+          "properties": {
+            "alignment": "top_center",
+            "x": -95,
+            "y": 114,
+            "width": 30,
+            "height": 16,
+            "action": {
+              "type": "palladium:open_screen",
+              "screen": "yha:power/quirk"
+            }
+          }
+        },
+        {
+          "type": "yha:vertical_segment_bar",
+          "label": "",
+          "part": "chest",
+          "current_key": "strength_current",
+          "max_key": "strength_max",
+          "width": 16,
+          "height": 92,
+          "show_value": true,
+          "properties": {
+            "alignment": "top_center",
+            "x": -48,
+            "y": 8,
+            "width": 16,
+            "height": 92
+          }
+        },
+        {
+          "type": "palladium:button",
+          "text": "+",
+          "properties": {
+            "alignment": "top_center",
+            "x": -47,
+            "y": 114,
+            "width": 30,
+            "height": 16,
+            "action": {
+              "type": "palladium:open_screen",
+              "screen": "yha:power/quirk"
+            }
+          }
+        },
+        {
+          "type": "yha:vertical_segment_bar",
+          "label": "",
+          "part": "chest",
+          "current_key": "armor_current",
+          "max_key": "armor_max",
+          "width": 16,
+          "height": 92,
+          "show_value": true,
+          "properties": {
+            "alignment": "top_center",
+            "x": 0,
+            "y": 8,
+            "width": 16,
+            "height": 92
+          }
+        },
+        {
+          "type": "palladium:button",
+          "text": "+",
+          "properties": {
+            "alignment": "top_center",
+            "x": 1,
+            "y": 114,
+            "width": 30,
+            "height": 16,
+            "action": {
+              "type": "palladium:open_screen",
+              "screen": "yha:power/quirk"
+            }
+          }
+        },
+        {
+          "type": "yha:vertical_segment_bar",
+          "label": "",
+          "part": "chest",
+          "current_key": "max_health_current",
+          "max_key": "max_health_max",
+          "width": 16,
+          "height": 92,
+          "show_value": true,
+          "properties": {
+            "alignment": "top_center",
+            "x": 48,
+            "y": 8,
+            "width": 16,
+            "height": 92
+          }
+        },
+        {
+          "type": "palladium:button",
+          "text": "+",
+          "properties": {
+            "alignment": "top_center",
+            "x": 49,
+            "y": 114,
+            "width": 30,
+            "height": 16,
+            "action": {
+              "type": "palladium:open_screen",
+              "screen": "yha:power/quirk"
+            }
+          }
+        },
+        {
+          "type": "yha:vertical_segment_bar",
+          "label": "",
+          "part": "chest",
+          "current_key": "armor_toughness_current",
+          "max_key": "armor_toughness_max",
+          "width": 16,
+          "height": 92,
+          "show_value": true,
+          "properties": {
+            "alignment": "top_center",
+            "x": 96,
+            "y": 8,
+            "width": 16,
+            "height": 92
+          }
+        },
+        {
+          "type": "palladium:button",
+          "text": "+",
+          "properties": {
+            "alignment": "top_center",
+            "x": 97,
+            "y": 114,
+            "width": 30,
+            "height": 16,
+            "action": {
+              "type": "palladium:open_screen",
+              "screen": "yha:power/quirk"
+            }
+          }
+        },
+        {
+          "type": "yha:anchored_power_tree",
           "power": "yha:quirk",
+          "auto_center": false,
+          "scrollable": false,
+          "start_grid_x": 0.0,
+          "start_grid_y": 0.0,
           "background": {
             "type": "palladium:repeating_texture",
             "texture": "minecraft:textures/block/white_concrete.png"
           },
           "properties": {
-            "alignment": "center",
+            "alignment": "bottom_center",
             "width": 236,
-            "height": 186
+            "height": 44
           }
         }
       ]

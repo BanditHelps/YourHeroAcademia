@@ -14,6 +14,21 @@ import java.util.Map;
 public class BodyData implements IBodyData {
     private static final String PARTS_KEY = "parts";
     private static final String DISPLAY_BARS_KEY = "displayBars";
+    private static final float DEFAULT_UPGRADE_MAX = 5.0F;
+    private static final String[] UPGRADE_CURRENT_KEYS = {
+            "speed_current",
+            "strength_current",
+            "armor_current",
+            "max_health_current",
+            "armor_toughness_current"
+    };
+    private static final String[] UPGRADE_MAX_KEYS = {
+            "speed_max",
+            "strength_max",
+            "armor_max",
+            "max_health_max",
+            "armor_toughness_max"
+    };
 
     public static final MapCodec<BodyData> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Codec.unboundedMap(BodyPart.CODEC, BodyPartData.CODEC)
@@ -84,6 +99,21 @@ public class BodyData implements IBodyData {
         parts.clear();
         for (BodyPart part : BodyPart.physicalParts()) {
             parts.put(part, new BodyPartData());
+        }
+        ensureChestUpgradeDefaults();
+    }
+
+    private void ensureChestUpgradeDefaults() {
+        BodyPartData chestData = getPartData(BodyPart.CHEST);
+        for (String currentKey : UPGRADE_CURRENT_KEYS) {
+            if (!chestData.getCustomFloats().containsKey(currentKey)) {
+                chestData.setCustomFloat(currentKey, 0.0F);
+            }
+        }
+        for (String maxKey : UPGRADE_MAX_KEYS) {
+            if (!chestData.getCustomFloats().containsKey(maxKey)) {
+                chestData.setCustomFloat(maxKey, DEFAULT_UPGRADE_MAX);
+            }
         }
     }
 
@@ -338,5 +368,6 @@ public class BodyData implements IBodyData {
             );
             displayBars.put(displayBar.id(), displayBar);
         }
+        ensureChestUpgradeDefaults();
     }
 }
