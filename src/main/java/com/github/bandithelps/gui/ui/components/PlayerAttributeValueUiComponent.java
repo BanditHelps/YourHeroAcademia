@@ -1,6 +1,7 @@
 package com.github.bandithelps.gui.ui.components;
 
 import com.github.bandithelps.attributes.QuirkAttributes;
+import com.github.bandithelps.client.attributes.ClientAttributeState;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -79,7 +80,7 @@ public class PlayerAttributeValueUiComponent extends RenderableUiComponent {
             return;
         }
 
-        double value = minecraft.player.getAttributeValue(attribute);
+        double value = getDisplayValue(minecraft, attribute, this.attributeId);
         double baseValue = getBaseValue(this.attributeId, attribute);
         int valueColor = getValueColor(value, baseValue);
         String valueText = formatValue(value);
@@ -106,6 +107,13 @@ public class PlayerAttributeValueUiComponent extends RenderableUiComponent {
             case RIGHT -> x + width - textWidth;
             default -> x;
         };
+    }
+
+    private static double getDisplayValue(Minecraft minecraft, Holder<Attribute> attribute, String attributeId) {
+        if ("attack_damage".equals(attributeId) && ClientAttributeState.isAttackDamageInitialized()) {
+            return ClientAttributeState.getAttackDamage();
+        }
+        return minecraft.player.getAttributeValue(attribute);
     }
 
     private static double getBaseValue(String attributeId, Holder<Attribute> attribute) {
