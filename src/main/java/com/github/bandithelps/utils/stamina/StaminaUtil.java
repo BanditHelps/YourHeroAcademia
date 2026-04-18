@@ -203,6 +203,21 @@ public class StaminaUtil {
     }
 
     /**
+     * Subtracts the "amount" from the total number of upgrade points.
+     * Will never set upgrade points below 0.
+     * @param player
+     * @param amount
+     */
+    public static void spendUpgradePoints(ServerPlayer player, int amount) {
+        if (amount <= 0) return;
+
+        IStaminaData stamina = StaminaAttachments.get(player);
+        int currentUpgradePoints = stamina.getUpgradePoints();
+        stamina.setUpgradePoints(Math.max(0, currentUpgradePoints - amount));
+        StaminaSyncEvents.syncNow(player);
+    }
+
+    /**
      * Check the new stamina value, and see if it falls into one of the exhaustion levels.
      * Return the index (or level 0-based) of the exhaustion.
      * @param stamina - the stamina value to check the level of (will usually be negative if exhausted)

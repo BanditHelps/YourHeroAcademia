@@ -23,6 +23,12 @@
         "hidden": false,
         "hidden_in_bar": true,
         "gui_position": [0.25, 0]
+      },
+      "state": {
+        "unlocking": {
+          "type": "yha:upgrade_point_buyable",
+          "cost": 1
+        }
       }
     },
     "armor_upgrade_1": {

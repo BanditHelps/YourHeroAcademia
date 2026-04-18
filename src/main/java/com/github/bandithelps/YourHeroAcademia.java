@@ -7,6 +7,7 @@ import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.client.renderers.entity.PotionGeneratorEntityRenderer;
 import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
+import com.github.bandithelps.conditions.unlocking_handlers.UnlockingHandlerRegister;
 import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
@@ -102,8 +103,11 @@ public final class YourHeroAcademia {
         // Register the Deferred Register to the mod event bus so tabs get registered
         CREATIVE_MODE_TABS.register(modEventBus);
 
+        // Custom palladium stuff
         AbilityRegister.ABILITIES.register(modEventBus);
         ConditionRegister.CONDITIONS.register(modEventBus);
+        UnlockingHandlerRegister.UNLOCKING_HANDLERS.register(modEventBus);
+
         QuirkAttributes.ATTRIBUTES.register(modEventBus);
         StaminaAttachments.ATTACHMENTS.register(modEventBus);
         BodyAttachments.ATTACHMENTS.register(modEventBus);
