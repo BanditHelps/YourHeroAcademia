@@ -5,25 +5,22 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.TextAlignment;
-import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.threetag.palladium.client.gui.ui.component.AbstractStringUiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
-import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
-import net.threetag.palladium.client.gui.ui.screen.UiScreen;
+import net.threetag.palladium.client.gui.ui.UiAlignment;
+import net.threetag.palladium.client.gui.ui.component.*;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
+import net.threetag.palladium.logic.context.DataContext;
 import net.threetag.palladium.util.PalladiumCodecs;
 
 import java.util.Locale;
 
-public class PlayerAttributeValueUiComponent extends AbstractStringUiComponent {
+public class PlayerAttributeValueUiComponent extends RenderableUiComponent {
 
     private static final int BASE_VALUE_COLOR = 0xFFB0B0B0;
     private static final int BUFFED_VALUE_COLOR = 0xFF55FF55;
@@ -34,16 +31,18 @@ public class PlayerAttributeValueUiComponent extends AbstractStringUiComponent {
             Codec.STRING.fieldOf("attribute").forGetter(PlayerAttributeValueUiComponent::getAttributeId),
             Codec.STRING.optionalFieldOf("label", "").forGetter(PlayerAttributeValueUiComponent::getLabel),
             Codec.INT.optionalFieldOf("decimals", 2).forGetter(PlayerAttributeValueUiComponent::getDecimals),
-            PalladiumCodecs.COLOR_INT_CODEC.optionalFieldOf("color", 0xFFFFFFFF).forGetter(AbstractStringUiComponent::getColor),
-            Codec.BOOL.optionalFieldOf("shadow", true).forGetter(AbstractStringUiComponent::hasShadow),
-            TEXT_ALIGNMENT_CODEC.optionalFieldOf("alignment", TextAlignment.LEFT).forGetter(AbstractStringUiComponent::getTextAlignment),
-            TEXT_OVERFLOW_CODEC.optionalFieldOf("overflow", StringWidget.TextOverflow.CLAMPED).forGetter(AbstractStringUiComponent::getTextOverflow),
+            PalladiumCodecs.COLOR_INT_CODEC.optionalFieldOf("color", 0xFFFFFFFF).forGetter(PlayerAttributeValueUiComponent::getColor),
+            Codec.BOOL.optionalFieldOf("shadow", true).forGetter(PlayerAttributeValueUiComponent::hasShadow),
+            AbstractStringUiComponent.TEXT_ALIGNMENT_CODEC.optionalFieldOf("alignment", TextAlignment.LEFT).forGetter(PlayerAttributeValueUiComponent::getTextAlignment),
             propertiesCodec()
     ).apply(instance, PlayerAttributeValueUiComponent::new));
 
     private final String attributeId;
     private final String label;
     private final int decimals;
+    private final int color;
+    private final boolean shadow;
+    private final TextAlignment alignment;
 
     public PlayerAttributeValueUiComponent(
             String attributeId,
@@ -52,64 +51,74 @@ public class PlayerAttributeValueUiComponent extends AbstractStringUiComponent {
             int color,
             boolean shadow,
             TextAlignment alignment,
-            StringWidget.TextOverflow textOverflow,
             UiComponentProperties properties
     ) {
-        super(color, shadow, alignment, textOverflow, properties);
+        super(properties);
         this.attributeId = attributeId;
-        this.label = label;
+        this.label = label == null ? "" : label.trim();
         this.decimals = Mth.clamp(decimals, 0, 4);
+        this.color = color;
+        this.shadow = shadow;
+        this.alignment = alignment;
     }
 
     @Override
-    public Component getText(UiScreen uiScreen) {
-        Minecraft minecraft = Minecraft.getInstance();
-        String normalizedLabel = this.label == null ? "" : this.label.trim();
-        boolean hasLabel = !normalizedLabel.isEmpty();
+    public void render(Minecraft minecraft, GuiGraphicsExtractor gui, DataContext context, int x, int y, int width, int height, int mouseX, int mouseY, UiAlignment alignment) {
+        boolean hasLabel = !this.label.isEmpty();
+
         if (minecraft.player == null) {
-            return hasLabel
-                    ? Component.literal(normalizedLabel + ": --")
-                    : Component.literal("--");
+            String fallback = hasLabel ? this.label + ": --" : "--";
+            gui.text(minecraft.font, fallback, alignedX(minecraft, fallback, x, width), y, this.color, this.shadow);
+            return;
         }
 
         Holder<Attribute> attribute = resolveAttribute(this.attributeId);
         if (attribute == null) {
-            return hasLabel
-                    ? Component.literal(normalizedLabel + ": ?")
-                    : Component.literal("?");
+            String fallback = hasLabel ? this.label + ": ?" : "?";
+            gui.text(minecraft.font, fallback, alignedX(minecraft, fallback, x, width), y, this.color, this.shadow);
+            return;
         }
 
         double value = minecraft.player.getAttributeValue(attribute);
-        double baseValue;
-
-        // Custom values for these because minecraft's "default" is a lie apparently
-        if (attributeId.equals("attack_strength")) {
-            baseValue = 1.0;
-        } else if (attributeId.equals("movement_speed")) {
-            baseValue = 0.1;
-        } else {
-            baseValue = attribute.value().getDefaultValue();
-        }
-
-
+        double baseValue = getBaseValue(this.attributeId, attribute);
         int valueColor = getValueColor(value, baseValue);
+        String valueText = formatValue(value);
 
         if (!hasLabel) {
-            return Component.literal(formatValue(value)).withColor(valueColor);
+            gui.text(minecraft.font, valueText, alignedX(minecraft, valueText, x, width), y, valueColor, this.shadow);
+        } else {
+            String labelPart = this.label + ": ";
+            int totalWidth = minecraft.font.width(labelPart) + minecraft.font.width(valueText);
+            int startX = switch (this.alignment) {
+                case CENTER -> x + (width - totalWidth) / 2;
+                case RIGHT -> x + width - totalWidth;
+                default -> x;
+            };
+            gui.text(minecraft.font, labelPart, startX, y, this.color, this.shadow);
+            gui.text(minecraft.font, valueText, startX + minecraft.font.width(labelPart), y, valueColor, this.shadow);
         }
+    }
 
-        return Component.empty()
-                .append(Component.literal(normalizedLabel + ": ").withColor(getColor()))
-                .append(Component.literal(formatValue(value)).withColor(valueColor));
+    private int alignedX(Minecraft minecraft, String text, int x, int width) {
+        int textWidth = minecraft.font.width(text);
+        return switch (this.alignment) {
+            case CENTER -> x + (width - textWidth) / 2;
+            case RIGHT -> x + width - textWidth;
+            default -> x;
+        };
+    }
+
+    private static double getBaseValue(String attributeId, Holder<Attribute> attribute) {
+        return switch (attributeId) {
+            case "attack_damage" -> 1.0;
+            case "movement_speed" -> 0.1;
+            default -> attribute.value().getDefaultValue();
+        };
     }
 
     private int getValueColor(double value, double baseValue) {
-        if (value > baseValue + COMPARISON_EPSILON) {
-            return BUFFED_VALUE_COLOR;
-        }
-        if (value < baseValue - COMPARISON_EPSILON) {
-            return NERFED_VALUE_COLOR;
-        }
+        if (value > baseValue + COMPARISON_EPSILON) return BUFFED_VALUE_COLOR;
+        if (value < baseValue - COMPARISON_EPSILON) return NERFED_VALUE_COLOR;
         return BASE_VALUE_COLOR;
     }
 
@@ -120,7 +129,7 @@ public class PlayerAttributeValueUiComponent extends AbstractStringUiComponent {
     private static Holder<Attribute> resolveAttribute(String attributeId) {
         return switch (attributeId) {
             case "quirk_factor" -> QuirkAttributes.QUIRK_FACTOR;
-            case "attack_strength" -> Attributes.ATTACK_DAMAGE;
+            case "attack_damage" -> Attributes.ATTACK_DAMAGE;
             case "attack_speed" -> Attributes.ATTACK_SPEED;
             case "movement_speed" -> Attributes.MOVEMENT_SPEED;
             case "jump_height" -> Attributes.JUMP_STRENGTH;
@@ -132,24 +141,19 @@ public class PlayerAttributeValueUiComponent extends AbstractStringUiComponent {
         };
     }
 
-    public String getAttributeId() {
-        return attributeId;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public int getDecimals() {
-        return decimals;
-    }
+    public String getAttributeId() { return attributeId; }
+    public String getLabel() { return label; }
+    public int getDecimals() { return decimals; }
+    public int getColor() { return color; }
+    public boolean hasShadow() { return shadow; }
+    public TextAlignment getTextAlignment() { return alignment; }
 
     @Override
     public UiComponentSerializer<?> getSerializer() {
         return YhaUiComponentSerializers.PLAYER_ATTRIBUTE_VALUE;
     }
 
-    public static class Serializer extends AbstractStringUiComponent.AbstractStringUiComponentSerializer<PlayerAttributeValueUiComponent> {
+    public static class Serializer extends UiComponentSerializer<PlayerAttributeValueUiComponent> {
         @Override
         public MapCodec<PlayerAttributeValueUiComponent> codec() {
             return PlayerAttributeValueUiComponent.CODEC;

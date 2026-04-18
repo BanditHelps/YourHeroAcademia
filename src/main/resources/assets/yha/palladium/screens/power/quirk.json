@@ -56,7 +56,7 @@
         },
         {
           "type": "yha:player_attribute_value",
-          "attribute": "attack_strength",
+          "attribute": "attack_damage",
           "decimals": 2,
           "properties": {
             "alignment": "top_left",
@@ -172,7 +172,7 @@
         {
           "type": "yha:player_attribute_value",
           "attribute": "armor",
-          "decimals": 1,
+          "decimals": 2,
           "properties": {
             "alignment": "top_left",
             "x": 62,
@@ -195,7 +195,7 @@
         {
           "type": "yha:player_attribute_value",
           "attribute": "armor_toughness",
-          "decimals": 1,
+          "decimals": 2,
           "properties": {
             "alignment": "top_left",
             "x": 18,
@@ -459,7 +459,7 @@
           "properties": {
             "alignment": "middle_left",
             "x": 24,
-            "y": 2
+            "y": 6
           }
         }
       ]

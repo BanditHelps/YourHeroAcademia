@@ -9,7 +9,10 @@
       "modifiers": [
         {
           "attribute": "minecraft:movement_speed",
-          "amount": 0.005,
+          "amount": {
+            "type": "palladium:molang_float",
+            "molang": "yha.speed_current() * 0.005"
+          },
           "operation": "add_value"
         }
       ],
@@ -30,7 +33,10 @@
       "modifiers": [
         {
           "attribute": "minecraft:attack_damage",
-          "amount": 0.25,
+          "amount": {
+            "type": "palladium:molang_float",
+            "molang": "yha.strength_current() * 0.25"
+          },
           "operation": "add_value"
         }
       ],
@@ -57,7 +63,10 @@
       "modifiers": [
         {
           "attribute": "minecraft:armor",
-          "amount": 0.5,
+          "amount": {
+            "type": "palladium:molang_float",
+            "molang": "yha.armor_current() * 0.25"
+          },
           "operation": "add_value"
         }
       ],
@@ -73,13 +82,15 @@
         "gui_position": [1.87, 0]
       }
     },
-
     "health_upgrade_1": {
       "type": "palladium:attribute_modifier",
       "modifiers": [
         {
           "attribute": "minecraft:max_health",
-          "amount": 0.5,
+          "amount": {
+            "type": "palladium:molang_float",
+            "molang": "yha.max_health_current() * 0.5"
+          },
           "operation": "add_value"
         }
       ],
@@ -100,7 +111,10 @@
       "modifiers": [
         {
           "attribute": "minecraft:armor_toughness",
-          "amount": 0.30,
+          "amount": {
+            "type": "palladium:molang_float",
+            "molang": "yha.armor_toughness_current() * 0.15"
+          },
           "operation": "add_value"
         }
       ],
