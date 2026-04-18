@@ -1,21 +1,112 @@
 {
-  "name": "Base Upgrades",
+  "name": "Physical Upgrades",
   "icon": "minecraft:iron_sword",
   "screen": "yha:power/quirk",
   "gui_display_type": "tree",
   "abilities": {
-    "startup": {
-      "type": "palladium:command",
-      "commands": [],
-      "first_tick_commands": "say Power Enabled!",
+    "strength_upgrade_1": {
+      "type": "palladium:attribute_modifier",
+      "modifiers": [
+        {
+          "attribute": "minecraft:attack_damage",
+          "amount": 0.25,
+          "operation": "add_value"
+        }
+      ],
       "properties": {
-        "title": "Physical Tree",
+        "title": "Strength Upgrade (+0.25)",
         "description": {
-          "locked": "This ability is still locked!",
-          "unlocked": "This ability was unlocked! Hooray!!!"
+          "locked": "Adds +0.25 to Attack Damage",
+          "unlocked": "+0.25 Attack Damage"
         },
+        "icon": "yha:textures/icons/physical/strength_upgrade_1.png",
         "hidden": false,
-        "hidden_in_bar": true
+        "hidden_in_bar": true,
+        "gui_position": [0.25, 0]
+      }
+    },
+    "armor_upgrade_1": {
+      "type": "palladium:attribute_modifier",
+      "modifiers": [
+        {
+          "attribute": "minecraft:armor",
+          "amount": 0.5,
+          "operation": "add_value"
+        }
+      ],
+      "properties": {
+        "title": "Armor Upgrade (+0.5)",
+        "description": {
+          "locked": "Adds +0.5 to Armor",
+          "unlocked": "+0.5 Armor"
+        },
+        "icon": "yha:textures/icons/physical/armor_upgrade_1.png",
+        "hidden": false,
+        "hidden_in_bar": true,
+        "gui_position": [0.75, 0]
+      }
+    },
+    "health_upgrade_1": {
+      "type": "palladium:attribute_modifier",
+      "modifiers": [
+        {
+          "attribute": "minecraft:max_health",
+          "amount": 0.5,
+          "operation": "add_value"
+        }
+      ],
+      "properties": {
+        "title": "Health Upgrade (+0.5)",
+        "description": {
+          "locked": "Adds +0.5 to Health",
+          "unlocked": "+0.5 Health"
+        },
+        "icon": "yha:textures/icons/physical/health_upgrade_1.png",
+        "hidden": false,
+        "hidden_in_bar": true,
+        "gui_position": [1.25, 0]
+      }
+    },
+    "speed_upgrade_1": {
+      "type": "palladium:attribute_modifier",
+      "modifiers": [
+        {
+          "attribute": "minecraft:movement_speed",
+          "amount": 0.005,
+          "operation": "add_value"
+        }
+      ],
+      "properties": {
+        "title": "Speed Upgrade (+0.005)",
+        "description": {
+          "locked": "Adds +0.005 to Movement Speed",
+          "unlocked": "+0.005 Movement Speed"
+        },
+        "icon": "yha:textures/icons/physical/speed_upgrade_1.png",
+        "hidden": false,
+        "hidden_in_bar": true,
+        "gui_position": [-0.25, 0]
+      }
+    },
+    "toughness_upgrade_1": {
+      "type": "palladium:attribute_modifier",
+      "modifiers": [
+        {
+          "attribute": "minecraft:armor_toughness",
+          "amount": 0.30,
+          "operation": "add_value"
+        }
+      ],
+      "properties": {
+        "title": "Toughness Upgrade (+0.30)",
+        "description": {
+          "locked": "Adds +0.30 to Toughness",
+          "unlocked": "+0.30 Toughness"
+        },
+        "icon": "minecraft:diamond_chestplate",
+        "hidden": false,
+        "hidden_in_bar": true,
+        "gui_position": [1.75, 0]
       }
     }
   }
