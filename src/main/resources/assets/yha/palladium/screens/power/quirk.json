@@ -228,6 +228,17 @@
           }
         },
         {
+          "type": "yha:stamina_bar",
+          "show_label": true,
+          "properties": {
+            "alignment": "top_center",
+            "x": -11,
+            "y": 132,
+            "width": 62,
+            "height": 10
+          }
+        },
+        {
           "type": "palladium:button",
           "text": "Awaken",
           "properties": {
