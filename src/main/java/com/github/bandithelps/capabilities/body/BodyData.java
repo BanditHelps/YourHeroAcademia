@@ -15,14 +15,17 @@ public class BodyData implements IBodyData {
     private static final String PARTS_KEY = "parts";
     private static final String DISPLAY_BARS_KEY = "displayBars";
     private static final float DEFAULT_UPGRADE_MAX = 5.0F;
-    private static final String[] UPGRADE_CURRENT_KEYS = {
+
+    // IMPORTANT - This and the MAX Keys must match in index, so the currents should be
+    // in the same slot as the max value.
+    public static final String[] UPGRADE_CURRENT_KEYS = {
             "speed_current",
             "strength_current",
             "armor_current",
             "max_health_current",
             "armor_toughness_current"
     };
-    private static final String[] UPGRADE_MAX_KEYS = {
+    public static final String[] UPGRADE_MAX_KEYS = {
             "speed_max",
             "strength_max",
             "armor_max",

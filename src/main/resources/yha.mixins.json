@@ -4,7 +4,8 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "AbilityPropertiesMixin",
-    "AbilityInstanceMixin"
+    "AbilityInstanceMixin",
+    "ServerCommonPacketListenerImplMixin"
   ],
   "injectors": {
     "defaultRequire": 1

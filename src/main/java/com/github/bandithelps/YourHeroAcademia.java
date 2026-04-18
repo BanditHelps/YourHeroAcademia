@@ -11,6 +11,7 @@ import com.github.bandithelps.conditions.unlocking_handlers.UnlockingHandlerRegi
 import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
+import com.github.bandithelps.gui.actions.YhaDialogActions;
 import com.github.bandithelps.network.YhaNetwork;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
@@ -107,6 +108,7 @@ public final class YourHeroAcademia {
         AbilityRegister.ABILITIES.register(modEventBus);
         ConditionRegister.CONDITIONS.register(modEventBus);
         UnlockingHandlerRegister.UNLOCKING_HANDLERS.register(modEventBus);
+        YhaDialogActions.ACTIONS.register(modEventBus);
 
         QuirkAttributes.ATTRIBUTES.register(modEventBus);
         StaminaAttachments.ATTACHMENTS.register(modEventBus);
