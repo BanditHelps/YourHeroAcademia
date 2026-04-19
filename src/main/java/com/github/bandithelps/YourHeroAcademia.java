@@ -13,6 +13,7 @@ import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
 import com.github.bandithelps.gui.actions.YhaDialogActions;
 import com.github.bandithelps.network.YhaNetwork;
+import com.github.bandithelps.particles.ModParticles;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -116,6 +117,7 @@ public final class YourHeroAcademia {
 
         ModEffects.MOD_EFFECTS.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
+        ModParticles.PARTICLE_TYPES.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in.
         // Note that this is necessary if and only if we want *this* class (YourHeroAcademia) to respond directly to events.
