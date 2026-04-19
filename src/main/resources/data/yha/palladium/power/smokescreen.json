@@ -56,6 +56,70 @@
         "hidden": true,
         "hidden_in_bar": true
       }
+    },
+    "smoke_domain": {
+      "type": "yha:bd_dome",
+      "radius": {
+        "type": "palladium:molang_float",
+        "molang": "20 + yha.quirk_factor() * 5"
+      },
+      "tick_speed": 50,
+      "density": 10,
+      "location_offset": [
+        0,
+        0,
+        0
+      ],
+      "initial_scale": [
+        0.5, 0.5, 0.5
+      ],
+      "final_scale": [
+        2, 2, 2
+      ],
+      "random_rotation": true,
+      "random_decay": true,
+      "palette": [
+        "minecraft:purple_stained_glass",
+        "minecraft:purple_concrete",
+        "minecraft:purple_concrete_powder",
+        "minecraft:purple_wool"
+      ],
+      "lifetime": 400,
+      "properties": {
+        "title": "Smoke Domain",
+        "icon": "minecraft:iron_boots",
+        "hidden_in_bar": false,
+        "list_index": 4
+      },
+      "state":{
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "action"
+        }
+      }
+    },
+    "smoke_domain_potion": {
+      "type": "yha:potion_gen",
+      "health": 100,
+      "duration": 20,
+      "effects": [
+        "yha:smoke_blind"
+      ],
+      "expiration_ticks": 400,
+      "radius": {
+        "type": "palladium:molang_float",
+        "molang": "24 + yha.quirk_factor() * 5"
+      },
+      "properties": {
+        "hidden": true,
+        "hidden_in_bar": false
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:ability_first_tick",
+          "ability": "yha:smokescreen#smoke_domain"
+        }
+      }
     }
   }
 }

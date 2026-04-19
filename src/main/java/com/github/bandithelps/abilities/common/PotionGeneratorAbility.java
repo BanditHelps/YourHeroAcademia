@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public class PotionGeneratorAbility extends Ability {
@@ -44,6 +45,7 @@ public class PotionGeneratorAbility extends Ability {
                     Value.CODEC.optionalFieldOf("duration", new StaticValue(20)).forGetter((ab) -> ab.duration),
                     Value.CODEC.optionalFieldOf("amplifier", new StaticValue(0)).forGetter((ab) -> ab.amplifier),
                     Value.CODEC.optionalFieldOf("radius", new StaticValue(5.0f)).forGetter((ab) -> ab.radius),
+                    Value.CODEC.optionalFieldOf("expiration_ticks").forGetter((ab) -> ab.expirationTicks),
                     Codec.BOOL.optionalFieldOf("effect_visible", true).forGetter((ab) -> ab.effectVisible),
                     PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("effects", Arrays.asList(Identifier.parse("minecraft:slowness"))).forGetter((ab) -> ab.effects),
                     propertiesCodec(),
@@ -55,6 +57,7 @@ public class PotionGeneratorAbility extends Ability {
     public final Value duration;
     public final Value amplifier;
     public final Value radius;
+    public final Optional<Value> expirationTicks;
     public final boolean effectVisible;
     public final List<Identifier> effects;
 
@@ -65,6 +68,7 @@ public class PotionGeneratorAbility extends Ability {
             Value duration,
             Value amplifier,
             Value radius,
+            Optional<Value> expirationTicks,
             boolean effectVisible,
             List<Identifier> effects,
             AbilityProperties properties,
@@ -75,6 +79,7 @@ public class PotionGeneratorAbility extends Ability {
         this.duration = duration;
         this.amplifier = amplifier;
         this.radius = radius;
+        this.expirationTicks = expirationTicks;
         this.effectVisible = effectVisible;
         this.effects = effects;
     }
@@ -96,6 +101,9 @@ public class PotionGeneratorAbility extends Ability {
         float health = this.health.getAsFloat(DataContext.forEntity(entity));
         int duration = this.duration.getAsInt(DataContext.forEntity(entity));
         int amplifier = this.amplifier.getAsInt(DataContext.forEntity(entity));
+        Integer expirationTicks = this.expirationTicks
+                .map(value -> value.getAsInt(DataContext.forEntity(entity)))
+                .orElse(null);
 
         List<Holder<MobEffect>> effectsToApply = new ArrayList<>();
         for (Identifier id : this.effects) {
@@ -112,6 +120,7 @@ public class PotionGeneratorAbility extends Ability {
         potionGen.setAmplifier(amplifier);
         potionGen.setEffects(effectsToApply);
         potionGen.setEffectVisible(this.effectVisible);
+        potionGen.setExpirationTicks(expirationTicks);
         potionGen.setInvisible(true);
         potionGen.setNoGravity(true);
         potionGen.setPos(new Vec3(entity.getX(), entity.getY(), entity.getZ()));
@@ -128,7 +137,12 @@ public class PotionGeneratorAbility extends Ability {
         if (generatorId == null) return;
 
         Entity generator = serverLevel.getEntity(generatorId);
-        if (generator != null) {
+
+        Integer expirationTicks = this.expirationTicks
+                .map(value -> value.getAsInt(DataContext.forEntity(entity)))
+                .orElse(null);
+
+        if (generator != null && expirationTicks == null) {
             generator.discard();
         }
     }
@@ -149,6 +163,7 @@ public class PotionGeneratorAbility extends Ability {
                     .add("duration", TYPE_VALUE, "Duration (ticks) of each applied effect.")
                     .add("amplifier", TYPE_VALUE, "Amplifier level for each applied effect.")
                     .add("radius", TYPE_VALUE, "Radius around the generator to search for targets.")
+                    .add("expiration_ticks", TYPE_VALUE, "Optional lifetime (ticks) before the generated entity discards itself.")
                     .add("effect_visible", TYPE_BOOLEAN, "Whether particles are shown for the applied potion effects.")
                     .add("effects", TYPE_IDENTIFIER, "A list of mob effect ids to apply.")
                     .addExampleObject(new PotionGeneratorAbility(
@@ -156,6 +171,7 @@ public class PotionGeneratorAbility extends Ability {
                             new StaticValue(20),
                             new StaticValue(0),
                             new StaticValue(5.0f),
+                            Optional.empty(),
                             true,
                             Arrays.asList(Identifier.fromNamespaceAndPath("minecraft", "slowness")),
                             AbilityProperties.BASIC,

@@ -32,6 +32,7 @@ public class PotionEffectGeneratorEntity extends ArmorStand {
     private int amplifier;
     private boolean showEffectParticles;
     private List<Holder<MobEffect>> effects;
+    private @Nullable Integer expirationTicks;
 
     public PotionEffectGeneratorEntity(EntityType<? extends ArmorStand> p_31553_, Level p_31554_) {
         super(p_31553_, p_31554_);
@@ -39,6 +40,7 @@ public class PotionEffectGeneratorEntity extends ArmorStand {
         this.duration = 20;
         this.amplifier = 0;
         this.showEffectParticles = false;
+        this.expirationTicks = null;
         this.setInvisible(true);
         this.setNoGravity(true);
     }
@@ -63,6 +65,10 @@ public class PotionEffectGeneratorEntity extends ArmorStand {
         this.showEffectParticles = visible;
     }
 
+    public void setExpirationTicks(@Nullable Integer expirationTicks) {
+        this.expirationTicks = expirationTicks;
+    }
+
     public void setGeneratorHealth(float health) {
         float clampedHealth = Math.max(1.0f, health);
         AttributeInstance maxHealth = this.getAttribute(Attributes.MAX_HEALTH);
@@ -79,6 +85,12 @@ public class PotionEffectGeneratorEntity extends ArmorStand {
 
     @Override
     public void tick() {
+        if (this.expirationTicks != null && this.tickCount >= this.expirationTicks) {
+            if (!this.level().isClientSide()) {
+                this.discard();
+            }
+            return;
+        }
 
         if ((this.tickCount % 10) == 0 && this.effects != null && !this.effects.isEmpty()) {
 
