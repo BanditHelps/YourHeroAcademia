@@ -27,6 +27,7 @@ public class BlockDisplaySummoner {
     private static final int FILLED_DOME_IDLE_MAX_INTERVAL_TICKS = 28;
     private static final float FILLED_DOME_IDLE_MIN_DEGREES = 0.8f;
     private static final float FILLED_DOME_IDLE_MAX_DEGREES = 1.9f;
+    private static final int TRANSFORM_APPLY_DELAY_TICKS = 2;
 
     private static final Vector3f CENTER_OFFSET_VECTOR = new Vector3f(-0.25f, 0, -0.2f); // Because for some reason, it is not centered
     private static final List<PendingTransform> PENDING_TRANSFORMS = new ArrayList<>();
@@ -197,7 +198,7 @@ public class BlockDisplaySummoner {
 
             level.addFreshEntity(display);
 
-            PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + 1));
+            PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS));
         }
     }
 
@@ -241,7 +242,7 @@ public class BlockDisplaySummoner {
                         display,
                         driftOffset == null ? new Vector3f() : new Vector3f(driftOffset),
                         finalScale == null ? new Vector3f(1.0f, 1.0f, 1.0f) : new Vector3f(finalScale),
-                        level.getServer().getTickCount() + 1
+                        level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS
                 )
         );
     }
@@ -313,7 +314,7 @@ public class BlockDisplaySummoner {
                 Vector3f translation = endPos.sub(startPos, endPos);
 
 
-                PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + 1));
+                PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS));
             }
         }
 
@@ -399,7 +400,7 @@ public class BlockDisplaySummoner {
             Vector3f translation = endPos.sub(startPos, endPos);
 
 
-            PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + 1));
+            PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS));
         }
 
 
@@ -437,7 +438,11 @@ public class BlockDisplaySummoner {
                 display.setPos(centerX, centerY, centerZ);
                 display.setBlock(randomPaletteBlock(random, palette));
                 display.setScale(initialScale);
-                display.setLifetime(200);
+                if (randomDecay) {
+                    display.setLifetime(lifetime + random.nextInt(60));
+                } else {
+                    display.setLifetime(lifetime);
+                }
                 display.setInterpolation(tickSpeed);
 
                 if (randomRotation) {
@@ -460,7 +465,7 @@ public class BlockDisplaySummoner {
                 Vector3f translation = endPos.sub(startPos, endPos);
 
 
-                PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + 1));
+                PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS));
             }
         }
 
