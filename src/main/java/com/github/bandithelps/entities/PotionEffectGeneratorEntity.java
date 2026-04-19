@@ -1,6 +1,8 @@
 package com.github.bandithelps.entities;
 
 import net.minecraft.core.Holder;
+import net.minecraft.core.particles.SimpleParticleType;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
@@ -16,6 +18,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.List;
 
 public class PotionEffectGeneratorEntity extends ArmorStand {
@@ -31,7 +34,11 @@ public class PotionEffectGeneratorEntity extends ArmorStand {
     private int duration;
     private int amplifier;
     private boolean showEffectParticles;
+    private boolean generateParticles;
+    private float particleSize;
+    private float particleDensity;
     private List<Holder<MobEffect>> effects;
+    private List<SimpleParticleType> particles;
     private @Nullable Integer expirationTicks;
 
     public PotionEffectGeneratorEntity(EntityType<? extends ArmorStand> p_31553_, Level p_31554_) {
@@ -40,6 +47,10 @@ public class PotionEffectGeneratorEntity extends ArmorStand {
         this.duration = 20;
         this.amplifier = 0;
         this.showEffectParticles = false;
+        this.generateParticles = false;
+        this.particleSize = 0.25f;
+        this.particleDensity = 1.0f;
+        this.particles = Collections.emptyList();
         this.expirationTicks = null;
         this.setInvisible(true);
         this.setNoGravity(true);
@@ -63,6 +74,22 @@ public class PotionEffectGeneratorEntity extends ArmorStand {
 
     public void setEffectVisible(boolean visible) {
         this.showEffectParticles = visible;
+    }
+
+    public void setGenerateParticles(boolean generateParticles) {
+        this.generateParticles = generateParticles;
+    }
+
+    public void setParticles(List<SimpleParticleType> particles) {
+        this.particles = particles;
+    }
+
+    public void setParticleSize(float particleSize) {
+        this.particleSize = Math.max(0.0f, particleSize);
+    }
+
+    public void setParticleDensity(float particleDensity) {
+        this.particleDensity = Math.max(0.0f, particleDensity);
     }
 
     public void setExpirationTicks(@Nullable Integer expirationTicks) {
@@ -90,6 +117,36 @@ public class PotionEffectGeneratorEntity extends ArmorStand {
                 this.discard();
             }
             return;
+        }
+
+        if (!this.level().isClientSide() && this.generateParticles && this.particles != null && !this.particles.isEmpty() && this.particleDensity > 0.0f && (this.tickCount % 2) == 0) {
+            ServerLevel serverLevel = (ServerLevel) this.level();
+            int particleCount = Math.max(1, Math.round(this.radius * 2.0f * this.particleDensity));
+            for (int i = 0; i < particleCount; i++) {
+                SimpleParticleType particle = this.particles.get(this.getRandom().nextInt(this.particles.size()));
+                double x;
+                double y;
+                double z;
+                double lenSq;
+                do {
+                    x = this.getRandom().nextDouble() * 2.0 - 1.0;
+                    y = this.getRandom().nextDouble() * 2.0 - 1.0;
+                    z = this.getRandom().nextDouble() * 2.0 - 1.0;
+                    lenSq = x * x + y * y + z * z;
+                } while (lenSq > 1.0);
+
+                serverLevel.sendParticles(
+                        particle,
+                        this.getX() + (x * this.radius),
+                        this.getY() + (y * this.radius),
+                        this.getZ() + (z * this.radius),
+                        1,
+                        this.particleSize,
+                        this.particleSize,
+                        this.particleSize,
+                        0.0
+                );
+            }
         }
 
         if ((this.tickCount % 10) == 0 && this.effects != null && !this.effects.isEmpty()) {

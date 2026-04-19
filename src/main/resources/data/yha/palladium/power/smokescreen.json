@@ -110,6 +110,12 @@
         "type": "palladium:molang_float",
         "molang": "24 + yha.quirk_factor() * 5"
       },
+      "generate_particles": true,
+      "particles": [
+        "yha:smokescreen"
+      ],
+      "particle_size": 0.8,
+      "particle_density": 2.0,
       "properties": {
         "hidden": true,
         "hidden_in_bar": false
