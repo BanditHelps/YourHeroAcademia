@@ -3,6 +3,7 @@ package com.github.bandithelps.abilities.blockdisplayanims;
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.capabilities.body.BodyPart;
 import com.github.bandithelps.utils.blockdisplays.BlockDisplaySummoner;
+import com.github.bandithelps.utils.blockdisplays.BlockDisplayVisualOptions;
 import com.github.bandithelps.values.ModSettingTypes;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -54,6 +55,7 @@ public class BDBodyPartEmitterAbility extends Ability {
                     Codec.BOOL.optionalFieldOf("relative_vectors", true).forGetter((ab) -> ab.relativeVectors),
                     Codec.BOOL.optionalFieldOf("random_decay", true).forGetter((ab) -> ab.randomDecay),
                     Codec.BOOL.optionalFieldOf("random_rotation", true).forGetter((ab) -> ab.randomRotation),
+                    BlockDisplayVisualOptions.CODEC.optionalFieldOf("visual_options", BlockDisplayVisualOptions.DEFAULT).forGetter((ab) -> ab.visualOptions),
                     propertiesCodec(),
                     stateCodec(),
                     energyBarUsagesCodec()
@@ -71,6 +73,7 @@ public class BDBodyPartEmitterAbility extends Ability {
     public final boolean relativeVectors;
     public final boolean randomDecay;
     public final boolean randomRotation;
+    public final BlockDisplayVisualOptions visualOptions;
 
     public BDBodyPartEmitterAbility(
             int tickRate,
@@ -85,6 +88,7 @@ public class BDBodyPartEmitterAbility extends Ability {
             boolean relativeVectors,
             boolean randomDecay,
             boolean randomRotation,
+            BlockDisplayVisualOptions visualOptions,
             AbilityProperties properties,
             AbilityStateManager conditions,
             List<EnergyBarUsage> energyBarUsages) {
@@ -101,6 +105,7 @@ public class BDBodyPartEmitterAbility extends Ability {
         this.relativeVectors = relativeVectors;
         this.randomDecay = randomDecay;
         this.randomRotation = randomRotation;
+        this.visualOptions = visualOptions;
     }
 
     @Override
@@ -145,7 +150,8 @@ public class BDBodyPartEmitterAbility extends Ability {
                     rotatedDriftOffset,
                     displayLifetime,
                     this.randomDecay,
-                    this.randomRotation
+                    this.randomRotation,
+                    this.visualOptions
             );
         }
 
@@ -252,6 +258,7 @@ public class BDBodyPartEmitterAbility extends Ability {
                             true,
                             true,
                             true,
+                            BlockDisplayVisualOptions.DEFAULT,
                             AbilityProperties.BASIC,
                             AbilityStateManager.EMPTY,
                             Collections.emptyList()

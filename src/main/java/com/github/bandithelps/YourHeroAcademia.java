@@ -2,9 +2,11 @@ package com.github.bandithelps;
 
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.attributes.QuirkAttributes;
+import com.github.bandithelps.blocks.ConfigurableFaceColorBlock;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.client.renderers.entity.PotionGeneratorEntityRenderer;
+import com.github.bandithelps.client.renderers.entity.RgbaDisplayEntityRenderer;
 import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
 import com.github.bandithelps.conditions.unlocking_handlers.UnlockingHandlerRegister;
@@ -74,6 +76,14 @@ public final class YourHeroAcademia {
             p -> p.mapColor(MapColor.METAL)
                     .strength(2.5F)
                     .sound(SoundType.METAL)
+                    .noOcclusion()
+    );
+    public static final DeferredBlock<ConfigurableFaceColorBlock> CONFIGURABLE_FACE_BLOCK = BLOCKS.registerBlock(
+            "configurable_face_block",
+            ConfigurableFaceColorBlock::new,
+            properties -> properties
+                    .mapColor(MapColor.SNOW)
+                    .strength(1.0F)
                     .noOcclusion()
     );
     public static final DeferredItem<BlockItem> TREADMILL_BLOCK_ITEM = ITEMS.registerSimpleBlockItem("treadmill", TREADMILL_BLOCK);
@@ -188,5 +198,6 @@ public final class YourHeroAcademia {
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.POTION_GENERATOR.get(), PotionGeneratorEntityRenderer::new);
+        event.registerEntityRenderer(ModEntities.RGBA_DISPLAY.get(), RgbaDisplayEntityRenderer::new);
     }
 }

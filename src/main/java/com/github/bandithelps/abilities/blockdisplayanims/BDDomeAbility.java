@@ -2,6 +2,7 @@ package com.github.bandithelps.abilities.blockdisplayanims;
 
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.utils.blockdisplays.BlockDisplaySummoner;
+import com.github.bandithelps.utils.blockdisplays.BlockDisplayVisualOptions;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -43,6 +44,7 @@ public class BDDomeAbility extends Ability {
                     Codec.BOOL.optionalFieldOf("random_decay", true).forGetter((ab) -> ab.randomDecay),
                     Codec.BOOL.optionalFieldOf("random_rotation", true).forGetter((ab) -> ab.randomRotation),
                     Codec.BOOL.optionalFieldOf("relative", false).forGetter((ab) -> ab.useRelative),
+                    BlockDisplayVisualOptions.CODEC.optionalFieldOf("visual_options", BlockDisplayVisualOptions.DEFAULT).forGetter((ab) -> ab.visualOptions),
                     propertiesCodec(),
                     stateCodec(),
                     energyBarUsagesCodec()).apply(instance, BDDomeAbility::new));
@@ -59,8 +61,9 @@ public class BDDomeAbility extends Ability {
     public final boolean randomDecay;
     public final boolean randomRotation;
     public final boolean useRelative;
+    public final BlockDisplayVisualOptions visualOptions;
 
-    public BDDomeAbility(Value radius, Value tickSpeed, Value density, List<Identifier> palette, Vector3f locationOffset, Vector3f rotationOffset, Vector3f initialScale, Vector3f finalScale, Value lifetime, boolean randomDecay, boolean randomRotation, boolean useRelative, AbilityProperties properties, AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
+    public BDDomeAbility(Value radius, Value tickSpeed, Value density, List<Identifier> palette, Vector3f locationOffset, Vector3f rotationOffset, Vector3f initialScale, Vector3f finalScale, Value lifetime, boolean randomDecay, boolean randomRotation, boolean useRelative, BlockDisplayVisualOptions visualOptions, AbilityProperties properties, AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.radius = radius;
         this.tickSpeed = tickSpeed;
@@ -74,6 +77,7 @@ public class BDDomeAbility extends Ability {
         this.randomDecay = randomDecay;
         this.randomRotation = randomRotation;
         this.useRelative = useRelative;
+        this.visualOptions = visualOptions;
     }
 
     @Override
@@ -106,7 +110,8 @@ public class BDDomeAbility extends Ability {
                     lifetime,
                     this.randomDecay,
                     this.randomRotation,
-                    this.useRelative
+                    this.useRelative,
+                    this.visualOptions
             );
         }
     }
@@ -136,7 +141,7 @@ public class BDDomeAbility extends Ability {
                     .add("random_decay", TYPE_BOOLEAN, "Whether or not the block displays disappear randomly or all at the same time")
                     .add("random_rotation", TYPE_BOOLEAN, "Whether or not the block displays spawn with a randomized right_rotation value")
                     .add("relative", TYPE_BOOLEAN, "Controls if the location_offset is based on the player's relative coordinates. i.e ^ ^ ^ instead of ~ ~ ~")
-                    .addExampleObject(new BDDomeAbility(new StaticValue(5.0f), new StaticValue(40), new StaticValue(50.0f), Arrays.asList(Identifier.parse("minecraft:diamond_block")), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0.3f, 0.3f, 0.3f), new Vector3f(0.6f, 0.6f, 0.6f), new StaticValue(40f), true, true, false, AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
+                    .addExampleObject(new BDDomeAbility(new StaticValue(5.0f), new StaticValue(40), new StaticValue(50.0f), Arrays.asList(Identifier.parse("minecraft:diamond_block")), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0.3f, 0.3f, 0.3f), new Vector3f(0.6f, 0.6f, 0.6f), new StaticValue(40f), true, true, false, BlockDisplayVisualOptions.DEFAULT, AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
 
     }

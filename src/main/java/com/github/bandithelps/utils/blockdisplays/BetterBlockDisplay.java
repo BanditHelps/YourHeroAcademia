@@ -1,5 +1,7 @@
 package com.github.bandithelps.utils.blockdisplays;
 
+import com.github.bandithelps.YourHeroAcademia;
+import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
@@ -8,6 +10,16 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 public class BetterBlockDisplay extends Display.BlockDisplay{
+    private static final String[] BRIGHTNESS_ACCESSOR_NAMES = {
+            "DATA_BRIGHTNESS_OVERRIDE_ID",
+            "DATA_BRIGHTNESS_OVERRIDE"
+    };
+    private static final String[] GLOW_COLOR_ACCESSOR_NAMES = {
+            "DATA_GLOW_COLOR_OVERRIDE_ID",
+            "DATA_GLOW_COLOR_OVERRIDE"
+    };
+    private static boolean loggedMissingBrightnessAccessor;
+    private static boolean loggedMissingGlowAccessor;
 
     private int lifetime;
     private boolean idleRotationEnabled;
@@ -55,6 +67,65 @@ public class BetterBlockDisplay extends Display.BlockDisplay{
     public void startInterpolation() { this.getEntityData().set(DATA_TRANSFORMATION_INTERPOLATION_START_DELTA_TICKS_ID, -1, true); }
 
     public void setLifetime(int lifetime) { this.lifetime = lifetime; }
+
+    public void setGlowingEnabled(boolean enabled) {
+        this.setGlowingTag(enabled);
+    }
+
+    public void setGlowColorOverride(int argbColor) {
+        this.setDisplayIntData(GLOW_COLOR_ACCESSOR_NAMES, argbColor, "glow_color_override");
+    }
+
+    public void setPackedBrightnessOverride(int packedBrightness) {
+        this.setDisplayIntData(BRIGHTNESS_ACCESSOR_NAMES, packedBrightness, "brightness_override");
+    }
+
+    private void setDisplayIntData(String[] accessorCandidates, int value, String fieldLabel) {
+        EntityDataAccessor<Integer> accessor = this.getIntAccessor(accessorCandidates);
+        if (accessor == null) {
+            this.logMissingAccessor(accessorCandidates, fieldLabel);
+            return;
+        }
+        this.getEntityData().set(accessor, value);
+    }
+
+    @SuppressWarnings("unchecked")
+    private EntityDataAccessor<Integer> getIntAccessor(String[] accessorCandidates) {
+        for (String accessorName : accessorCandidates) {
+            try {
+                var field = Display.class.getDeclaredField(accessorName);
+                field.setAccessible(true);
+                Object accessor = field.get(null);
+                if (accessor instanceof EntityDataAccessor<?> typedAccessor) {
+                    return (EntityDataAccessor<Integer>) typedAccessor;
+                }
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private void logMissingAccessor(String[] accessorCandidates, String fieldLabel) {
+        boolean isBrightness = "brightness_override".equals(fieldLabel);
+        if (isBrightness && loggedMissingBrightnessAccessor) {
+            return;
+        }
+        if (!isBrightness && loggedMissingGlowAccessor) {
+            return;
+        }
+
+        if (isBrightness) {
+            loggedMissingBrightnessAccessor = true;
+        } else {
+            loggedMissingGlowAccessor = true;
+        }
+
+        YourHeroAcademia.LOGGER.warn(
+                "Skipping BlockDisplay {} because no matching Display data accessor was found. Tried {}",
+                fieldLabel,
+                String.join(", ", accessorCandidates)
+        );
+    }
 
     public void enableIdleRotation(
             int startDelayTicks,

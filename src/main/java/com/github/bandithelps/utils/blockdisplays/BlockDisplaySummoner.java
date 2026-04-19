@@ -1,6 +1,8 @@
 package com.github.bandithelps.utils.blockdisplays;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.entities.ModEntities;
+import com.github.bandithelps.entities.RgbaDisplayEntity;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,14 +33,66 @@ public class BlockDisplaySummoner {
 
     private static final Vector3f CENTER_OFFSET_VECTOR = new Vector3f(-0.25f, 0, -0.2f); // Because for some reason, it is not centered
     private static final List<PendingTransform> PENDING_TRANSFORMS = new ArrayList<>();
+    private static final List<PendingRgbaTransform> PENDING_RGBA_TRANSFORMS = new ArrayList<>();
 
     private record PendingTransform(BetterBlockDisplay display, Vector3f translation, Vector3f scale, int applyAtTick) {}
+    private record PendingRgbaTransform(RgbaDisplayEntity display, Vector3f translation, Vector3f scale, int applyAtTick, int interpolationTicks) {}
 
     private static BlockState randomPaletteBlock(RandomSource random, List<BlockState> palette) {
         if (palette == null || palette.isEmpty()) {
             return Blocks.STONE.defaultBlockState();
         }
         return palette.get(random.nextInt(palette.size()));
+    }
+
+    private static BlockState resolveDisplayBlock(RandomSource random, List<BlockState> palette, BlockDisplayVisualOptions visualOptions) {
+        if (visualOptions != null) {
+            var override = visualOptions.getFaceColorBlockStateOverride();
+            if (override.isPresent()) {
+                return override.get();
+            }
+        }
+        return randomPaletteBlock(random, palette);
+    }
+
+    private static void applyVisualOptions(BetterBlockDisplay display, BlockDisplayVisualOptions visualOptions) {
+        if (visualOptions == null) {
+            return;
+        }
+        visualOptions.applyTo(display);
+    }
+
+    private static boolean shouldUseRgbaRenderer(BlockDisplayVisualOptions visualOptions) {
+        return visualOptions != null && visualOptions.getRgbaArgb().isPresent();
+    }
+
+    private static RgbaDisplayEntity createRgbaDisplay(
+            ServerLevel level,
+            RandomSource random,
+            double x,
+            double y,
+            double z,
+            Vector3f initialScale,
+            int lifetime,
+            boolean randomDecay,
+            boolean randomRotation,
+            BlockDisplayVisualOptions visualOptions) {
+        RgbaDisplayEntity display = new RgbaDisplayEntity(ModEntities.RGBA_DISPLAY.get(), level);
+        display.setPos(x, y, z);
+        display.setScale(initialScale == null ? new Vector3f(1.0f, 1.0f, 1.0f) : new Vector3f(initialScale));
+        display.setArgbColor(visualOptions.getRgbaArgb().orElse(0xFFFFFFFF));
+        display.setBlendMode(visualOptions.getRgbaBlendMode());
+
+        if (randomRotation) {
+            display.setRightRotation(randomUnitRotation(random));
+        }
+
+        if (randomDecay) {
+            display.setLifetime(Math.max(1, random.nextInt(Math.max(1, lifetime))));
+        } else {
+            display.setLifetime(Math.max(1, lifetime));
+        }
+        return display;
     }
 
     private static Quaternionf randomUnitRotation(RandomSource random) {
@@ -68,7 +122,8 @@ public class BlockDisplaySummoner {
             int lifetime,
             boolean randomDecay,
             boolean randomRotation,
-            boolean useRelative) {
+            boolean useRelative,
+            BlockDisplayVisualOptions visualOptions) {
 
         RandomSource random = player.getRandom();
 
@@ -145,8 +200,6 @@ public class BlockDisplaySummoner {
         // Spawn on the inner ring and apply transform one tick later.
         // This gives clients a true "previous" state to interpolate from.
         for (double theta = 0; theta < endPoint; theta += step) {
-            BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
-
             // Define these offsets in able to rotate them by the rotational offset passed above
             Vector3f beginningOffset = new Vector3f(
                     (float)(INITIAL_RADIUS * Math.cos(theta)),
@@ -171,30 +224,44 @@ public class BlockDisplaySummoner {
             double endY = centerY + endingOffset.y;
             double endZ = centerZ + endingOffset.z;;
 
-            display.setPos(initialX, initialY, initialZ);
-            display.setBlock(randomPaletteBlock(random, palette));
-            display.setScale(initialScale);
-            display.setTranslation(new Vector3f(CENTER_OFFSET_VECTOR));
-
-            if (randomRotation) {
-                display.setRightRotation(randomUnitRotation(random));
-            }
-
-            display.setInterpolation(tickSpeed);
-
-
-            if (randomDecay) {
-                display.setLifetime(random.nextInt(lifetime));
-            } else {
-                display.setLifetime(lifetime);
-            }
-
-
             Vector3f startPos = new Vector3f((float)initialX, (float)initialY, (float)initialZ);
             Vector3f endPos = new Vector3f((float)endX, (float)endY, (float)endZ);
 
             Vector3f translation = endPos.sub(startPos, new Vector3f()); // the movement required to get from the inner radius to the outer radius
 
+            if (shouldUseRgbaRenderer(visualOptions)) {
+                RgbaDisplayEntity rgbaDisplay = createRgbaDisplay(
+                        level,
+                        random,
+                        initialX,
+                        initialY,
+                        initialZ,
+                        initialScale,
+                        lifetime,
+                        randomDecay,
+                        randomRotation,
+                        visualOptions
+                );
+                level.addFreshEntity(rgbaDisplay);
+                PENDING_RGBA_TRANSFORMS.add(new PendingRgbaTransform(rgbaDisplay, translation, finalScale, level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS, tickSpeed));
+                continue;
+            }
+
+            BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
+            display.setPos(initialX, initialY, initialZ);
+            display.setBlock(resolveDisplayBlock(random, palette, visualOptions));
+            display.setScale(initialScale);
+            display.setTranslation(new Vector3f(CENTER_OFFSET_VECTOR));
+            if (randomRotation) {
+                display.setRightRotation(randomUnitRotation(random));
+            }
+            display.setInterpolation(tickSpeed);
+            applyVisualOptions(display, visualOptions);
+            if (randomDecay) {
+                display.setLifetime(random.nextInt(lifetime));
+            } else {
+                display.setLifetime(lifetime);
+            }
 
             level.addFreshEntity(display);
 
@@ -212,15 +279,42 @@ public class BlockDisplaySummoner {
             Vector3f driftOffset,
             int lifetime,
             boolean randomDecay,
-            boolean randomRotation) {
+            boolean randomRotation,
+            BlockDisplayVisualOptions visualOptions) {
         if (level == null || position == null) {
             return;
         }
 
         RandomSource random = level.getRandom();
+        if (shouldUseRgbaRenderer(visualOptions)) {
+            RgbaDisplayEntity rgbaDisplay = createRgbaDisplay(
+                    level,
+                    random,
+                    position.x,
+                    position.y,
+                    position.z,
+                    initialScale,
+                    lifetime,
+                    randomDecay,
+                    randomRotation,
+                    visualOptions
+            );
+            level.addFreshEntity(rgbaDisplay);
+            PENDING_RGBA_TRANSFORMS.add(
+                    new PendingRgbaTransform(
+                            rgbaDisplay,
+                            driftOffset == null ? new Vector3f() : new Vector3f(driftOffset),
+                            finalScale == null ? new Vector3f(1.0f, 1.0f, 1.0f) : new Vector3f(finalScale),
+                            level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS,
+                            Math.max(1, interpolationTicks)
+                    )
+            );
+            return;
+        }
+
         BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
         display.setPos(position.x, position.y, position.z);
-        display.setBlock(randomPaletteBlock(random, palette));
+        display.setBlock(resolveDisplayBlock(random, palette, visualOptions));
         display.setScale(initialScale);
         display.setTranslation(new Vector3f(CENTER_OFFSET_VECTOR));
 
@@ -229,6 +323,7 @@ public class BlockDisplaySummoner {
         }
 
         display.setInterpolation(Math.max(0, interpolationTicks));
+        applyVisualOptions(display, visualOptions);
 
         if (randomDecay) {
             display.setLifetime(Math.max(1, random.nextInt(Math.max(1, lifetime))));
@@ -262,7 +357,8 @@ public class BlockDisplaySummoner {
             int lifetime,
             boolean randomDecay,
             boolean randomRotation,
-            boolean useRelative
+            boolean useRelative,
+            BlockDisplayVisualOptions visualOptions
     ) {
 
         RandomSource random = player.getRandom();
@@ -295,25 +391,41 @@ public class BlockDisplaySummoner {
                 double newY = dz;
                 double newZ = dy;
 
+                Vector3f startPos = new Vector3f((float)centerX, (float)centerY, (float)centerZ);
+                Vector3f endPos = new Vector3f((float) ((float)centerX + dx), (float) ((float)centerY + newY), (float) ((float)centerZ + newZ));
+                Vector3f translation = endPos.sub(startPos, endPos);
+
+                if (shouldUseRgbaRenderer(visualOptions)) {
+                    RgbaDisplayEntity rgbaDisplay = createRgbaDisplay(
+                            level,
+                            random,
+                            centerX,
+                            centerY,
+                            centerZ,
+                            initialScale,
+                            lifetime,
+                            randomDecay,
+                            randomRotation,
+                            visualOptions
+                    );
+                    level.addFreshEntity(rgbaDisplay);
+                    PENDING_RGBA_TRANSFORMS.add(new PendingRgbaTransform(rgbaDisplay, translation, finalScale, level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS, tickSpeed));
+                    continue;
+                }
+
                 BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
                 display.setPos(centerX, centerY, centerZ);
-                display.setBlock(randomPaletteBlock(random, palette));
+                display.setBlock(resolveDisplayBlock(random, palette, visualOptions));
                 display.setScale(initialScale);
                 display.setLifetime(200);
                 display.setInterpolation(tickSpeed);
+                applyVisualOptions(display, visualOptions);
 
                 if (randomRotation) {
                     display.setRightRotation(randomUnitRotation(random));
                 }
 
                 level.addFreshEntity(display);
-
-                Vector3f startPos = new Vector3f((float)centerX, (float)centerY, (float)centerZ);
-                Vector3f endPos = new Vector3f((float) ((float)centerX + dx), (float) ((float)centerY + newY), (float) ((float)centerZ + newZ));
-
-                Vector3f translation = endPos.sub(startPos, endPos);
-
-
                 PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS));
             }
         }
@@ -335,7 +447,8 @@ public class BlockDisplaySummoner {
             int lifetime,
             boolean randomDecay,
             boolean randomRotation,
-            boolean useRelative
+            boolean useRelative,
+            BlockDisplayVisualOptions visualOptions
     ) {
 
         RandomSource random = player.getRandom();
@@ -367,9 +480,39 @@ public class BlockDisplaySummoner {
             double newY = dz;
             double newZ = dy;
 
+            Vector3f startPos = new Vector3f((float)centerX, (float)centerY, (float)centerZ);
+            Vector3f endPos = new Vector3f((float) ((float)centerX + dx), (float) ((float)centerY + newY), (float) ((float)centerZ + newZ));
+            Vector3f translation = endPos.sub(startPos, endPos);
+
+            if (shouldUseRgbaRenderer(visualOptions)) {
+                RgbaDisplayEntity rgbaDisplay = createRgbaDisplay(
+                        level,
+                        random,
+                        centerX,
+                        centerY,
+                        centerZ,
+                        initialScale,
+                        lifetime,
+                        randomDecay,
+                        randomRotation,
+                        visualOptions
+                );
+                rgbaDisplay.setLifetime(randomDecay ? lifetime + random.nextInt(60) : lifetime);
+                rgbaDisplay.enableIdleRotation(
+                        tickSpeed + 1,
+                        FILLED_DOME_IDLE_MIN_INTERVAL_TICKS,
+                        FILLED_DOME_IDLE_MAX_INTERVAL_TICKS,
+                        FILLED_DOME_IDLE_MIN_DEGREES,
+                        FILLED_DOME_IDLE_MAX_DEGREES
+                );
+                level.addFreshEntity(rgbaDisplay);
+                PENDING_RGBA_TRANSFORMS.add(new PendingRgbaTransform(rgbaDisplay, translation, finalScale, level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS, tickSpeed));
+                continue;
+            }
+
             BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
             display.setPos(centerX, centerY, centerZ);
-            display.setBlock(randomPaletteBlock(random, palette));
+            display.setBlock(resolveDisplayBlock(random, palette, visualOptions));
             display.setScale(initialScale);
 
             if (randomDecay) {
@@ -379,6 +522,7 @@ public class BlockDisplaySummoner {
             }
 
             display.setInterpolation(tickSpeed);
+            applyVisualOptions(display, visualOptions);
 
             if (randomRotation) {
                 display.setRightRotation(randomUnitRotation(random));
@@ -393,13 +537,6 @@ public class BlockDisplaySummoner {
             );
 
             level.addFreshEntity(display);
-
-            Vector3f startPos = new Vector3f((float)centerX, (float)centerY, (float)centerZ);
-            Vector3f endPos = new Vector3f((float) ((float)centerX + dx), (float) ((float)centerY + newY), (float) ((float)centerZ + newZ));
-
-            Vector3f translation = endPos.sub(startPos, endPos);
-
-
             PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS));
         }
 
@@ -434,9 +571,39 @@ public class BlockDisplaySummoner {
                 double newY = dz;
                 double newZ = dy;
 
+                Vector3f startPos = new Vector3f((float)centerX, (float)centerY, (float)centerZ);
+                Vector3f endPos = new Vector3f((float) ((float)centerX + dx), (float) ((float)centerY + newY), (float) ((float)centerZ + newZ));
+                Vector3f translation = endPos.sub(startPos, endPos);
+
+                if (shouldUseRgbaRenderer(visualOptions)) {
+                    RgbaDisplayEntity rgbaDisplay = createRgbaDisplay(
+                            level,
+                            random,
+                            centerX,
+                            centerY,
+                            centerZ,
+                            initialScale,
+                            lifetime,
+                            randomDecay,
+                            randomRotation,
+                            visualOptions
+                    );
+                    rgbaDisplay.setLifetime(randomDecay ? lifetime + random.nextInt(60) : lifetime);
+                    rgbaDisplay.enableIdleRotation(
+                            tickSpeed + 1,
+                            FILLED_DOME_IDLE_MIN_INTERVAL_TICKS,
+                            FILLED_DOME_IDLE_MAX_INTERVAL_TICKS,
+                            FILLED_DOME_IDLE_MIN_DEGREES,
+                            FILLED_DOME_IDLE_MAX_DEGREES
+                    );
+                    level.addFreshEntity(rgbaDisplay);
+                    PENDING_RGBA_TRANSFORMS.add(new PendingRgbaTransform(rgbaDisplay, translation, finalScale, level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS, tickSpeed));
+                    continue;
+                }
+
                 BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
                 display.setPos(centerX, centerY, centerZ);
-                display.setBlock(randomPaletteBlock(random, palette));
+                display.setBlock(resolveDisplayBlock(random, palette, visualOptions));
                 display.setScale(initialScale);
                 if (randomDecay) {
                     display.setLifetime(lifetime + random.nextInt(60));
@@ -444,6 +611,7 @@ public class BlockDisplaySummoner {
                     display.setLifetime(lifetime);
                 }
                 display.setInterpolation(tickSpeed);
+                applyVisualOptions(display, visualOptions);
 
                 if (randomRotation) {
                     display.setRightRotation(randomUnitRotation(random));
@@ -458,13 +626,6 @@ public class BlockDisplaySummoner {
                 );
 
                 level.addFreshEntity(display);
-
-                Vector3f startPos = new Vector3f((float)centerX, (float)centerY, (float)centerZ);
-                Vector3f endPos = new Vector3f((float) ((float)centerX + dx), (float) ((float)centerY + newY), (float) ((float)centerZ + newZ));
-
-                Vector3f translation = endPos.sub(startPos, endPos);
-
-
                 PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS));
             }
         }
@@ -480,7 +641,7 @@ public class BlockDisplaySummoner {
      */
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
-        if (PENDING_TRANSFORMS.isEmpty()) {
+        if (PENDING_TRANSFORMS.isEmpty() && PENDING_RGBA_TRANSFORMS.isEmpty()) {
             return;
         }
 
@@ -499,6 +660,20 @@ public class BlockDisplaySummoner {
             }
 
             iterator.remove();
+        }
+
+        Iterator<PendingRgbaTransform> rgbaIterator = PENDING_RGBA_TRANSFORMS.iterator();
+        while (rgbaIterator.hasNext()) {
+            PendingRgbaTransform pending = rgbaIterator.next();
+            if (tick < pending.applyAtTick()) {
+                continue;
+            }
+
+            if (!pending.display().isRemoved()) {
+                pending.display().startAnimation(pending.translation(), pending.scale(), pending.interpolationTicks());
+            }
+
+            rgbaIterator.remove();
         }
     }
 }

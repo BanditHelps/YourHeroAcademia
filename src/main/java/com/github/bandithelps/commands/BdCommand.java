@@ -1,6 +1,7 @@
 package com.github.bandithelps.commands;
 
 import com.github.bandithelps.utils.blockdisplays.BlockDisplaySummoner;
+import com.github.bandithelps.utils.blockdisplays.BlockDisplayVisualOptions;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -40,7 +41,7 @@ public class BdCommand {
             Blocks.BLACK_STAINED_GLASS.defaultBlockState()
         };
 
-        BlockDisplaySummoner.summonShockwave(player.level(), player, (float)radius, 40, num, Arrays.asList(palette), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0.6f, 0.6f, 0.6f), 40, true, true, false);
+        BlockDisplaySummoner.summonShockwave(player.level(), player, (float)radius, 40, num, Arrays.asList(palette), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0.6f, 0.6f, 0.6f), 40, true, true, false, BlockDisplayVisualOptions.DEFAULT);
         return 1;
     }
 }
