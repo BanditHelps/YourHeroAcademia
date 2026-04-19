@@ -23,6 +23,10 @@ import java.util.List;
 public class BlockDisplaySummoner {
 
     private static final double INITIAL_RADIUS = 0.25;
+    private static final int FILLED_DOME_IDLE_MIN_INTERVAL_TICKS = 14;
+    private static final int FILLED_DOME_IDLE_MAX_INTERVAL_TICKS = 28;
+    private static final float FILLED_DOME_IDLE_MIN_DEGREES = 0.8f;
+    private static final float FILLED_DOME_IDLE_MAX_DEGREES = 1.9f;
 
     private static final Vector3f CENTER_OFFSET_VECTOR = new Vector3f(-0.25f, 0, -0.2f); // Because for some reason, it is not centered
     private static final List<PendingTransform> PENDING_TRANSFORMS = new ArrayList<>();
@@ -34,6 +38,19 @@ public class BlockDisplaySummoner {
             return Blocks.STONE.defaultBlockState();
         }
         return palette.get(random.nextInt(palette.size()));
+    }
+
+    private static Quaternionf randomUnitRotation(RandomSource random) {
+        Quaternionf rotation = new Quaternionf(
+                random.nextFloat() * 2.0f - 1.0f,
+                random.nextFloat() * 2.0f - 1.0f,
+                random.nextFloat() * 2.0f - 1.0f,
+                random.nextFloat() * 2.0f - 1.0f
+        );
+        if (rotation.lengthSquared() < 1.0E-6f) {
+            return new Quaternionf();
+        }
+        return rotation.normalize();
     }
 
     public static void summonShockwave(
@@ -159,7 +176,7 @@ public class BlockDisplaySummoner {
             display.setTranslation(new Vector3f(CENTER_OFFSET_VECTOR));
 
             if (randomRotation) {
-                display.setRightRotation(new Quaternionf(random.nextDouble(),random.nextDouble(),random.nextDouble(),0.5));
+                display.setRightRotation(randomUnitRotation(random));
             }
 
             display.setInterpolation(tickSpeed);
@@ -207,7 +224,7 @@ public class BlockDisplaySummoner {
         display.setTranslation(new Vector3f(CENTER_OFFSET_VECTOR));
 
         if (randomRotation) {
-            display.setRightRotation(new Quaternionf(random.nextFloat(), random.nextFloat(), random.nextFloat(), 0.5f));
+            display.setRightRotation(randomUnitRotation(random));
         }
 
         display.setInterpolation(Math.max(0, interpolationTicks));
@@ -285,7 +302,7 @@ public class BlockDisplaySummoner {
                 display.setInterpolation(tickSpeed);
 
                 if (randomRotation) {
-                    display.setRightRotation(new Quaternionf(random.nextDouble(),random.nextDouble(),random.nextDouble(),0.5));
+                    display.setRightRotation(randomUnitRotation(random));
                 }
 
                 level.addFreshEntity(display);
@@ -363,8 +380,16 @@ public class BlockDisplaySummoner {
             display.setInterpolation(tickSpeed);
 
             if (randomRotation) {
-                display.setRightRotation(new Quaternionf(random.nextDouble(),random.nextDouble(),random.nextDouble(),0.5));
+                display.setRightRotation(randomUnitRotation(random));
             }
+
+            display.enableIdleRotation(
+                    tickSpeed + 1,
+                    FILLED_DOME_IDLE_MIN_INTERVAL_TICKS,
+                    FILLED_DOME_IDLE_MAX_INTERVAL_TICKS,
+                    FILLED_DOME_IDLE_MIN_DEGREES,
+                    FILLED_DOME_IDLE_MAX_DEGREES
+            );
 
             level.addFreshEntity(display);
 
@@ -416,8 +441,16 @@ public class BlockDisplaySummoner {
                 display.setInterpolation(tickSpeed);
 
                 if (randomRotation) {
-                    display.setRightRotation(new Quaternionf(random.nextDouble(),random.nextDouble(),random.nextDouble(),0.5));
+                    display.setRightRotation(randomUnitRotation(random));
                 }
+
+                display.enableIdleRotation(
+                        tickSpeed + 1,
+                        FILLED_DOME_IDLE_MIN_INTERVAL_TICKS,
+                        FILLED_DOME_IDLE_MAX_INTERVAL_TICKS,
+                        FILLED_DOME_IDLE_MIN_DEGREES,
+                        FILLED_DOME_IDLE_MAX_DEGREES
+                );
 
                 level.addFreshEntity(display);
 
