@@ -108,6 +108,22 @@ public class BlockDisplaySummoner {
         return rotation.normalize();
     }
 
+    private static int resolvePointCount(double requestedDensity, double radius, int minPoints) {
+        if (!Double.isFinite(requestedDensity)) {
+            return minPoints;
+        }
+
+        int computedPoints = (int) Math.round(Math.max(0.0, requestedDensity) * Math.max(0.0, radius));
+        return Math.max(minPoints, computedPoints);
+    }
+
+    private static int[] resolveDomeShellSteps(double requestedDensity, double radius) {
+        int shellPoints = resolvePointCount(requestedDensity, radius, 32);
+        int verticalSteps = Math.max(4, (int) Math.round(Math.sqrt(shellPoints / 2.0)));
+        int horizontalSteps = Math.max(8, (int) Math.round((double) shellPoints / verticalSteps));
+        return new int[]{verticalSteps, horizontalSteps};
+    }
+
     public static void summonShockwave(
             ServerLevel level,
             ServerPlayer player,
@@ -368,17 +384,18 @@ public class BlockDisplaySummoner {
         double centerZ = player.getZ();
 
 
-        double verticalSteps = 30;
-        double horizontalSteps = 70;
+        int[] shellSteps = resolveDomeShellSteps(density, endRadius);
+        int verticalSteps = shellSteps[0];
+        int horizontalSteps = shellSteps[1];
 
 
         // Track the vertical slice
             // horizontal slices ->
         for (int i = 0; i <= verticalSteps; i++) {
-            double theta = (i / verticalSteps) * Math.PI / 2;
+            double theta = ((double) i / verticalSteps) * Math.PI / 2;
 
             for (int j = 0; j < horizontalSteps; j++) {
-                double phi = (j / horizontalSteps) * 2 * Math.PI;
+                double phi = ((double) j / horizontalSteps) * 2 * Math.PI;
 
                 double x = centerX + endRadius * Math.sin(theta) * Math.cos(phi);
                 double y = centerY + endRadius * Math.sin(theta) * Math.sin(phi);
@@ -457,7 +474,7 @@ public class BlockDisplaySummoner {
         double centerY = player.getY();
         double centerZ = player.getZ();
 
-        double totalPoints = density * endRadius;
+        int totalPoints = resolvePointCount(density, endRadius, 1);
 
 
         for (int i = 0; i < totalPoints; i++) {
@@ -540,25 +557,17 @@ public class BlockDisplaySummoner {
             PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS));
         }
 
-
-
-
-
-
-        double verticalSteps = 30;
-        double horizontalSteps = 70;
-
-
-
-
+        int[] shellSteps = resolveDomeShellSteps(density, endRadius);
+        int verticalSteps = shellSteps[0];
+        int horizontalSteps = shellSteps[1];
 
         // Track the vertical slice
         // horizontal slices ->
         for (int i = 0; i <= verticalSteps; i++) {
-            double theta = (i / verticalSteps) * Math.PI / 2;
+            double theta = ((double) i / verticalSteps) * Math.PI / 2;
 
             for (int j = 0; j < horizontalSteps; j++) {
-                double phi = (j / horizontalSteps) * 2 * Math.PI;
+                double phi = ((double) j / horizontalSteps) * 2 * Math.PI;
 
                 double x = centerX + endRadius * Math.sin(theta) * Math.cos(phi);
                 double y = centerY + endRadius * Math.sin(theta) * Math.sin(phi);
