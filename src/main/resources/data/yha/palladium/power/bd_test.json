@@ -158,6 +158,16 @@
         }
       }
     },
+    "multi_jump_test": {
+      "type": "yha:multi_jump",
+      "max_jumps": 3,
+      "properties": {
+        "title": "Multi Jump",
+        "icon": "minecraft:rabbit_foot",
+        "hidden_in_bar": true,
+        "list_index": 3
+      }
+    },
     "emitter": {
       "type": "yha:bd_body_part_emitter",
       "parts": ["left_hand", "right_hand"],
@@ -182,6 +192,47 @@
         "enabling": {
           "type": "palladium:key_bind",
           "behaviour": "toggle"
+        }
+      }
+    },
+    "spray_attack_test": {
+      "type": "yha:spray_attack",
+      "range": 10,
+      "hit_radius": 0.3,
+      "damage": 1.5,
+      "fire_seconds": 1.5,
+      "tick_rate": 1,
+      "max_targets_per_tick": 5,
+      "particle_config": {
+        "particles": [
+          "minecraft:flame",
+          "minecraft:smoke"
+        ],
+        "density": 2.5,
+        "spread": 0.04,
+        "origin_forward": 1.0,
+        "origin_right": -0.35,
+        "origin_up": -0.25,
+        "growth_per_tick": 0.6,
+        "max_distance": 10
+      },
+      "effects": [
+        "minecraft:weakness"
+      ],
+      "effect_duration": 40,
+      "effect_amplifier": 0,
+      "show_effect_particles": true,
+      "properties": {
+        "title": "Spray Attack",
+        "icon": "minecraft:blaze_powder",
+        "hidden_in_bar": false,
+        "list_index": 6
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "held",
+          "cooldown": 0
         }
       }
     }

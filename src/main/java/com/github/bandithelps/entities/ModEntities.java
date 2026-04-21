@@ -31,4 +31,20 @@ public class ModEntities {
             ))
     );
 
+    public static final Supplier<EntityType<RgbaDisplayEntity>> RGBA_DISPLAY = ENTITY_TYPES.register(
+            "rgba_display",
+            () -> EntityType.Builder.of(
+                            RgbaDisplayEntity::new,
+                            MobCategory.MISC
+                    )
+                    .noSave()
+                    .sized(1.0f, 1.0f)
+                    .clientTrackingRange(64)
+                    .updateInterval(1)
+                    .build(ResourceKey.create(
+                            Registries.ENTITY_TYPE,
+                            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "rgba_display")
+                    ))
+    );
+
 }
