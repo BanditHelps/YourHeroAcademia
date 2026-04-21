@@ -17,7 +17,10 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 import net.threetag.palladium.logic.context.DataContext;
@@ -33,6 +36,7 @@ import net.threetag.palladium.util.PalladiumCodecs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -61,6 +65,8 @@ public class SprayAttackAbility extends Ability {
                     Value.CODEC.optionalFieldOf("fire_seconds", new StaticValue(0.0f)).forGetter((ab) -> ab.fireSeconds),
                     ExtraCodecs.POSITIVE_INT.optionalFieldOf("tick_rate", 1).forGetter((ab) -> ab.tickRate),
                     ExtraCodecs.NON_NEGATIVE_INT.optionalFieldOf("max_targets_per_tick", 0).forGetter((ab) -> ab.maxTargetsPerTick),
+                    Codec.BOOL.optionalFieldOf("pass_through_walls", true).forGetter((ab) -> ab.passThroughWalls),
+                    Codec.BOOL.optionalFieldOf("pass_through_entities", true).forGetter((ab) -> ab.passThroughEntities),
                     ParticleConfig.CODEC.codec().optionalFieldOf("particle_config", DEFAULT_PARTICLE_CONFIG).forGetter((ab) -> ab.particleConfig),
                     PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("effects", Collections.emptyList()).forGetter((ab) -> ab.effects),
                     Value.CODEC.optionalFieldOf("effect_duration", new StaticValue(40)).forGetter((ab) -> ab.effectDuration),
@@ -77,6 +83,8 @@ public class SprayAttackAbility extends Ability {
     public final Value fireSeconds;
     public final int tickRate;
     public final int maxTargetsPerTick;
+    public final boolean passThroughWalls;
+    public final boolean passThroughEntities;
     public final ParticleConfig particleConfig;
     public final List<Identifier> effects;
     public final Value effectDuration;
@@ -91,6 +99,8 @@ public class SprayAttackAbility extends Ability {
             Value fireSeconds,
             int tickRate,
             int maxTargetsPerTick,
+            boolean passThroughWalls,
+            boolean passThroughEntities,
             ParticleConfig particleConfig,
             List<Identifier> effects,
             Value effectDuration,
@@ -107,6 +117,8 @@ public class SprayAttackAbility extends Ability {
         this.fireSeconds = fireSeconds;
         this.tickRate = tickRate;
         this.maxTargetsPerTick = maxTargetsPerTick;
+        this.passThroughWalls = passThroughWalls;
+        this.passThroughEntities = passThroughEntities;
         this.particleConfig = particleConfig;
         this.effects = effects;
         this.effectDuration = effectDuration;
@@ -152,11 +164,27 @@ public class SprayAttackAbility extends Ability {
         Vec3 look = entity.getLookAngle().normalize();
         Vec3 start = this.resolveOrigin(eyePos, look, entity, originForward, originRight, originUp);
         Vec3 end = start.add(look.scale(activeDistance));
+        if (!this.passThroughWalls) {
+            BlockHitResult blockHit = serverLevel.clip(new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, entity));
+            if (blockHit.getType() != HitResult.Type.MISS) {
+                end = blockHit.getLocation();
+            }
+        }
+        float effectiveDistance = (float) start.distanceTo(end);
+
+        List<TargetHit> targetHits = this.findTargetHits(serverLevel, entity, start, look, end, effectiveDistance, hitRadius);
+        if (!this.passThroughEntities && !targetHits.isEmpty()) {
+            TargetHit firstHit = targetHits.get(0);
+            float clipDistance = (float) Math.max(0.0d, Math.min(firstHit.projection(), effectiveDistance));
+            end = start.add(look.scale(clipDistance));
+            effectiveDistance = clipDistance;
+            targetHits = List.of(firstHit);
+        }
 
         this.spawnSprayParticles(serverLevel, start, end, hitRadius, particleDensity, particleSpread, this.resolveParticles());
 
         List<Holder<MobEffect>> effects = this.resolveEffects();
-        List<LivingEntity> targets = this.findTargets(serverLevel, entity, start, look, end, activeDistance, hitRadius);
+        List<LivingEntity> targets = targetHits.stream().map(TargetHit::target).toList();
 
         int affected = 0;
         for (LivingEntity target : targets) {
@@ -205,7 +233,7 @@ public class SprayAttackAbility extends Ability {
         this.holdTicksByOwner.remove(entity.getUUID());
     }
 
-    private List<LivingEntity> findTargets(ServerLevel level, LivingEntity owner, Vec3 start, Vec3 look, Vec3 end, float range, float hitRadius) {
+    private List<TargetHit> findTargetHits(ServerLevel level, LivingEntity owner, Vec3 start, Vec3 look, Vec3 end, float range, float hitRadius) {
         AABB searchBox = new AABB(
                 Math.min(start.x, end.x) - hitRadius,
                 Math.min(start.y, end.y) - hitRadius,
@@ -215,7 +243,7 @@ public class SprayAttackAbility extends Ability {
                 Math.max(start.z, end.z) + hitRadius
         );
 
-        List<LivingEntity> targets = new ArrayList<>();
+        List<TargetHit> targets = new ArrayList<>();
         for (Entity nearbyEntity : level.getEntities(owner, searchBox)) {
             if (!(nearbyEntity instanceof LivingEntity target) || !target.isAlive() || target == owner) {
                 continue;
@@ -231,9 +259,10 @@ public class SprayAttackAbility extends Ability {
             Vec3 closestPoint = start.add(look.scale(projection));
             double allowedRadius = hitRadius + (target.getBbWidth() * 0.5d);
             if (targetCenter.distanceToSqr(closestPoint) <= (allowedRadius * allowedRadius)) {
-                targets.add(target);
+                targets.add(new TargetHit(target, projection));
             }
         }
+        targets.sort(Comparator.comparingDouble(TargetHit::projection));
         return targets;
     }
 
@@ -310,6 +339,8 @@ public class SprayAttackAbility extends Ability {
                     .add("fire_seconds", TYPE_VALUE, "How many seconds targets are lit on fire when hit. Set to 0 to disable.")
                     .add("tick_rate", TYPE_INT, "How many ticks between spray updates.")
                     .add("max_targets_per_tick", TYPE_INT, "Maximum number of targets affected per update. 0 means no cap.")
+                    .add("pass_through_walls", TYPE_BOOLEAN, "Whether the spray can pass through solid blocks. If false, spray stops at first wall.")
+                    .add("pass_through_entities", TYPE_BOOLEAN, "Whether the spray can continue past entities. If false, spray stops at first target hit.")
                     .add("particle_config", TYPE_VALUE, "Visual spray settings object. Supports particles, density, spread, growth_per_tick, max_distance, and camera-relative origin offsets (origin_forward/origin_right/origin_up).")
                     .add("effects", TYPE_IDENTIFIER, "A list of mob effect ids to apply on hit.")
                     .add("effect_duration", TYPE_VALUE, "Duration in ticks for applied effects.")
@@ -322,6 +353,8 @@ public class SprayAttackAbility extends Ability {
                             new StaticValue(2.0f),
                             1,
                             4,
+                            false,
+                            false,
                             new ParticleConfig(
                                     Arrays.asList(Identifier.fromNamespaceAndPath("minecraft", "flame")),
                                     new StaticValue(2.0f),
@@ -341,6 +374,9 @@ public class SprayAttackAbility extends Ability {
                             Collections.emptyList()
                     ));
         }
+    }
+
+    private record TargetHit(LivingEntity target, double projection) {
     }
 
     public static class ParticleConfig {
