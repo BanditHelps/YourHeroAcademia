@@ -163,8 +163,17 @@
       },
       "state": {
         "enabling": {
-          "type": "palladium:ability_enabled",
-          "ability": "yha:smokescreen#smoke_spray"
+          "type": "palladium:or",
+          "conditions": [
+            {
+              "type": "palladium:ability_enabled",
+              "ability": "yha:smokescreen#smoke_spray"
+            },
+            {
+              "type": "palladium:ability_first_tick",
+              "ability": "yha:smokescreen#smoke_domain"
+            }
+          ]
         }
       }
     },
@@ -194,9 +203,9 @@
       ],
       "visual_options": {
         "rgba_color": {
-          "r": 176,
-          "g": 16,
-          "b": 237,
+          "r": 202,
+          "g": 34,
+          "b": 214,
           "a": 160
         },
         "rgba_blend_mode": "normal"

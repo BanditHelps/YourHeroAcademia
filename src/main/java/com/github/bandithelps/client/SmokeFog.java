@@ -22,9 +22,9 @@ public class SmokeFog {
         MobEffectInstance smokeBlindEffect = getActiveSmokeBlindEffect();
         if (smokeBlindEffect == null) return;
 
-        event.setRed(0.5411F);
-        event.setGreen(0.1686f);
-        event.setBlue(0.8862F);
+        event.setRed(0.792F);
+        event.setGreen(0.133f);
+        event.setBlue(0.839F);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
