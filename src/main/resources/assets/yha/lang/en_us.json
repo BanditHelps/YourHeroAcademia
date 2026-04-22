@@ -3,8 +3,13 @@
   "block.yourheroacademia.example_block": "Example Block",
   "block.yha.treadmill": "Treadmill",
   "item.yha.treadmill": "Treadmill",
+  "item.yha.empty_canister": "Empty Canister",
+  "item.yha.filled_smoke_canister": "Filled Smoke Canister",
+  "item.yha.infused_smoke_canister": "Infused Smoke Canister",
+  "item.yha.pipette": "Pipette",
   "item.yourheroacademia.example_item": "Example Item",
 
+  "effect.yha.smoke_blind": "Smoke Blindness",
 
   "ability.yha.dash": "Dash",
   "ability.yha.damage_body_part": "Damage Body Part",
@@ -12,6 +17,9 @@
   "ability.yha.display_body_bar": "Display Body Bar",
   "ability.yha.heal_body_part": "Heal Body Bar",
   "ability.yha.bd_shockwave": "Shockwave Effect",
+  "ability.yha.smoke_canister_charge": "Smoke Canister Charge",
+  "ability.yha.smoke_canister_charge.not_enough_smoke": "Not enough smoke capacity to charge.",
+  "ability.yha.smoke_canister_charge.charged": "Canister charged to tier %1$s/%2$s.",
 
   "condition.yha.body_health": "Body Health",
   "condition.yha.body_float": "Body String",

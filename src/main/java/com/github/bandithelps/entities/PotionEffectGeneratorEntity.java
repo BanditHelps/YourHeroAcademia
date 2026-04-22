@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList;
 
 public class PotionEffectGeneratorEntity extends ArmorStand {
 
@@ -38,6 +39,7 @@ public class PotionEffectGeneratorEntity extends ArmorStand {
     private float particleSize;
     private float particleDensity;
     private List<Holder<MobEffect>> effects;
+    private List<MobEffectInstance> extraEffects;
     private List<SimpleParticleType> particles;
     private @Nullable Integer expirationTicks;
 
@@ -50,6 +52,7 @@ public class PotionEffectGeneratorEntity extends ArmorStand {
         this.generateParticles = false;
         this.particleSize = 0.25f;
         this.particleDensity = 1.0f;
+        this.extraEffects = Collections.emptyList();
         this.particles = Collections.emptyList();
         this.expirationTicks = null;
         this.setInvisible(true);
@@ -66,6 +69,18 @@ public class PotionEffectGeneratorEntity extends ArmorStand {
 
     public void setDuration(int duration) {
         this.duration = duration;
+    }
+
+    public void setExtraEffects(List<MobEffectInstance> extraEffects) {
+        if (extraEffects == null || extraEffects.isEmpty()) {
+            this.extraEffects = Collections.emptyList();
+            return;
+        }
+        List<MobEffectInstance> sanitized = new ArrayList<>(extraEffects.size());
+        for (MobEffectInstance effectInstance : extraEffects) {
+            sanitized.add(new MobEffectInstance(effectInstance));
+        }
+        this.extraEffects = sanitized;
     }
 
     public void setAmplifier(int amplifier) {
@@ -164,6 +179,11 @@ public class PotionEffectGeneratorEntity extends ArmorStand {
 
                 for (Holder<MobEffect> effect : this.effects) {
                     livingEntity.addEffect(new MobEffectInstance(effect, this.duration, this.amplifier, true, this.showEffectParticles));
+                }
+                if (this.extraEffects != null && !this.extraEffects.isEmpty()) {
+                    for (MobEffectInstance effectInstance : this.extraEffects) {
+                        livingEntity.addEffect(new MobEffectInstance(effectInstance));
+                    }
                 }
 
             }

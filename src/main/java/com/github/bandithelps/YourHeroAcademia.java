@@ -7,6 +7,7 @@ import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.client.renderers.entity.PotionGeneratorEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.RgbaDisplayEntityRenderer;
+import com.github.bandithelps.client.renderers.entity.SmokeCanisterProjectileRenderer;
 import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
 import com.github.bandithelps.conditions.unlocking_handlers.UnlockingHandlerRegister;
@@ -14,8 +15,10 @@ import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
 import com.github.bandithelps.gui.actions.YhaDialogActions;
+import com.github.bandithelps.items.SmokeCanisterItem;
 import com.github.bandithelps.network.YhaNetwork;
 import com.github.bandithelps.particles.ModParticles;
+import com.github.bandithelps.recipes.ModRecipeSerializers;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -27,6 +30,8 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
@@ -35,16 +40,13 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
-import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
@@ -91,6 +93,14 @@ public final class YourHeroAcademia {
     // Creates a new food item with the id "yourheroacademia:example_id", nutrition 1 and saturation 2
     public static final DeferredItem<Item> EXAMPLE_ITEM = ITEMS.registerSimpleItem("example_item", p -> p.food(new FoodProperties.Builder()
             .alwaysEdible().nutrition(1).saturationModifier(2f).build()));
+    public static final DeferredItem<Item> EMPTY_CANISTER = ITEMS.registerSimpleItem("empty_canister");
+    public static final DeferredItem<Item> FILLED_SMOKE_CANISTER = ITEMS.register("filled_smoke_canister", () -> new SmokeCanisterItem(new Item.Properties()
+            .stacksTo(16)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "filled_smoke_canister")))));
+    public static final DeferredItem<Item> INFUSED_SMOKE_CANISTER = ITEMS.register("infused_smoke_canister", () -> new SmokeCanisterItem(new Item.Properties()
+            .stacksTo(16)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "infused_smoke_canister")))));
+    public static final DeferredItem<Item> PIPETTE = ITEMS.registerSimpleItem("pipette");
 
     // Creates a creative tab with the id "yourheroacademia:example_tab" for the example item, that is placed after the combat tab
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("example_tab", () -> CreativeModeTab.builder()
@@ -128,6 +138,7 @@ public final class YourHeroAcademia {
         ModEffects.MOD_EFFECTS.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
         ModParticles.PARTICLE_TYPES.register(modEventBus);
+        ModRecipeSerializers.RECIPE_SERIALIZERS.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in.
         // Note that this is necessary if and only if we want *this* class (YourHeroAcademia) to respond directly to events.
@@ -160,6 +171,11 @@ public final class YourHeroAcademia {
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(EXAMPLE_BLOCK_ITEM);
             event.accept(TREADMILL_BLOCK_ITEM);
+        } else if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
+            event.accept(EMPTY_CANISTER);
+            event.accept(FILLED_SMOKE_CANISTER);
+            event.accept(INFUSED_SMOKE_CANISTER);
+            event.accept(PIPETTE);
         }
     }
 
@@ -199,5 +215,6 @@ public final class YourHeroAcademia {
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.POTION_GENERATOR.get(), PotionGeneratorEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.RGBA_DISPLAY.get(), RgbaDisplayEntityRenderer::new);
+        event.registerEntityRenderer(ModEntities.SMOKE_CANISTER_PROJECTILE.get(), SmokeCanisterProjectileRenderer::new);
     }
 }

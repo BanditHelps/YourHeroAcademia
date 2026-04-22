@@ -47,4 +47,19 @@ public class ModEntities {
                     ))
     );
 
+    public static final Supplier<EntityType<SmokeCanisterProjectileEntity>> SMOKE_CANISTER_PROJECTILE = ENTITY_TYPES.register(
+            "smoke_canister_projectile",
+            () -> EntityType.Builder.<SmokeCanisterProjectileEntity>of(
+                            SmokeCanisterProjectileEntity::new,
+                            MobCategory.MISC
+                    )
+                    .sized(0.25f, 0.25f)
+                    .clientTrackingRange(8)
+                    .updateInterval(10)
+                    .build(ResourceKey.create(
+                            Registries.ENTITY_TYPE,
+                            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "smoke_canister_projectile")
+                    ))
+    );
+
 }

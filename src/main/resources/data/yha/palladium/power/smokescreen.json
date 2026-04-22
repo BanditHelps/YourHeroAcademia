@@ -204,7 +204,7 @@
       "lifetime": 400,
       "properties": {
         "title": "Smoke Domain",
-        "icon": "minecraft:iron_boots",
+        "icon": "yha:textures/icons/smokescreen/smoke_cloud.png",
         "hidden_in_bar": false,
         "list_index": 4
       },
@@ -241,6 +241,33 @@
         "enabling": {
           "type": "palladium:ability_first_tick",
           "ability": "yha:smokescreen#smoke_domain"
+        }
+      }
+    },
+    "canister_charge": {
+      "type": "yha:smoke_canister_charge",
+      "tier_costs": [
+        35,
+        55,
+        80
+      ],
+      "properties": {
+        "title": "Canister Charge",
+        "description": "Charge canisters using your smoke reserves.",
+        "icon": "yha:textures/icons/smokescreen/smoke_capacity4.png",
+        "list_index": 2
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "action"
+        },
+        "unlocking": {
+          "type": "yha:body_float",
+          "part": "chest",
+          "key": "smoke_capacity",
+          "operator": ">=",
+          "target": 35
         }
       }
     }

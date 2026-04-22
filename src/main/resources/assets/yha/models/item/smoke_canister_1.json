@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "yha:item/smoke_canister_1",
+    "particle": "yha:item/smoke_canister_1"
+  }
+}

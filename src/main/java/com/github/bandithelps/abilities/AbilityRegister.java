@@ -10,6 +10,7 @@ import com.github.bandithelps.abilities.bodydata.DamageBodyPartAbility;
 import com.github.bandithelps.abilities.bodydata.HealBodyPartAbility;
 import com.github.bandithelps.abilities.common.PlaySoundAbility;
 import com.github.bandithelps.abilities.common.PotionGeneratorAbility;
+import com.github.bandithelps.abilities.common.SmokeCanisterChargeAbility;
 import com.github.bandithelps.abilities.common.SprayAttackAbility;
 import com.github.bandithelps.abilities.movement.DashAbility;
 import com.github.bandithelps.abilities.movement.MultiJumpAbility;
@@ -33,6 +34,7 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, PotionGeneratorAbility.Serializer> POTION_GEN;
     public static final DeferredHolder<AbilitySerializer<?>, SprayAttackAbility.Serializer> SPRAY_ATTACK;
     public static final DeferredHolder<AbilitySerializer<?>, PlaySoundAbility.Serializer> PLAY_SOUND;
+    public static final DeferredHolder<AbilitySerializer<?>, SmokeCanisterChargeAbility.Serializer> SMOKE_CANISTER_CHARGE;
 
     static {
         ABILITIES = DeferredRegister.create(PalladiumRegistryKeys.ABILITY_SERIALIZER, YourHeroAcademia.MODID);
@@ -48,6 +50,7 @@ public class AbilityRegister {
         POTION_GEN = ABILITIES.register("potion_gen", PotionGeneratorAbility.Serializer::new);
         SPRAY_ATTACK = ABILITIES.register("spray_attack", SprayAttackAbility.Serializer::new);
         PLAY_SOUND = ABILITIES.register("play_sound", PlaySoundAbility.Serializer::new);
+        SMOKE_CANISTER_CHARGE = ABILITIES.register("smoke_canister_charge", SmokeCanisterChargeAbility.Serializer::new);
     }
 
 }
