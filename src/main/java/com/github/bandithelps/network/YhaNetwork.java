@@ -8,7 +8,7 @@ public final class YhaNetwork {
     }
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar("1");
+        PayloadRegistrar registrar = event.registrar("2");
         registrar.playToClient(AttackDamageSyncPayload.TYPE, AttackDamageSyncPayload.STREAM_CODEC, AttackDamageSyncPayload::handle);
         registrar.playToClient(OpenGeneExperimentScreenPayload.TYPE, OpenGeneExperimentScreenPayload.STREAM_CODEC, OpenGeneExperimentScreenPayload::handle);
         registrar.playToClient(OpenBodyDebugScreenPayload.TYPE, OpenBodyDebugScreenPayload.STREAM_CODEC, OpenBodyDebugScreenPayload::handle);
@@ -16,6 +16,8 @@ public final class YhaNetwork {
         registrar.playToClient(StaminaDebugOverlayPayload.TYPE, StaminaDebugOverlayPayload.STREAM_CODEC, StaminaDebugOverlayPayload::handle);
         registrar.playToClient(BodySyncPayload.TYPE, BodySyncPayload.STREAM_CODEC, BodySyncPayload::handle);
         registrar.playToClient(TreadmillMountStatePayload.TYPE, TreadmillMountStatePayload.STREAM_CODEC, TreadmillMountStatePayload::handle);
+        registrar.playToClient(TreadmillMinigameStatePayload.TYPE, TreadmillMinigameStatePayload.STREAM_CODEC, TreadmillMinigameStatePayload::handle);
         registrar.playToServer(MultiJumpRequestPayload.TYPE, MultiJumpRequestPayload.STREAM_CODEC, MultiJumpRequestPayload::handle);
+        registrar.playToServer(TreadmillMinigameInputPayload.TYPE, TreadmillMinigameInputPayload.STREAM_CODEC, TreadmillMinigameInputPayload::handle);
     }
 }

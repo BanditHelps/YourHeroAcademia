@@ -25,6 +25,11 @@ public record TreadmillMountStatePayload(boolean mounted) implements CustomPacke
     }
 
     public static void handle(TreadmillMountStatePayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientTreadmillState.setMounted(payload.mounted()));
+        context.enqueueWork(() -> {
+            ClientTreadmillState.setMounted(payload.mounted());
+            if (!payload.mounted()) {
+                ClientTreadmillState.clearMinigame();
+            }
+        });
     }
 }
