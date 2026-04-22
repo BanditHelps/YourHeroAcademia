@@ -3,6 +3,7 @@ package com.github.bandithelps;
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.attributes.QuirkAttributes;
 import com.github.bandithelps.blocks.ConfigurableFaceColorBlock;
+import com.github.bandithelps.blocks.TreadmillBlock;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.client.renderers.entity.PotionGeneratorEntityRenderer;
@@ -73,8 +74,9 @@ public final class YourHeroAcademia {
     public static final DeferredBlock<Block> EXAMPLE_BLOCK = BLOCKS.registerSimpleBlock("example_block", p -> p.mapColor(MapColor.STONE));
     // Creates a new BlockItem with the id "yourheroacademia:example_block", combining the namespace and path
     public static final DeferredItem<BlockItem> EXAMPLE_BLOCK_ITEM = ITEMS.registerSimpleBlockItem("example_block", EXAMPLE_BLOCK);
-    public static final DeferredBlock<Block> TREADMILL_BLOCK = BLOCKS.registerSimpleBlock(
+    public static final DeferredBlock<TreadmillBlock> TREADMILL_BLOCK = BLOCKS.registerBlock(
             "treadmill",
+            TreadmillBlock::new,
             p -> p.mapColor(MapColor.METAL)
                     .strength(2.5F)
                     .sound(SoundType.METAL)

@@ -20,7 +20,7 @@ public final class TreadmillBlockEvents {
     private static final int TRAINING_INTERVAL_TICKS = 10;
     private static final int TRAINING_USAGE_PER_INTERVAL = 1;
     private static final float FOOD_EXHAUSTION_PER_INTERVAL = 0.18F;
-    private static final double LOCK_DRIFT_DISTANCE_SQR = 0.01D;
+    private static final double LOCK_DRIFT_DISTANCE_SQR = 0.005D;
 
     private TreadmillBlockEvents() {
     }
@@ -91,8 +91,8 @@ public final class TreadmillBlockEvents {
 
         // Keep the player standing in place on top of the treadmill.
         double targetX = treadmillPos.getX() + 0.5D;
-        double targetY = treadmillPos.getY() + 1.0D;
-        double targetZ = treadmillPos.getZ() + 0.5D;
+        double targetY = treadmillPos.getY();
+        double targetZ = treadmillPos.getZ() + 0.6D;
 
         double dx = player.getX() - targetX;
         double dz = player.getZ() - targetZ;

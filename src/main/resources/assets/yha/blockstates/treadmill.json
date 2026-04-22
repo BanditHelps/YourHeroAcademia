@@ -1,7 +1,13 @@
 {
   "variants": {
-    "": {
-      "model": "yha:block/treadmill"
-    }
+    "facing=north,part=foot": { "model": "yha:block/treadmill", "y": 90 },
+    "facing=east,part=foot": { "model": "yha:block/treadmill", "y": 180 },
+    "facing=south,part=foot": { "model": "yha:block/treadmill", "y": 270 },
+    "facing=west,part=foot": { "model": "yha:block/treadmill", "y": 0 },
+
+    "facing=north,part=head": { "model": "yha:block/treadmill", "y": 90 },
+    "facing=east,part=head": { "model": "yha:block/treadmill", "y": 180 },
+    "facing=south,part=head": { "model": "yha:block/treadmill", "y": 270 },
+    "facing=west,part=head": { "model": "yha:block/treadmill", "y": 0 }
   }
 }
