@@ -305,9 +305,9 @@ public final class TreadmillBlockEvents {
         }
 
         player.setDeltaMovement(
-                -facing.getStepX() * FLING_HORIZONTAL_SPEED,
+                facing.getStepX() * FLING_HORIZONTAL_SPEED,
                 FLING_UPWARD_SPEED,
-                -facing.getStepZ() * FLING_HORIZONTAL_SPEED
+                facing.getStepZ() * FLING_HORIZONTAL_SPEED
         );
         player.hurtMarked = true;
     }
