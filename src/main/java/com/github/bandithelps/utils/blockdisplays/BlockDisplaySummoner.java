@@ -1,6 +1,7 @@
 package com.github.bandithelps.utils.blockdisplays;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.abilities.blockdisplayanims.BDTrailAbility;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.RgbaDisplayEntity;
 import net.minecraft.network.chat.Component;
@@ -641,6 +642,97 @@ public class BlockDisplaySummoner {
 
     }
 
+
+    public static void summonTrailDisplay(
+            ServerLevel level,
+            Vec3 position,
+            Vector3f locationOffset,
+            Vector3f rotationOffset,
+            Vector3f initialScale,
+            Vector3f finalScale,
+            List<BlockState> palette,
+            int interpolationTicks,
+            int lifetime,
+            boolean randomDecay,
+            boolean randomRotation,
+            boolean relative,
+            BDTrailAbility.IdleRotationConfig idleConfig,
+            BlockDisplayVisualOptions visualOptions) {
+
+        if (level == null || position == null) {
+            return;
+        }
+
+        RandomSource random = level.getRandom();
+
+        double x = position.x;
+        double y = position.y;
+        double z = position.z;
+
+        Vector3f startPos = new Vector3f((float) x, (float) y, (float) z);
+        Vector3f endPos = new Vector3f(
+                (float) (x + locationOffset.x()),
+                (float) (y + locationOffset.y()),
+                (float) (z + locationOffset.z())
+        );
+        Vector3f translation = endPos.sub(startPos, new Vector3f());
+
+        if (shouldUseRgbaRenderer(visualOptions)) {
+            RgbaDisplayEntity rgbaDisplay = createRgbaDisplay(
+                    level,
+                    random,
+                    x,
+                    y,
+                    z,
+                    initialScale,
+                    lifetime,
+                    randomDecay,
+                    randomRotation,
+                    visualOptions
+            );
+            rgbaDisplay.setLifetime(randomDecay ? lifetime + random.nextInt(60) : lifetime);
+            rgbaDisplay.enableIdleRotation(
+                    interpolationTicks + 1,
+                    idleConfig.intervalMin,
+                    idleConfig.intervalMax,
+                    idleConfig.degreesMin,
+                    idleConfig.degreesMax
+            );
+            level.addFreshEntity(rgbaDisplay);
+            PENDING_RGBA_TRANSFORMS.add(new PendingRgbaTransform(rgbaDisplay, translation, finalScale, level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS, interpolationTicks));
+            return;
+        }
+
+        BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
+        display.setPos(x, y, z);
+        display.setBlock(resolveDisplayBlock(random, palette, visualOptions));
+        display.setScale(initialScale);
+        display.setTranslation(new Vector3f(CENTER_OFFSET_VECTOR));
+
+        if (randomRotation) {
+            display.setRightRotation(randomUnitRotation(random));
+        }
+
+        display.setInterpolation(Math.max(0, interpolationTicks));
+        applyVisualOptions(display, visualOptions);
+
+        if (randomDecay) {
+            display.setLifetime(lifetime + random.nextInt(60));
+        } else {
+            display.setLifetime(lifetime);
+        }
+
+        display.enableIdleRotation(
+                interpolationTicks + 1,
+                idleConfig.intervalMin,
+                idleConfig.intervalMax,
+                idleConfig.degreesMin,
+                idleConfig.degreesMax
+        );
+
+        level.addFreshEntity(display);
+        PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale, level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS));
+    }
 
     // TODO Summon Implosion
 

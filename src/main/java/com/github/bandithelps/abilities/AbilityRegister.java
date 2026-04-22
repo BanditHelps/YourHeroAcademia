@@ -4,6 +4,7 @@ import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.abilities.blockdisplayanims.BDBodyPartEmitterAbility;
 import com.github.bandithelps.abilities.blockdisplayanims.BDDomeAbility;
 import com.github.bandithelps.abilities.blockdisplayanims.BDShockwaveAbility;
+import com.github.bandithelps.abilities.blockdisplayanims.BDTrailAbility;
 import com.github.bandithelps.abilities.bodydata.DisplayBodyBarAbility;
 import com.github.bandithelps.abilities.bodydata.BodyPartValueTickAbility;
 import com.github.bandithelps.abilities.bodydata.DamageBodyPartAbility;
@@ -31,6 +32,7 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, BDShockwaveAbility.Serializer> BD_SHOCKWAVE;
     public static final DeferredHolder<AbilitySerializer<?>, BDDomeAbility.Serializer> BD_DOME;
     public static final DeferredHolder<AbilitySerializer<?>, BDBodyPartEmitterAbility.Serializer> BD_BODY_PART_EMITTER;
+    public static final DeferredHolder<AbilitySerializer<?>, BDTrailAbility.Serializer> BD_TRAIL;
     public static final DeferredHolder<AbilitySerializer<?>, PotionGeneratorAbility.Serializer> POTION_GEN;
     public static final DeferredHolder<AbilitySerializer<?>, SprayAttackAbility.Serializer> SPRAY_ATTACK;
     public static final DeferredHolder<AbilitySerializer<?>, PlaySoundAbility.Serializer> PLAY_SOUND;
@@ -47,6 +49,7 @@ public class AbilityRegister {
         BD_SHOCKWAVE = ABILITIES.register("bd_shockwave", BDShockwaveAbility.Serializer::new);
         BD_DOME = ABILITIES.register("bd_dome", BDDomeAbility.Serializer::new);
         BD_BODY_PART_EMITTER = ABILITIES.register("bd_body_part_emitter", BDBodyPartEmitterAbility.Serializer::new);
+        BD_TRAIL = ABILITIES.register("bd_trail", BDTrailAbility.Serializer::new);
         POTION_GEN = ABILITIES.register("potion_gen", PotionGeneratorAbility.Serializer::new);
         SPRAY_ATTACK = ABILITIES.register("spray_attack", SprayAttackAbility.Serializer::new);
         PLAY_SOUND = ABILITIES.register("play_sound", PlaySoundAbility.Serializer::new);
