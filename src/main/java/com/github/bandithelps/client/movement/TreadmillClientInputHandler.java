@@ -15,6 +15,11 @@ public final class TreadmillClientInputHandler {
     private static final float WALK_ANIMATION_DAMPING = 0.2F;
     private static final float WALK_ANIMATION_SCALE = 1.0F;
 
+    private static boolean prevKeyUp    = false;
+    private static boolean prevKeyLeft  = false;
+    private static boolean prevKeyDown  = false;
+    private static boolean prevKeyRight = false;
+
     private TreadmillClientInputHandler() {
     }
 
@@ -24,6 +29,7 @@ public final class TreadmillClientInputHandler {
         if (minecraft.player == null) {
             ClientTreadmillState.setMounted(false);
             ClientTreadmillState.clearMinigame();
+            resetPrevKeys();
             return;
         }
 
@@ -35,8 +41,6 @@ public final class TreadmillClientInputHandler {
             return;
         }
 
-        // Do not clear WASD while the QTE is active. Forcing setDown(false) every tick breaks KeyMapping
-        // state so consumeClick() can re-fire every frame (queued wrong keys → instant server failure).
         if (!ClientTreadmillState.isMinigameActive()) {
             minecraft.options.keyUp.setDown(false);
             minecraft.options.keyDown.setDown(false);
@@ -52,31 +56,49 @@ public final class TreadmillClientInputHandler {
     public static void onClientTickPost(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.screen != null) {
+            resetPrevKeys();
             return;
         }
 
         if (!ClientTreadmillState.isMounted() || minecraft.options.keyShift.isDown()) {
+            resetPrevKeys();
             return;
         }
 
-        sendMinigameInputs(minecraft);
+        boolean currUp    = minecraft.options.keyUp.isDown();
+        boolean currLeft  = minecraft.options.keyLeft.isDown();
+        boolean currDown  = minecraft.options.keyDown.isDown();
+        boolean currRight = minecraft.options.keyRight.isDown();
+
+        if (ClientTreadmillState.isMinigameActive()) {
+            sendMinigameInputs(currUp, currLeft, currDown, currRight);
+        }
+
+        prevKeyUp    = currUp;
+        prevKeyLeft  = currLeft;
+        prevKeyDown  = currDown;
+        prevKeyRight = currRight;
+
         minecraft.player.setSprinting(true);
         minecraft.player.walkAnimation.update(WALK_ANIMATION_SPEED, WALK_ANIMATION_DAMPING, WALK_ANIMATION_SCALE);
     }
 
-    private static void sendMinigameInputs(Minecraft minecraft) {
-        if (!ClientTreadmillState.isMinigameActive()) {
-            return;
-        }
-        // At most one key per frame so we never send multiple wrong inputs if multiple edges register.
-        if (minecraft.options.keyUp.consumeClick()) {
+    private static void sendMinigameInputs(boolean currUp, boolean currLeft, boolean currDown, boolean currRight) {
+        if (!prevKeyUp && currUp) {
             ClientPacketDistributor.sendToServer(new TreadmillMinigameInputPayload(0));
-        } else if (minecraft.options.keyLeft.consumeClick()) {
+        } else if (!prevKeyLeft && currLeft) {
             ClientPacketDistributor.sendToServer(new TreadmillMinigameInputPayload(1));
-        } else if (minecraft.options.keyDown.consumeClick()) {
+        } else if (!prevKeyDown && currDown) {
             ClientPacketDistributor.sendToServer(new TreadmillMinigameInputPayload(2));
-        } else if (minecraft.options.keyRight.consumeClick()) {
+        } else if (!prevKeyRight && currRight) {
             ClientPacketDistributor.sendToServer(new TreadmillMinigameInputPayload(3));
         }
+    }
+
+    private static void resetPrevKeys() {
+        prevKeyUp    = false;
+        prevKeyLeft  = false;
+        prevKeyDown  = false;
+        prevKeyRight = false;
     }
 }

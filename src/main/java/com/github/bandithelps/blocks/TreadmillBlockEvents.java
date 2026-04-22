@@ -190,8 +190,12 @@ public final class TreadmillBlockEvents {
             return;
         }
 
-        BlockPos treadmillPos = BlockPos.of(treadmillPosValue);
         long gameTime = player.level().getGameTime();
+        if (gameTime - state.inputStartTick <= 2) {
+            return;
+        }
+
+        BlockPos treadmillPos = BlockPos.of(treadmillPosValue);
         if (gameTime > state.deadlineTick) {
             failMinigame(player, treadmillPos, true);
             return;
@@ -265,6 +269,7 @@ public final class TreadmillBlockEvents {
         state.packedSequence = packed;
         state.sequenceLength = length;
         state.progressIndex = 0;
+        state.inputStartTick = gameTime;
         state.deadlineTick = gameTime + BASE_QTE_DURATION_TICKS + (long) length * QTE_TICKS_PER_KEY;
         sendMinigameState(player, state, true, gameTime);
     }
@@ -313,6 +318,7 @@ public final class TreadmillBlockEvents {
         private int sequenceLength;
         private int progressIndex;
         private long deadlineTick;
+        private long inputStartTick;
         /** Avoid default 0 (would schedule a QTE every tick before startTraining overwrites this). */
         private long nextStartTick = Long.MAX_VALUE;
     }
