@@ -40,6 +40,8 @@
   "yourheroacademia.configuration.magicNumber": "Magic Number",
   "yha.gui.example_title": "Example Screen",
 
-  "yha:quirk#startup": "Startup"
+  "yha:quirk#startup": "Startup",
+  "ability.yha.smoke_canister_charge.empty_hand": "You must be holding a smoke canister to use this!",
+  "ability.yha.smoke_canister_charge.max_tier": "You don't have the strength to compress the smoke further"
 
 }

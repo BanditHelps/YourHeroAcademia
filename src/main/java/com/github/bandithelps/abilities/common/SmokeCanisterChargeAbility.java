@@ -31,16 +31,19 @@ public class SmokeCanisterChargeAbility extends Ability {
     public static final MapCodec<SmokeCanisterChargeAbility> CODEC = RecordCodecBuilder.mapCodec(instance ->
             instance.group(
                     Codec.INT.listOf().optionalFieldOf("tier_costs", List.of(35, 55, 80)).forGetter(ab -> ab.tierCosts),
+                    Codec.INT.optionalFieldOf("max_tier", 3).forGetter(ab -> ab.maxTier),
                     propertiesCodec(),
                     stateCodec(),
                     energyBarUsagesCodec()
             ).apply(instance, SmokeCanisterChargeAbility::new));
 
     private final List<Integer> tierCosts;
+    private final int maxTier;
 
-    public SmokeCanisterChargeAbility(List<Integer> tierCosts, AbilityProperties properties, AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
+    public SmokeCanisterChargeAbility(List<Integer> tierCosts, int maxTier, AbilityProperties properties, AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.tierCosts = tierCosts == null || tierCosts.isEmpty() ? List.of(35, 55, 80) : tierCosts;
+        this.maxTier = maxTier;
     }
 
     @Override
@@ -51,12 +54,14 @@ public class SmokeCanisterChargeAbility extends Ability {
 
         InteractionHand hand = this.resolveCanisterHand(player);
         if (hand == null) {
+            player.sendSystemMessage(Component.translatable("ability.yha.smoke_canister_charge.empty_hand"));
             return;
         }
 
         ItemStack stack = player.getItemInHand(hand);
         int currentTier = SmokeCanisterData.getTier(stack);
-        if (currentTier >= SmokeCanisterData.MAX_TIER) {
+        if (currentTier >= SmokeCanisterData.MAX_TIER || currentTier == maxTier) {
+            player.sendSystemMessage(Component.translatable("ability.yha.smoke_canister_charge.max_tier"));
             return;
         }
 
@@ -125,7 +130,8 @@ public class SmokeCanisterChargeAbility extends Ability {
         public void addDocumentation(CodecDocumentationBuilder<Ability, SmokeCanisterChargeAbility> builder, HolderLookup.Provider provider) {
             builder.setDescription("Consumes Smokescreen capacity to charge canisters in tiers.")
                     .add("tier_costs", TYPE_INT, "Smoke capacity cost for each charge tier in ascending order.")
-                    .addExampleObject(new SmokeCanisterChargeAbility(List.of(35, 55, 80), AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
+                    .add("max_tier", TYPE_INT, "The highest tier that the ability can make. (Max 3)")
+                    .addExampleObject(new SmokeCanisterChargeAbility(List.of(35, 55, 80), 3, AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
     }
 }
