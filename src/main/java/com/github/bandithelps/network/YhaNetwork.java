@@ -17,7 +17,6 @@ public final class YhaNetwork {
         registrar.playToClient(BodySyncPayload.TYPE, BodySyncPayload.STREAM_CODEC, BodySyncPayload::handle);
         registrar.playToClient(TreadmillMountStatePayload.TYPE, TreadmillMountStatePayload.STREAM_CODEC, TreadmillMountStatePayload::handle);
         registrar.playToClient(TreadmillMinigameStatePayload.TYPE, TreadmillMinigameStatePayload.STREAM_CODEC, TreadmillMinigameStatePayload::handle);
-        registrar.playToServer(MultiJumpRequestPayload.TYPE, MultiJumpRequestPayload.STREAM_CODEC, MultiJumpRequestPayload::handle);
         registrar.playToServer(TreadmillMinigameInputPayload.TYPE, TreadmillMinigameInputPayload.STREAM_CODEC, TreadmillMinigameInputPayload::handle);
     }
 }

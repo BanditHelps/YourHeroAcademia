@@ -14,7 +14,6 @@ import com.github.bandithelps.abilities.common.PotionGeneratorAbility;
 import com.github.bandithelps.abilities.common.SmokeCanisterChargeAbility;
 import com.github.bandithelps.abilities.common.SprayAttackAbility;
 import com.github.bandithelps.abilities.movement.DashAbility;
-import com.github.bandithelps.abilities.movement.MultiJumpAbility;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.threetag.palladium.power.ability.AbilitySerializer;
@@ -24,7 +23,6 @@ public class AbilityRegister {
 
     public static final DeferredRegister<AbilitySerializer<?>> ABILITIES;
     public static final DeferredHolder<AbilitySerializer<?>, DashAbility.Serializer> DASH;
-    public static final DeferredHolder<AbilitySerializer<?>, MultiJumpAbility.Serializer> MULTI_JUMP;
     public static final DeferredHolder<AbilitySerializer<?>, DamageBodyPartAbility.Serializer> DAMAGE_BODY_PART;
     public static final DeferredHolder<AbilitySerializer<?>, HealBodyPartAbility.Serializer> HEAL_BODY_PART;
     public static final DeferredHolder<AbilitySerializer<?>, BodyPartValueTickAbility.Serializer> CHANGE_BODY_VALUE;
@@ -41,7 +39,6 @@ public class AbilityRegister {
     static {
         ABILITIES = DeferredRegister.create(PalladiumRegistryKeys.ABILITY_SERIALIZER, YourHeroAcademia.MODID);
         DASH = ABILITIES.register("dash", DashAbility.Serializer::new);
-        MULTI_JUMP = ABILITIES.register("multi_jump", MultiJumpAbility.Serializer::new);
         DAMAGE_BODY_PART = ABILITIES.register("damage_body_part", DamageBodyPartAbility.Serializer::new);
         HEAL_BODY_PART = ABILITIES.register("heal_body_part", HealBodyPartAbility.Serializer::new);
         CHANGE_BODY_VALUE = ABILITIES.register("change_body_value", BodyPartValueTickAbility.Serializer::new);
