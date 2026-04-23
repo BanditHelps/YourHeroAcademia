@@ -16,6 +16,10 @@ public class DNAAnalyzerBlock extends Block implements EntityBlock {
 
     private static final VoxelShape SHAPE = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 14.0D, 16.0D);
 
+    public DNAAnalyzerBlock(Properties properties) {
+        super(properties);
+    }
+
     public DNAAnalyzerBlock() {
         super(Properties.of()
                 .mapColor(MapColor.METAL)

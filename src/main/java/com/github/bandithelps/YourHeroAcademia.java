@@ -3,11 +3,7 @@ package com.github.bandithelps;
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.attributes.QuirkAttributes;
 import com.github.bandithelps.attributes.IntelligenceAttributes;
-import com.github.bandithelps.blocks.ConfigurableFaceColorBlock;
-import com.github.bandithelps.blocks.TreadmillBlock;
-import com.github.bandithelps.blocks.DNAAnalyzerBlock;
-import com.github.bandithelps.blocks.DNASplicerBlock;
-import com.github.bandithelps.blocks.ModBlockEntities;
+import com.github.bandithelps.blocks.*;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.dna.DNAAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
@@ -74,43 +70,35 @@ public final class YourHeroAcademia {
     public static final String MODID = "yha";
     public static final Logger LOGGER = LogUtils.getLogger();
     // Create a Deferred Register to hold Blocks which will all be registered under the "yourheroacademia" namespace
-    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
+//    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
     // Create a Deferred Register to hold Items which will all be registered under the "yourheroacademia" namespace
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
     // Create a Deferred Register to hold CreativeModeTabs which will all be registered under the "yourheroacademia" namespace
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
-    // Creates a new Block with the id "yourheroacademia:example_block", combining the namespace and path
-    public static final DeferredBlock<Block> EXAMPLE_BLOCK = BLOCKS.registerSimpleBlock("example_block", p -> p.mapColor(MapColor.STONE));
+
     // Creates a new BlockItem with the id "yourheroacademia:example_block", combining the namespace and path
-    public static final DeferredItem<BlockItem> EXAMPLE_BLOCK_ITEM = ITEMS.registerSimpleBlockItem("example_block", EXAMPLE_BLOCK);
-    public static final DeferredBlock<TreadmillBlock> TREADMILL_BLOCK = BLOCKS.registerBlock(
-            "treadmill",
-            TreadmillBlock::new,
-            p -> p.mapColor(MapColor.METAL)
-                    .strength(2.5F)
-                    .sound(SoundType.METAL)
-                    .noOcclusion()
-    );
-    public static final DeferredBlock<ConfigurableFaceColorBlock> CONFIGURABLE_FACE_BLOCK = BLOCKS.registerBlock(
-            "configurable_face_block",
-            ConfigurableFaceColorBlock::new,
-            properties -> properties
-                    .mapColor(MapColor.SNOW)
-                    .strength(1.0F)
-                    .noOcclusion()
-    );
-    public static final DeferredItem<BlockItem> TREADMILL_BLOCK_ITEM = ITEMS.registerSimpleBlockItem("treadmill", TREADMILL_BLOCK);
-    public static final DeferredBlock<DNAAnalyzerBlock> DNA_ANALYZER_BLOCK = BLOCKS.register(
-            "dna_analyzer",
-            DNAAnalyzerBlock::new
-    );
-    public static final DeferredBlock<DNASplicerBlock> DNA_SPLICER_BLOCK = BLOCKS.register(
-            "dna_splicer",
-            DNASplicerBlock::new
-    );
-    public static final DeferredItem<BlockItem> DNA_ANALYZER_ITEM = ITEMS.registerSimpleBlockItem("dna_analyzer", DNA_ANALYZER_BLOCK);
-    public static final DeferredItem<BlockItem> DNA_SPLICER_ITEM = ITEMS.registerSimpleBlockItem("dna_splicer", DNA_SPLICER_BLOCK);
+    public static final DeferredItem<BlockItem> EXAMPLE_BLOCK_ITEM = ITEMS.registerSimpleBlockItem("example_block", ModBlocks.EXAMPLE_BLOCK);
+//    public static final DeferredBlock<TreadmillBlock> TREADMILL_BLOCK = BLOCKS.registerBlock(
+//            "treadmill",
+//            TreadmillBlock::new,
+//            p -> p.mapColor(MapColor.METAL)
+//                    .strength(2.5F)
+//                    .sound(SoundType.METAL)
+//                    .noOcclusion()
+//    );
+
+    public static final DeferredItem<BlockItem> TREADMILL_BLOCK_ITEM = ITEMS.registerSimpleBlockItem("treadmill", ModBlocks.TREADMILL_BLOCK);
+//    public static final DeferredBlock<DNAAnalyzerBlock> DNA_ANALYZER_BLOCK = BLOCKS.register(
+//            "dna_analyzer",
+//            DNAAnalyzerBlock::new
+//    );
+//    public static final DeferredBlock<DNASplicerBlock> DNA_SPLICER_BLOCK = BLOCKS.register(
+//            "dna_splicer",
+//            DNASplicerBlock::new
+//    );
+    public static final DeferredItem<BlockItem> DNA_ANALYZER_ITEM = ITEMS.registerSimpleBlockItem("dna_analyzer", ModBlocks.DNA_ANALYZER);
+    public static final DeferredItem<BlockItem> DNA_SPLICER_ITEM = ITEMS.registerSimpleBlockItem("dna_splicer", ModBlocks.DNA_SPLICER);
 
     // Creates a new food item with the id "yourheroacademia:example_id", nutrition 1 and saturation 2
     public static final DeferredItem<Item> EXAMPLE_ITEM = ITEMS.registerSimpleItem("example_item", p -> p.food(new FoodProperties.Builder()
@@ -135,7 +123,7 @@ public final class YourHeroAcademia {
     public static final DeferredItem<Item> DNA_INJECTOR = ITEMS.register("dna_injector", () -> new DNAInjectorItem(new Item.Properties()
             .stacksTo(1)
             .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "dna_injector")))));
-    public static final DeferredItem<BlockItem> SAMPLE_REFRIGERATOR = ITEMS.registerSimpleBlockItem("sample_refrigerator", EXAMPLE_BLOCK);
+    public static final DeferredItem<BlockItem> SAMPLE_REFRIGERATOR = ITEMS.registerSimpleBlockItem("sample_refrigerator", ModBlocks.EXAMPLE_BLOCK);
 
     // Creates a creative tab with the id "yourheroacademia:example_tab" for the example item, that is placed after the combat tab
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("example_tab", () -> CreativeModeTab.builder()
@@ -154,7 +142,7 @@ public final class YourHeroAcademia {
         modEventBus.addListener(this::commonSetup);
 
         // Register the Deferred Register to the mod event bus so blocks get registered
-        BLOCKS.register(modEventBus);
+
         // Register the Deferred Register to the mod event bus so items get registered
         ITEMS.register(modEventBus);
         // Register the Deferred Register to the mod event bus so tabs get registered
@@ -174,6 +162,7 @@ public final class YourHeroAcademia {
 
         ModEffects.MOD_EFFECTS.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
+        ModBlocks.BLOCKS.register(modEventBus);
         ModParticles.PARTICLE_TYPES.register(modEventBus);
         ModRecipeSerializers.RECIPE_SERIALIZERS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);

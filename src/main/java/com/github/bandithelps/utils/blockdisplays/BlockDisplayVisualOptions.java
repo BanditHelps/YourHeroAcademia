@@ -2,6 +2,7 @@ package com.github.bandithelps.utils.blockdisplays;
 
 import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.blocks.ConfigurableFaceColorBlock;
+import com.github.bandithelps.blocks.ModBlocks;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.ExtraCodecs;
@@ -68,7 +69,7 @@ public record BlockDisplayVisualOptions(
         }
 
         DyeColor color = this.faceColor.orElse(DyeColor.WHITE);
-        BlockState state = YourHeroAcademia.CONFIGURABLE_FACE_BLOCK.get()
+        BlockState state = ModBlocks.CONFIGURABLE_FACE_BLOCK.get()
                 .defaultBlockState()
                 .setValue(ConfigurableFaceColorBlock.FACE_COLOR, color);
         return Optional.of(state);

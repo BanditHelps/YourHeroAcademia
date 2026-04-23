@@ -1,7 +1,6 @@
 package com.github.bandithelps.items;
 
 import com.github.bandithelps.YourHeroAcademia;
-import net.minecraft.network.chat.Component;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -20,7 +19,7 @@ public class TissueExtractorItem extends Item {
         super(properties);
     }
 
-    public InteractionResult onItemUseFirst(Item item, Level level, Player player, InteractionHand hand, Entity targetEntity) {
+    public InteractionResult onItemUseFirst(Level level, Player player, InteractionHand hand, Entity targetEntity) {
         if (!(targetEntity instanceof Player targetPlayer)) {
             return InteractionResult.PASS;
         }

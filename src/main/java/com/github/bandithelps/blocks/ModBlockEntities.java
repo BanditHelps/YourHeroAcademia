@@ -16,7 +16,7 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(
                             DNAAnalyzerBlockEntity::new,
                             false,
-                            YourHeroAcademia.DNA_ANALYZER_BLOCK.get()
+                            ModBlocks.DNA_ANALYZER.get()
                     )
             );
 

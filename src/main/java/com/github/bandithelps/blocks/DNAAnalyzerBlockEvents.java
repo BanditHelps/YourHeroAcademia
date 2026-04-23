@@ -26,7 +26,7 @@ public final class DNAAnalyzerBlockEvents {
 
         BlockPos pos = event.getPos();
         BlockState state = event.getLevel().getBlockState(pos);
-        if (state.getBlock() != YourHeroAcademia.DNA_ANALYZER_BLOCK.get()) {
+        if (state.getBlock() != ModBlocks.DNA_ANALYZER.get()) {
             return;
         }
 

@@ -13,6 +13,10 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 public class DNASplicerBlock extends Block implements EntityBlock {
     private static final VoxelShape SHAPE = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 14.0D, 16.0D);
 
+    public DNASplicerBlock(Properties props) {
+        super(props);
+    }
+
     public DNASplicerBlock() {
         super(Properties.of()
                 .mapColor(MapColor.METAL)
