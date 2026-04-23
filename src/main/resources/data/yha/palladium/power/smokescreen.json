@@ -325,6 +325,16 @@
         "gui_position": [0, -2]
       },
       "state": {
+        "unlocking": {
+          "type": "yha:upgrade_point_buyable",
+          "cost": 3,
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "quirk_info"
+            }
+          ]
+        },
         "enabling": {
           "type": "palladium:key_bind",
           "behaviour": "action"
