@@ -1,0 +1,11 @@
+{
+  "id": "yha:strength_boost_1",
+  "category": "ATTRIBUTE",
+  "rarity": "RARE",
+  "qualityRange": [1, 100],
+  "combinable": false,
+  "description": "A common gene found in many mobs, granting enhanced strength.",
+  "mobs": [
+    "minecraft:iron_golem"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "yha:beta",
+  "category": "BUILDER",
+  "rarity": "COMMON",
+  "qualityRange": [1, 100],
+  "combinable": false,
+  "description": "A common gene found in many mobs, granting enhanced strength.",
+  "mobs": [
+    "minecraft:villager",
+    "minecraft:husk"
+  ]
+}

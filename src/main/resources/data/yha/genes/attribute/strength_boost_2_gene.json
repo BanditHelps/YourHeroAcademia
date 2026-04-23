@@ -1,17 +1,14 @@
 {
+  "id": "yha:strength_boost_2",
   "category": "ATTRIBUTE",
-  "rarity": "COMMON",
+  "rarity": "RARE",
   "qualityRange": [1, 100],
   "combinable": true,
-  "description": "A common gene found in many mobs, granting enhanced strength.",
-  "mobs": [
-    "minecraft:zombie",
-    "minecraft:skeleton"
-  ],
+  "description": "An advanced variant of the strength gene.",
   "combination": {
     "requires": [
       {
-        "id": "yha:strength_i",
+        "id": "yha:strength_boost_1",
         "minQuality": 50
       }
     ],
