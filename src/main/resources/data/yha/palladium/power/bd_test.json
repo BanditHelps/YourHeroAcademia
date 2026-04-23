@@ -1,7 +1,6 @@
 {
   "name": "Block Display Test",
   "icon": "minecraft:grass_block",
-  "screen": "yha:power/bd_test",
   "gui_display_type": "tree",
   "abilities": {
     "foot_shockwave": {
