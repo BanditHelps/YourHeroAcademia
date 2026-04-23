@@ -2,9 +2,14 @@ package com.github.bandithelps;
 
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.attributes.QuirkAttributes;
+import com.github.bandithelps.attributes.IntelligenceAttributes;
 import com.github.bandithelps.blocks.ConfigurableFaceColorBlock;
 import com.github.bandithelps.blocks.TreadmillBlock;
+import com.github.bandithelps.blocks.DNAAnalyzerBlock;
+import com.github.bandithelps.blocks.DNASplicerBlock;
+import com.github.bandithelps.blocks.ModBlockEntities;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
+import com.github.bandithelps.capabilities.dna.DNAAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.client.renderers.entity.PotionGeneratorEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.RgbaDisplayEntityRenderer;
@@ -17,6 +22,10 @@ import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
 import com.github.bandithelps.gui.actions.YhaDialogActions;
 import com.github.bandithelps.items.SmokeCanisterItem;
+import com.github.bandithelps.items.TissueExtractorItem;
+import com.github.bandithelps.items.TissueSampleItem;
+import com.github.bandithelps.items.GeneVialItem;
+import com.github.bandithelps.items.DNAInjectorItem;
 import com.github.bandithelps.network.YhaNetwork;
 import com.github.bandithelps.particles.ModParticles;
 import com.github.bandithelps.recipes.ModRecipeSerializers;
@@ -54,6 +63,7 @@ import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(YourHeroAcademia.MODID)
@@ -91,6 +101,16 @@ public final class YourHeroAcademia {
                     .noOcclusion()
     );
     public static final DeferredItem<BlockItem> TREADMILL_BLOCK_ITEM = ITEMS.registerSimpleBlockItem("treadmill", TREADMILL_BLOCK);
+    public static final DeferredBlock<DNAAnalyzerBlock> DNA_ANALYZER_BLOCK = BLOCKS.register(
+            "dna_analyzer",
+            DNAAnalyzerBlock::new
+    );
+    public static final DeferredBlock<DNASplicerBlock> DNA_SPLICER_BLOCK = BLOCKS.register(
+            "dna_splicer",
+            DNASplicerBlock::new
+    );
+    public static final DeferredItem<BlockItem> DNA_ANALYZER_ITEM = ITEMS.registerSimpleBlockItem("dna_analyzer", DNA_ANALYZER_BLOCK);
+    public static final DeferredItem<BlockItem> DNA_SPLICER_ITEM = ITEMS.registerSimpleBlockItem("dna_splicer", DNA_SPLICER_BLOCK);
 
     // Creates a new food item with the id "yourheroacademia:example_id", nutrition 1 and saturation 2
     public static final DeferredItem<Item> EXAMPLE_ITEM = ITEMS.registerSimpleItem("example_item", p -> p.food(new FoodProperties.Builder()
@@ -103,6 +123,19 @@ public final class YourHeroAcademia {
             .stacksTo(16)
             .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "infused_smoke_canister")))));
     public static final DeferredItem<Item> PIPETTE = ITEMS.registerSimpleItem("pipette");
+    public static final DeferredItem<Item> TISSUE_EXTRACTOR = ITEMS.register("tissue_extractor", () -> new TissueExtractorItem(new Item.Properties()
+            .stacksTo(1)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "tissue_extractor")))));
+    public static final DeferredItem<Item> TISSUE_SAMPLE = ITEMS.register("tissue_sample", () -> new TissueSampleItem(new Item.Properties()
+            .stacksTo(16)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "tissue_sample")))));
+    public static final DeferredItem<Item> GENE_VIAL = ITEMS.register("gene_vial", () -> new GeneVialItem(new Item.Properties()
+            .stacksTo(1)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "gene_vial")))));
+    public static final DeferredItem<Item> DNA_INJECTOR = ITEMS.register("dna_injector", () -> new DNAInjectorItem(new Item.Properties()
+            .stacksTo(1)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "dna_injector")))));
+    public static final DeferredItem<BlockItem> SAMPLE_REFRIGERATOR = ITEMS.registerSimpleBlockItem("sample_refrigerator", EXAMPLE_BLOCK);
 
     // Creates a creative tab with the id "yourheroacademia:example_tab" for the example item, that is placed after the combat tab
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("example_tab", () -> CreativeModeTab.builder()
@@ -134,13 +167,16 @@ public final class YourHeroAcademia {
         YhaDialogActions.ACTIONS.register(modEventBus);
 
         QuirkAttributes.ATTRIBUTES.register(modEventBus);
+        IntelligenceAttributes.ATTRIBUTES.register(modEventBus);
         StaminaAttachments.ATTACHMENTS.register(modEventBus);
         BodyAttachments.ATTACHMENTS.register(modEventBus);
+        DNAAttachments.ATTACHMENTS.register(modEventBus);
 
         ModEffects.MOD_EFFECTS.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
         ModParticles.PARTICLE_TYPES.register(modEventBus);
         ModRecipeSerializers.RECIPE_SERIALIZERS.register(modEventBus);
+        ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in.
         // Note that this is necessary if and only if we want *this* class (YourHeroAcademia) to respond directly to events.
@@ -173,11 +209,18 @@ public final class YourHeroAcademia {
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(EXAMPLE_BLOCK_ITEM);
             event.accept(TREADMILL_BLOCK_ITEM);
+            event.accept(DNA_ANALYZER_ITEM);
+            event.accept(DNA_SPLICER_ITEM);
         } else if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(EMPTY_CANISTER);
             event.accept(FILLED_SMOKE_CANISTER);
             event.accept(INFUSED_SMOKE_CANISTER);
             event.accept(PIPETTE);
+            event.accept(TISSUE_EXTRACTOR);
+            event.accept(TISSUE_SAMPLE);
+            event.accept(GENE_VIAL);
+            event.accept(DNA_INJECTOR);
+            event.accept(SAMPLE_REFRIGERATOR);
         }
     }
 

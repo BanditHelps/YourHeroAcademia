@@ -34,6 +34,10 @@ public class Config {
             .comment("A list of items to log on common setup.")
             .defineListAllowEmpty("items", List.of("minecraft:iron_ingot"), () -> "", Config::validateItemName);
 
+    public static final ModConfigSpec.IntValue TISSUE_EXTRACTOR_COOLDOWN = BUILDER
+            .comment("Cooldown time in ticks for the Tissue Extractor (20 ticks = 1 second)")
+            .defineInRange("tissueExtractorCooldown", 30, 0, 7200);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     private static boolean validateItemName(final Object obj) {
