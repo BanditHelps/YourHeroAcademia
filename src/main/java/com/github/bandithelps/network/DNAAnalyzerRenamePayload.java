@@ -10,22 +10,22 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public record DNAAnalyzerExtractPayload(
+public record DNAAnalyzerRenamePayload(
         BlockPos blockPos,
-        int side,
-        int selectedSlot
+        int slotIndex,
+        String name
 ) implements CustomPacketPayload {
-    public static final Type<DNAAnalyzerExtractPayload> TYPE =
-            new Type<>(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "dna_analyzer_extract"));
+    public static final Type<DNAAnalyzerRenamePayload> TYPE =
+            new Type<>(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "dna_analyzer_rename"));
 
-    public static final StreamCodec<ByteBuf, DNAAnalyzerExtractPayload> STREAM_CODEC = StreamCodec.composite(
+    public static final StreamCodec<ByteBuf, DNAAnalyzerRenamePayload> STREAM_CODEC = StreamCodec.composite(
             BlockPos.STREAM_CODEC,
-            DNAAnalyzerExtractPayload::blockPos,
+            DNAAnalyzerRenamePayload::blockPos,
             ByteBufCodecs.VAR_INT,
-            DNAAnalyzerExtractPayload::side,
-            ByteBufCodecs.VAR_INT,
-            DNAAnalyzerExtractPayload::selectedSlot,
-            DNAAnalyzerExtractPayload::new
+            DNAAnalyzerRenamePayload::slotIndex,
+            ByteBufCodecs.STRING_UTF8,
+            DNAAnalyzerRenamePayload::name,
+            DNAAnalyzerRenamePayload::new
     );
 
     @Override
@@ -33,7 +33,7 @@ public record DNAAnalyzerExtractPayload(
         return TYPE;
     }
 
-    public static void handle(DNAAnalyzerExtractPayload payload, IPayloadContext context) {
+    public static void handle(DNAAnalyzerRenamePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return;
@@ -41,7 +41,7 @@ public record DNAAnalyzerExtractPayload(
             var level = player.level();
             var be = level.getBlockEntity(payload.blockPos());
             if (be instanceof com.github.bandithelps.blocks.DNAAnalyzerBlockEntity analyzer) {
-                analyzer.extractGenes(player, payload.side(), payload.selectedSlot());
+                analyzer.renameGene(payload.slotIndex(), payload.name(), player);
             }
         });
     }

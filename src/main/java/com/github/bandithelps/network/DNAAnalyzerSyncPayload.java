@@ -31,6 +31,20 @@ public record DNAAnalyzerSyncPayload(
                     Arrays::asList
             );
 
+    public DNAAnalyzerSyncPayload {
+        sourceName = sourceName == null ? "" : sourceName;
+        sourceUuid = sourceUuid == null ? "" : sourceUuid;
+        if (geneSlots == null) {
+            geneSlots = new String[0];
+        } else {
+            String[] sanitized = new String[geneSlots.length];
+            for (int i = 0; i < geneSlots.length; i++) {
+                sanitized[i] = geneSlots[i] == null ? "" : geneSlots[i];
+            }
+            geneSlots = sanitized;
+        }
+    }
+
     public static final StreamCodec<ByteBuf, DNAAnalyzerSyncPayload> STREAM_CODEC = StreamCodec.composite(
             BlockPos.STREAM_CODEC,
             DNAAnalyzerSyncPayload::blockPos,

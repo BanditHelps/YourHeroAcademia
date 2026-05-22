@@ -1,20 +1,26 @@
 package com.github.bandithelps.blocks;
 
 import com.github.bandithelps.YourHeroAcademia;
-import com.github.bandithelps.YourHeroAcademiaClient;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.threetag.palladium.network.OpenScreenPacket;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 @EventBusSubscriber(modid = YourHeroAcademia.MODID)
 public final class DNAAnalyzerBlockEvents {
+    private static final Identifier DNA_ANALYZER_SCREEN_ID =
+            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "power/dna_analyzer");
+
     private DNAAnalyzerBlockEvents() {
     }
 
@@ -42,15 +48,17 @@ public final class DNAAnalyzerBlockEvents {
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
 
-        if (held.isEmpty()) {
-            return;
-        }
-
-        if (held.getItem() == YourHeroAcademia.TISSUE_SAMPLE.get()) {
-            BlockEntity be = event.getLevel().getBlockEntity(pos);
-            if (be instanceof DNAAnalyzerBlockEntity analyzer) {
-                analyzer.insertSample(held);
+        BlockEntity be = event.getLevel().getBlockEntity(pos);
+        if (be instanceof DNAAnalyzerBlockEntity analyzer && player instanceof ServerPlayer serverPlayer) {
+            boolean wantsInsert = player.isShiftKeyDown()
+                    && !held.isEmpty()
+                    && held.getItem() == YourHeroAcademia.TISSUE_SAMPLE.get();
+            if (wantsInsert && analyzer.insertSample(held, player)) {
+                return;
             }
+
+            analyzer.syncToPlayer(serverPlayer);
+            PacketDistributor.sendToPlayer(serverPlayer, new OpenScreenPacket(DNA_ANALYZER_SCREEN_ID));
         }
     }
 }

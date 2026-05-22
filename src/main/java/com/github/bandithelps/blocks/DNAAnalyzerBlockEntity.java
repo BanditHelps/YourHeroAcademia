@@ -1,11 +1,19 @@
 package com.github.bandithelps.blocks;
 
+import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.attributes.IntelligenceAttributes;
+import com.github.bandithelps.gene.Gene;
+import com.github.bandithelps.items.GeneVialItem;
+import com.github.bandithelps.items.TissueSampleItem;
 import com.github.bandithelps.network.DNAAnalyzerSyncPayload;
-import com.github.bandithelps.utils.player.PlayerUtils;
+import com.github.bandithelps.utils.gene.GeneAliasUtil;
+import com.github.bandithelps.utils.gene.GeneUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -22,12 +30,17 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     public static final String TAG_INVENTORY = "inventory";
 
     public static final int SLOT_SAMPLE = 0;
-    public static final int ANALYZE_TICKS = 100;
+    public static final int ANALYZE_TICKS = 30;
+    private static final int EXTRACT_COUNT_LOW_INTELLIGENCE = 3;
+    private static final int EXTRACT_COUNT_MID_INTELLIGENCE = 2;
+    private static final int EXTRACT_COUNT_HIGH_INTELLIGENCE = 1;
+    private static final double MID_INTELLIGENCE_THRESHOLD = 25.0D;
+    private static final double HIGH_INTELLIGENCE_THRESHOLD = 60.0D;
 
     private final ItemStackSlot inventory = new ItemStackSlot(1);
     private int analyzeProgress = 0;
     private boolean analyzed = false;
-    private String[] geneSlots = new String[6];
+    private String[] geneSlots = createEmptyGeneSlots();
     private String sourceName = "";
     private String sourceUuid = "";
 
@@ -44,7 +57,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
 
         if (tag.contains(TAG_GENE_SLOTS)) {
             ListTag listTag = tag.getList(TAG_GENE_SLOTS).orElse(new ListTag());
-            String[] stored = new String[6];
+            String[] stored = createEmptyGeneSlots();
             for (int i = 0; i < Math.min(listTag.size(), 6); i++) {
                 stored[i] = listTag.getString(i).orElse("");
             }
@@ -93,7 +106,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
             return;
         }
 
-        CompoundTag dnaData = com.github.bandithelps.items.TissueSampleItem.getDNAData(sample);
+        CompoundTag dnaData = TissueSampleItem.getDNAData(sample);
         sourceName = dnaData.getString("sourceName").orElse("Unknown");
         sourceUuid = dnaData.getString("sourceUuid").orElse("");
         String genesRaw = dnaData.getString("genes").orElse("");
@@ -120,61 +133,113 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         return slots;
     }
 
-    public boolean insertSample(ItemStack sampleStack) {
+    public boolean insertSample(ItemStack sampleStack, Player player) {
         if (!inventory.getStack(SLOT_SAMPLE).isEmpty()) {
             return false;
         }
+        if (!TissueSampleItem.hasDNA(sampleStack)) {
+            return false;
+        }
+
+        DNAView dnaView = buildGeneView(sampleStack, player);
+        if (dnaView == null) {
+            return false;
+        }
+
         ItemStack toInsert = sampleStack.copy();
         toInsert.setCount(1);
         sampleStack.shrink(1);
         inventory.setStack(SLOT_SAMPLE, toInsert);
         analyzeProgress = 0;
-        analyzed = false;
-        sourceName = "";
-        sourceUuid = "";
-        geneSlots = new String[6];
+        analyzed = true;
+        sourceName = dnaView.sourceName();
+        sourceUuid = dnaView.sourceUuid();
+        geneSlots = dnaView.geneSlots();
 
         BlockState state = getBlockState();
         if (state.hasProperty(DNAAnalyzerBlock.ANALYZED)) {
-            this.level.setBlock(getBlockPos(), state.setValue(DNAAnalyzerBlock.ANALYZED, false), 3);
+            this.level.setBlock(getBlockPos(), state.setValue(DNAAnalyzerBlock.ANALYZED, true), 3);
         }
         setChanged();
         syncToClient();
         return true;
     }
 
-    public void extractGenes(int count, int side, Player player) {
+    public void renameGene(int slotIndex, String newName, Player player) {
+        if (!analyzed || slotIndex < 0 || slotIndex >= geneSlots.length) {
+            return;
+        }
+
+        String rawGene = geneSlots[slotIndex];
+        if (rawGene == null || rawGene.isEmpty()) {
+            return;
+        }
+
+        Gene gene = GeneUtil.parseGene(rawGene);
+        if (gene == null) {
+            return;
+        }
+
+        String normalizedName = newName == null ? "" : newName.trim();
+        if (normalizedName.isEmpty()) {
+            return;
+        }
+
+        Gene renamedGene = new Gene(
+                gene.getId(),
+                normalizedName,
+                gene.getCategory(),
+                gene.getType(),
+                gene.getDescription(),
+                gene.getQuality(),
+                gene.getSideEffects()
+        );
+        geneSlots[slotIndex] = GeneUtil.serializeGene(renamedGene);
+        GeneAliasUtil.setAlias(player, sourceUuid, gene.getType().getId(), normalizedName);
+        setChanged();
+        syncToClient();
+    }
+
+    public void extractGenes(Player player, int side, int selectedSlot) {
         if (!analyzed) {
             return;
         }
 
-        String[] sideGenes;
-        if (side == 0) {
-            sideGenes = new String[]{geneSlots[0], geneSlots[1], geneSlots[2]};
-        } else {
-            sideGenes = new String[]{geneSlots[3], geneSlots[4], geneSlots[5]};
-        }
-
-        int actual = Math.min(count, 3);
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < actual; i++) {
-            if (sideGenes[i] != null && !sideGenes[i].isEmpty()) {
-                if (sb.length() > 0) {
-                    sb.append(",");
-                }
-                sb.append(sideGenes[i]);
+        int extractCount = getExtractionCountForPlayer(player);
+        String[] selectedGenes = resolveSelectedGenes(extractCount, side, selectedSlot);
+        StringBuilder serializedGenes = new StringBuilder();
+        for (String rawGene : selectedGenes) {
+            if (rawGene == null || rawGene.isEmpty()) {
+                continue;
             }
+            Gene gene = GeneUtil.parseGene(rawGene);
+            if (gene == null) {
+                continue;
+            }
+            Gene aliasedGene = GeneAliasUtil.applyAlias(player, sourceUuid, gene);
+            if (serializedGenes.length() > 0) {
+                serializedGenes.append(",");
+            }
+            serializedGenes.append(GeneUtil.serializeGene(aliasedGene));
         }
 
-        if (sb.isEmpty()) {
+        if (serializedGenes.isEmpty()) {
             return;
         }
 
-        ItemStack vial = new ItemStack(com.github.bandithelps.YourHeroAcademia.GENE_VIAL.get());
-        com.github.bandithelps.items.GeneVialItem.setGenes(vial, sb.toString());
+        ItemStack vial = new ItemStack(YourHeroAcademia.GENE_VIAL.get());
+        GeneVialItem.setGenes(vial, serializedGenes.toString());
 
-        if (player != null) {
-            PlayerUtils.giveItem(player, vial);
+        if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            ItemEntity vialEntity = new ItemEntity(
+                    serverLevel,
+                    this.worldPosition.getX() + 0.5D,
+                    this.worldPosition.getY() + 1.05D,
+                    this.worldPosition.getZ() + 0.5D,
+                    vial
+            );
+            vialEntity.setDeltaMovement(0.0D, 0.1D, 0.0D);
+            serverLevel.addFreshEntity(vialEntity);
         }
 
         ItemStack sample = inventory.getStack(SLOT_SAMPLE);
@@ -187,7 +252,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
 
         analyzed = false;
         analyzeProgress = 0;
-        geneSlots = new String[6];
+        geneSlots = createEmptyGeneSlots();
         sourceName = "";
         sourceUuid = "";
 
@@ -197,6 +262,62 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         }
         setChanged();
         syncToClient();
+    }
+
+    private String[] resolveSelectedGenes(int extractCount, int side, int selectedSlot) {
+        if (extractCount == EXTRACT_COUNT_HIGH_INTELLIGENCE && selectedSlot >= 0 && selectedSlot < geneSlots.length) {
+            return new String[]{geneSlots[selectedSlot]};
+        }
+        if (side == 1) {
+            return extractCount == EXTRACT_COUNT_MID_INTELLIGENCE
+                    ? new String[]{geneSlots[3], geneSlots[4]}
+                    : new String[]{geneSlots[3], geneSlots[4], geneSlots[5]};
+        }
+        return extractCount == EXTRACT_COUNT_MID_INTELLIGENCE
+                ? new String[]{geneSlots[0], geneSlots[1]}
+                : new String[]{geneSlots[0], geneSlots[1], geneSlots[2]};
+    }
+
+    private int getExtractionCountForPlayer(Player player) {
+        if (player == null) {
+            return EXTRACT_COUNT_LOW_INTELLIGENCE;
+        }
+        double intelligence = player.getAttributeValue(IntelligenceAttributes.INTELLIGENCE);
+        if (intelligence >= HIGH_INTELLIGENCE_THRESHOLD) {
+            return EXTRACT_COUNT_HIGH_INTELLIGENCE;
+        }
+        if (intelligence >= MID_INTELLIGENCE_THRESHOLD) {
+            return EXTRACT_COUNT_MID_INTELLIGENCE;
+        }
+        return EXTRACT_COUNT_LOW_INTELLIGENCE;
+    }
+
+    private DNAView buildGeneView(ItemStack sample, Player player) {
+        CompoundTag dnaData = TissueSampleItem.getDNAData(sample);
+        String parsedSourceName = dnaData.getString("sourceName").orElse("");
+        String parsedSourceUuid = dnaData.getString("sourceUuid").orElse("");
+        String genesRaw = dnaData.getString("genes").orElse("");
+        if (parsedSourceUuid.isEmpty() || genesRaw.isEmpty()) {
+            return null;
+        }
+
+        String[] rawSlots = parseGeneSlots(genesRaw);
+        String[] resolvedSlots = createEmptyGeneSlots();
+        for (int i = 0; i < rawSlots.length; i++) {
+            String rawGene = rawSlots[i];
+            if (rawGene == null || rawGene.isEmpty()) {
+                resolvedSlots[i] = "";
+                continue;
+            }
+            Gene gene = GeneUtil.parseGene(rawGene);
+            if (gene == null) {
+                resolvedSlots[i] = "";
+                continue;
+            }
+            Gene aliasedGene = GeneAliasUtil.applyAlias(player, parsedSourceUuid, gene);
+            resolvedSlots[i] = GeneUtil.serializeGene(aliasedGene);
+        }
+        return new DNAView(parsedSourceName, parsedSourceUuid, resolvedSlots);
     }
 
     private void syncToClient() {
@@ -221,6 +342,14 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         );
     }
 
+    private static String[] createEmptyGeneSlots() {
+        String[] slots = new String[6];
+        for (int i = 0; i < slots.length; i++) {
+            slots[i] = "";
+        }
+        return slots;
+    }
+
     public boolean hasSample() {
         return !inventory.getStack(SLOT_SAMPLE).isEmpty();
     }
@@ -237,7 +366,28 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         return geneSlots;
     }
 
+    public String getSourceName() {
+        return sourceName;
+    }
+
+    public String getSourceUuid() {
+        return sourceUuid;
+    }
+
     public ItemStackSlot getInventory() {
         return inventory;
+    }
+
+    public void syncToPlayer(ServerPlayer player) {
+        PacketDistributor.sendToPlayer(player, new DNAAnalyzerSyncPayload(
+                getBlockPos(),
+                analyzed,
+                sourceName,
+                sourceUuid,
+                geneSlots
+        ));
+    }
+
+    private record DNAView(String sourceName, String sourceUuid, String[] geneSlots) {
     }
 }

@@ -1,0 +1,75 @@
+{
+  "type": "palladium:multi_column",
+  "layouts": [
+    {
+      "width": 320,
+      "height": 200,
+      "padding": 6,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/default"
+      },
+      "components": [
+        {
+          "type": "palladium:text_box",
+          "text": "Genome Workstation",
+          "properties": {
+            "alignment": "top_center",
+            "width": 180,
+            "height": 16,
+            "y": 2
+          }
+        },
+        {
+          "type": "yha:dna_analyzer_panel",
+          "title": "DNA Analyzer",
+          "frame_color": 7977727,
+          "slot_color": 1714482,
+          "slot_active_color": 10146559,
+          "text_color": 15135487,
+          "properties": {
+            "alignment": "top_center",
+            "x": 0,
+            "y": 22,
+            "width": 196,
+            "height": 120
+          }
+        }
+      ]
+    },
+    {
+      "width": 84,
+      "height": 24,
+      "padding": 2,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/default"
+      },
+      "components": [
+        {
+          "type": "palladium:icon",
+          "icon": "minecraft:experience_bottle",
+          "properties": {
+            "alignment": "middle_left",
+            "x": 4,
+            "width": 16,
+            "height": 16
+          }
+        },
+        {
+          "type": "yha:player_attribute_value",
+          "attribute": "quirk_factor",
+          "label": "QF",
+          "decimals": 2,
+          "properties": {
+            "alignment": "middle_left",
+            "x": 24,
+            "y": 6,
+            "width": 54,
+            "height": 12
+          }
+        }
+      ]
+    }
+  ]
+}

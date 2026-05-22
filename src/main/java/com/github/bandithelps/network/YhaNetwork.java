@@ -20,7 +20,9 @@ public final class YhaNetwork {
         registrar.playToServer(TreadmillMinigameInputPayload.TYPE, TreadmillMinigameInputPayload.STREAM_CODEC, TreadmillMinigameInputPayload::handle);
         registrar.playToClient(DNASyncPayload.TYPE, DNASyncPayload.STREAM_CODEC, DNASyncPayload::handle);
         registrar.playToClient(DNAAnalyzerSyncPayload.TYPE, DNAAnalyzerSyncPayload.STREAM_CODEC, DNAAnalyzerSyncPayload::handle);
+        registrar.playToClient(OpenDNAAnalyzerScreenPayload.TYPE, OpenDNAAnalyzerScreenPayload.STREAM_CODEC, OpenDNAAnalyzerScreenPayload::handle);
         registrar.playToServer(DNAAnalyzerExtractPayload.TYPE, DNAAnalyzerExtractPayload.STREAM_CODEC, DNAAnalyzerExtractPayload::handle);
+        registrar.playToServer(DNAAnalyzerRenamePayload.TYPE, DNAAnalyzerRenamePayload.STREAM_CODEC, DNAAnalyzerRenamePayload::handle);
         registrar.playToClient(DNASplicerSyncPayload.TYPE, DNASplicerSyncPayload.STREAM_CODEC, DNASplicerSyncPayload::handle);
         registrar.playToServer(DNASplicerCreateInjectorPayload.TYPE, DNASplicerCreateInjectorPayload.STREAM_CODEC, DNASplicerCreateInjectorPayload::handle);
     }
