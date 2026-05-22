@@ -118,7 +118,7 @@ public class BDDomeAbility extends Ability {
 
     @Override
     public AbilitySerializer<?> getSerializer() {
-        return AbilityRegister.BD_SHOCKWAVE.get();
+        return AbilityRegister.BD_DOME.get();
     }
 
     /*

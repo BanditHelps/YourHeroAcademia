@@ -12,7 +12,8 @@ import com.github.bandithelps.client.renderers.entity.RgbaDisplayEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.SmokeCanisterProjectileRenderer;
 import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
-import com.github.bandithelps.conditions.unlocking_handlers.UnlockingHandlerRegister;
+import com.github.bandithelps.conditions.cost.CostRegister;
+//import com.github.bandithelps.conditions.unlocking_handlers.UnlockingHandlerRegister;
 import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
@@ -151,7 +152,9 @@ public final class YourHeroAcademia {
         // Custom palladium stuff
         AbilityRegister.ABILITIES.register(modEventBus);
         ConditionRegister.CONDITIONS.register(modEventBus);
-        UnlockingHandlerRegister.UNLOCKING_HANDLERS.register(modEventBus);
+        CostRegister.COST_SERIALIZERS.register(modEventBus);
+
+//        UnlockingHandlerRegister.UNLOCKING_HANDLERS.register(modEventBus);
         YhaDialogActions.ACTIONS.register(modEventBus);
 
         QuirkAttributes.ATTRIBUTES.register(modEventBus);
