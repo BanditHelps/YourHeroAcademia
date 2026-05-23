@@ -37,6 +37,10 @@ public final class ClientDNAAnalyzerState {
         return STATES.values().stream().findFirst().orElse(null);
     }
 
+    public static BlockPos getLatestPos() {
+        return latestPos;
+    }
+
     public record ClientData(boolean analyzed, String sourceName, String sourceUuid, String[] geneSlots) {
     }
 }

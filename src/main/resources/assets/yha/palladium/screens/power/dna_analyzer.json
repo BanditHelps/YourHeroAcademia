@@ -2,7 +2,51 @@
   "type": "palladium:multi_column",
   "layouts": [
     {
-      "width": 320,
+      "width": 40,
+      "height": 200,
+      "padding": 6,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/modal_with_header"
+      },
+      "components": [
+        {
+          "type": "palladium:text_box",
+          "text": "Tools",
+          "properties": {
+            "alignment": "top_center",
+            "y": -2,
+            "x": 4,
+            "width": 45,
+            "height": 17
+          }
+        },
+        {
+          "type": "yha:dna_analyzer_tools",
+          "frame_color": 7977727,
+          "slot_color": 1714482,
+          "slot_active_color": 10146559,
+          "text_color": 15135487,
+          "tools": [
+            {
+              "id": "rename",
+              "label": "",
+              "icon": "minecraft:name_tag",
+              "tooltip": "Rename a gene alias"
+            }
+          ],
+          "properties": {
+            "alignment": "top_center",
+            "x": -1,
+            "y": 13,
+            "width": 29,
+            "height": 175
+          }
+        }
+      ]
+    },
+    {
+      "width": 280,
       "height": 200,
       "padding": 6,
       "background": {
@@ -31,7 +75,7 @@
             "alignment": "top_center",
             "x": 0,
             "y": 22,
-            "width": 296,
+            "width": 256,
             "height": 165
           }
         }
@@ -70,8 +114,8 @@
         },
         {
           "type": "yha:player_attribute_value",
-          "attribute": "quirk_factor",
-          "label": "QF",
+          "attribute": "intelligence",
+          "label": "INT",
           "decimals": 2,
           "properties": {
             "alignment": "top_left",

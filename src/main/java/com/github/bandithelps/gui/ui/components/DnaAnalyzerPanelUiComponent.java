@@ -1,6 +1,8 @@
 package com.github.bandithelps.gui.ui.components;
 
 import com.github.bandithelps.client.dna_analyzer.ClientDNAAnalyzerState;
+import com.github.bandithelps.client.dna_analyzer.ClientDNAAnalyzerToolState;
+import com.github.bandithelps.gui.screens.DnaAnalyzerRenamePopupScreen;
 import com.github.bandithelps.gene.Gene;
 import com.github.bandithelps.utils.gene.GeneUtil;
 import com.mojang.serialization.Codec;
@@ -13,6 +15,7 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
@@ -444,6 +447,10 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
 
             int clickedSlot = getSlotAt((int) event.x(), (int) event.y(), leftSlotsX, rightSlotsX, slotsStartY);
             if (clickedSlot >= 0 && clickedSlot < genes.length && genes[clickedSlot] != null) {
+                if (ClientDNAAnalyzerToolState.isRenameEnabled()) {
+                    this.openRenamePopup(clickedSlot, genes[clickedSlot]);
+                    return true;
+                }
                 if (this.owner.selectedSlot != clickedSlot) {
                     Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 }
@@ -495,6 +502,18 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
         @Override
         protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
             narrationElementOutput.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE, this.getMessage());
+        }
+
+        private void openRenamePopup(int slot, Gene gene) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.screen == null || gene == null) {
+                return;
+            }
+            BlockPos analyzerPos = ClientDNAAnalyzerState.getLatestPos();
+            if (analyzerPos == null) {
+                return;
+            }
+            minecraft.setScreen(new DnaAnalyzerRenamePopupScreen(minecraft.screen, analyzerPos, slot, safeText(gene.getName(), "")));
         }
     }
 
