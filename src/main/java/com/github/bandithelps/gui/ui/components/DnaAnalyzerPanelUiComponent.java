@@ -1,9 +1,11 @@
 package com.github.bandithelps.gui.ui.components;
 
+import com.github.bandithelps.attributes.IntelligenceAttributes;
 import com.github.bandithelps.client.dna_analyzer.ClientDNAAnalyzerState;
 import com.github.bandithelps.client.dna_analyzer.ClientDNAAnalyzerToolState;
 import com.github.bandithelps.gui.screens.DnaAnalyzerRenamePopupScreen;
 import com.github.bandithelps.gene.Gene;
+import com.github.bandithelps.network.DNAAnalyzerExtractPayload;
 import com.github.bandithelps.utils.gene.GeneUtil;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -20,6 +22,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.threetag.palladium.client.gui.ui.component.UiComponent;
 import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
 import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
@@ -27,6 +30,7 @@ import net.threetag.palladium.client.gui.ui.screen.UiScreen;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class DnaAnalyzerPanelUiComponent extends UiComponent {
@@ -36,6 +40,8 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
     private static final int HELIX_DRAW_WIDTH = 40;
     private static final int HELIX_HALF_WIDTH = HELIX_DRAW_WIDTH / 2;
     private static final int HELIX_TO_SLOT_GAP = 10;
+    private static final double MID_INTELLIGENCE_THRESHOLD = 25.0D;
+    private static final double HIGH_INTELLIGENCE_THRESHOLD = 60.0D;
 
     public static final MapCodec<DnaAnalyzerPanelUiComponent> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
             Codec.STRING.optionalFieldOf("title", "").forGetter(DnaAnalyzerPanelUiComponent::getTitle),
@@ -53,6 +59,7 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
     private final int textColor;
     private int selectedSlot = -1;
     private int descriptionScrollOffset = 0;
+    private int[] selectedIsolationSlots = new int[0];
 
     public DnaAnalyzerPanelUiComponent(
             String title,
@@ -423,12 +430,30 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
             int leftSlotsX = centerX - HELIX_HALF_WIDTH - HELIX_TO_SLOT_GAP - SLOT_WIDTH;
             int rightSlotsX = centerX + HELIX_HALF_WIDTH + HELIX_TO_SLOT_GAP;
             int slotsStartY = y + 6;
+            boolean isolateMode = ClientDNAAnalyzerToolState.isActive(ClientDNAAnalyzerToolState.TOOL_ISOLATE);
+            if (!isolateMode) {
+                this.owner.selectedIsolationSlots = new int[0];
+            }
 
             int hoveredSlot = drawGeneSlots(this.owner, minecraft, gui, slots, genes, leftSlotsX, rightSlotsX, slotsStartY, mouseX, mouseY);
-            drawSelectedGeneInfo(this.owner, minecraft, gui, genes, x + 12, y + 102, width - 24, y + height - 8);
+            if (isolateMode) {
+                List<IsolationOption> options = buildIsolationOptions(leftSlotsX, rightSlotsX, slotsStartY, getExtractionCountForPlayer(minecraft));
+                if (!isSelectionPresent(this.owner.selectedIsolationSlots, options)) {
+                    this.owner.selectedIsolationSlots = new int[0];
+                }
+                IsolationOption hoveredOption = getHoveredOption(options, mouseX, mouseY);
+                drawIsolationOptionHighlights(gui, options, hoveredOption, this.owner.selectedIsolationSlots);
+                drawIsolateInfo(gui, minecraft, x + 12, y + 102, width - 24, y + height - 8, options);
+                boolean canSplice = state != null && state.analyzed() && selectionHasAnyFilledGenes(this.owner.selectedIsolationSlots, slots);
+                drawSpliceButton(gui, minecraft, x, y, width, height, canSplice);
+            } else {
+                drawSelectedGeneInfo(this.owner, minecraft, gui, genes, x + 12, y + 102, width - 24, y + height - 8);
+            }
 
             if (hoveredSlot >= 0 && hoveredSlot < genes.length && genes[hoveredSlot] != null) {
                 this.setMessage(Component.literal("Gene Slot " + (hoveredSlot + 1) + ": " + genes[hoveredSlot].getName()));
+            } else if (isolateMode) {
+                this.setMessage(Component.literal("Isolation mode"));
             } else {
                 this.setMessage(Component.literal(this.owner.title));
             }
@@ -444,6 +469,30 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
             int leftSlotsX = centerX - HELIX_HALF_WIDTH - HELIX_TO_SLOT_GAP - SLOT_WIDTH;
             int rightSlotsX = centerX + HELIX_HALF_WIDTH + HELIX_TO_SLOT_GAP;
             int slotsStartY = this.getY() + 6;
+            boolean isolateMode = ClientDNAAnalyzerToolState.isActive(ClientDNAAnalyzerToolState.TOOL_ISOLATE);
+
+            if (isolateMode) {
+                boolean canSplice = state != null && state.analyzed() && selectionHasAnyFilledGenes(this.owner.selectedIsolationSlots, slots);
+                if (isPointInsideSpliceButton((int) event.x(), (int) event.y())) {
+                    if (canSplice) {
+                        this.sendSpliceRequest(this.owner.selectedIsolationSlots);
+                    }
+                    return true;
+                }
+
+                List<IsolationOption> options = buildIsolationOptions(leftSlotsX, rightSlotsX, slotsStartY, getExtractionCountForPlayer(Minecraft.getInstance()));
+                IsolationOption clickedOption = getHoveredOption(options, (int) event.x(), (int) event.y());
+                if (clickedOption != null) {
+                    if (Arrays.equals(this.owner.selectedIsolationSlots, clickedOption.slots())) {
+                        this.owner.selectedIsolationSlots = new int[0];
+                    } else {
+                        this.owner.selectedIsolationSlots = Arrays.copyOf(clickedOption.slots(), clickedOption.slots().length);
+                    }
+                    Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                    return true;
+                }
+                return false;
+            }
 
             int clickedSlot = getSlotAt((int) event.x(), (int) event.y(), leftSlotsX, rightSlotsX, slotsStartY);
             if (clickedSlot >= 0 && clickedSlot < genes.length && genes[clickedSlot] != null) {
@@ -463,6 +512,9 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
 
         @Override
         public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+            if (ClientDNAAnalyzerToolState.isActive(ClientDNAAnalyzerToolState.TOOL_ISOLATE)) {
+                return false;
+            }
             ClientDNAAnalyzerState.ClientData state = ClientDNAAnalyzerState.getLatest();
             String[] slots = state == null ? emptySlots() : normalizeSlots(state.geneSlots());
             Gene[] genes = parseGenes(slots);
@@ -514,6 +566,159 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
                 return;
             }
             minecraft.setScreen(new DnaAnalyzerRenamePopupScreen(minecraft.screen, analyzerPos, slot, safeText(gene.getName(), "")));
+        }
+
+        private int getExtractionCountForPlayer(Minecraft minecraft) {
+            if (minecraft.player == null) {
+                return 3;
+            }
+            double intelligence = minecraft.player.getAttributeValue(IntelligenceAttributes.INTELLIGENCE);
+            if (intelligence >= HIGH_INTELLIGENCE_THRESHOLD) {
+                return 1;
+            }
+            if (intelligence >= MID_INTELLIGENCE_THRESHOLD) {
+                return 2;
+            }
+            return 3;
+        }
+
+        private List<IsolationOption> buildIsolationOptions(int leftX, int rightX, int startY, int extractCount) {
+            List<IsolationOption> options = new ArrayList<>();
+            if (extractCount == 1) {
+                for (int i = 0; i < 6; i++) {
+                    options.add(optionForSlots(new int[]{i}, leftX, rightX, startY, "Slot " + (i + 1)));
+                }
+                return options;
+            }
+            if (extractCount == 2) {
+                options.add(optionForSlots(new int[]{0, 1}, leftX, rightX, startY, "Left A"));
+                options.add(optionForSlots(new int[]{1, 2}, leftX, rightX, startY, "Left B"));
+                options.add(optionForSlots(new int[]{3, 4}, leftX, rightX, startY, "Right A"));
+                options.add(optionForSlots(new int[]{4, 5}, leftX, rightX, startY, "Right B"));
+                return options;
+            }
+            options.add(optionForSlots(new int[]{0, 1, 2}, leftX, rightX, startY, "Left"));
+            options.add(optionForSlots(new int[]{3, 4, 5}, leftX, rightX, startY, "Right"));
+            return options;
+        }
+
+        private IsolationOption optionForSlots(int[] slots, int leftX, int rightX, int startY, String label) {
+            int minX = Integer.MAX_VALUE;
+            int minY = Integer.MAX_VALUE;
+            int maxX = Integer.MIN_VALUE;
+            int maxY = Integer.MIN_VALUE;
+            for (int slot : slots) {
+                int slotX = slot < 3 ? leftX : rightX;
+                int row = slot % 3;
+                int slotY = startY + row * (SLOT_HEIGHT + SLOT_ROW_GAP);
+                minX = Math.min(minX, slotX);
+                minY = Math.min(minY, slotY);
+                maxX = Math.max(maxX, slotX + SLOT_WIDTH);
+                maxY = Math.max(maxY, slotY + SLOT_HEIGHT);
+            }
+            return new IsolationOption(Arrays.copyOf(slots, slots.length), minX, minY, maxX - minX, maxY - minY, label);
+        }
+
+        private IsolationOption getHoveredOption(List<IsolationOption> options, int mouseX, int mouseY) {
+            for (IsolationOption option : options) {
+                if (mouseX >= option.x() && mouseX < option.x() + option.width()
+                        && mouseY >= option.y() && mouseY < option.y() + option.height()) {
+                    return option;
+                }
+            }
+            return null;
+        }
+
+        private boolean isSelectionPresent(int[] selectedSlots, List<IsolationOption> options) {
+            if (selectedSlots == null || selectedSlots.length == 0) {
+                return true;
+            }
+            for (IsolationOption option : options) {
+                if (Arrays.equals(selectedSlots, option.slots())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void drawIsolationOptionHighlights(GuiGraphicsExtractor gui, List<IsolationOption> options, IsolationOption hoveredOption, int[] selectedSlots) {
+            for (IsolationOption option : options) {
+                boolean selected = Arrays.equals(selectedSlots, option.slots());
+                boolean hovered = hoveredOption != null && Arrays.equals(hoveredOption.slots(), option.slots());
+                int fillColor = selected ? 0x663AA6FF : hovered ? 0x444DCBFF : 0x221E3F57;
+                int border = selected ? 0xFFFFC857 : hovered ? 0xFF8AD0FF : 0xAA557391;
+                gui.fill(option.x(), option.y(), option.x() + option.width(), option.y() + option.height(), fillColor);
+                gui.fill(option.x(), option.y(), option.x() + option.width(), option.y() + 1, border);
+                gui.fill(option.x(), option.y() + option.height() - 1, option.x() + option.width(), option.y() + option.height(), border);
+                gui.fill(option.x(), option.y(), option.x() + 1, option.y() + option.height(), border);
+                gui.fill(option.x() + option.width() - 1, option.y(), option.x() + option.width(), option.y() + option.height(), border);
+            }
+        }
+
+        private void drawIsolateInfo(GuiGraphicsExtractor gui, Minecraft minecraft, int x, int y, int width, int bottomY, List<IsolationOption> options) {
+            gui.fill(x, y, x + width, bottomY, 0x88101824);
+            gui.fill(x, y, x + width, y + 1, 0xAA476485);
+            gui.fill(x, bottomY - 1, x + width, bottomY, 0xAA476485);
+            gui.fill(x, y, x + 1, bottomY, 0xAA476485);
+            gui.fill(x + width - 1, y, x + width, bottomY, 0xAA476485);
+            gui.text(minecraft.font, "Isolation Mode", x + 6, y + 4, 0xFFE6F2FF, false);
+            gui.text(minecraft.font, "Select a highlighted section.", x + 6, y + 16, 0xFF9AA9BC, false);
+            gui.text(minecraft.font, "Click Splice to extract selection.", x + 6, y + 27, 0xFF9AA9BC, false);
+            String selected = "None";
+            for (IsolationOption option : options) {
+                if (Arrays.equals(this.owner.selectedIsolationSlots, option.slots())) {
+                    selected = option.label();
+                    break;
+                }
+            }
+            gui.text(minecraft.font, "Selection: " + selected, x + 6, y + 40, 0xFFB7D9FF, false);
+        }
+
+        private void drawSpliceButton(GuiGraphicsExtractor gui, Minecraft minecraft, int x, int y, int width, int height, boolean canSplice) {
+            int buttonX = x + width - 72;
+            int buttonY = y + height - 26;
+            int buttonW = 58;
+            int buttonH = 16;
+            int border = canSplice ? 0xFF79B8FF : 0xFF3A4A5E;
+            int fill = canSplice ? 0xAA1C3D54 : 0xAA1C222B;
+            gui.fill(buttonX, buttonY, buttonX + buttonW, buttonY + buttonH, fill);
+            gui.fill(buttonX, buttonY, buttonX + buttonW, buttonY + 1, border);
+            gui.fill(buttonX, buttonY + buttonH - 1, buttonX + buttonW, buttonY + buttonH, border);
+            gui.fill(buttonX, buttonY, buttonX + 1, buttonY + buttonH, border);
+            gui.fill(buttonX + buttonW - 1, buttonY, buttonX + buttonW, buttonY + buttonH, border);
+            String text = "Splice";
+            int color = canSplice ? 0xFFE6F2FF : 0xFF738398;
+            gui.text(minecraft.font, text, buttonX + (buttonW - minecraft.font.width(text)) / 2, buttonY + 4, color, false);
+        }
+
+        private boolean isPointInsideSpliceButton(int mouseX, int mouseY) {
+            int buttonX = this.getX() + this.getWidth() - 68;
+            int buttonY = this.getY() + this.getHeight() - 24;
+            return mouseX >= buttonX && mouseX < buttonX + 58 && mouseY >= buttonY && mouseY < buttonY + 16;
+        }
+
+        private boolean selectionHasAnyFilledGenes(int[] selection, String[] slots) {
+            if (selection == null || selection.length == 0) {
+                return false;
+            }
+            for (int index : selection) {
+                if (index >= 0 && index < slots.length && slots[index] != null && !slots[index].isBlank()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void sendSpliceRequest(int[] selectedSlots) {
+            BlockPos analyzerPos = ClientDNAAnalyzerState.getLatestPos();
+            if (analyzerPos == null || selectedSlots == null || selectedSlots.length == 0) {
+                return;
+            }
+            ClientPacketDistributor.sendToServer(new DNAAnalyzerExtractPayload(analyzerPos, Arrays.copyOf(selectedSlots, selectedSlots.length)));
+            Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        }
+
+        private record IsolationOption(int[] slots, int x, int y, int width, int height, String label) {
         }
     }
 

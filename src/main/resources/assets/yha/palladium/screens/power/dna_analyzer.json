@@ -33,6 +33,12 @@
               "label": "",
               "icon": "minecraft:name_tag",
               "tooltip": "Rename a gene alias"
+            },
+            {
+              "id": "isolate",
+              "label": "",
+              "icon": "minecraft:shears",
+              "tooltip": "Select genes to splice"
             }
           ],
           "properties": {

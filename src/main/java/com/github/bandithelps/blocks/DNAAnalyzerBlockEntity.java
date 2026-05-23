@@ -21,6 +21,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import java.util.Arrays;
+
 public class DNAAnalyzerBlockEntity extends BlockEntity {
     public static final String TAG_ANALYZE_PROGRESS = "analyzeProgress";
     public static final String TAG_ANALYZED = "analyzed";
@@ -200,13 +202,21 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         syncToClient();
     }
 
-    public void extractGenes(Player player, int side, int selectedSlot) {
+    public void extractGenes(Player player, int[] selectedSlots) {
         if (!analyzed) {
             return;
         }
 
         int extractCount = getExtractionCountForPlayer(player);
-        String[] selectedGenes = resolveSelectedGenes(extractCount, side, selectedSlot);
+        int[] normalizedSelection = normalizeSelection(selectedSlots);
+        if (!isValidSelectionForExtractCount(extractCount, normalizedSelection)) {
+            return;
+        }
+
+        String[] selectedGenes = new String[normalizedSelection.length];
+        for (int i = 0; i < normalizedSelection.length; i++) {
+            selectedGenes[i] = geneSlots[normalizedSelection[i]];
+        }
         StringBuilder serializedGenes = new StringBuilder();
         for (String rawGene : selectedGenes) {
             if (rawGene == null || rawGene.isEmpty()) {
@@ -264,18 +274,36 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         syncToClient();
     }
 
-    private String[] resolveSelectedGenes(int extractCount, int side, int selectedSlot) {
-        if (extractCount == EXTRACT_COUNT_HIGH_INTELLIGENCE && selectedSlot >= 0 && selectedSlot < geneSlots.length) {
-            return new String[]{geneSlots[selectedSlot]};
+    private static int[] normalizeSelection(int[] selectedSlots) {
+        if (selectedSlots == null || selectedSlots.length == 0) {
+            return new int[0];
         }
-        if (side == 1) {
-            return extractCount == EXTRACT_COUNT_MID_INTELLIGENCE
-                    ? new String[]{geneSlots[3], geneSlots[4]}
-                    : new String[]{geneSlots[3], geneSlots[4], geneSlots[5]};
+        int[] filtered = Arrays.stream(selectedSlots)
+                .filter(index -> index >= 0 && index < 6)
+                .distinct()
+                .sorted()
+                .toArray();
+        return filtered;
+    }
+
+    private static boolean isValidSelectionForExtractCount(int extractCount, int[] selection) {
+        if (extractCount == EXTRACT_COUNT_LOW_INTELLIGENCE) {
+            return matchesSelection(selection, 0, 1, 2) || matchesSelection(selection, 3, 4, 5);
         }
-        return extractCount == EXTRACT_COUNT_MID_INTELLIGENCE
-                ? new String[]{geneSlots[0], geneSlots[1]}
-                : new String[]{geneSlots[0], geneSlots[1], geneSlots[2]};
+        if (extractCount == EXTRACT_COUNT_MID_INTELLIGENCE) {
+            return matchesSelection(selection, 0, 1)
+                    || matchesSelection(selection, 1, 2)
+                    || matchesSelection(selection, 3, 4)
+                    || matchesSelection(selection, 4, 5);
+        }
+        if (extractCount == EXTRACT_COUNT_HIGH_INTELLIGENCE) {
+            return selection.length == 1;
+        }
+        return false;
+    }
+
+    private static boolean matchesSelection(int[] selection, int... expected) {
+        return Arrays.equals(selection, expected);
     }
 
     private int getExtractionCountForPlayer(Player player) {

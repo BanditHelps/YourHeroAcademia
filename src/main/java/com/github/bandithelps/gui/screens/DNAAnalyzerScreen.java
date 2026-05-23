@@ -203,12 +203,12 @@ public class DNAAnalyzerScreen extends Screen {
     }
 
     private void extractLeft() {
-        ClientPacketDistributor.sendToServer(new DNAAnalyzerExtractPayload(analyzerPos, 0, -1));
+        ClientPacketDistributor.sendToServer(new DNAAnalyzerExtractPayload(analyzerPos, new int[]{0, 1, 2}));
         onClose();
     }
 
     private void extractRight() {
-        ClientPacketDistributor.sendToServer(new DNAAnalyzerExtractPayload(analyzerPos, 1, -1));
+        ClientPacketDistributor.sendToServer(new DNAAnalyzerExtractPayload(analyzerPos, new int[]{3, 4, 5}));
         onClose();
     }
 
@@ -216,7 +216,7 @@ public class DNAAnalyzerScreen extends Screen {
         if (selectedSlot < 0) {
             return;
         }
-        ClientPacketDistributor.sendToServer(new DNAAnalyzerExtractPayload(analyzerPos, 0, selectedSlot));
+        ClientPacketDistributor.sendToServer(new DNAAnalyzerExtractPayload(analyzerPos, new int[]{selectedSlot}));
         onClose();
     }
 

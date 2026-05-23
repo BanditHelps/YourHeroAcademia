@@ -2,6 +2,7 @@ package com.github.bandithelps.client.dna_analyzer;
 
 public final class ClientDNAAnalyzerToolState {
     public static final String TOOL_RENAME = "rename";
+    public static final String TOOL_ISOLATE = "isolate";
     private static volatile String activeToolId = "";
 
     private ClientDNAAnalyzerToolState() {

@@ -102,7 +102,7 @@ public class DnaAnalyzerToolsUiComponent extends UiComponent {
 
     private static List<ToolDefinition> sanitizeTools(List<ToolDefinition> tools) {
         if (tools == null || tools.isEmpty()) {
-            return List.of(defaultRenameTool());
+            return defaultTools();
         }
         List<ToolDefinition> result = new ArrayList<>();
         for (ToolDefinition tool : tools) {
@@ -119,13 +119,21 @@ public class DnaAnalyzerToolsUiComponent extends UiComponent {
             result.add(new ToolDefinition(id, label, icon, tooltip));
         }
         if (result.isEmpty()) {
-            result.add(defaultRenameTool());
+            result.addAll(defaultTools());
         }
         return List.copyOf(result);
     }
 
+    private static List<ToolDefinition> defaultTools() {
+        return List.of(defaultRenameTool(), defaultIsolateTool());
+    }
+
     private static ToolDefinition defaultRenameTool() {
         return new ToolDefinition(ClientDNAAnalyzerToolState.TOOL_RENAME, "Rename", "minecraft:name_tag", "Rename a gene");
+    }
+
+    private static ToolDefinition defaultIsolateTool() {
+        return new ToolDefinition(ClientDNAAnalyzerToolState.TOOL_ISOLATE, "Isolate", "minecraft:shears", "Extract selected gene sequence");
     }
 
     private static int withOpaqueAlpha(int color) {
