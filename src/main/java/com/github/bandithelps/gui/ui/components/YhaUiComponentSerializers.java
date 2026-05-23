@@ -14,6 +14,7 @@ public class YhaUiComponentSerializers {
     public static final UiComponentSerializer<VerticalSegmentBarUiComponent> VERTICAL_SEGMENT_BAR = register("vertical_segment_bar", new VerticalSegmentBarUiComponent.Serializer());
     public static final UiComponentSerializer<AnchoredPowerTreeUiComponent> ANCHORED_POWER_TREE = register("anchored_power_tree", new AnchoredPowerTreeUiComponent.Serializer());
     public static final UiComponentSerializer<DnaAnalyzerPanelUiComponent> DNA_ANALYZER_PANEL = register("dna_analyzer_panel", new DnaAnalyzerPanelUiComponent.Serializer());
+    public static final UiComponentSerializer<DnaAnalyzerInfoUiComponent> DNA_ANALYZER_INFO = register("dna_analyzer_info", new DnaAnalyzerInfoUiComponent.Serializer());
 
     private static <T extends UiComponent> UiComponentSerializer<T> register(String id, UiComponentSerializer<T> serializer) {
         UiComponentSerializer.register(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, id), serializer);

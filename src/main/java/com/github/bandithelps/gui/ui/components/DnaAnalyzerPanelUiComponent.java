@@ -8,23 +8,34 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
-import net.threetag.palladium.client.gui.ui.UiAlignment;
-import net.threetag.palladium.client.gui.ui.component.RenderableUiComponent;
 import net.threetag.palladium.client.gui.ui.component.UiComponent;
 import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
 import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
+import net.threetag.palladium.client.gui.ui.screen.UiScreen;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
-import net.threetag.palladium.logic.context.DataContext;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class DnaAnalyzerPanelUiComponent extends RenderableUiComponent {
+public class DnaAnalyzerPanelUiComponent extends UiComponent {
+    private static final int SLOT_WIDTH = 72;
+    private static final int SLOT_HEIGHT = 24;
+    private static final int SLOT_ROW_GAP = 10;
+    private static final int HELIX_DRAW_WIDTH = 40;
+    private static final int HELIX_HALF_WIDTH = HELIX_DRAW_WIDTH / 2;
+    private static final int HELIX_TO_SLOT_GAP = 10;
+
     public static final MapCodec<DnaAnalyzerPanelUiComponent> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
-            Codec.STRING.optionalFieldOf("title", "DNA ANALYZER").forGetter(DnaAnalyzerPanelUiComponent::getTitle),
+            Codec.STRING.optionalFieldOf("title", "").forGetter(DnaAnalyzerPanelUiComponent::getTitle),
             Codec.INT.optionalFieldOf("frame_color", 0xFF79B8FF).forGetter(DnaAnalyzerPanelUiComponent::getFrameColor),
             Codec.INT.optionalFieldOf("slot_color", 0xFF1A2532).forGetter(DnaAnalyzerPanelUiComponent::getSlotColor),
             Codec.INT.optionalFieldOf("slot_active_color", 0xFF9AD1FF).forGetter(DnaAnalyzerPanelUiComponent::getSlotActiveColor),
@@ -37,6 +48,8 @@ public class DnaAnalyzerPanelUiComponent extends RenderableUiComponent {
     private final int slotColor;
     private final int slotActiveColor;
     private final int textColor;
+    private int selectedSlot = -1;
+    private int descriptionScrollOffset = 0;
 
     public DnaAnalyzerPanelUiComponent(
             String title,
@@ -47,7 +60,7 @@ public class DnaAnalyzerPanelUiComponent extends RenderableUiComponent {
             UiComponentProperties properties
     ) {
         super(properties);
-        this.title = title == null || title.isBlank() ? "DNA ANALYZER" : title;
+        this.title = title == null || title.isBlank() ? "" : title;
         this.frameColor = withOpaqueAlpha(frameColor);
         this.slotColor = withOpaqueAlpha(slotColor);
         this.slotActiveColor = withOpaqueAlpha(slotActiveColor);
@@ -60,88 +73,165 @@ public class DnaAnalyzerPanelUiComponent extends RenderableUiComponent {
     }
 
     @Override
-    public void render(Minecraft minecraft, GuiGraphicsExtractor gui, DataContext context, int x, int y, int width, int height, int mouseX, int mouseY, UiAlignment alignment) {
-        drawPanelBackground(gui, x, y, width, height);
-
-        int titleX = x + (width - minecraft.font.width(this.title)) / 2;
-        gui.text(minecraft.font, this.title, titleX, y + 6, this.textColor, true);
-
-        int helixX = x + 14;
-        int helixY = y + 24;
-        int helixHeight = 96;
-        drawHelix(gui, helixX, helixY, helixHeight);
-
-        ClientDNAAnalyzerState.ClientData state = ClientDNAAnalyzerState.getLatest();
-        String sourceName = state == null ? "No Sample Loaded" : safeText(state.sourceName(), "Unknown Source");
-        String sourceUuid = state == null ? "" : safeText(state.sourceUuid(), "");
-        String[] slots = state == null ? emptySlots() : normalizeSlots(state.geneSlots());
-
-        int slotsX = x + 74;
-        int slotsY = y + 24;
-        drawGeneSlots(minecraft, gui, slots, slotsX, slotsY, mouseX, mouseY);
-
-        int filled = 0;
-        for (String slot : slots) {
-            if (!slot.isBlank()) {
-                filled++;
-            }
-        }
-
-        gui.text(minecraft.font, "Source:", x + 14, y + 128, 0xFF98C8FF, false);
-        gui.text(minecraft.font, sourceName, x + 56, y + 128, this.textColor, false);
-        gui.text(minecraft.font, "UUID:", x + 14, y + 140, 0xFF98C8FF, false);
-        gui.text(minecraft.font, trimMiddle(sourceUuid, 28), x + 56, y + 140, 0xFFB4C8DF, false);
-        gui.text(minecraft.font, "Genes:", x + 14, y + 152, 0xFF98C8FF, false);
-        gui.text(minecraft.font, String.valueOf(filled) + "/6", x + 56, y + 152, this.textColor, false);
+    public AbstractWidget buildWidget(UiScreen screen, ScreenRectangle rectangle) {
+        return new DnaAnalyzerPanelWidget(this, this.getX(rectangle), this.getY(rectangle), this.getWidth(), this.getHeight());
     }
 
-    private void drawPanelBackground(GuiGraphicsExtractor gui, int x, int y, int width, int height) {
+    private static void drawPanelBackground(GuiGraphicsExtractor gui, int x, int y, int width, int height, int frameColor) {
         gui.fill(x, y, x + width, y + height, 0xCC0E131B);
         gui.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0xAA172231);
-        gui.fill(x, y, x + width, y + 1, this.frameColor);
-        gui.fill(x, y + height - 1, x + width, y + height, this.frameColor);
-        gui.fill(x, y, x + 1, y + height, this.frameColor);
-        gui.fill(x + width - 1, y, x + width, y + height, this.frameColor);
+        gui.fill(x, y, x + width, y + 1, frameColor);
+        gui.fill(x, y + height - 1, x + width, y + height, frameColor);
+        gui.fill(x, y, x + 1, y + height, frameColor);
+        gui.fill(x + width - 1, y, x + width, y + height, frameColor);
     }
 
-    private void drawHelix(GuiGraphicsExtractor gui, int x, int y, int height) {
+    private static void drawHelix(GuiGraphicsExtractor gui, int x, int y, int height, float animationTime, boolean activeMode, String sampleUuid) {
+        float speed = activeMode ? 0.16F : 0.03F;
+        float phase = animationTime * speed;
+        float frequency = activeMode ? 0.20F : 0.13F;
+        int uuidSeed = sampleUuid == null ? 0 : sampleUuid.hashCode();
+        float uuidPhaseOffset = activeMode ? (((uuidSeed >>> 8) & 0xFF) / 255.0F) * 6.2831855F : 0.0F;
+        float uuidFrequencyScale = activeMode ? (0.85F + ((((uuidSeed >>> 16) & 0xFF) / 255.0F) * 0.40F)) : 1.0F;
+        float uuidAmplitudeScale = activeMode ? (0.75F + (((uuidSeed & 0xFF) / 255.0F) * 0.90F)) : 1.0F;
+        int centerX = x + (HELIX_DRAW_WIDTH / 2);
         for (int i = 0; i < height; i += 2) {
-            int wave = (int) Math.round(Math.sin((i + 4) * 0.26D) * 7.0D);
-            int leftX = x + 8 + wave;
-            int rightX = x + 30 - wave;
-            gui.fill(leftX, y + i, leftX + 2, y + i + 2, 0xFF7CD2FF);
-            gui.fill(rightX, y + i, rightX + 2, y + i + 2, 0xFF7CD2FF);
+            float angle = (i * frequency * uuidFrequencyScale) + phase + uuidPhaseOffset;
+            float spin = (float) Math.sin(angle);
+            float depth = (float) Math.cos(angle);
+            float baseSpread = activeMode ? 5.0F : 7.0F;
+            float animatedSpread = activeMode
+                    ? (13.0F * Math.abs(spin) * uuidAmplitudeScale)
+                    : (5.0F * (0.5F + 0.5F * Math.abs(spin)));
+            float uuidJitter = activeMode ? uuidSpreadJitter(uuidSeed, i) : 0.0F;
+            int spread = Math.max(3, Math.round(baseSpread + animatedSpread + uuidJitter));
+
+            int leftX = centerX - spread;
+            int rightX = centerX + spread;
+            int frontColor = depth >= 0 ? 0xFF8CE0FF : 0xFF5EA5C8;
+            int backColor = depth >= 0 ? 0xFF5EA5C8 : 0xFF8CE0FF;
+
+            gui.fill(leftX, y + i, leftX + 2, y + i + 2, backColor);
+            gui.fill(rightX, y + i, rightX + 2, y + i + 2, frontColor);
             if ((i / 2) % 2 == 0) {
-                gui.fill(Math.min(leftX, rightX), y + i, Math.max(leftX, rightX) + 2, y + i + 1, 0xAA9EE4FF);
+                int rungColor = depth >= 0 ? 0xAA9EE4FF : 0x665C8AA8;
+                gui.fill(Math.min(leftX, rightX), y + i, Math.max(leftX, rightX) + 2, y + i + 1, rungColor);
             }
         }
     }
 
-    private void drawGeneSlots(Minecraft minecraft, GuiGraphicsExtractor gui, String[] slots, int startX, int startY, int mouseX, int mouseY) {
+    private static float uuidSpreadJitter(int seed, int row) {
+        int value = seed ^ (row * 0x9E3779B9);
+        value ^= (value >>> 16);
+        value *= 0x7FEB352D;
+        value ^= (value >>> 15);
+        value *= 0x846CA68B;
+        value ^= (value >>> 16);
+        float normalized = ((value & 0xFF) / 255.0F) - 0.5F;
+        return normalized * 4.0F;
+    }
+
+    private static int drawGeneSlots(
+            DnaAnalyzerPanelUiComponent owner,
+            Minecraft minecraft,
+            GuiGraphicsExtractor gui,
+            String[] slots,
+            Gene[] genes,
+            int leftX,
+            int rightX,
+            int startY,
+            int mouseX,
+            int mouseY
+    ) {
+        int hoveredSlot = -1;
         for (int i = 0; i < 6; i++) {
-            int slotX = startX + (i % 3) * 52;
-            int slotY = startY + (i / 3) * 52;
+            int row = i % 3;
+            int slotX = i < 3 ? leftX : rightX;
+            int slotY = startY + row * (SLOT_HEIGHT + SLOT_ROW_GAP);
             boolean filled = i < slots.length && !slots[i].isBlank();
-            int border = filled ? this.slotActiveColor : 0xFF3A4A5E;
+            boolean selected = owner.selectedSlot == i;
+            int border = selected ? 0xFFFFC857 : filled ? owner.slotActiveColor : 0xFF3A4A5E;
 
-            gui.fill(slotX, slotY, slotX + 44, slotY + 44, this.slotColor);
-            gui.fill(slotX, slotY, slotX + 44, slotY + 1, border);
-            gui.fill(slotX, slotY + 43, slotX + 44, slotY + 44, border);
-            gui.fill(slotX, slotY, slotX + 1, slotY + 44, border);
-            gui.fill(slotX + 43, slotY, slotX + 44, slotY + 44, border);
+            gui.fill(slotX, slotY, slotX + SLOT_WIDTH, slotY + SLOT_HEIGHT, owner.slotColor);
+            gui.fill(slotX, slotY, slotX + SLOT_WIDTH, slotY + 1, border);
+            gui.fill(slotX, slotY + SLOT_HEIGHT - 1, slotX + SLOT_WIDTH, slotY + SLOT_HEIGHT, border);
+            gui.fill(slotX, slotY, slotX + 1, slotY + SLOT_HEIGHT, border);
+            gui.fill(slotX + SLOT_WIDTH - 1, slotY, slotX + SLOT_WIDTH, slotY + SLOT_HEIGHT, border);
 
-            String text = filled ? "GENE" : "EMPTY";
+            String text = filled ? trimToWidth(minecraft, safeText(genes[i] == null ? "" : genes[i].getName(), "Unknown"), SLOT_WIDTH - 8) : "Empty";
             int textColor = filled ? 0xFFB3F0C4 : 0xFF7E8BA0;
-            int textX = slotX + (44 - minecraft.font.width(text)) / 2;
-            gui.text(minecraft.font, text, textX, slotY + 16, textColor, false);
+            int textX = slotX + (SLOT_WIDTH - minecraft.font.width(text)) / 2;
+            gui.text(minecraft.font, text, textX, slotY + 8, textColor, false);
 
-            if (mouseX >= slotX && mouseX < slotX + 44 && mouseY >= slotY && mouseY < slotY + 44 && filled) {
+            if (mouseX >= slotX && mouseX < slotX + SLOT_WIDTH && mouseY >= slotY && mouseY < slotY + SLOT_HEIGHT) {
+                hoveredSlot = i;
+            }
+
+            if (hoveredSlot == i && filled) {
                 addGeneTooltip(gui, minecraft, slots[i], mouseX, mouseY, i + 1);
             }
         }
+        return hoveredSlot;
     }
 
-    private void addGeneTooltip(GuiGraphicsExtractor gui, Minecraft minecraft, String rawGene, int mouseX, int mouseY, int slotNumber) {
+    private static void drawSelectedGeneInfo(DnaAnalyzerPanelUiComponent owner, Minecraft minecraft, GuiGraphicsExtractor gui, Gene[] genes, int x, int y, int width, int bottomY) {
+        gui.fill(x, y, x + width, bottomY, 0x88101824);
+        gui.fill(x, y, x + width, y + 1, 0xAA476485);
+        gui.fill(x, bottomY - 1, x + width, bottomY, 0xAA476485);
+        gui.fill(x, y, x + 1, bottomY, 0xAA476485);
+        gui.fill(x + width - 1, y, x + width, bottomY, 0xAA476485);
+
+        if (owner.selectedSlot < 0 || owner.selectedSlot >= genes.length || genes[owner.selectedSlot] == null) {
+            gui.text(minecraft.font, "No gene selected", x + 6, y + 4, 0xFF98C8FF, false);
+            gui.text(minecraft.font, "Click a gene slot to inspect details.", x + 6, y + 16, 0xFF9AA9BC, false);
+            return;
+        }
+
+        Gene gene = genes[owner.selectedSlot];
+        gui.text(minecraft.font, trimToWidth(minecraft, gene.getName(), width - 12), x + 6, y + 4, owner.textColor, false);
+        String qualityLine = "Q " + gene.getQuality() + "/100";
+        String categoryLine = "Cat " + gene.getCategory().name();
+        gui.text(minecraft.font, qualityLine + "  " + categoryLine, x + 6, y + 16, 0xFFB7D9FF, false);
+
+        int descX = x + 5;
+        int descY = y + 28;
+        int descW = width - 10;
+        int descH = Math.max(16, bottomY - descY - 4);
+        drawDescriptionBox(owner, minecraft, gui, gene, descX, descY, descW, descH);
+    }
+
+    private static void drawDescriptionBox(DnaAnalyzerPanelUiComponent owner, Minecraft minecraft, GuiGraphicsExtractor gui, Gene gene, int x, int y, int width, int height) {
+        gui.fill(x, y, x + width, y + height, 0xAA0B1220);
+        gui.fill(x, y, x + width, y + 1, 0xAA3E5F84);
+        gui.fill(x, y + height - 1, x + width, y + height, 0xAA3E5F84);
+        gui.fill(x, y, x + 1, y + height, 0xAA3E5F84);
+        gui.fill(x + width - 1, y, x + width, y + height, 0xAA3E5F84);
+
+        String description = resolveDescriptionText(gene);
+        List<String> wrapped = wrapText(minecraft, description, width - 10);
+        int visibleLines = Math.max(1, (height - 6) / 9);
+        int maxScroll = Math.max(0, wrapped.size() - visibleLines);
+        owner.descriptionScrollOffset = clamp(owner.descriptionScrollOffset, 0, maxScroll);
+
+        int start = owner.descriptionScrollOffset;
+        int end = Math.min(wrapped.size(), start + visibleLines);
+        int lineY = y + 3;
+        for (int i = start; i < end; i++) {
+            gui.text(minecraft.font, wrapped.get(i), x + 4, lineY, 0xFFBFD7EE, false);
+            lineY += 9;
+        }
+
+        if (maxScroll > 0) {
+            int barX = x + width - 3;
+            gui.fill(barX, y + 2, barX + 1, y + height - 2, 0xFF1E334A);
+            int thumbHeight = Math.max(8, (height - 6) * visibleLines / wrapped.size());
+            int trackHeight = (height - 4) - thumbHeight;
+            int thumbY = y + 2 + (trackHeight <= 0 ? 0 : (trackHeight * owner.descriptionScrollOffset / maxScroll));
+            gui.fill(barX, thumbY, barX + 1, thumbY + thumbHeight, 0xFF88B7E3);
+        }
+    }
+
+    private static void addGeneTooltip(GuiGraphicsExtractor gui, Minecraft minecraft, String rawGene, int mouseX, int mouseY, int slotNumber) {
         Gene gene = GeneUtil.parseGene(rawGene);
         if (gene == null) {
             return;
@@ -156,6 +246,16 @@ public class DnaAnalyzerPanelUiComponent extends RenderableUiComponent {
                 .map(Component::getVisualOrderText)
                 .toList();
         gui.setTooltipForNextFrame(minecraft.font, tooltipLines, mouseX, mouseY);
+    }
+
+    private static Gene[] parseGenes(String[] slots) {
+        Gene[] genes = new Gene[6];
+        for (int i = 0; i < genes.length; i++) {
+            if (i < slots.length && !slots[i].isBlank()) {
+                genes[i] = GeneUtil.parseGene(slots[i]);
+            }
+        }
+        return genes;
     }
 
     private static String[] normalizeSlots(String[] slots) {
@@ -183,13 +283,78 @@ public class DnaAnalyzerPanelUiComponent extends RenderableUiComponent {
         return value;
     }
 
-    private static String trimMiddle(String value, int maxLen) {
-        if (value == null || value.length() <= maxLen) {
-            return value == null ? "" : value;
+    private static String trimToWidth(Minecraft minecraft, String value, int maxWidth) {
+        if (minecraft.font.width(value) <= maxWidth) {
+            return value;
         }
-        int left = (maxLen - 3) / 2;
-        int right = maxLen - 3 - left;
-        return value.substring(0, left) + "..." + value.substring(value.length() - right);
+        String suffix = "...";
+        int suffixWidth = minecraft.font.width(suffix);
+        int target = Math.max(0, maxWidth - suffixWidth);
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < value.length(); i++) {
+            char next = value.charAt(i);
+            if (minecraft.font.width(builder.toString() + next) > target) {
+                break;
+            }
+            builder.append(next);
+        }
+        return builder + suffix;
+    }
+
+    private static String resolveDescriptionText(Gene gene) {
+        String raw = gene.getDescription();
+        if (raw == null || raw.isBlank()) {
+            return "No description available.";
+        }
+        if (isLikelyTranslationKey(raw)) {
+            return Component.translatable(raw).getString();
+        }
+        return raw;
+    }
+
+    private static boolean isLikelyTranslationKey(String value) {
+        if (value == null || value.isBlank() || value.contains(" ")) {
+            return false;
+        }
+        return value.contains(".");
+    }
+
+    private static List<String> wrapText(Minecraft minecraft, String text, int maxWidth) {
+        List<String> lines = new ArrayList<>();
+        if (text == null || text.isBlank()) {
+            lines.add("");
+            return lines;
+        }
+        String[] words = text.replace('\n', ' ').trim().split("\\s+");
+        StringBuilder current = new StringBuilder();
+        for (String word : words) {
+            String candidate = current.isEmpty() ? word : current + " " + word;
+            if (minecraft.font.width(candidate) <= maxWidth) {
+                current.setLength(0);
+                current.append(candidate);
+            } else {
+                if (!current.isEmpty()) {
+                    lines.add(current.toString());
+                    current.setLength(0);
+                }
+                if (minecraft.font.width(word) <= maxWidth) {
+                    current.append(word);
+                } else {
+                    lines.add(trimToWidth(minecraft, word, maxWidth));
+                }
+            }
+        }
+        if (!current.isEmpty()) {
+            lines.add(current.toString());
+        }
+        if (lines.isEmpty()) {
+            lines.add("");
+        }
+        return lines;
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private static int withOpaqueAlpha(int color) {
@@ -214,6 +379,135 @@ public class DnaAnalyzerPanelUiComponent extends RenderableUiComponent {
 
     public int getTextColor() {
         return this.textColor;
+    }
+
+    private static final class DnaAnalyzerPanelWidget extends AbstractWidget {
+        private final DnaAnalyzerPanelUiComponent owner;
+
+        private DnaAnalyzerPanelWidget(DnaAnalyzerPanelUiComponent owner, int x, int y, int width, int height) {
+            super(x, y, width, height, Component.literal(owner.title));
+            this.owner = owner;
+        }
+
+        @Override
+        protected void extractWidgetRenderState(GuiGraphicsExtractor gui, int mouseX, int mouseY, float partialTick) {
+            Minecraft minecraft = Minecraft.getInstance();
+            int x = this.getX();
+            int y = this.getY();
+            int width = this.getWidth();
+            int height = this.getHeight();
+            ClientDNAAnalyzerState.ClientData state = ClientDNAAnalyzerState.getLatest();
+            String sampleUuid = state == null ? "" : safeText(state.sourceUuid(), "");
+            boolean activeMode = !sampleUuid.isBlank();
+
+            drawPanelBackground(gui, x, y, width, height, this.owner.frameColor);
+
+            int centerX = x + (width / 2);
+            int helixX = centerX - HELIX_HALF_WIDTH;
+            int helixY = y + 6;
+            int helixHeight = 90;
+            float animationTime = minecraft.level != null
+                    ? minecraft.level.getGameTime() + partialTick
+                    : (System.currentTimeMillis() / 50L);
+            drawHelix(gui, helixX, helixY, helixHeight, animationTime, activeMode, sampleUuid);
+
+            String[] slots = state == null ? emptySlots() : normalizeSlots(state.geneSlots());
+            Gene[] genes = parseGenes(slots);
+            if (this.owner.selectedSlot >= genes.length || this.owner.selectedSlot < 0 || genes[this.owner.selectedSlot] == null) {
+                this.owner.selectedSlot = -1;
+            }
+
+            int leftSlotsX = centerX - HELIX_HALF_WIDTH - HELIX_TO_SLOT_GAP - SLOT_WIDTH;
+            int rightSlotsX = centerX + HELIX_HALF_WIDTH + HELIX_TO_SLOT_GAP;
+            int slotsStartY = y + 6;
+
+            int hoveredSlot = drawGeneSlots(this.owner, minecraft, gui, slots, genes, leftSlotsX, rightSlotsX, slotsStartY, mouseX, mouseY);
+            drawSelectedGeneInfo(this.owner, minecraft, gui, genes, x + 12, y + 102, width - 24, y + height - 8);
+
+            if (hoveredSlot >= 0 && hoveredSlot < genes.length && genes[hoveredSlot] != null) {
+                this.setMessage(Component.literal("Gene Slot " + (hoveredSlot + 1) + ": " + genes[hoveredSlot].getName()));
+            } else {
+                this.setMessage(Component.literal(this.owner.title));
+            }
+        }
+
+        @Override
+        public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+            ClientDNAAnalyzerState.ClientData state = ClientDNAAnalyzerState.getLatest();
+            String[] slots = state == null ? emptySlots() : normalizeSlots(state.geneSlots());
+            Gene[] genes = parseGenes(slots);
+
+            int centerX = this.getX() + (this.getWidth() / 2);
+            int leftSlotsX = centerX - HELIX_HALF_WIDTH - HELIX_TO_SLOT_GAP - SLOT_WIDTH;
+            int rightSlotsX = centerX + HELIX_HALF_WIDTH + HELIX_TO_SLOT_GAP;
+            int slotsStartY = this.getY() + 6;
+
+            int clickedSlot = getSlotAt((int) event.x(), (int) event.y(), leftSlotsX, rightSlotsX, slotsStartY);
+            if (clickedSlot >= 0 && clickedSlot < genes.length && genes[clickedSlot] != null) {
+                if (this.owner.selectedSlot != clickedSlot) {
+                    Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                }
+                this.owner.selectedSlot = clickedSlot;
+                this.owner.descriptionScrollOffset = 0;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+            ClientDNAAnalyzerState.ClientData state = ClientDNAAnalyzerState.getLatest();
+            String[] slots = state == null ? emptySlots() : normalizeSlots(state.geneSlots());
+            Gene[] genes = parseGenes(slots);
+            if (this.owner.selectedSlot < 0 || this.owner.selectedSlot >= genes.length || genes[this.owner.selectedSlot] == null) {
+                return false;
+            }
+
+            int infoX = this.getX() + 12;
+            int infoY = this.getY() + 102;
+            int infoWidth = this.getWidth() - 24;
+            int infoBottom = this.getY() + this.getHeight() - 8;
+            int descX = infoX + 5;
+            int descY = infoY + 28;
+            int descW = infoWidth - 10;
+            int descH = Math.max(16, infoBottom - descY - 4);
+
+            if (mouseX < descX || mouseX >= descX + descW || mouseY < descY || mouseY >= descY + descH) {
+                return false;
+            }
+
+            String description = resolveDescriptionText(genes[this.owner.selectedSlot]);
+            List<String> wrapped = wrapText(Minecraft.getInstance(), description, descW - 10);
+            int visibleLines = Math.max(1, (descH - 6) / 9);
+            int maxScroll = Math.max(0, wrapped.size() - visibleLines);
+            if (maxScroll <= 0) {
+                return false;
+            }
+
+            if (scrollY > 0) {
+                this.owner.descriptionScrollOffset = Math.max(0, this.owner.descriptionScrollOffset - 1);
+            } else if (scrollY < 0) {
+                this.owner.descriptionScrollOffset = Math.min(maxScroll, this.owner.descriptionScrollOffset + 1);
+            }
+            return true;
+        }
+
+        @Override
+        protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+            narrationElementOutput.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE, this.getMessage());
+        }
+    }
+
+    private static int getSlotAt(int mouseX, int mouseY, int leftX, int rightX, int startY) {
+        for (int i = 0; i < 6; i++) {
+            int row = i % 3;
+            int slotX = i < 3 ? leftX : rightX;
+            int slotY = startY + row * (SLOT_HEIGHT + SLOT_ROW_GAP);
+            if (mouseX >= slotX && mouseX < slotX + SLOT_WIDTH && mouseY >= slotY && mouseY < slotY + SLOT_HEIGHT) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public static class Serializer extends UiComponentSerializer<DnaAnalyzerPanelUiComponent> {
