@@ -11,8 +11,18 @@ public final class ClientDNAAnalyzerState {
     private ClientDNAAnalyzerState() {
     }
 
-    public static void set(BlockPos pos, boolean analyzed, String sourceName, String sourceUuid, String[] geneSlots) {
-        STATES.put(pos, new ClientData(analyzed, sourceName, sourceUuid, geneSlots));
+    public static void set(
+            BlockPos pos,
+            boolean analyzed,
+            boolean processing,
+            int processingProgress,
+            int processingTotalTicks,
+            boolean awaitingVialCollection,
+            String sourceName,
+            String sourceUuid,
+            String[] geneSlots
+    ) {
+        STATES.put(pos, new ClientData(analyzed, processing, processingProgress, processingTotalTicks, awaitingVialCollection, sourceName, sourceUuid, geneSlots));
         latestPos = pos;
     }
 
@@ -41,6 +51,15 @@ public final class ClientDNAAnalyzerState {
         return latestPos;
     }
 
-    public record ClientData(boolean analyzed, String sourceName, String sourceUuid, String[] geneSlots) {
+    public record ClientData(
+            boolean analyzed,
+            boolean processing,
+            int processingProgress,
+            int processingTotalTicks,
+            boolean awaitingVialCollection,
+            String sourceName,
+            String sourceUuid,
+            String[] geneSlots
+    ) {
     }
 }

@@ -15,6 +15,10 @@ import java.util.List;
 public record DNAAnalyzerSyncPayload(
         BlockPos blockPos,
         boolean analyzed,
+        boolean processing,
+        int processingProgress,
+        int processingTotalTicks,
+        boolean awaitingVialCollection,
         String sourceName,
         String sourceUuid,
         String[] geneSlots
@@ -50,6 +54,14 @@ public record DNAAnalyzerSyncPayload(
             DNAAnalyzerSyncPayload::blockPos,
             ByteBufCodecs.BOOL,
             DNAAnalyzerSyncPayload::analyzed,
+            ByteBufCodecs.BOOL,
+            DNAAnalyzerSyncPayload::processing,
+            ByteBufCodecs.VAR_INT,
+            DNAAnalyzerSyncPayload::processingProgress,
+            ByteBufCodecs.VAR_INT,
+            DNAAnalyzerSyncPayload::processingTotalTicks,
+            ByteBufCodecs.BOOL,
+            DNAAnalyzerSyncPayload::awaitingVialCollection,
             ByteBufCodecs.STRING_UTF8,
             DNAAnalyzerSyncPayload::sourceName,
             ByteBufCodecs.STRING_UTF8,
@@ -72,6 +84,10 @@ public record DNAAnalyzerSyncPayload(
         context.enqueueWork(() -> ClientDNAAnalyzerState.set(
                 payload.blockPos(),
                 payload.analyzed(),
+                payload.processing(),
+                payload.processingProgress(),
+                payload.processingTotalTicks(),
+                payload.awaitingVialCollection(),
                 payload.sourceName(),
                 payload.sourceUuid(),
                 payload.geneSlots()

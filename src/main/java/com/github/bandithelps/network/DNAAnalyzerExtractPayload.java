@@ -54,7 +54,7 @@ public record DNAAnalyzerExtractPayload(
             var level = player.level();
             var be = level.getBlockEntity(payload.blockPos());
             if (be instanceof com.github.bandithelps.blocks.DNAAnalyzerBlockEntity analyzer) {
-                analyzer.extractGenes(player, payload.slotIndexes());
+                analyzer.beginSpliceProcessing(player, payload.slotIndexes());
             }
         });
     }

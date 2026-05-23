@@ -17,6 +17,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -30,18 +31,28 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     public static final String TAG_SOURCE_UUID = "sourceUuid";
     public static final String TAG_GENE_SLOTS = "geneSlots";
     public static final String TAG_INVENTORY = "inventory";
+    public static final String TAG_PROCESSING = "processing";
+    public static final String TAG_PROCESSING_PROGRESS = "processingProgress";
+    public static final String TAG_PROCESSING_TOTAL_TICKS = "processingTotalTicks";
+    public static final String TAG_AWAITING_VIAL_COLLECTION = "awaitingVialCollection";
+    public static final String TAG_PENDING_GENES = "pendingGenes";
 
     public static final int SLOT_SAMPLE = 0;
-    public static final int ANALYZE_TICKS = 30;
     private static final int EXTRACT_COUNT_LOW_INTELLIGENCE = 3;
     private static final int EXTRACT_COUNT_MID_INTELLIGENCE = 2;
     private static final int EXTRACT_COUNT_HIGH_INTELLIGENCE = 1;
+    private static final int MIN_PROCESS_TICKS = 40;
+    private static final int MAX_PROCESS_TICKS = 180;
     private static final double MID_INTELLIGENCE_THRESHOLD = 25.0D;
     private static final double HIGH_INTELLIGENCE_THRESHOLD = 60.0D;
 
     private final ItemStackSlot inventory = new ItemStackSlot(1);
-    private int analyzeProgress = 0;
     private boolean analyzed = false;
+    private boolean processing = false;
+    private int processingProgress = 0;
+    private int processingTotalTicks = 0;
+    private boolean awaitingVialCollection = false;
+    private String pendingGenes = "";
     private String[] geneSlots = createEmptyGeneSlots();
     private String sourceName = "";
     private String sourceUuid = "";
@@ -52,10 +63,14 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
 
     public void loadFromTag() {
         CompoundTag tag = getPersistentData();
-        analyzeProgress = tag.getInt(TAG_ANALYZE_PROGRESS).orElse(0);
         analyzed = tag.getBoolean(TAG_ANALYZED).orElse(false);
         sourceName = tag.getString(TAG_SOURCE_NAME).orElse("");
         sourceUuid = tag.getString(TAG_SOURCE_UUID).orElse("");
+        processing = tag.getBoolean(TAG_PROCESSING).orElse(false);
+        processingProgress = tag.getInt(TAG_PROCESSING_PROGRESS).orElse(0);
+        processingTotalTicks = tag.getInt(TAG_PROCESSING_TOTAL_TICKS).orElse(0);
+        awaitingVialCollection = tag.getBoolean(TAG_AWAITING_VIAL_COLLECTION).orElse(false);
+        pendingGenes = tag.getString(TAG_PENDING_GENES).orElse("");
 
         if (tag.contains(TAG_GENE_SLOTS)) {
             ListTag listTag = tag.getList(TAG_GENE_SLOTS).orElse(new ListTag());
@@ -73,10 +88,14 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
 
     public void saveToTag() {
         CompoundTag tag = getPersistentData();
-        tag.putInt(TAG_ANALYZE_PROGRESS, analyzeProgress);
         tag.putBoolean(TAG_ANALYZED, analyzed);
         tag.putString(TAG_SOURCE_NAME, sourceName);
         tag.putString(TAG_SOURCE_UUID, sourceUuid);
+        tag.putBoolean(TAG_PROCESSING, processing);
+        tag.putInt(TAG_PROCESSING_PROGRESS, processingProgress);
+        tag.putInt(TAG_PROCESSING_TOTAL_TICKS, processingTotalTicks);
+        tag.putBoolean(TAG_AWAITING_VIAL_COLLECTION, awaitingVialCollection);
+        tag.putString(TAG_PENDING_GENES, pendingGenes);
 
         ListTag list = new ListTag();
         for (String gene : geneSlots) {
@@ -90,39 +109,17 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         if (this.level == null || this.level.isClientSide()) {
             return;
         }
-
-        if (!analyzed) {
-            if (!inventory.getStack(SLOT_SAMPLE).isEmpty()) {
-                analyzeProgress++;
-                if (analyzeProgress >= ANALYZE_TICKS) {
-                    finishAnalysis();
-                }
-                setChanged();
-            }
-        }
-    }
-
-    private void finishAnalysis() {
-        ItemStack sample = inventory.getStack(SLOT_SAMPLE);
-        if (sample.isEmpty()) {
+        if (!processing) {
             return;
         }
-
-        CompoundTag dnaData = TissueSampleItem.getDNAData(sample);
-        sourceName = dnaData.getString("sourceName").orElse("Unknown");
-        sourceUuid = dnaData.getString("sourceUuid").orElse("");
-        String genesRaw = dnaData.getString("genes").orElse("");
-
-        geneSlots = parseGeneSlots(genesRaw);
-        analyzeProgress = 0;
-        analyzed = true;
-
-        BlockState state = getBlockState();
-        if (state.hasProperty(DNAAnalyzerBlock.ANALYZED)) {
-            this.level.setBlock(getBlockPos(), state.setValue(DNAAnalyzerBlock.ANALYZED, true), 3);
+        if (processingTotalTicks <= 0) {
+            processingTotalTicks = MIN_PROCESS_TICKS;
         }
-        this.level.gameEvent(GameEvent.BLOCK_ACTIVATE, getBlockPos(), GameEvent.Context.of(state));
-
+        processingProgress = Math.min(processingProgress + 1, processingTotalTicks);
+        if (processingProgress >= processingTotalTicks) {
+            finishProcessing();
+        }
+        setChanged();
         syncToClient();
     }
 
@@ -136,7 +133,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     }
 
     public boolean insertSample(ItemStack sampleStack, Player player) {
-        if (!inventory.getStack(SLOT_SAMPLE).isEmpty()) {
+        if (!inventory.getStack(SLOT_SAMPLE).isEmpty() || processing || awaitingVialCollection) {
             return false;
         }
         if (!TissueSampleItem.hasDNA(sampleStack)) {
@@ -152,8 +149,12 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         toInsert.setCount(1);
         sampleStack.shrink(1);
         inventory.setStack(SLOT_SAMPLE, toInsert);
-        analyzeProgress = 0;
         analyzed = true;
+        processing = false;
+        processingProgress = 0;
+        processingTotalTicks = 0;
+        awaitingVialCollection = false;
+        pendingGenes = "";
         sourceName = dnaView.sourceName();
         sourceUuid = dnaView.sourceUuid();
         geneSlots = dnaView.geneSlots();
@@ -168,7 +169,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     }
 
     public void renameGene(int slotIndex, String newName, Player player) {
-        if (!analyzed || slotIndex < 0 || slotIndex >= geneSlots.length) {
+        if (!analyzed || processing || awaitingVialCollection || slotIndex < 0 || slotIndex >= geneSlots.length) {
             return;
         }
 
@@ -202,8 +203,8 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         syncToClient();
     }
 
-    public void extractGenes(Player player, int[] selectedSlots) {
-        if (!analyzed) {
+    public void beginSpliceProcessing(Player player, int[] selectedSlots) {
+        if (!analyzed || processing || awaitingVialCollection) {
             return;
         }
 
@@ -237,41 +238,45 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
             return;
         }
 
-        ItemStack vial = new ItemStack(YourHeroAcademia.GENE_VIAL.get());
-        GeneVialItem.setGenes(vial, serializedGenes.toString());
+        pendingGenes = serializedGenes.toString();
+        processing = true;
+        processingProgress = 0;
+        processingTotalTicks = getProcessingTicksForPlayer(player);
+        awaitingVialCollection = false;
+        setChanged();
+        syncToClient();
+    }
 
-        if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-            ItemEntity vialEntity = new ItemEntity(
-                    serverLevel,
-                    this.worldPosition.getX() + 0.5D,
-                    this.worldPosition.getY() + 1.05D,
-                    this.worldPosition.getZ() + 0.5D,
-                    vial
-            );
-            vialEntity.setDeltaMovement(0.0D, 0.1D, 0.0D);
-            serverLevel.addFreshEntity(vialEntity);
+    public boolean collectProcessedGenes(ItemStack heldStack, Player player, InteractionHand hand) {
+        if (!awaitingVialCollection || processing || pendingGenes.isBlank()) {
+            return false;
+        }
+        if (heldStack.isEmpty() || heldStack.getItem() != YourHeroAcademia.EMPTY_GENE_VIAL.get()) {
+            return false;
         }
 
-        ItemStack sample = inventory.getStack(SLOT_SAMPLE);
-        if (!sample.isEmpty()) {
-            sample.shrink(1);
-            if (sample.isEmpty()) {
-                inventory.setStack(SLOT_SAMPLE, ItemStack.EMPTY);
+        ItemStack filledVial = new ItemStack(YourHeroAcademia.GENE_VIAL.get());
+        GeneVialItem.setGenes(filledVial, pendingGenes, sourceName, sourceUuid);
+
+        heldStack.shrink(1);
+        if (heldStack.isEmpty()) {
+            player.setItemInHand(hand, filledVial);
+        } else if (!player.getInventory().add(filledVial)) {
+            if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                ItemEntity vialEntity = new ItemEntity(
+                        serverLevel,
+                        this.worldPosition.getX() + 0.5D,
+                        this.worldPosition.getY() + 1.05D,
+                        this.worldPosition.getZ() + 0.5D,
+                        filledVial
+                );
+                vialEntity.setDeltaMovement(0.0D, 0.1D, 0.0D);
+                serverLevel.addFreshEntity(vialEntity);
             }
         }
 
-        analyzed = false;
-        analyzeProgress = 0;
-        geneSlots = createEmptyGeneSlots();
-        sourceName = "";
-        sourceUuid = "";
-
-        BlockState state = getBlockState();
-        if (state.hasProperty(DNAAnalyzerBlock.ANALYZED)) {
-            this.level.setBlock(getBlockPos(), state.setValue(DNAAnalyzerBlock.ANALYZED, false), 3);
-        }
-        setChanged();
-        syncToClient();
+        clearAnalyzerForNextSample();
+        return true;
     }
 
     private static int[] normalizeSelection(int[] selectedSlots) {
@@ -320,6 +325,45 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         return EXTRACT_COUNT_LOW_INTELLIGENCE;
     }
 
+    private int getProcessingTicksForPlayer(Player player) {
+        if (player == null) {
+            return MAX_PROCESS_TICKS;
+        }
+        double intelligence = Math.max(0.0D, Math.min(100.0D, player.getAttributeValue(IntelligenceAttributes.INTELLIGENCE)));
+        double percent = intelligence / 100.0D;
+        return (int) Math.round(MAX_PROCESS_TICKS - ((MAX_PROCESS_TICKS - MIN_PROCESS_TICKS) * percent));
+    }
+
+    private void finishProcessing() {
+        processing = false;
+        processingProgress = processingTotalTicks;
+        awaitingVialCollection = true;
+        BlockState state = getBlockState();
+        this.level.gameEvent(GameEvent.BLOCK_ACTIVATE, getBlockPos(), GameEvent.Context.of(state));
+        setChanged();
+        syncToClient();
+    }
+
+    private void clearAnalyzerForNextSample() {
+        inventory.setStack(SLOT_SAMPLE, ItemStack.EMPTY);
+        analyzed = false;
+        processing = false;
+        processingProgress = 0;
+        processingTotalTicks = 0;
+        awaitingVialCollection = false;
+        pendingGenes = "";
+        geneSlots = createEmptyGeneSlots();
+        sourceName = "";
+        sourceUuid = "";
+
+        BlockState state = getBlockState();
+        if (state.hasProperty(DNAAnalyzerBlock.ANALYZED)) {
+            this.level.setBlock(getBlockPos(), state.setValue(DNAAnalyzerBlock.ANALYZED, false), 3);
+        }
+        setChanged();
+        syncToClient();
+    }
+
     private DNAView buildGeneView(ItemStack sample, Player player) {
         CompoundTag dnaData = TissueSampleItem.getDNAData(sample);
         String parsedSourceName = dnaData.getString("sourceName").orElse("");
@@ -363,6 +407,10 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
                 new DNAAnalyzerSyncPayload(
                         getBlockPos(),
                         analyzed,
+                        processing,
+                        processingProgress,
+                        processingTotalTicks,
+                        awaitingVialCollection,
                         sourceName,
                         sourceUuid,
                         geneSlots
@@ -387,7 +435,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     }
 
     public int getAnalyzeProgress() {
-        return analyzeProgress;
+        return processingProgress;
     }
 
     public String[] getGeneSlots() {
@@ -410,6 +458,10 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         PacketDistributor.sendToPlayer(player, new DNAAnalyzerSyncPayload(
                 getBlockPos(),
                 analyzed,
+                processing,
+                processingProgress,
+                processingTotalTicks,
+                awaitingVialCollection,
                 sourceName,
                 sourceUuid,
                 geneSlots

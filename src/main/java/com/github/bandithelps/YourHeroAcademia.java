@@ -118,6 +118,9 @@ public final class YourHeroAcademia {
     public static final DeferredItem<Item> TISSUE_SAMPLE = ITEMS.register("tissue_sample", () -> new TissueSampleItem(new Item.Properties()
             .stacksTo(16)
             .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "tissue_sample")))));
+    public static final DeferredItem<Item> EMPTY_GENE_VIAL = ITEMS.register("empty_gene_vial", () -> new Item(new Item.Properties()
+            .stacksTo(16)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "empty_gene_vial")))));
     public static final DeferredItem<Item> GENE_VIAL = ITEMS.register("gene_vial", () -> new GeneVialItem(new Item.Properties()
             .stacksTo(1)
             .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "gene_vial")))));
@@ -210,6 +213,7 @@ public final class YourHeroAcademia {
             event.accept(PIPETTE);
             event.accept(TISSUE_EXTRACTOR);
             event.accept(TISSUE_SAMPLE);
+            event.accept(EMPTY_GENE_VIAL);
             event.accept(GENE_VIAL);
             event.accept(DNA_INJECTOR);
             event.accept(SAMPLE_REFRIGERATOR);

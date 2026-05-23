@@ -42,7 +42,19 @@ public class DnaAnalyzerInfoUiComponent extends RenderableUiComponent {
         String sourceName = state == null ? "No Sample Loaded" : safeText(state.sourceName(), "Unknown Source");
         String sourceUuid = state == null ? "" : safeText(state.sourceUuid(), "");
         int genes = state == null ? 0 : countFilled(state.geneSlots());
-        String analyzed = state != null && state.analyzed() ? "Ready" : "Pending";
+        boolean processing = state != null && state.processing();
+        boolean awaitingVialCollection = state != null && state.awaitingVialCollection();
+        String analyzed;
+        if (processing) {
+            int progressPercent = state.processingTotalTicks() <= 0
+                    ? 0
+                    : (int) ((state.processingProgress() * 100.0F) / state.processingTotalTicks());
+            analyzed = "Processing " + progressPercent + "%";
+        } else if (awaitingVialCollection) {
+            analyzed = "Complete";
+        } else {
+            analyzed = state != null && state.analyzed() ? "Ready" : "Pending";
+        }
 
         int lineY = y + 2;
         gui.text(minecraft.font, "Specimen", x, lineY, this.labelColor, false);

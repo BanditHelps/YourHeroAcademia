@@ -1,5 +1,6 @@
 package com.github.bandithelps.gui.ui.components;
 
+import com.github.bandithelps.client.dna_analyzer.ClientDNAAnalyzerState;
 import com.github.bandithelps.client.dna_analyzer.ClientDNAAnalyzerToolState;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -172,6 +173,8 @@ public class DnaAnalyzerToolsUiComponent extends UiComponent {
             gui.fill(x, y, x + 1, y + height, this.owner.frameColor);
             gui.fill(x + width - 1, y, x + width, y + height, this.owner.frameColor);
 
+            ClientDNAAnalyzerState.ClientData analyzerState = ClientDNAAnalyzerState.getLatest();
+            boolean locked = analyzerState != null && (analyzerState.processing() || analyzerState.awaitingVialCollection());
             int hoveredIndex = getToolIndexAt(mouseX, mouseY);
             for (int i = 0; i < this.owner.tools.size(); i++) {
                 ToolDefinition tool = this.owner.tools.get(i);
@@ -179,10 +182,10 @@ public class DnaAnalyzerToolsUiComponent extends UiComponent {
                 int buttonY = y + INNER_PADDING + (i * (BUTTON_HEIGHT + BUTTON_GAP));
                 int buttonW = width - (INNER_PADDING * 2);
                 int buttonH = BUTTON_HEIGHT;
-                boolean active = ClientDNAAnalyzerToolState.isActive(tool.id());
-                boolean hovered = i == hoveredIndex;
+                boolean active = !locked && ClientDNAAnalyzerToolState.isActive(tool.id());
+                boolean hovered = !locked && i == hoveredIndex;
                 int borderColor = active ? 0xFFFFC857 : hovered ? this.owner.slotActiveColor : 0xFF41546B;
-                int fillColor = active ? 0xAA22415E : this.owner.slotColor;
+                int fillColor = locked ? 0xAA111820 : active ? 0xAA22415E : this.owner.slotColor;
 
                 gui.fill(buttonX, buttonY, buttonX + buttonW, buttonY + buttonH, fillColor);
                 gui.fill(buttonX, buttonY, buttonX + buttonW, buttonY + 1, borderColor);
@@ -218,6 +221,11 @@ public class DnaAnalyzerToolsUiComponent extends UiComponent {
 
         @Override
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+            ClientDNAAnalyzerState.ClientData analyzerState = ClientDNAAnalyzerState.getLatest();
+            if (analyzerState != null && (analyzerState.processing() || analyzerState.awaitingVialCollection())) {
+                return true;
+            }
+
             int index = getToolIndexAt((int) event.x(), (int) event.y());
             if (index < 0 || index >= this.owner.tools.size()) {
                 return false;

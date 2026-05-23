@@ -96,7 +96,16 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
         gui.fill(x + width - 1, y, x + width, y + height, frameColor);
     }
 
-    private static void drawHelix(GuiGraphicsExtractor gui, int x, int y, int height, float animationTime, boolean activeMode, String sampleUuid) {
+    private static void drawHelix(
+            GuiGraphicsExtractor gui,
+            int x,
+            int y,
+            int height,
+            float animationTime,
+            boolean activeMode,
+            String sampleUuid,
+            float processingProgress
+    ) {
         float speed = activeMode ? 0.16F : 0.03F;
         float phase = animationTime * speed;
         float frequency = activeMode ? 0.20F : 0.13F;
@@ -118,13 +127,22 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
 
             int leftX = centerX - spread;
             int rightX = centerX + spread;
-            int frontColor = depth >= 0 ? 0xFF8CE0FF : 0xFF5EA5C8;
-            int backColor = depth >= 0 ? 0xFF5EA5C8 : 0xFF8CE0FF;
+            int defaultFrontColor = depth >= 0 ? 0xFF8CE0FF : 0xFF5EA5C8;
+            int defaultBackColor = depth >= 0 ? 0xFF5EA5C8 : 0xFF8CE0FF;
+            int progressedFrontColor = depth >= 0 ? 0xFF8EF5A8 : 0xFF5BBE7B;
+            int progressedBackColor = depth >= 0 ? 0xFF5BBE7B : 0xFF8EF5A8;
+            float completedHeight = processingProgress * height;
+            float distanceFromBottom = height - i;
+            float segmentProgress = clamp01((completedHeight - distanceFromBottom + 2.0F) / 4.0F);
+            int frontColor = lerpColor(defaultFrontColor, progressedFrontColor, segmentProgress);
+            int backColor = lerpColor(defaultBackColor, progressedBackColor, segmentProgress);
 
             gui.fill(leftX, y + i, leftX + 2, y + i + 2, backColor);
             gui.fill(rightX, y + i, rightX + 2, y + i + 2, frontColor);
             if ((i / 2) % 2 == 0) {
-                int rungColor = depth >= 0 ? 0xAA9EE4FF : 0x665C8AA8;
+                int defaultRungColor = depth >= 0 ? 0xAA9EE4FF : 0x665C8AA8;
+                int progressedRungColor = depth >= 0 ? 0xAA9EF2B5 : 0x6666B580;
+                int rungColor = lerpColor(defaultRungColor, progressedRungColor, segmentProgress);
                 gui.fill(Math.min(leftX, rightX), y + i, Math.max(leftX, rightX) + 2, y + i + 1, rungColor);
             }
         }
@@ -367,6 +385,27 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
         return Math.max(min, Math.min(max, value));
     }
 
+    private static float clamp01(float value) {
+        return Math.max(0.0F, Math.min(1.0F, value));
+    }
+
+    private static int lerpColor(int from, int to, float progress) {
+        float t = clamp01(progress);
+        int a1 = (from >>> 24) & 0xFF;
+        int r1 = (from >>> 16) & 0xFF;
+        int g1 = (from >>> 8) & 0xFF;
+        int b1 = from & 0xFF;
+        int a2 = (to >>> 24) & 0xFF;
+        int r2 = (to >>> 16) & 0xFF;
+        int g2 = (to >>> 8) & 0xFF;
+        int b2 = to & 0xFF;
+        int a = (int) (a1 + ((a2 - a1) * t));
+        int r = (int) (r1 + ((r2 - r1) * t));
+        int g = (int) (g1 + ((g2 - g1) * t));
+        int b = (int) (b1 + ((b2 - b1) * t));
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
     private static int withOpaqueAlpha(int color) {
         return 0xFF000000 | (color & 0x00FFFFFF);
     }
@@ -409,8 +448,22 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
             ClientDNAAnalyzerState.ClientData state = ClientDNAAnalyzerState.getLatest();
             String sampleUuid = state == null ? "" : safeText(state.sourceUuid(), "");
             boolean activeMode = !sampleUuid.isBlank();
+            boolean processing = state != null && state.processing();
+            boolean awaitingVialCollection = state != null && state.awaitingVialCollection();
+            float processingProgress = state == null
+                    ? 0.0F
+                    : (awaitingVialCollection
+                    ? 1.0F
+                    : state.processingTotalTicks() <= 0
+                    ? 0.0F
+                    : clamp01((float) state.processingProgress() / (float) state.processingTotalTicks()));
 
             drawPanelBackground(gui, x, y, width, height, this.owner.frameColor);
+            if (awaitingVialCollection) {
+                drawCompletionOverlay(gui, minecraft, x, y, width, height);
+                this.setMessage(Component.literal("Awaiting vial extraction"));
+                return;
+            }
 
             int centerX = x + (width / 2);
             int helixX = centerX - HELIX_HALF_WIDTH;
@@ -419,7 +472,7 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
             float animationTime = minecraft.level != null
                     ? minecraft.level.getGameTime() + partialTick
                     : (System.currentTimeMillis() / 50L);
-            drawHelix(gui, helixX, helixY, helixHeight, animationTime, activeMode, sampleUuid);
+            drawHelix(gui, helixX, helixY, helixHeight, animationTime, activeMode, sampleUuid, processingProgress);
 
             String[] slots = state == null ? emptySlots() : normalizeSlots(state.geneSlots());
             Gene[] genes = parseGenes(slots);
@@ -444,8 +497,12 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
                 IsolationOption hoveredOption = getHoveredOption(options, mouseX, mouseY);
                 drawIsolationOptionHighlights(gui, options, hoveredOption, this.owner.selectedIsolationSlots);
                 drawIsolateInfo(gui, minecraft, x + 12, y + 102, width - 24, y + height - 8, options);
-                boolean canSplice = state != null && state.analyzed() && selectionHasAnyFilledGenes(this.owner.selectedIsolationSlots, slots);
-                drawSpliceButton(gui, minecraft, x, y, width, height, canSplice);
+                boolean canSplice = state != null
+                        && state.analyzed()
+                        && !state.processing()
+                        && !state.awaitingVialCollection()
+                        && selectionHasAnyFilledGenes(this.owner.selectedIsolationSlots, slots);
+                drawSpliceButton(gui, minecraft, x, y, width, height, canSplice, processing, awaitingVialCollection);
             } else {
                 drawSelectedGeneInfo(this.owner, minecraft, gui, genes, x + 12, y + 102, width - 24, y + height - 8);
             }
@@ -462,6 +519,9 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
         @Override
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
             ClientDNAAnalyzerState.ClientData state = ClientDNAAnalyzerState.getLatest();
+            if (state != null && (state.processing() || state.awaitingVialCollection())) {
+                return true;
+            }
             String[] slots = state == null ? emptySlots() : normalizeSlots(state.geneSlots());
             Gene[] genes = parseGenes(slots);
 
@@ -512,10 +572,11 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
 
         @Override
         public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-            if (ClientDNAAnalyzerToolState.isActive(ClientDNAAnalyzerToolState.TOOL_ISOLATE)) {
+            ClientDNAAnalyzerState.ClientData state = ClientDNAAnalyzerState.getLatest();
+            if ((state != null && (state.processing() || state.awaitingVialCollection()))
+                    || ClientDNAAnalyzerToolState.isActive(ClientDNAAnalyzerToolState.TOOL_ISOLATE)) {
                 return false;
             }
-            ClientDNAAnalyzerState.ClientData state = ClientDNAAnalyzerState.getLatest();
             String[] slots = state == null ? emptySlots() : normalizeSlots(state.geneSlots());
             Gene[] genes = parseGenes(slots);
             if (this.owner.selectedSlot < 0 || this.owner.selectedSlot >= genes.length || genes[this.owner.selectedSlot] == null) {
@@ -655,7 +716,15 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
             }
         }
 
-        private void drawIsolateInfo(GuiGraphicsExtractor gui, Minecraft minecraft, int x, int y, int width, int bottomY, List<IsolationOption> options) {
+        private void drawIsolateInfo(
+                GuiGraphicsExtractor gui,
+                Minecraft minecraft,
+                int x,
+                int y,
+                int width,
+                int bottomY,
+                List<IsolationOption> options
+        ) {
             gui.fill(x, y, x + width, bottomY, 0x88101824);
             gui.fill(x, y, x + width, y + 1, 0xAA476485);
             gui.fill(x, bottomY - 1, x + width, bottomY, 0xAA476485);
@@ -674,21 +743,55 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
             gui.text(minecraft.font, "Selection: " + selected, x + 6, y + 40, 0xFFB7D9FF, false);
         }
 
-        private void drawSpliceButton(GuiGraphicsExtractor gui, Minecraft minecraft, int x, int y, int width, int height, boolean canSplice) {
+        private void drawSpliceButton(
+                GuiGraphicsExtractor gui,
+                Minecraft minecraft,
+                int x,
+                int y,
+                int width,
+                int height,
+                boolean canSplice,
+                boolean processing,
+                boolean awaitingVialCollection
+        ) {
             int buttonX = x + width - 72;
             int buttonY = y + height - 26;
             int buttonW = 58;
             int buttonH = 16;
-            int border = canSplice ? 0xFF79B8FF : 0xFF3A4A5E;
-            int fill = canSplice ? 0xAA1C3D54 : 0xAA1C222B;
+            boolean disabled = !canSplice || processing || awaitingVialCollection;
+            int border = disabled ? 0xFF3A4A5E : 0xFF79B8FF;
+            int fill = disabled ? 0xAA1C222B : 0xAA1C3D54;
             gui.fill(buttonX, buttonY, buttonX + buttonW, buttonY + buttonH, fill);
             gui.fill(buttonX, buttonY, buttonX + buttonW, buttonY + 1, border);
             gui.fill(buttonX, buttonY + buttonH - 1, buttonX + buttonW, buttonY + buttonH, border);
             gui.fill(buttonX, buttonY, buttonX + 1, buttonY + buttonH, border);
             gui.fill(buttonX + buttonW - 1, buttonY, buttonX + buttonW, buttonY + buttonH, border);
-            String text = "Splice";
-            int color = canSplice ? 0xFFE6F2FF : 0xFF738398;
+            String text = processing ? "..." : awaitingVialCollection ? "Done" : "Splice";
+            int color = disabled ? 0xFF738398 : 0xFFE6F2FF;
             gui.text(minecraft.font, text, buttonX + (buttonW - minecraft.font.width(text)) / 2, buttonY + 4, color, false);
+        }
+
+        private void drawCompletionOverlay(GuiGraphicsExtractor gui, Minecraft minecraft, int x, int y, int width, int height) {
+            gui.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0xDD05090F);
+
+            int popupWidth = Math.min(220, width - 24);
+            int popupHeight = 74;
+            int popupX = x + (width - popupWidth) / 2;
+            int popupY = y + (height - popupHeight) / 2;
+
+            gui.fill(popupX, popupY, popupX + popupWidth, popupY + popupHeight, 0xEE111A25);
+            gui.fill(popupX, popupY, popupX + popupWidth, popupY + 1, 0xFF79B8FF);
+            gui.fill(popupX, popupY + popupHeight - 1, popupX + popupWidth, popupY + popupHeight, 0xFF79B8FF);
+            gui.fill(popupX, popupY, popupX + 1, popupY + popupHeight, 0xFF79B8FF);
+            gui.fill(popupX + popupWidth - 1, popupY, popupX + popupWidth, popupY + popupHeight, 0xFF79B8FF);
+
+            String title = "Extraction Complete";
+            gui.text(minecraft.font, title, popupX + (popupWidth - minecraft.font.width(title)) / 2, popupY + 10, 0xFFAEEFBF, false);
+
+            String line1 = "Right-click analyzer with";
+            String line2 = "an Empty Gene Vial to continue.";
+            gui.text(minecraft.font, line1, popupX + (popupWidth - minecraft.font.width(line1)) / 2, popupY + 30, 0xFFE6F2FF, false);
+            gui.text(minecraft.font, line2, popupX + (popupWidth - minecraft.font.width(line2)) / 2, popupY + 42, 0xFFE6F2FF, false);
         }
 
         private boolean isPointInsideSpliceButton(int mouseX, int mouseY) {
