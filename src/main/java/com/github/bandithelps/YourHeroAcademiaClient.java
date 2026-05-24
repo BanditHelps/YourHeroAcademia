@@ -2,16 +2,18 @@ package com.github.bandithelps;
 
 import com.github.bandithelps.gui.ui.components.YhaUiComponentSerializers;
 import com.github.bandithelps.gui.ui.layouts.YhaUiLayoutSerializers;
+import com.github.bandithelps.gui.menu.ModMenus;
+import com.github.bandithelps.gui.screens.GeneCombinerScreen;
 import com.github.bandithelps.particles.ModParticles;
 import com.github.bandithelps.particles.SmokescreenParticle;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
@@ -30,6 +32,11 @@ public class YourHeroAcademiaClient {
     static void onClientSetup(FMLClientSetupEvent event) {
         YourHeroAcademia.LOGGER.info("HELLO FROM CLIENT SETUP");
         YourHeroAcademia.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+    }
+
+    @SubscribeEvent
+    static void registerMenuScreens(RegisterMenuScreensEvent event) {
+        event.register(ModMenus.GENE_COMBINER.get(), GeneCombinerScreen::new);
     }
 
     @SubscribeEvent

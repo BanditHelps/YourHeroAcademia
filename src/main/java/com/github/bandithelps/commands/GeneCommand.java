@@ -7,7 +7,11 @@ import com.github.bandithelps.gene.GeneCategory;
 import com.github.bandithelps.gene.GeneRegistry;
 import com.github.bandithelps.gene.GeneType;
 import com.github.bandithelps.gene.SideEffect;
+import com.github.bandithelps.gene.combination.CombinationGraph;
+import com.github.bandithelps.gene.combination.CombinationManager;
+import com.github.bandithelps.gene.combination.ResolvedCombinationRecipe;
 import com.github.bandithelps.items.GeneVialItem;
+import com.github.bandithelps.network.OpenGeneCombinationBrowserPayload;
 import com.github.bandithelps.utils.gene.GeneAliasUtil;
 import com.github.bandithelps.utils.gene.GeneUtil;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -23,6 +27,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -49,6 +54,14 @@ public class GeneCommand {
                         .executes(c -> listGenes(c.getSource())))
                 .then(Commands.literal("reload")
                         .executes(c -> reloadGenes(c.getSource())))
+                .then(Commands.literal("combinations")
+                        .then(Commands.literal("list")
+                                .executes(c -> listCombinations(c.getSource())))
+                        .then(Commands.literal("inspect")
+                                .then(Commands.argument("geneId", StringArgumentType.string())
+                                        .executes(c -> inspectCombination(c.getSource(), StringArgumentType.getString(c, "geneId")))))
+                        .then(Commands.literal("open")
+                                .executes(c -> openCombinationBrowser(c.getSource()))))
                 .then(Commands.literal("create")
                         .then(Commands.argument("geneId", StringArgumentType.string())
                                 .executes(c -> createGeneVial(c.getSource(), c.getSource().getPlayerOrException(), StringArgumentType.getString(c, "geneId"), 50))
@@ -134,8 +147,51 @@ public class GeneCommand {
 
     private static int reloadGenes(CommandSourceStack source) {
         int loaded = GeneRegistry.getInstance().reload(source.getServer().getResourceManager());
-        source.sendSuccess(() -> Component.literal("Reloaded genes. Registered " + loaded + " entries."), true);
+        CombinationGraph graph = CombinationManager.rebuildForServer(source.getServer());
+        source.sendSuccess(() -> Component.literal(
+                "Reloaded genes. Registered " + loaded + " entries; resolved "
+                        + graph.getAllRecipes().size() + " combination recipes (invalid: "
+                        + graph.getInvalidCount() + ", overlaps: " + graph.getOverlapGroups().size() + ")."
+        ), true);
         return loaded;
+    }
+
+    private static int listCombinations(CommandSourceStack source) {
+        CombinationGraph graph = CombinationManager.getGraph();
+        List<ResolvedCombinationRecipe> recipes = graph.getAllRecipes().stream()
+                .sorted(Comparator.comparing(ResolvedCombinationRecipe::getOutputGeneId))
+                .toList();
+        if (recipes.isEmpty()) {
+            source.sendSuccess(() -> Component.literal("No resolved combinations are available."), false);
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(
+                "Resolved combinations: " + recipes.size()
+                        + " (invalid: " + graph.getInvalidCount()
+                        + ", overlaps: " + graph.getOverlapGroups().size() + ")"
+        ), false);
+        for (ResolvedCombinationRecipe recipe : recipes) {
+            source.sendSuccess(() -> Component.literal(describeRecipe(recipe)), false);
+        }
+        return recipes.size();
+    }
+
+    private static int inspectCombination(CommandSourceStack source, String geneId) {
+        ResolvedCombinationRecipe recipe = CombinationManager.getGraph().getRecipe(geneId);
+        if (recipe == null) {
+            source.sendSuccess(() -> Component.literal("No resolved recipe found for " + geneId), false);
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(describeRecipe(recipe)), false);
+        return 1;
+    }
+
+    private static int openCombinationBrowser(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        CombinationGraph graph = CombinationManager.getGraph();
+        PacketDistributor.sendToPlayer(player, new OpenGeneCombinationBrowserPayload(buildBrowserLines(graph)));
+        source.sendSuccess(() -> Component.literal("Opened resolved combination browser."), false);
+        return 1;
     }
 
     private static int createGeneVial(CommandSourceStack source, Player player, String geneId, int quality) throws CommandSyntaxException {
@@ -179,6 +235,40 @@ public class GeneCommand {
                 .filter(part -> !part.isEmpty())
                 .map(part -> part.substring(0, 1).toUpperCase(Locale.ROOT) + part.substring(1).toLowerCase(Locale.ROOT))
                 .collect(Collectors.joining(" "));
+    }
+
+    private static String describeRecipe(ResolvedCombinationRecipe recipe) {
+        String requirements = recipe.getRequirements().stream()
+                .map(req -> (req.builderResolved() ? "builder:" : "req:")
+                        + req.geneId() + " q>=" + req.minQuality())
+                .collect(Collectors.joining(", "));
+        if (requirements.isEmpty()) {
+            requirements = "none";
+        }
+        String status = recipe.isValid() ? "valid" : "invalid(" + recipe.getInvalidReason() + ")";
+        return recipe.getOutputGeneId() + " <- [" + requirements + "] success=" + recipe.getSuccessRate() + "% " + status;
+    }
+
+    private static List<String> buildBrowserLines(CombinationGraph graph) {
+        List<String> lines = new ArrayList<>();
+        lines.add("seed=" + graph.getWorldSeed()
+                + " recipes=" + graph.getAllRecipes().size()
+                + " invalid=" + graph.getInvalidCount()
+                + " overlaps=" + graph.getOverlapGroups().size());
+        lines.add("------------------------------------------------");
+        List<ResolvedCombinationRecipe> ordered = graph.getAllRecipes().stream()
+                .sorted(Comparator.comparing(ResolvedCombinationRecipe::getOutputGeneId))
+                .toList();
+        for (ResolvedCombinationRecipe recipe : ordered) {
+            lines.add(describeRecipe(recipe));
+        }
+        if (!graph.getOverlapGroups().isEmpty()) {
+            lines.add("------------------------------------------------");
+            lines.add("Overlaps:");
+            graph.getOverlapGroups().forEach((signature, outputs) ->
+                    lines.add("sig=[" + signature + "] -> " + String.join(", ", outputs)));
+        }
+        return lines;
     }
 
     private static int showDnaInfo(CommandSourceStack source, Player player) throws CommandSyntaxException {

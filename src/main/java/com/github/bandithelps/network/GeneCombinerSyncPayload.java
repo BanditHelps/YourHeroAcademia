@@ -1,0 +1,70 @@
+package com.github.bandithelps.network;
+
+import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.client.gene_combiner.ClientGeneCombinerState;
+import io.netty.buffer.ByteBuf;
+import java.util.Arrays;
+import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+
+public record GeneCombinerSyncPayload(
+        BlockPos blockPos,
+        boolean processing,
+        int processingProgress,
+        int processingTotalTicks,
+        int[] inputGeneCounts,
+        String outputKind,
+        int outputGeneCount
+) implements CustomPacketPayload {
+    public static final Type<GeneCombinerSyncPayload> TYPE =
+            new Type<>(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "gene_combiner_sync"));
+
+    private static final StreamCodec<ByteBuf, List<Integer>> INT_LIST_CODEC =
+            ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list());
+
+    private static final StreamCodec<ByteBuf, int[]> INT_ARRAY_CODEC =
+            INT_LIST_CODEC.map(
+                    list -> list.stream().mapToInt(Integer::intValue).toArray(),
+                    array -> Arrays.stream(array).boxed().toList()
+            );
+
+    public static final StreamCodec<ByteBuf, GeneCombinerSyncPayload> STREAM_CODEC = StreamCodec.composite(
+            BlockPos.STREAM_CODEC,
+            GeneCombinerSyncPayload::blockPos,
+            ByteBufCodecs.BOOL,
+            GeneCombinerSyncPayload::processing,
+            ByteBufCodecs.VAR_INT,
+            GeneCombinerSyncPayload::processingProgress,
+            ByteBufCodecs.VAR_INT,
+            GeneCombinerSyncPayload::processingTotalTicks,
+            INT_ARRAY_CODEC,
+            GeneCombinerSyncPayload::inputGeneCounts,
+            ByteBufCodecs.STRING_UTF8,
+            GeneCombinerSyncPayload::outputKind,
+            ByteBufCodecs.VAR_INT,
+            GeneCombinerSyncPayload::outputGeneCount,
+            GeneCombinerSyncPayload::new
+    );
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(GeneCombinerSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientGeneCombinerState.set(
+                payload.blockPos(),
+                payload.processing(),
+                payload.processingProgress(),
+                payload.processingTotalTicks(),
+                payload.inputGeneCounts(),
+                payload.outputKind(),
+                payload.outputGeneCount()
+        ));
+    }
+}

@@ -50,6 +50,15 @@ public final class ModBlocks {
                     .noOcclusion()
     );
 
+    public static final DeferredBlock<GeneCombinerBlock> GENE_COMBINER = BLOCKS.registerBlock(
+            "gene_combiner",
+            GeneCombinerBlock::new,
+            p -> p.mapColor(MapColor.METAL)
+                    .strength(2.5f)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+    );
+
     private ModBlocks() {
     }
 }

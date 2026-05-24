@@ -26,5 +26,7 @@ public final class YhaNetwork {
         registrar.playToServer(DNAAnalyzerRenamePayload.TYPE, DNAAnalyzerRenamePayload.STREAM_CODEC, DNAAnalyzerRenamePayload::handle);
         registrar.playToClient(DNASplicerSyncPayload.TYPE, DNASplicerSyncPayload.STREAM_CODEC, DNASplicerSyncPayload::handle);
         registrar.playToServer(DNASplicerCreateInjectorPayload.TYPE, DNASplicerCreateInjectorPayload.STREAM_CODEC, DNASplicerCreateInjectorPayload::handle);
+        registrar.playToClient(GeneCombinationBrowserDataPayload.TYPE, GeneCombinationBrowserDataPayload.STREAM_CODEC, GeneCombinationBrowserDataPayload::handle);
+        registrar.playToClient(OpenGeneCombinationBrowserPayload.TYPE, OpenGeneCombinationBrowserPayload.STREAM_CODEC, OpenGeneCombinationBrowserPayload::handle);
     }
 }

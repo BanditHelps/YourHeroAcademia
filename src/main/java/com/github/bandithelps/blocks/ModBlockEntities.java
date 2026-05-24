@@ -30,6 +30,16 @@ public final class ModBlockEntities {
                     )
             );
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<GeneCombinerBlockEntity>> GENE_COMBINER =
+            BLOCK_ENTITIES.register(
+                    "gene_combiner",
+                    () -> new BlockEntityType<>(
+                            GeneCombinerBlockEntity::new,
+                            false,
+                            ModBlocks.GENE_COMBINER.get()
+                    )
+            );
+
     private ModBlockEntities() {
     }
 }

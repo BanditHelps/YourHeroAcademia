@@ -18,6 +18,8 @@ import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
 import com.github.bandithelps.gene.GeneRegistry;
+import com.github.bandithelps.gene.combination.CombinationManager;
+import com.github.bandithelps.gui.menu.ModMenus;
 import com.github.bandithelps.gui.actions.YhaDialogActions;
 import com.github.bandithelps.items.SmokeCanisterItem;
 import com.github.bandithelps.items.TissueExtractorItem;
@@ -101,6 +103,7 @@ public final class YourHeroAcademia {
 //    );
     public static final DeferredItem<BlockItem> DNA_ANALYZER_ITEM = ITEMS.registerSimpleBlockItem("dna_analyzer", ModBlocks.DNA_ANALYZER);
     public static final DeferredItem<BlockItem> DNA_SPLICER_ITEM = ITEMS.registerSimpleBlockItem("dna_splicer", ModBlocks.DNA_SPLICER);
+    public static final DeferredItem<BlockItem> GENE_COMBINER_ITEM = ITEMS.registerSimpleBlockItem("gene_combiner", ModBlocks.GENE_COMBINER);
 
     // Creates a new food item with the id "yourheroacademia:example_id", nutrition 1 and saturation 2
     public static final DeferredItem<Item> EXAMPLE_ITEM = ITEMS.registerSimpleItem("example_item", p -> p.food(new FoodProperties.Builder()
@@ -128,6 +131,9 @@ public final class YourHeroAcademia {
     public static final DeferredItem<Item> DNA_INJECTOR = ITEMS.register("dna_injector", () -> new DNAInjectorItem(new Item.Properties()
             .stacksTo(1)
             .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "dna_injector")))));
+    public static final DeferredItem<Item> GENETIC_SLOP = ITEMS.register("genetic_slop", () -> new Item(new Item.Properties()
+            .stacksTo(64)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "genetic_slop")))));
     public static final DeferredItem<BlockItem> SAMPLE_REFRIGERATOR = ITEMS.registerSimpleBlockItem("sample_refrigerator", ModBlocks.EXAMPLE_BLOCK);
 
     // Creates a creative tab with the id "yourheroacademia:example_tab" for the example item, that is placed after the combat tab
@@ -173,6 +179,7 @@ public final class YourHeroAcademia {
         ModParticles.PARTICLE_TYPES.register(modEventBus);
         ModRecipeSerializers.RECIPE_SERIALIZERS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        ModMenus.MENUS.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in.
         // Note that this is necessary if and only if we want *this* class (YourHeroAcademia) to respond directly to events.
@@ -207,6 +214,7 @@ public final class YourHeroAcademia {
             event.accept(TREADMILL_BLOCK_ITEM);
             event.accept(DNA_ANALYZER_ITEM);
             event.accept(DNA_SPLICER_ITEM);
+            event.accept(GENE_COMBINER_ITEM);
         } else if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(EMPTY_CANISTER);
             event.accept(FILLED_SMOKE_CANISTER);
@@ -217,6 +225,7 @@ public final class YourHeroAcademia {
             event.accept(EMPTY_GENE_VIAL);
             event.accept(GENE_VIAL);
             event.accept(DNA_INJECTOR);
+            event.accept(GENETIC_SLOP);
             event.accept(SAMPLE_REFRIGERATOR);
         }
     }
@@ -227,6 +236,7 @@ public final class YourHeroAcademia {
         // Do something when the server starts
         LOGGER.info("HELLO from server starting");
         GeneRegistry.getInstance().reload(event.getServer().getResourceManager());
+        CombinationManager.rebuildForServer(event.getServer());
     }
 
 
