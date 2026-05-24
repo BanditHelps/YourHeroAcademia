@@ -2,6 +2,9 @@ package com.github.bandithelps.blocks;
 
 import com.github.bandithelps.items.TissueSampleItem;
 import com.github.bandithelps.network.DNASplicerSyncPayload;
+import com.github.bandithelps.gene.DNA;
+import com.github.bandithelps.utils.gene.GeneAliasUtil;
+import com.github.bandithelps.utils.gene.GeneUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -11,6 +14,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
+
+import java.util.List;
 
 public class DNASplicerBlockEntity extends BlockEntity {
     public static final int SLOT_DNA = 0;
@@ -62,11 +67,15 @@ public class DNASplicerBlockEntity extends BlockEntity {
             return false;
         }
 
-        CompoundTag dnaData = TissueSampleItem.getDNAData(sampleStack);
-        sourceName = dnaData.getString("sourceName").orElse("Unknown");
-        sourceUuid = dnaData.getString("sourceUuid").orElse("");
-        String genesRaw = dnaData.getString("genes").orElse("");
-        geneSlots = parseGeneSlots(genesRaw);
+        DNA dna = TissueSampleItem.getDNA(sampleStack);
+        if (dna == null || dna.getSourceUuid() == null) {
+            return false;
+        }
+        sourceName = dna.getSourceName();
+        sourceUuid = dna.getSourceUuid().toString();
+        geneSlots = parseGeneSlots(dna.getGenes().stream()
+                .map(GeneUtil::serializeGene)
+                .toList(), sourceUuid);
 
         ItemStack toInsert = sampleStack.copy();
         toInsert.setCount(1);
@@ -119,11 +128,14 @@ public class DNASplicerBlockEntity extends BlockEntity {
         sourceUuid = "";
     }
 
-    private static String[] parseGeneSlots(String genesRaw) {
-        String[] allGenes = genesRaw.isEmpty() ? new String[0] : genesRaw.split(",");
+    private String[] parseGeneSlots(List<String> genesRaw, String sourceUuidForAliases) {
         String[] slots = new String[6];
         for (int i = 0; i < 6; i++) {
-            slots[i] = i < allGenes.length ? allGenes[i].trim() : "";
+            if (i < genesRaw.size()) {
+                slots[i] = resolveGeneAlias(genesRaw.get(i).trim(), sourceUuidForAliases);
+            } else {
+                slots[i] = "";
+            }
         }
         return slots;
     }
@@ -157,8 +169,9 @@ public class DNASplicerBlockEntity extends BlockEntity {
         if (vial.isEmpty()) {
             return new String[3];
         }
-        String vialGenes = com.github.bandithelps.items.GeneVialItem.getStoredGenes(vial);
-        return parseGeneSlots(vialGenes);
+        String vialSourceUuid = com.github.bandithelps.items.GeneVialItem.getSourceUuid(vial);
+        List<String> vialGenes = com.github.bandithelps.items.GeneVialItem.getStoredGeneList(vial);
+        return parseGeneSlots(vialGenes, vialSourceUuid);
     }
 
     public ItemStack createInjector(boolean useLeftSide, Player player) {
@@ -167,7 +180,7 @@ public class DNASplicerBlockEntity extends BlockEntity {
         }
 
         ItemStack vial = inventory.getStack(SLOT_VIAL);
-        String vialGenes = com.github.bandithelps.items.GeneVialItem.getStoredGenes(vial);
+        List<String> vialGenes = com.github.bandithelps.items.GeneVialItem.getStoredGeneList(vial);
 
         String[] splicedGenes = new String[6];
         for (int i = 0; i < 6; i++) {
@@ -198,16 +211,19 @@ public class DNASplicerBlockEntity extends BlockEntity {
         return injector;
     }
 
-    private String getVialGeneAt(String vialGenes, int index) {
+    private String getVialGeneAt(List<String> vialGenes, int index) {
         if (vialGenes == null || vialGenes.isEmpty()) {
             return "";
         }
-        String[] genes = vialGenes.split(",");
-        if (index >= genes.length) {
+        if (index >= vialGenes.size()) {
             return "";
         }
-        String gene = genes[index].trim();
-        return gene.isEmpty() ? "" : gene;
+        String gene = vialGenes.get(index).trim();
+        if (gene.isEmpty()) {
+            return "";
+        }
+        String vialSourceUuid = com.github.bandithelps.items.GeneVialItem.getSourceUuid(inventory.getStack(SLOT_VIAL));
+        return resolveGeneAlias(gene, vialSourceUuid);
     }
 
     private String buildGeneString(String[] genes) {
@@ -221,6 +237,18 @@ public class DNASplicerBlockEntity extends BlockEntity {
             }
         }
         return sb.toString();
+    }
+
+    private String resolveGeneAlias(String rawGene, String sourceUuidForAliases) {
+        if (rawGene == null || rawGene.isBlank()) {
+            return "";
+        }
+        var parsed = GeneUtil.parseGene(rawGene);
+        if (parsed == null) {
+            return rawGene;
+        }
+        var aliased = GeneAliasUtil.applyAlias(this.level, sourceUuidForAliases, parsed);
+        return GeneUtil.serializeGene(aliased);
     }
 
     private void syncToClient() {

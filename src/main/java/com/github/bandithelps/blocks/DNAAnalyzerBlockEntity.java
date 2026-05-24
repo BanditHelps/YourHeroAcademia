@@ -24,6 +24,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -41,6 +42,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     public static final String TAG_PROCESSING_TOTAL_TICKS = "processingTotalTicks";
     public static final String TAG_AWAITING_VIAL_COLLECTION = "awaitingVialCollection";
     public static final String TAG_PENDING_GENES = "pendingGenes";
+    public static final String TAG_PENDING_GENE_LIST = "pendingGeneList";
 
     public static final int SLOT_SAMPLE = 0;
     private static final int EXTRACT_COUNT_LOW_INTELLIGENCE = 3;
@@ -58,6 +60,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     private int processingTotalTicks = 0;
     private boolean awaitingVialCollection = false;
     private String pendingGenes = "";
+    private List<String> pendingGeneList = new ArrayList<>();
     private String[] geneSlots = createEmptyGeneSlots();
     private String sourceName = "";
     private String sourceUuid = "";
@@ -76,6 +79,16 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         processingTotalTicks = tag.getInt(TAG_PROCESSING_TOTAL_TICKS).orElse(0);
         awaitingVialCollection = tag.getBoolean(TAG_AWAITING_VIAL_COLLECTION).orElse(false);
         pendingGenes = tag.getString(TAG_PENDING_GENES).orElse("");
+        pendingGeneList = new ArrayList<>();
+        if (tag.contains(TAG_PENDING_GENE_LIST)) {
+            ListTag pendingListTag = tag.getList(TAG_PENDING_GENE_LIST).orElse(new ListTag());
+            for (int i = 0; i < pendingListTag.size(); i++) {
+                String value = pendingListTag.getString(i).orElse("");
+                if (!value.isBlank()) {
+                    pendingGeneList.add(value);
+                }
+            }
+        }
 
         if (tag.contains(TAG_GENE_SLOTS)) {
             ListTag listTag = tag.getList(TAG_GENE_SLOTS).orElse(new ListTag());
@@ -101,6 +114,13 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         tag.putInt(TAG_PROCESSING_TOTAL_TICKS, processingTotalTicks);
         tag.putBoolean(TAG_AWAITING_VIAL_COLLECTION, awaitingVialCollection);
         tag.putString(TAG_PENDING_GENES, pendingGenes);
+        ListTag pendingList = new ListTag();
+        for (String gene : pendingGeneList) {
+            if (gene != null && !gene.isBlank()) {
+                pendingList.add(StringTag.valueOf(gene));
+            }
+        }
+        tag.put(TAG_PENDING_GENE_LIST, pendingList);
 
         ListTag list = new ListTag();
         for (String gene : geneSlots) {
@@ -160,6 +180,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         processingTotalTicks = 0;
         awaitingVialCollection = false;
         pendingGenes = "";
+        pendingGeneList = new ArrayList<>();
         sourceName = dnaView.sourceName();
         sourceUuid = dnaView.sourceUuid();
         geneSlots = dnaView.geneSlots();
@@ -227,7 +248,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         for (int i = 0; i < normalizedSelection.length; i++) {
             selectedGenes[i] = geneSlots[normalizedSelection[i]];
         }
-        StringBuilder serializedGenes = new StringBuilder();
+        List<String> selectedSerializedGenes = new ArrayList<>();
         for (String rawGene : selectedGenes) {
             if (rawGene == null || rawGene.isEmpty()) {
                 continue;
@@ -237,17 +258,16 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
                 continue;
             }
             Gene aliasedGene = GeneAliasUtil.applyAlias(this.level, sourceUuid, gene);
-            if (serializedGenes.length() > 0) {
-                serializedGenes.append(",");
-            }
-            serializedGenes.append(GeneUtil.serializeGene(aliasedGene));
+            selectedSerializedGenes.add(GeneUtil.serializeGene(aliasedGene));
         }
 
-        if (serializedGenes.isEmpty()) {
+        if (selectedSerializedGenes.isEmpty()) {
             return;
         }
 
-        pendingGenes = serializedGenes.toString();
+        pendingGeneList = selectedSerializedGenes;
+        // Legacy string retained for older readers.
+        pendingGenes = String.join(",", selectedSerializedGenes);
         processing = true;
         processingProgress = 0;
         processingTotalTicks = getProcessingTicksForPlayer(player);
@@ -257,7 +277,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     }
 
     public boolean collectProcessedGenes(ItemStack heldStack, Player player, InteractionHand hand) {
-        if (!awaitingVialCollection || processing || pendingGenes.isBlank()) {
+        if (!awaitingVialCollection || processing || (pendingGeneList.isEmpty() && pendingGenes.isBlank())) {
             return false;
         }
         if (heldStack.isEmpty() || heldStack.getItem() != YourHeroAcademia.EMPTY_GENE_VIAL.get()) {
@@ -265,7 +285,11 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         }
 
         ItemStack filledVial = new ItemStack(YourHeroAcademia.GENE_VIAL.get());
-        GeneVialItem.setGenes(filledVial, pendingGenes, sourceName, sourceUuid);
+        if (!pendingGeneList.isEmpty()) {
+            GeneVialItem.setGenes(filledVial, pendingGeneList, sourceName, sourceUuid);
+        } else {
+            GeneVialItem.setGenes(filledVial, pendingGenes, sourceName, sourceUuid);
+        }
 
         heldStack.shrink(1);
         if (heldStack.isEmpty()) {
@@ -393,6 +417,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         processingTotalTicks = 0;
         awaitingVialCollection = false;
         pendingGenes = "";
+        pendingGeneList = new ArrayList<>();
         geneSlots = createEmptyGeneSlots();
         sourceName = "";
         sourceUuid = "";
