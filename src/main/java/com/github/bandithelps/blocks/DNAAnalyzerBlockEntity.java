@@ -279,6 +279,38 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         return true;
     }
 
+    public boolean retrieveSample(Player player, InteractionHand hand) {
+        if (processing || awaitingVialCollection) {
+            return false;
+        }
+        ItemStack sample = inventory.getStack(SLOT_SAMPLE);
+        if (sample.isEmpty()) {
+            return false;
+        }
+
+        ItemStack returnedSample = sample.copy();
+        returnedSample.setCount(1);
+        clearAnalyzerForNextSample();
+
+        ItemStack held = player.getItemInHand(hand);
+        if (held.isEmpty()) {
+            player.setItemInHand(hand, returnedSample);
+            return true;
+        }
+        if (!player.getInventory().add(returnedSample) && this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            ItemEntity sampleEntity = new ItemEntity(
+                    serverLevel,
+                    this.worldPosition.getX() + 0.5D,
+                    this.worldPosition.getY() + 1.05D,
+                    this.worldPosition.getZ() + 0.5D,
+                    returnedSample
+            );
+            sampleEntity.setDeltaMovement(0.0D, 0.1D, 0.0D);
+            serverLevel.addFreshEntity(sampleEntity);
+        }
+        return true;
+    }
+
     private static int[] normalizeSelection(int[] selectedSlots) {
         if (selectedSlots == null || selectedSlots.length == 0) {
             return new int[0];

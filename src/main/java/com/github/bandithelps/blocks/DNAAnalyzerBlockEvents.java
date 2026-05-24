@@ -50,6 +50,11 @@ public final class DNAAnalyzerBlockEvents {
 
         BlockEntity be = event.getLevel().getBlockEntity(pos);
         if (be instanceof DNAAnalyzerBlockEntity analyzer && player instanceof ServerPlayer serverPlayer) {
+            boolean wantsRetrieveSample = player.isShiftKeyDown() && held.isEmpty();
+            if (wantsRetrieveSample && analyzer.retrieveSample(player, event.getHand())) {
+                return;
+            }
+
             boolean wantsCollect = !held.isEmpty() && held.getItem() == YourHeroAcademia.EMPTY_GENE_VIAL.get();
             if (wantsCollect && analyzer.collectProcessedGenes(held, player, event.getHand())) {
                 return;
