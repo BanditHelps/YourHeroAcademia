@@ -1,7 +1,11 @@
 {
   "itemGroup.yourheroacademia": "Example Mod Tab",
+
   "block.yourheroacademia.example_block": "Example Block",
   "block.yha.treadmill": "Treadmill",
+  "block.yha.dna_analyzer": "DNA Analyzer",
+  "block.yha.dna_splicer": "DNA Splicer",
+
   "item.yha.treadmill": "Treadmill",
   "item.yha.empty_canister": "Empty Canister",
   "item.yha.filled_smoke_canister": "Filled Smoke Canister",
@@ -9,6 +13,9 @@
   "item.yha.pipette": "Pipette",
   "item.yha.empty_gene_vial": "Empty Gene Vial",
   "item.yourheroacademia.example_item": "Example Item",
+  "item.yha.tissue_sample": "Tissue Sample",
+  "item.yha.tissue_extractor": "Tissue Extractor",
+  "item.yha.gene_vial": "Gene Vial",
 
   "effect.yha.smoke_blind": "Smoke Blindness",
 
