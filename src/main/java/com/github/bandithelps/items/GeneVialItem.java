@@ -1,6 +1,7 @@
 package com.github.bandithelps.items;
 
 import com.github.bandithelps.gene.Gene;
+import com.github.bandithelps.utils.gene.GeneAliasUtil;
 import com.github.bandithelps.utils.gene.GeneUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
@@ -97,7 +98,8 @@ public class GeneVialItem extends Item {
         List<Gene> genes = parseGenes(genesRaw);
         tooltipAdder.accept(Component.literal("Genes: " + genes.size()).withStyle(ChatFormatting.GOLD));
         for (Gene gene : genes) {
-            tooltipAdder.accept(Component.literal("- " + gene.getName() + " (" + gene.getType().getId() + ") q:" + gene.getQuality())
+            Gene resolved = GeneAliasUtil.applyAlias(context.level(), sourceUuid, gene);
+            tooltipAdder.accept(Component.literal("- " + resolved.getName() + " (" + resolved.getType().getId() + ") q:" + resolved.getQuality())
                     .withStyle(ChatFormatting.YELLOW));
         }
     }

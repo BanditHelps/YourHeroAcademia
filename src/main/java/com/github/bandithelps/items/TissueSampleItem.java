@@ -3,6 +3,7 @@ package com.github.bandithelps.items;
 import com.github.bandithelps.gene.DNA;
 import com.github.bandithelps.gene.Gene;
 import com.github.bandithelps.gene.SideEffect;
+import com.github.bandithelps.utils.gene.GeneAliasUtil;
 import com.github.bandithelps.utils.gene.GeneUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
@@ -15,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.level.Level;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -39,20 +41,22 @@ public class TissueSampleItem extends Item {
         super(properties);
     }
 
-    public static void setDNA(ItemStack stack, DNA dna) {
+    public static void setDNA(ItemStack stack, DNA dna, Level level) {
         CompoundTag customTag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         CompoundTag dnaTag = new CompoundTag();
         dnaTag.putString(TAG_SOURCE_NAME, dna.getSourceName());
         dnaTag.putString(TAG_SOURCE_UUID, dna.getSourceUuid().toString());
         dnaTag.putLong(TAG_HARVEST_TIME, dna.getHarvestTime());
+        String sourceUuid = dna.getSourceUuid().toString();
         ListTag genesList = new ListTag();
         for (Gene gene : dna.getGenes()) {
-            genesList.add(StringTag.valueOf(GeneUtil.serializeGene(gene)));
+            Gene resolved = GeneAliasUtil.applyAlias(level, sourceUuid, gene);
+            genesList.add(StringTag.valueOf(GeneUtil.serializeGene(resolved)));
         }
         dnaTag.put(TAG_GENE_LIST, genesList);
         // Legacy field retained for compatibility with older samples/readers.
         dnaTag.putString(TAG_GENES, dna.getGenes().stream()
-                .map(GeneUtil::serializeGene)
+                .map(gene -> GeneUtil.serializeGene(GeneAliasUtil.applyAlias(level, sourceUuid, gene)))
                 .collect(Collectors.joining(",")));
 
         customTag.put(TAG_DNA, dnaTag);
@@ -155,11 +159,13 @@ public class TissueSampleItem extends Item {
                 .withStyle(ChatFormatting.GRAY));
         tooltipAdder.accept(Component.literal("Genes: " + dna.getGeneCount()).withStyle(ChatFormatting.GOLD));
 
+        String sourceUuid = dna.getSourceUuid().toString();
         for (Gene gene : dna.getGenes()) {
-            tooltipAdder.accept(Component.literal("- " + gene.getName() + " (" + gene.getCategory() + ") q:" + gene.getQuality())
+            Gene resolved = GeneAliasUtil.applyAlias(context.level(), sourceUuid, gene);
+            tooltipAdder.accept(Component.literal("- " + resolved.getName() + " (" + resolved.getCategory() + ") q:" + resolved.getQuality())
                     .withStyle(ChatFormatting.YELLOW));
-            if (gene.hasSideEffects()) {
-                for (SideEffect sideEffect : gene.getSideEffects()) {
+            if (resolved.hasSideEffects()) {
+                for (SideEffect sideEffect : resolved.getSideEffects()) {
                     tooltipAdder.accept(Component.literal("  * " + sideEffect.getDisplayName())
                             .withStyle(ChatFormatting.RED));
                 }

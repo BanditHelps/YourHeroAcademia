@@ -1,42 +1,42 @@
 package com.github.bandithelps.utils.gene;
 
+import com.github.bandithelps.gene.GeneAliasSavedData;
+import com.github.bandithelps.gene.GeneAliasClientCache;
 import com.github.bandithelps.gene.Gene;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 
 public final class GeneAliasUtil {
-    private static final String ROOT_TAG = "yha_gene_aliases";
-
     private GeneAliasUtil() {
     }
 
-    public static String getAlias(Player player, String sourceUuid, String geneTypeId) {
-        if (player == null || sourceUuid == null || sourceUuid.isEmpty() || geneTypeId == null || geneTypeId.isEmpty()) {
+    public static String getAlias(Level level, String sourceUuid, String geneTypeId) {
+        if (sourceUuid == null || sourceUuid.isEmpty() || geneTypeId == null || geneTypeId.isEmpty()) {
             return "";
         }
-        CompoundTag root = getRoot(player);
-        return root.getString(makeKey(sourceUuid, geneTypeId)).orElse("");
+        String key = makeKey(sourceUuid, geneTypeId);
+        if (level instanceof ServerLevel serverLevel) {
+            return GeneAliasSavedData.get(serverLevel).getAlias(key);
+        }
+        return GeneAliasClientCache.getAlias(key);
     }
 
-    public static void setAlias(Player player, String sourceUuid, String geneTypeId, String alias) {
-        if (player == null || sourceUuid == null || sourceUuid.isEmpty() || geneTypeId == null || geneTypeId.isEmpty()) {
+    public static void setAlias(Level level, String sourceUuid, String geneTypeId, String alias) {
+        if (!(level instanceof ServerLevel serverLevel)) {
             return;
         }
-        CompoundTag root = getRoot(player);
-        String key = makeKey(sourceUuid, geneTypeId);
-        if (alias == null || alias.isBlank()) {
-            root.remove(key);
-        } else {
-            root.putString(key, alias.trim());
+        if (sourceUuid == null || sourceUuid.isEmpty() || geneTypeId == null || geneTypeId.isEmpty()) {
+            return;
         }
-        player.getPersistentData().put(ROOT_TAG, root);
+        String normalizedAlias = alias == null ? "" : alias.trim();
+        GeneAliasSavedData.get(serverLevel).setAlias(makeKey(sourceUuid, geneTypeId), normalizedAlias);
     }
 
-    public static Gene applyAlias(Player player, String sourceUuid, Gene gene) {
+    public static Gene applyAlias(Level level, String sourceUuid, Gene gene) {
         if (gene == null) {
             return null;
         }
-        String alias = getAlias(player, sourceUuid, gene.getType().getId());
+        String alias = getAlias(level, sourceUuid, gene.getType().getId());
         if (alias.isEmpty()) {
             return gene;
         }
@@ -53,9 +53,5 @@ public final class GeneAliasUtil {
 
     private static String makeKey(String sourceUuid, String geneTypeId) {
         return sourceUuid + "|" + geneTypeId;
-    }
-
-    private static CompoundTag getRoot(Player player) {
-        return player.getPersistentData().getCompound(ROOT_TAG).orElse(new CompoundTag());
     }
 }

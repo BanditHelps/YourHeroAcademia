@@ -8,6 +8,7 @@ import com.github.bandithelps.gene.GeneRegistry;
 import com.github.bandithelps.gene.GeneType;
 import com.github.bandithelps.gene.SideEffect;
 import com.github.bandithelps.items.GeneVialItem;
+import com.github.bandithelps.utils.gene.GeneAliasUtil;
 import com.github.bandithelps.utils.gene.GeneUtil;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -199,13 +200,15 @@ public class GeneCommand {
         info.append("Harvest Time: ").append(dna.getHarvestTime()).append("\n");
         info.append("DNA Fatigued: ").append(DNAAttachments.get(player).isDNAFatigued()).append("\n");
         info.append("Genes:\n");
+        String sourceUuid = dna.getSourceUuid().toString();
         for (Gene gene : dna.getGenes()) {
-            info.append("  - ").append(gene.getName())
-                    .append(" [").append(gene.getCategory()).append("]")
-                    .append(" Q").append(gene.getQuality());
-            if (gene.hasSideEffects()) {
+            Gene resolved = GeneAliasUtil.applyAlias(source.getLevel(), sourceUuid, gene);
+            info.append("  - ").append(resolved.getName())
+                    .append(" [").append(resolved.getCategory()).append("]")
+                    .append(" Q").append(resolved.getQuality());
+            if (resolved.hasSideEffects()) {
                 info.append(" (Side Effects: ");
-                info.append(gene.getSideEffects().stream()
+                info.append(resolved.getSideEffects().stream()
                         .map(SideEffect::name)
                         .collect(Collectors.joining(", ")));
                 info.append(")");

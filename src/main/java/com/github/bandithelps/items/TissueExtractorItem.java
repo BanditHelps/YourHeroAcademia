@@ -75,7 +75,7 @@ public class TissueExtractorItem extends Item {
         }
 
         ItemStack sampleStack = new ItemStack(YourHeroAcademia.TISSUE_SAMPLE.get());
-        TissueSampleItem.setDNA(sampleStack, dna);
+        TissueSampleItem.setDNA(sampleStack, dna, extractor.level());
 
         if (!extractor.getInventory().add(sampleStack)) {
             extractor.drop(sampleStack, true);

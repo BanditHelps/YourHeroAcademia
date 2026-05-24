@@ -4,6 +4,7 @@ import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.attributes.IntelligenceAttributes;
 import com.github.bandithelps.gene.DNA;
 import com.github.bandithelps.gene.Gene;
+import com.github.bandithelps.gene.GeneAliasSyncEvents;
 import com.github.bandithelps.items.GeneVialItem;
 import com.github.bandithelps.items.TissueSampleItem;
 import com.github.bandithelps.network.DNAAnalyzerSyncPayload;
@@ -142,7 +143,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
             return false;
         }
 
-        DNAView dnaView = buildGeneView(sampleStack, player);
+        DNAView dnaView = buildGeneView(sampleStack);
         if (dnaView == null) {
             return false;
         }
@@ -200,7 +201,11 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
                 gene.getSideEffects()
         );
         geneSlots[slotIndex] = GeneUtil.serializeGene(renamedGene);
-        GeneAliasUtil.setAlias(player, sourceUuid, gene.getType().getId(), normalizedName);
+        GeneAliasUtil.setAlias(this.level, sourceUuid, gene.getType().getId(), normalizedName);
+        if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            GeneAliasSyncEvents.broadcastAliasUpdate(serverLevel, sourceUuid, gene.getType().getId(), normalizedName);
+        }
+        refreshInsertedSampleAliases();
         setChanged();
         syncToClient();
     }
@@ -229,7 +234,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
             if (gene == null) {
                 continue;
             }
-            Gene aliasedGene = GeneAliasUtil.applyAlias(player, sourceUuid, gene);
+            Gene aliasedGene = GeneAliasUtil.applyAlias(this.level, sourceUuid, gene);
             if (serializedGenes.length() > 0) {
                 serializedGenes.append(",");
             }
@@ -398,7 +403,23 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         syncToClient();
     }
 
-    private DNAView buildGeneView(ItemStack sample, Player player) {
+    private void refreshInsertedSampleAliases() {
+        if (this.level == null) {
+            return;
+        }
+        ItemStack sampleStack = inventory.getStack(SLOT_SAMPLE);
+        if (sampleStack.isEmpty()) {
+            return;
+        }
+        DNA dna = TissueSampleItem.getDNA(sampleStack);
+        if (dna == null || dna.getSourceUuid() == null) {
+            return;
+        }
+        TissueSampleItem.setDNA(sampleStack, dna, this.level);
+        inventory.setStack(SLOT_SAMPLE, sampleStack);
+    }
+
+    private DNAView buildGeneView(ItemStack sample) {
         DNA dna = TissueSampleItem.getDNA(sample);
         if (dna == null || dna.getSourceUuid() == null) {
             return null;
@@ -411,7 +432,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         int limit = Math.min(genes.size(), resolvedSlots.length);
         for (int i = 0; i < limit; i++) {
             Gene gene = genes.get(i);
-            Gene aliasedGene = GeneAliasUtil.applyAlias(player, parsedSourceUuid, gene);
+            Gene aliasedGene = GeneAliasUtil.applyAlias(this.level, parsedSourceUuid, gene);
             resolvedSlots[i] = GeneUtil.serializeGene(aliasedGene);
         }
         return new DNAView(parsedSourceName, parsedSourceUuid, resolvedSlots);
