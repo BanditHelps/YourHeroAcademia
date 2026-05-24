@@ -7,6 +7,8 @@ import com.github.bandithelps.utils.gene.GeneUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -28,6 +30,7 @@ public class TissueSampleItem extends Item {
     private static final String TAG_SOURCE_NAME = "sourceName";
     private static final String TAG_SOURCE_UUID = "sourceUuid";
     private static final String TAG_GENES = "genes";
+    private static final String TAG_GENE_LIST = "geneList";
     private static final String TAG_HARVEST_TIME = "harvestTime";
     private static final DateTimeFormatter HARVEST_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
@@ -42,6 +45,12 @@ public class TissueSampleItem extends Item {
         dnaTag.putString(TAG_SOURCE_NAME, dna.getSourceName());
         dnaTag.putString(TAG_SOURCE_UUID, dna.getSourceUuid().toString());
         dnaTag.putLong(TAG_HARVEST_TIME, dna.getHarvestTime());
+        ListTag genesList = new ListTag();
+        for (Gene gene : dna.getGenes()) {
+            genesList.add(StringTag.valueOf(GeneUtil.serializeGene(gene)));
+        }
+        dnaTag.put(TAG_GENE_LIST, genesList);
+        // Legacy field retained for compatibility with older samples/readers.
         dnaTag.putString(TAG_GENES, dna.getGenes().stream()
                 .map(GeneUtil::serializeGene)
                 .collect(Collectors.joining(",")));
@@ -66,17 +75,33 @@ public class TissueSampleItem extends Item {
         }
 
         long harvestTime = dnaTag.getLong(TAG_HARVEST_TIME).orElse(System.currentTimeMillis());
-        String genesRaw = dnaTag.getString(TAG_GENES).orElse("");
         List<Gene> genes = new ArrayList<>();
-        if (!genesRaw.isEmpty()) {
-            String[] geneParts = genesRaw.split(",");
-            for (String genePart : geneParts) {
+
+        if (dnaTag.contains(TAG_GENE_LIST)) {
+            ListTag geneListTag = dnaTag.getList(TAG_GENE_LIST).orElse(new ListTag());
+            for (int i = 0; i < geneListTag.size(); i++) {
+                String genePart = geneListTag.getString(i).orElse("");
+                if (genePart.isEmpty()) {
+                    continue;
+                }
                 Gene gene = GeneUtil.parseGene(genePart);
                 if (gene != null) {
                     genes.add(gene);
                 }
             }
+        } else {
+            String genesRaw = dnaTag.getString(TAG_GENES).orElse("");
+            if (!genesRaw.isEmpty()) {
+                String[] geneParts = genesRaw.split(",");
+                for (String genePart : geneParts) {
+                    Gene gene = GeneUtil.parseGene(genePart);
+                    if (gene != null) {
+                        genes.add(gene);
+                    }
+                }
+            }
         }
+
         return new DNA(sourceName, sourceUuid, genes, harvestTime);
     }
 
@@ -97,6 +122,17 @@ public class TissueSampleItem extends Item {
 
     public static String getGenesData(ItemStack stack) {
         CompoundTag dnaTag = getDNAData(stack);
+        if (dnaTag.contains(TAG_GENE_LIST)) {
+            ListTag geneListTag = dnaTag.getList(TAG_GENE_LIST).orElse(new ListTag());
+            List<String> parts = new ArrayList<>();
+            for (int i = 0; i < geneListTag.size(); i++) {
+                String value = geneListTag.getString(i).orElse("");
+                if (!value.isEmpty()) {
+                    parts.add(value);
+                }
+            }
+            return String.join(",", parts);
+        }
         return dnaTag.getString(TAG_GENES).orElse("");
     }
 

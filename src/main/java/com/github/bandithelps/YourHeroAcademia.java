@@ -17,6 +17,7 @@ import com.github.bandithelps.conditions.cost.CostRegister;
 import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
+import com.github.bandithelps.gene.GeneRegistry;
 import com.github.bandithelps.gui.actions.YhaDialogActions;
 import com.github.bandithelps.items.SmokeCanisterItem;
 import com.github.bandithelps.items.TissueExtractorItem;
@@ -225,6 +226,7 @@ public final class YourHeroAcademia {
     public static void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
         LOGGER.info("HELLO from server starting");
+        GeneRegistry.getInstance().reload(event.getServer().getResourceManager());
     }
 
 
@@ -245,6 +247,7 @@ public final class YourHeroAcademia {
         StaminaCommand.register(event.getBuilder(), event.getBuildContext());
         BodyCommand.register(event.getBuilder(), event.getBuildContext());
         BdCommand.register(event.getBuilder(), event.getBuildContext());
+        GeneCommand.register(event.getBuilder(), event.getBuildContext());
     }
 
     @SubscribeEvent

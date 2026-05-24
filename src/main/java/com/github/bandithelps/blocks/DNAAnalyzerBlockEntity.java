@@ -2,6 +2,7 @@ package com.github.bandithelps.blocks;
 
 import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.attributes.IntelligenceAttributes;
+import com.github.bandithelps.gene.DNA;
 import com.github.bandithelps.gene.Gene;
 import com.github.bandithelps.items.GeneVialItem;
 import com.github.bandithelps.items.TissueSampleItem;
@@ -23,6 +24,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class DNAAnalyzerBlockEntity extends BlockEntity {
     public static final String TAG_ANALYZE_PROGRESS = "analyzeProgress";
@@ -397,27 +399,18 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     }
 
     private DNAView buildGeneView(ItemStack sample, Player player) {
-        CompoundTag dnaData = TissueSampleItem.getDNAData(sample);
-        String parsedSourceName = dnaData.getString("sourceName").orElse("");
-        String parsedSourceUuid = dnaData.getString("sourceUuid").orElse("");
-        String genesRaw = dnaData.getString("genes").orElse("");
-        if (parsedSourceUuid.isEmpty() || genesRaw.isEmpty()) {
+        DNA dna = TissueSampleItem.getDNA(sample);
+        if (dna == null || dna.getSourceUuid() == null) {
             return null;
         }
 
-        String[] rawSlots = parseGeneSlots(genesRaw);
+        String parsedSourceName = dna.getSourceName();
+        String parsedSourceUuid = dna.getSourceUuid().toString();
         String[] resolvedSlots = createEmptyGeneSlots();
-        for (int i = 0; i < rawSlots.length; i++) {
-            String rawGene = rawSlots[i];
-            if (rawGene == null || rawGene.isEmpty()) {
-                resolvedSlots[i] = "";
-                continue;
-            }
-            Gene gene = GeneUtil.parseGene(rawGene);
-            if (gene == null) {
-                resolvedSlots[i] = "";
-                continue;
-            }
+        List<Gene> genes = dna.getGenes();
+        int limit = Math.min(genes.size(), resolvedSlots.length);
+        for (int i = 0; i < limit; i++) {
+            Gene gene = genes.get(i);
             Gene aliasedGene = GeneAliasUtil.applyAlias(player, parsedSourceUuid, gene);
             resolvedSlots[i] = GeneUtil.serializeGene(aliasedGene);
         }
