@@ -2,6 +2,7 @@ package com.github.bandithelps.blocks;
 
 import com.github.bandithelps.YourHeroAcademia;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -11,9 +12,14 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.threetag.palladium.network.OpenScreenPacket;
 
 @EventBusSubscriber(modid = YourHeroAcademia.MODID)
 public final class GeneCombinerBlockEvents {
+    private static final Identifier GENE_COMBINER_SCREEN_ID =
+            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "power/gene_combiner");
+
     private GeneCombinerBlockEvents() {
     }
 
@@ -49,6 +55,7 @@ public final class GeneCombinerBlockEvents {
         if (!combiner.isUsableBy(serverPlayer)) {
             return;
         }
-        serverPlayer.openMenu(combiner);
+        combiner.syncToPlayer(serverPlayer);
+        PacketDistributor.sendToPlayer(serverPlayer, new OpenScreenPacket(GENE_COMBINER_SCREEN_ID));
     }
 }

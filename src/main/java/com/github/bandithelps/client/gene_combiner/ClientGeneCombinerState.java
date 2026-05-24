@@ -17,8 +17,10 @@ public final class ClientGeneCombinerState {
             int processingProgress,
             int processingTotalTicks,
             int[] inputGeneCounts,
+            String[] inputSlotLabels,
             String outputKind,
-            int outputGeneCount
+            int outputGeneCount,
+            String outputLabel
     ) {
         STATES.put(blockPos, new ClientData(
                 processing,
@@ -26,7 +28,9 @@ public final class ClientGeneCombinerState {
                 processingTotalTicks,
                 inputGeneCounts == null ? new int[0] : inputGeneCounts,
                 outputKind == null ? "empty" : outputKind,
-                outputGeneCount
+                outputGeneCount,
+                inputSlotLabels == null ? new String[0] : inputSlotLabels,
+                outputLabel == null ? "" : outputLabel
         ));
         latestPos = blockPos;
     }
@@ -55,7 +59,9 @@ public final class ClientGeneCombinerState {
             int processingTotalTicks,
             int[] inputGeneCounts,
             String outputKind,
-            int outputGeneCount
+            int outputGeneCount,
+            String[] inputSlotLabels,
+            String outputLabel
     ) {
     }
 }

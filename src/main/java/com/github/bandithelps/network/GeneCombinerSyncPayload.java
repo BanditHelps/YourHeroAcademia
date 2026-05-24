@@ -18,8 +18,10 @@ public record GeneCombinerSyncPayload(
         int processingProgress,
         int processingTotalTicks,
         int[] inputGeneCounts,
+        String[] inputSlotLabels,
         String outputKind,
-        int outputGeneCount
+        int outputGeneCount,
+        String outputLabel
 ) implements CustomPacketPayload {
     public static final Type<GeneCombinerSyncPayload> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "gene_combiner_sync"));
@@ -33,6 +35,26 @@ public record GeneCombinerSyncPayload(
                     array -> Arrays.stream(array).boxed().toList()
             );
 
+    private static final StreamCodec<ByteBuf, List<String>> STRING_LIST_CODEC =
+            ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list());
+
+    private static final StreamCodec<ByteBuf, String[]> STRING_ARRAY_CODEC =
+            STRING_LIST_CODEC.map(
+                    list -> list.toArray(new String[0]),
+                    Arrays::asList
+            );
+
+    public GeneCombinerSyncPayload {
+        if (inputGeneCounts == null) {
+            inputGeneCounts = new int[0];
+        }
+        if (inputSlotLabels == null) {
+            inputSlotLabels = new String[0];
+        }
+        outputKind = outputKind == null ? "empty" : outputKind;
+        outputLabel = outputLabel == null ? "" : outputLabel;
+    }
+
     public static final StreamCodec<ByteBuf, GeneCombinerSyncPayload> STREAM_CODEC = StreamCodec.composite(
             BlockPos.STREAM_CODEC,
             GeneCombinerSyncPayload::blockPos,
@@ -44,10 +66,14 @@ public record GeneCombinerSyncPayload(
             GeneCombinerSyncPayload::processingTotalTicks,
             INT_ARRAY_CODEC,
             GeneCombinerSyncPayload::inputGeneCounts,
+            STRING_ARRAY_CODEC,
+            GeneCombinerSyncPayload::inputSlotLabels,
             ByteBufCodecs.STRING_UTF8,
             GeneCombinerSyncPayload::outputKind,
             ByteBufCodecs.VAR_INT,
             GeneCombinerSyncPayload::outputGeneCount,
+            ByteBufCodecs.STRING_UTF8,
+            GeneCombinerSyncPayload::outputLabel,
             GeneCombinerSyncPayload::new
     );
 
@@ -63,8 +89,10 @@ public record GeneCombinerSyncPayload(
                 payload.processingProgress(),
                 payload.processingTotalTicks(),
                 payload.inputGeneCounts(),
+                payload.inputSlotLabels(),
                 payload.outputKind(),
-                payload.outputGeneCount()
+                payload.outputGeneCount(),
+                payload.outputLabel()
         ));
     }
 }
