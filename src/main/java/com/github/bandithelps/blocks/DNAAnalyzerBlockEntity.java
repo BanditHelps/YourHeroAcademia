@@ -84,9 +84,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
             ListTag pendingListTag = tag.getList(TAG_PENDING_GENE_LIST).orElse(new ListTag());
             for (int i = 0; i < pendingListTag.size(); i++) {
                 String value = pendingListTag.getString(i).orElse("");
-                if (!value.isBlank()) {
-                    pendingGeneList.add(value);
-                }
+                pendingGeneList.add(value);
             }
         }
 
@@ -116,9 +114,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         tag.putString(TAG_PENDING_GENES, pendingGenes);
         ListTag pendingList = new ListTag();
         for (String gene : pendingGeneList) {
-            if (gene != null && !gene.isBlank()) {
-                pendingList.add(StringTag.valueOf(gene));
-            }
+            pendingList.add(StringTag.valueOf(gene == null ? "" : gene));
         }
         tag.put(TAG_PENDING_GENE_LIST, pendingList);
 
@@ -244,24 +240,25 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
             return;
         }
 
-        String[] selectedGenes = new String[normalizedSelection.length];
-        for (int i = 0; i < normalizedSelection.length; i++) {
-            selectedGenes[i] = geneSlots[normalizedSelection[i]];
-        }
         List<String> selectedSerializedGenes = new ArrayList<>();
-        for (String rawGene : selectedGenes) {
+        boolean hasAnyGene = false;
+        for (int selectedIndex : normalizedSelection) {
+            String rawGene = geneSlots[selectedIndex];
             if (rawGene == null || rawGene.isEmpty()) {
+                selectedSerializedGenes.add("");
                 continue;
             }
             Gene gene = GeneUtil.parseGene(rawGene);
             if (gene == null) {
+                selectedSerializedGenes.add("");
                 continue;
             }
             Gene aliasedGene = GeneAliasUtil.applyAlias(this.level, sourceUuid, gene);
             selectedSerializedGenes.add(GeneUtil.serializeGene(aliasedGene));
+            hasAnyGene = true;
         }
 
-        if (selectedSerializedGenes.isEmpty()) {
+        if (!hasAnyGene) {
             return;
         }
 

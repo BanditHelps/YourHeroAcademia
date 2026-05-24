@@ -57,8 +57,14 @@ public class GeneVialItem extends Item {
         List<String> normalizedGenes = genes == null
                 ? List.of()
                 : genes.stream()
-                .filter(value -> value != null && !value.isBlank())
+                .map(value -> value == null ? "" : value)
                 .collect(Collectors.toCollection(ArrayList::new));
+        int geneCount = 0;
+        for (String gene : normalizedGenes) {
+            if (gene != null && !gene.isBlank()) {
+                geneCount++;
+            }
+        }
         CompoundTag customTag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         CompoundTag vialTag = new CompoundTag();
         ListTag genesList = new ListTag();
@@ -68,7 +74,7 @@ public class GeneVialItem extends Item {
         vialTag.put(TAG_GENE_LIST, genesList);
         // Legacy field retained for compatibility with older readers.
         vialTag.putString(TAG_GENES, String.join(",", normalizedGenes));
-        vialTag.putInt(TAG_GENE_COUNT, normalizedGenes.size());
+        vialTag.putInt(TAG_GENE_COUNT, geneCount);
         vialTag.putString(TAG_SOURCE_NAME, sourceName == null ? "" : sourceName);
         vialTag.putString(TAG_SOURCE_UUID, sourceUuid == null ? "" : sourceUuid);
 
@@ -92,9 +98,7 @@ public class GeneVialItem extends Item {
             ListTag listTag = vialTag.getList(TAG_GENE_LIST).orElse(new ListTag());
             for (int i = 0; i < listTag.size(); i++) {
                 String value = listTag.getString(i).orElse("");
-                if (!value.isBlank()) {
-                    genes.add(value);
-                }
+                genes.add(value);
             }
             return genes;
         }
@@ -103,7 +107,13 @@ public class GeneVialItem extends Item {
     }
 
     public static int getGeneCount(ItemStack stack) {
-        return getStoredGeneList(stack).size();
+        int count = 0;
+        for (String gene : getStoredGeneList(stack)) {
+            if (gene != null && !gene.isBlank()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     public static boolean hasGenes(ItemStack stack) {
@@ -141,12 +151,37 @@ public class GeneVialItem extends Item {
             tooltipAdder.accept(Component.literal("UUID: " + sourceUuid).withStyle(ChatFormatting.DARK_GRAY));
         }
 
-        List<Gene> genes = parseGenes(getStoredGeneList(stack));
-        tooltipAdder.accept(Component.literal("Genes: " + genes.size()).withStyle(ChatFormatting.GOLD));
-        for (Gene gene : genes) {
-            Gene resolved = GeneAliasUtil.applyAlias(context.level(), sourceUuid, gene);
-            tooltipAdder.accept(Component.literal("- " + resolved.getName() + " (" + resolved.getType().getId() + ") q:" + resolved.getQuality())
+        List<String> slotGenes = getStoredGeneList(stack);
+        tooltipAdder.accept(Component.literal("Genes: " + getGeneCount(stack)).withStyle(ChatFormatting.GOLD));
+        if (slotGenes.isEmpty()) {
+            tooltipAdder.accept(Component.literal("No stored gene slots").withStyle(ChatFormatting.GRAY));
+            return;
+        }
+
+        for (int i = 0; i < slotGenes.size(); i++) {
+            int slotNumber = i + 1;
+            String rawGene = slotGenes.get(i);
+            if (rawGene == null || rawGene.isBlank()) {
+                tooltipAdder.accept(Component.literal("[" + slotNumber + "] Empty").withStyle(ChatFormatting.DARK_GRAY));
+                continue;
+            }
+
+            Gene parsed = GeneUtil.parseGene(rawGene);
+            if (parsed == null) {
+                tooltipAdder.accept(Component.literal("[" + slotNumber + "] Invalid gene data").withStyle(ChatFormatting.RED));
+                continue;
+            }
+
+            Gene resolved = GeneAliasUtil.applyAlias(context.level(), sourceUuid, parsed);
+            tooltipAdder.accept(Component.literal("[" + slotNumber + "] " + resolved.getName()
+                            + " (" + resolved.getType().getId() + ") q:" + resolved.getQuality())
                     .withStyle(ChatFormatting.YELLOW));
+            if (resolved.hasSideEffects()) {
+                for (var sideEffect : resolved.getSideEffects()) {
+                    tooltipAdder.accept(Component.literal("  - Side effect: " + sideEffect.getDisplayName())
+                            .withStyle(ChatFormatting.RED));
+                }
+            }
         }
     }
 
