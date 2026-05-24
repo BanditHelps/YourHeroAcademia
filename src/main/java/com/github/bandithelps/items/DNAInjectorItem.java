@@ -2,6 +2,7 @@ package com.github.bandithelps.items;
 
 import com.github.bandithelps.capabilities.dna.DNAAttachments;
 import com.github.bandithelps.effects.ModEffects;
+import com.github.bandithelps.gene.GeneEffectHandler;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.InteractionHand;
@@ -77,6 +78,8 @@ public class DNAInjectorItem extends Item {
         var dna = DNAAttachments.get(player);
         dna.setDNA(genes);
         dna.setDNAFatigued(true);
+
+        GeneEffectHandler.applyGeneEffects(player);
 
         int fatigueTicks = 24000;
         player.addEffect(new MobEffectInstance(

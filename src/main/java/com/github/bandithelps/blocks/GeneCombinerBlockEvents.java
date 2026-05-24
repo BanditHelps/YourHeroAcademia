@@ -55,6 +55,7 @@ public final class GeneCombinerBlockEvents {
         if (!combiner.isUsableBy(serverPlayer)) {
             return;
         }
+        combiner.clearLastResultDisplay();
         combiner.syncToPlayer(serverPlayer);
         PacketDistributor.sendToPlayer(serverPlayer, new OpenScreenPacket(GENE_COMBINER_SCREEN_ID));
     }

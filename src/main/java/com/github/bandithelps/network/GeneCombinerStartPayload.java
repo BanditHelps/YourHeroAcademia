@@ -42,8 +42,8 @@ public record GeneCombinerStartPayload(BlockPos blockPos) implements CustomPacke
             player.sendSystemMessage(Component.literal(switch (result) {
                 case BUSY -> "Gene Combiner is already running.";
                 case OUTPUT_BLOCKED -> "Gene Combiner output slot is blocked.";
-                case NO_INPUT -> "Gene Combiner requires gene vials in the input slots.";
-                case NO_RECIPE -> "No valid combination recipe matches those genes.";
+                case NO_INPUT -> "Gene Combiner requires at least 2 gene vials in input slots.";
+                case NO_RECIPE -> "Combination failed.";
                 case TOO_FAR -> "You are too far from this Gene Combiner.";
                 default -> "Unable to start Gene Combiner.";
             }));

@@ -19,6 +19,7 @@ public record GeneCombinerSyncPayload(
         int processingTotalTicks,
         int[] inputGeneCounts,
         String[] inputSlotLabels,
+        String[] inputSlotTooltips,
         String outputKind,
         int outputGeneCount,
         String outputLabel
@@ -51,6 +52,9 @@ public record GeneCombinerSyncPayload(
         if (inputSlotLabels == null) {
             inputSlotLabels = new String[0];
         }
+        if (inputSlotTooltips == null) {
+            inputSlotTooltips = new String[0];
+        }
         outputKind = outputKind == null ? "empty" : outputKind;
         outputLabel = outputLabel == null ? "" : outputLabel;
     }
@@ -68,6 +72,8 @@ public record GeneCombinerSyncPayload(
             GeneCombinerSyncPayload::inputGeneCounts,
             STRING_ARRAY_CODEC,
             GeneCombinerSyncPayload::inputSlotLabels,
+            STRING_ARRAY_CODEC,
+            GeneCombinerSyncPayload::inputSlotTooltips,
             ByteBufCodecs.STRING_UTF8,
             GeneCombinerSyncPayload::outputKind,
             ByteBufCodecs.VAR_INT,
@@ -90,6 +96,7 @@ public record GeneCombinerSyncPayload(
                 payload.processingTotalTicks(),
                 payload.inputGeneCounts(),
                 payload.inputSlotLabels(),
+                payload.inputSlotTooltips(),
                 payload.outputKind(),
                 payload.outputGeneCount(),
                 payload.outputLabel()

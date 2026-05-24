@@ -147,25 +147,24 @@ public class GeneCombinerBlockEntity extends BlockEntity implements Container, M
         if (!isUsableBy(player)) {
             return GeneCombinerStartResult.TOO_FAR;
         }
-        List<String> pooledGenes = gatherInputGenes();
-        if (pooledGenes.isEmpty()) {
+        int loadedVials = countLoadedInputVials();
+        if (loadedVials < 2) {
             return GeneCombinerStartResult.NO_INPUT;
         }
-
+        List<String> pooledGenes = gatherInputGenes();
         Random random = this.level == null ? new Random() : new Random(this.level.getGameTime() ^ getBlockPos().asLong());
-        CombinationManager.CombinationAttemptResult result = CombinationManager.evaluateAndRoll(pooledGenes, random);
-        if (!result.hasAnyMatch()) {
-            return GeneCombinerStartResult.NO_RECIPE;
-        }
+        CombinationManager.CombinationAttemptResult result = pooledGenes.isEmpty()
+                ? null
+                : CombinationManager.evaluateAndRoll(pooledGenes, random);
 
         clearInputs();
-        this.pendingSlop = !result.success();
+        this.pendingSlop = result == null || !result.hasAnyMatch() || !result.success();
         this.pendingGenes.clear();
         this.lastResultKind = "empty";
         this.lastResultGeneCount = 0;
         this.lastResultLabel = "";
         this.processingPlayer = player.getUUID();
-        if (result.success()) {
+        if (result != null && result.success()) {
             for (Gene gene : result.producedGenes()) {
                 this.pendingGenes.add(GeneUtil.serializeGene(gene));
             }
@@ -318,6 +317,17 @@ public class GeneCombinerBlockEntity extends BlockEntity implements Container, M
         return pooled;
     }
 
+    private int countLoadedInputVials() {
+        int count = 0;
+        for (int i = 0; i < INPUT_SLOTS; i++) {
+            ItemStack stack = this.inventory.getStack(i);
+            if (!stack.isEmpty() && stack.getItem() == YourHeroAcademia.GENE_VIAL.get()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     private void clearInputs() {
         for (int i = 0; i < INPUT_SLOTS; i++) {
             this.inventory.setStack(i, ItemStack.EMPTY);
@@ -420,6 +430,43 @@ public class GeneCombinerBlockEntity extends BlockEntity implements Container, M
         return labels;
     }
 
+    private String[] getInputSlotTooltips() {
+        String[] tooltips = new String[INPUT_SLOTS];
+        for (int i = 0; i < INPUT_SLOTS; i++) {
+            ItemStack stack = this.inventory.getStack(i);
+            if (stack.isEmpty() || stack.getItem() != YourHeroAcademia.GENE_VIAL.get()) {
+                tooltips[i] = "";
+                continue;
+            }
+            List<String> lines = new ArrayList<>();
+            lines.add("Gene Vial");
+            List<String> genes = GeneVialItem.getStoredGeneList(stack);
+            int index = 1;
+            for (String raw : genes) {
+                if (raw == null || raw.isBlank()) {
+                    continue;
+                }
+                Gene parsed = GeneUtil.parseGene(raw);
+                if (parsed == null) {
+                    continue;
+                }
+                lines.add(index + ". " + parsed.getName()
+                        + " [" + parsed.getCategory().name() + "]"
+                        + " (" + parsed.getType().getId() + ", q:" + parsed.getQuality() + ")");
+                if (parsed.hasSideEffects()) {
+                    parsed.getSideEffects().forEach(sideEffect ->
+                            lines.add("   - Side effect: " + sideEffect.getDisplayName()));
+                }
+                index++;
+            }
+            if (index == 1) {
+                lines.add("No genes stored");
+            }
+            tooltips[i] = String.join("\n", lines);
+        }
+        return tooltips;
+    }
+
     private void syncToClient() {
         if (this.level == null || this.level.isClientSide()) {
             return;
@@ -439,6 +486,7 @@ public class GeneCombinerBlockEntity extends BlockEntity implements Container, M
                         this.processingTotalTicks,
                         getInputGeneCounts(),
                         getInputSlotLabels(),
+                        getInputSlotTooltips(),
                         this.lastResultKind,
                         this.lastResultGeneCount,
                         this.lastResultLabel
@@ -454,10 +502,25 @@ public class GeneCombinerBlockEntity extends BlockEntity implements Container, M
                 this.processingTotalTicks,
                 getInputGeneCounts(),
                 getInputSlotLabels(),
+                getInputSlotTooltips(),
                 this.lastResultKind,
                 this.lastResultGeneCount,
                 this.lastResultLabel
         ));
+    }
+
+    public void clearLastResultDisplay() {
+        if (this.processing) {
+            return;
+        }
+        if ("empty".equals(this.lastResultKind) && this.lastResultGeneCount == 0 && (this.lastResultLabel == null || this.lastResultLabel.isBlank())) {
+            return;
+        }
+        this.lastResultKind = "empty";
+        this.lastResultGeneCount = 0;
+        this.lastResultLabel = "";
+        setChanged();
+        syncToClient();
     }
 
     public enum GeneCombinerStartResult {

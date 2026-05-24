@@ -11,7 +11,10 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -87,7 +90,11 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
     private static final class GeneCombinerWidget extends AbstractWidget {
         private final GeneCombinerPanelUiComponent owner;
         private int scrollOffset = 0;
+        private InventoryEntry pressedEntry;
         private DraggingEntry dragging;
+        private String lastSeenResultKind = "empty";
+        private long resultFlashStartMs = 0L;
+        private int resultFlashColor = 0;
 
         private GeneCombinerWidget(GeneCombinerPanelUiComponent owner, int x, int y, int width, int height) {
             super(x, y, width, height, Component.literal("Gene Combiner"));
@@ -123,37 +130,14 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
                 gui.item(this.dragging.stack(), mouseX - 8, mouseY - 8);
                 gui.text(minecraft.font, trimToWidth(minecraft, this.dragging.label(), 96), mouseX + 10, mouseY - 2, 0xFFD5E8FF, false);
             }
+
+            drawResultFlashOverlay(gui, x, y, width, height);
         }
 
         @Override
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
             int mouseX = (int) event.x();
             int mouseY = (int) event.y();
-            List<InventoryEntry> entries = getInventoryEntries(Minecraft.getInstance());
-            InventoryEntry clickedEntry = getInventoryEntryAt(entries, mouseX, mouseY);
-            if (clickedEntry != null) {
-                this.dragging = new DraggingEntry(clickedEntry.inventorySlot(), clickedEntry.stack().copy(), clickedEntry.label());
-                clickSound();
-                return true;
-            }
-
-            int slot = getMachineSlotAt(mouseX, mouseY);
-            if (slot >= 0) {
-                BlockPos pos = ClientGeneCombinerState.getLatestPos();
-                if (pos == null) {
-                    this.dragging = null;
-                    return true;
-                }
-                if (this.dragging != null) {
-                    ClientPacketDistributor.sendToServer(new GeneCombinerTransferPayload(pos, this.dragging.inventorySlot(), slot));
-                    this.dragging = null;
-                    clickSound();
-                    return true;
-                }
-                ClientPacketDistributor.sendToServer(new GeneCombinerTransferPayload(pos, -1, slot));
-                clickSound();
-                return true;
-            }
 
             if (isInsideCombineButton(mouseX, mouseY)) {
                 BlockPos pos = ClientGeneCombinerState.getLatestPos();
@@ -164,8 +148,69 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
                 return true;
             }
 
+            List<InventoryEntry> entries = getInventoryEntries(Minecraft.getInstance());
+            InventoryEntry clickedEntry = getInventoryEntryAt(entries, mouseX, mouseY);
+            if (clickedEntry != null && event.button() == 0) {
+                this.pressedEntry = clickedEntry;
+                this.dragging = null;
+                return true;
+            }
+
+            int slot = getMachineSlotAt(mouseX, mouseY);
+            if (slot >= 0) {
+                BlockPos pos = ClientGeneCombinerState.getLatestPos();
+                if (pos == null) {
+                    return true;
+                }
+                ClientPacketDistributor.sendToServer(new GeneCombinerTransferPayload(pos, -1, slot));
+                clickSound();
+                return true;
+            }
+
+            this.pressedEntry = null;
             this.dragging = null;
             return false;
+        }
+
+        @Override
+        public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+            if (event.button() != 0) {
+                return false;
+            }
+            if (this.pressedEntry == null) {
+                return false;
+            }
+            if (this.dragging == null) {
+                this.dragging = new DraggingEntry(
+                        this.pressedEntry.primaryInventorySlot(),
+                        this.pressedEntry.stack().copy(),
+                        this.pressedEntry.label()
+                );
+                clickSound();
+            }
+            return true;
+        }
+
+        @Override
+        public boolean mouseReleased(MouseButtonEvent event) {
+            if (event.button() != 0) {
+                return false;
+            }
+            if (this.dragging == null) {
+                this.pressedEntry = null;
+                return false;
+            }
+            int slot = getMachineSlotAt((int) event.x(), (int) event.y());
+            if (slot >= 0) {
+                BlockPos pos = ClientGeneCombinerState.getLatestPos();
+                if (pos != null) {
+                    ClientPacketDistributor.sendToServer(new GeneCombinerTransferPayload(pos, this.dragging.inventorySlot(), slot));
+                    clickSound();
+                }
+            }
+            this.dragging = null;
+            this.pressedEntry = null;
+            return true;
         }
 
         @Override
@@ -214,15 +259,16 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
                 int border = hovered ? 0xFF9AD1FF : 0xFF3B5A78;
                 drawFrame(gui, x + 2, rowY, width - 4, ROW_HEIGHT - 1, fill, border);
                 gui.item(entry.stack(), x + 6, rowY + 2);
-                String label = trimToWidth(minecraft, entry.label(), width - 44);
+                String copiesSuffix = entry.copies() > 1 ? " (" + entry.copies() + ")" : "";
+                int suffixWidth = minecraft.font.width(copiesSuffix);
+                String label = trimToWidth(minecraft, entry.label(), Math.max(20, width - 30 - suffixWidth));
                 gui.text(minecraft.font, label, x + 24, rowY + 4, 0xFFDCEFFF, false);
-                gui.text(minecraft.font, "x" + entry.geneCount(), x + width - 22, rowY + 4, 0xFF9FD1A8, false);
+                if (!copiesSuffix.isBlank()) {
+                    gui.text(minecraft.font, copiesSuffix, x + width - 8 - suffixWidth, rowY + 4, 0xFFAED6F3, false);
+                }
 
                 if (hovered) {
-                    List<Component> tooltip = new ArrayList<>();
-                    tooltip.add(Component.literal(entry.label()));
-                    tooltip.add(Component.literal("Genes: " + entry.geneCount()));
-                    tooltip.add(Component.literal("Inv slot: " + entry.inventorySlot()));
+                    List<Component> tooltip = buildVialTooltip(entry.stack(), entry.label(), entry.geneCount(), entry.copies());
                     gui.setTooltipForNextFrame(
                             minecraft.font,
                             tooltip.stream().map(Component::getVisualOrderText).toList(),
@@ -267,6 +313,7 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
             int slotsY = y + 18;
             int[] counts = state == null ? new int[0] : state.inputGeneCounts();
             String[] labels = state == null ? new String[0] : state.inputSlotLabels();
+            String[] tooltips = state == null ? new String[0] : state.inputSlotTooltips();
             for (int i = 0; i < INPUT_SLOTS; i++) {
                 int slotX = slotsX + (i % 2) * (SLOT_SIZE + 10);
                 int slotY = slotsY + (i / 2) * (SLOT_SIZE + 10);
@@ -274,18 +321,31 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
                 boolean hovered = mouseX >= slotX && mouseX < slotX + SLOT_SIZE && mouseY >= slotY && mouseY < slotY + SLOT_SIZE;
                 int border = hovered ? 0xFF9AD1FF : filled ? 0xFF87C47B : 0xFF49637D;
                 drawFrame(gui, slotX, slotY, SLOT_SIZE, SLOT_SIZE, 0xAA1B2A3B, border);
-                String text = filled ? Integer.toString(counts[i]) : "-";
-                int textColor = filled ? 0xFFAEEFBF : 0xFF7E8EA3;
-                gui.text(minecraft.font, text, slotX + (SLOT_SIZE - minecraft.font.width(text)) / 2, slotY + 13, textColor, false);
+                if (filled) {
+                    gui.item(new ItemStack(YourHeroAcademia.GENE_VIAL.get()), slotX + 9, slotY + 9);
+                } else {
+                    gui.text(minecraft.font, "-", slotX + (SLOT_SIZE - minecraft.font.width("-")) / 2, slotY + 13, 0xFF7E8EA3, false);
+                }
                 if (hovered) {
                     List<Component> tooltip = new ArrayList<>();
                     tooltip.add(Component.literal("Input Slot " + (i + 1)));
                     if (filled) {
                         String label = i < labels.length ? labels[i] : "";
-                        tooltip.add(Component.literal(label.isBlank() ? counts[i] + " genes" : label));
-                        tooltip.add(Component.literal("Click to clear slot"));
+                        if (!label.isBlank()) {
+                            tooltip.add(Component.literal(label).withStyle(ChatFormatting.AQUA));
+                        }
+                        if (i < tooltips.length && tooltips[i] != null && !tooltips[i].isBlank()) {
+                            for (String line : tooltips[i].split("\\n")) {
+                                if (!line.isBlank()) {
+                                    tooltip.add(styleInputTooltipLine(line));
+                                }
+                            }
+                        } else {
+                            tooltip.add(Component.literal(counts[i] + " genes").withStyle(ChatFormatting.GRAY));
+                        }
+                        tooltip.add(Component.literal("Click to clear slot").withStyle(ChatFormatting.DARK_GRAY));
                     } else {
-                        tooltip.add(Component.literal("Drop a vial here"));
+                        tooltip.add(Component.literal("Drop a vial here").withStyle(ChatFormatting.GRAY));
                     }
                     gui.setTooltipForNextFrame(
                             minecraft.font,
@@ -300,6 +360,10 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
             float progress = state == null || state.processingTotalTicks() <= 0
                     ? 0.0F
                     : clamp01((float) state.processingProgress() / (float) state.processingTotalTicks());
+            String outputKind = state == null ? "empty" : state.outputKind();
+            updateResultFlash(outputKind, processing);
+            boolean failedLastAttempt = !processing && "slop".equals(outputKind);
+            boolean successfulLastAttempt = !processing && "vial".equals(outputKind);
 
             int machineCenterX = x + width - 78;
             int machineCenterY = y + 52;
@@ -308,27 +372,42 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
             int progressX = x + 10;
             int progressY = y + height - 44;
             int progressW = width - 20;
-            drawFrame(gui, progressX, progressY, progressW, 10, 0xAA1B2A3B, 0xFF43617F);
-            gui.fill(progressX + 1, progressY + 1, progressX + 1 + Math.round((progressW - 2) * progress), progressY + 9, 0xFF7BD6FF);
+            int progressBorder = failedLastAttempt ? 0xFFAA5A5A : successfulLastAttempt ? 0xFF57A968 : 0xFF43617F;
+            int progressFill = failedLastAttempt ? 0xFFCC6B6B : successfulLastAttempt ? 0xFF6FD88A : 0xFF7BD6FF;
+            drawFrame(gui, progressX, progressY, progressW, 10, 0xAA1B2A3B, progressBorder);
+            gui.fill(progressX + 1, progressY + 1, progressX + 1 + Math.round((progressW - 2) * progress), progressY + 9, progressFill);
 
-            String status = processing ? "Combining..." : "Idle";
-            gui.text(minecraft.font, status, progressX, progressY - 10, 0xFFB7D9FF, false);
+            int loadedInputs = countLoadedInputs(counts);
+            String status = processing
+                    ? "Combining..."
+                    : failedLastAttempt
+                    ? "Failure"
+                    : successfulLastAttempt
+                    ? "Success"
+                    : "Load at least 2 vials";
+            int statusColor = failedLastAttempt ? 0xFFFF9A9A : successfulLastAttempt ? 0xFF9CF5AE : 0xFFB7D9FF;
+            gui.text(minecraft.font, status, progressX, progressY - 10, statusColor, false);
 
             int buttonX = x + width - 80;
-            int buttonY = y + height - 28;
-            boolean canCombine = !processing && hasAnyInput(counts);
+            int buttonY = y + height - 66;
+            boolean canCombine = !processing && loadedInputs >= 2;
             drawFrame(gui, buttonX, buttonY, 70, 18, canCombine ? 0xAA1C3D54 : 0xAA1C222B, canCombine ? 0xFF79B8FF : 0xFF41546B);
             String buttonLabel = processing ? "Working" : "Combine";
             int buttonTextColor = canCombine ? 0xFFE6F2FF : 0xFF7A8A9D;
             gui.text(minecraft.font, buttonLabel, buttonX + (70 - minecraft.font.width(buttonLabel)) / 2, buttonY + 5, buttonTextColor, false);
 
-            String outputKind = state == null ? "empty" : state.outputKind();
             if (!"empty".equals(outputKind)) {
                 String result = state.outputLabel();
                 if (result == null || result.isBlank()) {
                     result = "slop".equals(outputKind) ? "Genetic Slop" : "Gene Vial";
                 }
-                gui.text(minecraft.font, "Result: " + trimToWidth(minecraft, result, width - 20), x + 10, y + height - 16, 0xFFAEEFBF, false);
+                if (failedLastAttempt) {
+                    gui.text(minecraft.font, "Combination failed: unstable genome.", x + 10, y + height - 27, 0xFFFF8D8D, false);
+                } else if (successfulLastAttempt) {
+                    gui.text(minecraft.font, "Combination successful!", x + 10, y + height - 27, 0xFF98F5B1, false);
+                }
+                int resultColor = failedLastAttempt ? 0xFFFFB3B3 : 0xFFAEEFBF;
+                gui.text(minecraft.font, "Result: " + trimToWidth(minecraft, result, width - 20), x + 10, y + height - 16, resultColor, false);
             }
         }
 
@@ -350,8 +429,40 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
 
         private boolean isInsideCombineButton(int mouseX, int mouseY) {
             int x = this.getX() + this.getWidth() - 80;
-            int y = this.getY() + this.getHeight() - 28;
+            int y = this.getY() + this.getHeight() - 66;
             return mouseX >= x && mouseX < x + 70 && mouseY >= y && mouseY < y + 18;
+        }
+
+        private void updateResultFlash(String outputKind, boolean processing) {
+            String normalized = outputKind == null ? "empty" : outputKind;
+            if (processing) {
+                this.lastSeenResultKind = normalized;
+                return;
+            }
+            boolean changedToResult = !normalized.equals(this.lastSeenResultKind)
+                    && ("slop".equals(normalized) || "vial".equals(normalized));
+            if (changedToResult) {
+                this.resultFlashStartMs = System.currentTimeMillis();
+                this.resultFlashColor = "slop".equals(normalized) ? 0xAAFF4B4B : 0xAA52FF88;
+            }
+            this.lastSeenResultKind = normalized;
+        }
+
+        private void drawResultFlashOverlay(GuiGraphicsExtractor gui, int x, int y, int width, int height) {
+            if (this.resultFlashStartMs <= 0L) {
+                return;
+            }
+            long elapsed = System.currentTimeMillis() - this.resultFlashStartMs;
+            long durationMs = 1400L;
+            if (elapsed >= durationMs) {
+                this.resultFlashStartMs = 0L;
+                return;
+            }
+            float life = 1.0F - ((float) elapsed / (float) durationMs);
+            int alpha = Math.max(0, Math.min(255, Math.round(((this.resultFlashColor >>> 24) & 0xFF) * life)));
+            int rgb = this.resultFlashColor & 0x00FFFFFF;
+            int color = (alpha << 24) | rgb;
+            gui.fill(x + 1, y + 1, x + width - 1, y + height - 1, color);
         }
 
         private int getMachineSlotAt(int mouseX, int mouseY) {
@@ -387,6 +498,7 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
                 return entries;
             }
             Inventory inventory = minecraft.player.getInventory();
+            Map<String, GroupAccumulator> grouped = new LinkedHashMap<>();
             for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
                 ItemStack stack = inventory.getItem(slot);
                 if (stack.isEmpty() || stack.getItem() != YourHeroAcademia.GENE_VIAL.get()) {
@@ -394,12 +506,35 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
                 }
                 int geneCount = GeneVialItem.getGeneCount(stack);
                 String label = resolveVialLabel(stack, geneCount);
-                entries.add(new InventoryEntry(slot, stack, geneCount, label));
+                String key = buildGroupingKey(stack);
+                GroupAccumulator existing = grouped.get(key);
+                if (existing == null) {
+                    grouped.put(key, new GroupAccumulator(slot, stack.copy(), geneCount, label, 1));
+                } else {
+                    existing.copies++;
+                }
+            }
+            for (GroupAccumulator group : grouped.values()) {
+                entries.add(new InventoryEntry(
+                        group.primaryInventorySlot,
+                        group.stack,
+                        group.geneCount,
+                        group.label,
+                        group.copies
+                ));
             }
             return entries;
         }
 
+        private String buildGroupingKey(ItemStack stack) {
+            List<String> genes = GeneVialItem.getStoredGeneList(stack);
+            String sourceName = GeneVialItem.getSourceName(stack);
+            String sourceUuid = GeneVialItem.getSourceUuid(stack);
+            return String.join("|", genes) + "#" + (sourceName == null ? "" : sourceName) + "#" + (sourceUuid == null ? "" : sourceUuid);
+        }
+
         private String resolveVialLabel(ItemStack stack, int geneCount) {
+            String multiSuffix = geneCount > 1 ? "+" : "";
             List<String> genes = GeneVialItem.getStoredGeneList(stack);
             for (String raw : genes) {
                 if (raw == null || raw.isBlank()) {
@@ -407,30 +542,115 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
                 }
                 Gene parsed = GeneUtil.parseGene(raw);
                 if (parsed != null) {
-                    return parsed.getName();
+                    return parsed.getName() + multiSuffix;
                 }
             }
             String source = GeneVialItem.getSourceName(stack);
             if (source != null && !source.isBlank()) {
-                return source;
+                return source + multiSuffix;
             }
-            return geneCount + " gene" + (geneCount == 1 ? "" : "s");
+            return geneCount + " gene" + (geneCount == 1 ? "" : "s") + multiSuffix;
+        }
+
+        private List<Component> buildVialTooltip(ItemStack stack, String fallbackLabel, int geneCount, int copies) {
+            List<Component> tooltip = new ArrayList<>();
+            tooltip.add(Component.literal(fallbackLabel).withStyle(ChatFormatting.AQUA));
+            if (copies > 1) {
+                tooltip.add(Component.literal("Copies: " + copies).withStyle(ChatFormatting.DARK_AQUA));
+            }
+            List<String> genes = GeneVialItem.getStoredGeneList(stack);
+            int index = 1;
+            for (String raw : genes) {
+                if (raw == null || raw.isBlank()) {
+                    continue;
+                }
+                Gene parsed = GeneUtil.parseGene(raw);
+                if (parsed == null) {
+                    continue;
+                }
+                tooltip.add(Component.literal(index + ". " + parsed.getName()
+                                + " [" + parsed.getCategory().name() + "]"
+                                + " (" + parsed.getType().getId() + ", q:" + parsed.getQuality() + ")")
+                        .withStyle(getCategoryColor(parsed.getCategory().name())));
+                if (parsed.hasSideEffects()) {
+                    parsed.getSideEffects().forEach(sideEffect ->
+                            tooltip.add(Component.literal("   - Side effect: " + sideEffect.getDisplayName())
+                                    .withStyle(ChatFormatting.RED)));
+                }
+                index++;
+            }
+            if (index == 1) {
+                tooltip.add(Component.literal("No genes stored").withStyle(ChatFormatting.GRAY));
+            } else {
+                tooltip.add(Component.literal("Total genes: " + geneCount).withStyle(ChatFormatting.GOLD));
+            }
+            return tooltip;
+        }
+
+        private Component styleInputTooltipLine(String line) {
+            if (line == null || line.isBlank()) {
+                return Component.literal("");
+            }
+            if (line.startsWith("Gene Vial")) {
+                return Component.literal(line).withStyle(ChatFormatting.AQUA);
+            }
+            if (line.contains("Side effect:")) {
+                return Component.literal(line).withStyle(ChatFormatting.RED);
+            }
+            if (Character.isDigit(line.charAt(0))) {
+                String upper = line.toUpperCase();
+                if (upper.contains("[BUILDER]")) {
+                    return Component.literal(line).withStyle(getCategoryColor("BUILDER"));
+                }
+                if (upper.contains("[ATTRIBUTE]")) {
+                    return Component.literal(line).withStyle(getCategoryColor("ATTRIBUTE"));
+                }
+                if (upper.contains("[RESISTANCE]")) {
+                    return Component.literal(line).withStyle(getCategoryColor("RESISTANCE"));
+                }
+                if (upper.contains("[COSMETIC]")) {
+                    return Component.literal(line).withStyle(getCategoryColor("COSMETIC"));
+                }
+                if (upper.contains("[ABILITY]")) {
+                    return Component.literal(line).withStyle(getCategoryColor("ABILITY"));
+                }
+                if (upper.contains("[QUIRK]")) {
+                    return Component.literal(line).withStyle(getCategoryColor("QUIRK"));
+                }
+            }
+            return Component.literal(line).withStyle(ChatFormatting.GRAY);
+        }
+
+        private ChatFormatting getCategoryColor(String categoryName) {
+            if (categoryName == null) {
+                return ChatFormatting.WHITE;
+            }
+            return switch (categoryName.toUpperCase()) {
+                case "BUILDER" -> ChatFormatting.BLUE;
+                case "ATTRIBUTE" -> ChatFormatting.GREEN;
+                case "RESISTANCE" -> ChatFormatting.DARK_GREEN;
+                case "COSMETIC" -> ChatFormatting.LIGHT_PURPLE;
+                case "ABILITY" -> ChatFormatting.YELLOW;
+                case "QUIRK" -> ChatFormatting.GOLD;
+                default -> ChatFormatting.WHITE;
+            };
         }
 
         private void clickSound() {
             Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
         }
 
-        private static boolean hasAnyInput(int[] counts) {
+        private static int countLoadedInputs(int[] counts) {
+            int loaded = 0;
             if (counts == null) {
-                return false;
+                return 0;
             }
             for (int count : counts) {
                 if (count > 0) {
-                    return true;
+                    loaded++;
                 }
             }
-            return false;
+            return loaded;
         }
 
         private static String trimToWidth(Minecraft minecraft, String value, int maxWidth) {
@@ -469,10 +689,26 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
             gui.fill(x + width - 1, y, x + width, y + height, border);
         }
 
-        private record InventoryEntry(int inventorySlot, ItemStack stack, int geneCount, String label) {
+        private record InventoryEntry(int primaryInventorySlot, ItemStack stack, int geneCount, String label, int copies) {
         }
 
         private record DraggingEntry(int inventorySlot, ItemStack stack, String label) {
+        }
+
+        private static final class GroupAccumulator {
+            private final int primaryInventorySlot;
+            private final ItemStack stack;
+            private final int geneCount;
+            private final String label;
+            private int copies;
+
+            private GroupAccumulator(int primaryInventorySlot, ItemStack stack, int geneCount, String label, int copies) {
+                this.primaryInventorySlot = primaryInventorySlot;
+                this.stack = stack;
+                this.geneCount = geneCount;
+                this.label = label;
+                this.copies = copies;
+            }
         }
     }
 

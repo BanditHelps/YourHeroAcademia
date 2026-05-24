@@ -18,6 +18,7 @@ public final class ClientGeneCombinerState {
             int processingTotalTicks,
             int[] inputGeneCounts,
             String[] inputSlotLabels,
+            String[] inputSlotTooltips,
             String outputKind,
             int outputGeneCount,
             String outputLabel
@@ -27,6 +28,7 @@ public final class ClientGeneCombinerState {
                 processingProgress,
                 processingTotalTicks,
                 inputGeneCounts == null ? new int[0] : inputGeneCounts,
+                inputSlotTooltips == null ? new String[0] : inputSlotTooltips,
                 outputKind == null ? "empty" : outputKind,
                 outputGeneCount,
                 inputSlotLabels == null ? new String[0] : inputSlotLabels,
@@ -58,6 +60,7 @@ public final class ClientGeneCombinerState {
             int processingProgress,
             int processingTotalTicks,
             int[] inputGeneCounts,
+            String[] inputSlotTooltips,
             String outputKind,
             int outputGeneCount,
             String[] inputSlotLabels,
