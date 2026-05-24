@@ -26,6 +26,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 
 public class DNAAnalyzerBlockEntity extends BlockEntity {
     public static final String TAG_ANALYZE_PROGRESS = "analyzeProgress";
@@ -430,12 +432,34 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         String[] resolvedSlots = createEmptyGeneSlots();
         List<Gene> genes = dna.getGenes();
         int limit = Math.min(genes.size(), resolvedSlots.length);
+        int[] slotOrder = getDeterministicSlotOrder(parsedSourceUuid);
         for (int i = 0; i < limit; i++) {
             Gene gene = genes.get(i);
             Gene aliasedGene = GeneAliasUtil.applyAlias(this.level, parsedSourceUuid, gene);
-            resolvedSlots[i] = GeneUtil.serializeGene(aliasedGene);
+            int slotIndex = slotOrder[i];
+            resolvedSlots[slotIndex] = GeneUtil.serializeGene(aliasedGene);
         }
         return new DNAView(parsedSourceName, parsedSourceUuid, resolvedSlots);
+    }
+
+    private static int[] getDeterministicSlotOrder(String sourceUuid) {
+        int[] slots = {0, 1, 2, 3, 4, 5};
+        long seed;
+        try {
+            UUID uuid = UUID.fromString(sourceUuid);
+            seed = uuid.getMostSignificantBits() ^ uuid.getLeastSignificantBits();
+        } catch (IllegalArgumentException ex) {
+            seed = sourceUuid.hashCode();
+        }
+
+        Random random = new Random(seed);
+        for (int i = slots.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            int temp = slots[i];
+            slots[i] = slots[j];
+            slots[j] = temp;
+        }
+        return slots;
     }
 
     private void syncToClient() {

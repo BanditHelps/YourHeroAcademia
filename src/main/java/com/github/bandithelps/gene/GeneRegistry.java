@@ -80,7 +80,7 @@ public final class GeneRegistry {
             entry.getValue().sort((a, b) -> a.getId().compareToIgnoreCase(b.getId()));
         }
 
-        YourHeroAcademia.LOGGER.info("Loaded {} gene definitions from datapacks.", this.geneTypesById.size());
+        YourHeroAcademia.LOGGER.info("Registered {} genes", this.geneTypesById.size());
         return this.geneTypesById.size();
     }
 
