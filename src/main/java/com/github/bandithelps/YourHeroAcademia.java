@@ -104,6 +104,7 @@ public final class YourHeroAcademia {
     public static final DeferredItem<BlockItem> DNA_ANALYZER_ITEM = ITEMS.registerSimpleBlockItem("dna_analyzer", ModBlocks.DNA_ANALYZER);
     public static final DeferredItem<BlockItem> DNA_SPLICER_ITEM = ITEMS.registerSimpleBlockItem("dna_splicer", ModBlocks.DNA_SPLICER);
     public static final DeferredItem<BlockItem> GENE_COMBINER_ITEM = ITEMS.registerSimpleBlockItem("gene_combiner", ModBlocks.GENE_COMBINER);
+    public static final DeferredItem<BlockItem> BIO_PRINTER_ITEM = ITEMS.registerSimpleBlockItem("bio_printer", ModBlocks.BIO_PRINTER);
 
     // Creates a new food item with the id "yourheroacademia:example_id", nutrition 1 and saturation 2
     public static final DeferredItem<Item> EXAMPLE_ITEM = ITEMS.registerSimpleItem("example_item", p -> p.food(new FoodProperties.Builder()
@@ -215,6 +216,7 @@ public final class YourHeroAcademia {
             event.accept(DNA_ANALYZER_ITEM);
             event.accept(DNA_SPLICER_ITEM);
             event.accept(GENE_COMBINER_ITEM);
+            event.accept(BIO_PRINTER_ITEM);
         } else if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(EMPTY_CANISTER);
             event.accept(FILLED_SMOKE_CANISTER);

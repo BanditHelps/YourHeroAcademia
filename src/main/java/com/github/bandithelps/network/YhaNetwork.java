@@ -29,6 +29,10 @@ public final class YhaNetwork {
         registrar.playToClient(GeneCombinerSyncPayload.TYPE, GeneCombinerSyncPayload.STREAM_CODEC, GeneCombinerSyncPayload::handle);
         registrar.playToServer(GeneCombinerStartPayload.TYPE, GeneCombinerStartPayload.STREAM_CODEC, GeneCombinerStartPayload::handle);
         registrar.playToServer(GeneCombinerTransferPayload.TYPE, GeneCombinerTransferPayload.STREAM_CODEC, GeneCombinerTransferPayload::handle);
+        registrar.playToClient(BioPrinterSyncPayload.TYPE, BioPrinterSyncPayload.STREAM_CODEC, BioPrinterSyncPayload::handle);
+        registrar.playToServer(BioPrinterImportPayload.TYPE, BioPrinterImportPayload.STREAM_CODEC, BioPrinterImportPayload::handle);
+        registrar.playToServer(BioPrinterTransferPayload.TYPE, BioPrinterTransferPayload.STREAM_CODEC, BioPrinterTransferPayload::handle);
+        registrar.playToServer(BioPrinterPrintPayload.TYPE, BioPrinterPrintPayload.STREAM_CODEC, BioPrinterPrintPayload::handle);
         registrar.playToClient(GeneCombinationBrowserDataPayload.TYPE, GeneCombinationBrowserDataPayload.STREAM_CODEC, GeneCombinationBrowserDataPayload::handle);
         registrar.playToClient(OpenGeneCombinationBrowserPayload.TYPE, OpenGeneCombinationBrowserPayload.STREAM_CODEC, OpenGeneCombinationBrowserPayload::handle);
     }

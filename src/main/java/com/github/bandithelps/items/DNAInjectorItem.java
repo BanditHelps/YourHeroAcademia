@@ -2,17 +2,26 @@ package com.github.bandithelps.items;
 
 import com.github.bandithelps.capabilities.dna.DNAAttachments;
 import com.github.bandithelps.effects.ModEffects;
+import com.github.bandithelps.gene.Gene;
 import com.github.bandithelps.gene.GeneEffectHandler;
+import com.github.bandithelps.utils.gene.GeneUtil;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.effect.MobEffectInstance;
 
 public class DNAInjectorItem extends Item {
     private static final String TAG_DNA = "dna";
@@ -94,5 +103,57 @@ public class DNAInjectorItem extends Item {
         stack.shrink(1);
 
         return InteractionResult.SUCCESS;
+    }
+
+    @Override
+    public void appendHoverText(
+            ItemStack stack,
+            Item.TooltipContext context,
+            TooltipDisplay tooltipDisplay,
+            Consumer<Component> tooltipAdder,
+            TooltipFlag tooltipFlag
+    ) {
+        if (!hasDNA(stack)) {
+            tooltipAdder.accept(Component.literal("Empty Injector").withStyle(ChatFormatting.GRAY));
+            return;
+        }
+        tooltipAdder.accept(Component.literal("Source: " + getSourceName(stack)).withStyle(ChatFormatting.AQUA));
+        String genesRaw = getGenes(stack);
+        if (genesRaw == null || genesRaw.isBlank()) {
+            tooltipAdder.accept(Component.literal("No stored genome data").withStyle(ChatFormatting.DARK_GRAY));
+            return;
+        }
+        List<Gene> genes = parseGenes(genesRaw);
+        tooltipAdder.accept(Component.literal("Printed Genes: " + genes.size()).withStyle(ChatFormatting.GOLD));
+        for (int i = 0; i < genes.size(); i++) {
+            Gene gene = genes.get(i);
+            tooltipAdder.accept(Component.literal("[" + (i + 1) + "] " + gene.getName()
+                            + " (" + gene.getType().getId() + ", q:" + gene.getQuality() + ")")
+                    .withStyle(ChatFormatting.YELLOW));
+            if (gene.hasSideEffects()) {
+                gene.getSideEffects().forEach(effect ->
+                        tooltipAdder.accept(Component.literal("   - Side effect: " + effect.getDisplayName())
+                                .withStyle(ChatFormatting.RED)));
+            }
+        }
+    }
+
+    private static List<Gene> parseGenes(String genesRaw) {
+        List<Gene> genes = new ArrayList<>();
+        if (genesRaw == null || genesRaw.isBlank()) {
+            return genes;
+        }
+        String[] parts = genesRaw.split(",");
+        for (String part : parts) {
+            String trimmed = part == null ? "" : part.trim();
+            if (trimmed.isBlank()) {
+                continue;
+            }
+            Gene parsed = GeneUtil.parseGene(trimmed);
+            if (parsed != null) {
+                genes.add(parsed);
+            }
+        }
+        return genes;
     }
 }

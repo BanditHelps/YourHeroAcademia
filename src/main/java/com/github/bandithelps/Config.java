@@ -74,6 +74,10 @@ public class Config {
             .comment("Quality bonus per rarity step dropped when selecting a fallback gene rarity")
             .defineInRange("geneFallbackQualityBoost", 10, 0, 100);
 
+    public static final ModConfigSpec.IntValue BIO_PRINTER_PROCESS_TICKS = BUILDER
+            .comment("Bio Printer print duration in ticks (20 ticks = 1 second)")
+            .defineInRange("bioPrinterProcessTicks", 240, 20, 72000);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     private static boolean validateItemName(final Object obj) {

@@ -40,6 +40,16 @@ public final class ModBlockEntities {
                     )
             );
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BioPrinterBlockEntity>> BIO_PRINTER =
+            BLOCK_ENTITIES.register(
+                    "bio_printer",
+                    () -> new BlockEntityType<>(
+                            BioPrinterBlockEntity::new,
+                            false,
+                            ModBlocks.BIO_PRINTER.get()
+                    )
+            );
+
     private ModBlockEntities() {
     }
 }

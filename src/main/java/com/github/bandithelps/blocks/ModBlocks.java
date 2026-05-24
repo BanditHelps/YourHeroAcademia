@@ -59,6 +59,15 @@ public final class ModBlocks {
                     .noOcclusion()
     );
 
+    public static final DeferredBlock<BioPrinterBlock> BIO_PRINTER = BLOCKS.registerBlock(
+            "bio_printer",
+            BioPrinterBlock::new,
+            p -> p.mapColor(MapColor.METAL)
+                    .strength(2.5f)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+    );
+
     private ModBlocks() {
     }
 }

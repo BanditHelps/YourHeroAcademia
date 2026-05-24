@@ -6,6 +6,7 @@
   "block.yha.dna_analyzer": "DNA Analyzer",
   "block.yha.dna_splicer": "DNA Splicer",
   "block.yha.gene_combiner": "Gene Combiner",
+  "block.yha.bio_printer": "Bio Printer",
 
   "item.yha.treadmill": "Treadmill",
   "item.yha.empty_canister": "Empty Canister",
@@ -17,6 +18,7 @@
   "item.yha.tissue_sample": "Tissue Sample",
   "item.yha.tissue_extractor": "Tissue Extractor",
   "item.yha.gene_vial": "Gene Vial",
+  "item.yha.dna_injector": "DNA Injector",
   "item.yha.genetic_slop": "Genetic Slop",
 
   "effect.yha.smoke_blind": "Smoke Blindness",
