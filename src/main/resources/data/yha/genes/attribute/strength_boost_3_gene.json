@@ -1,0 +1,41 @@
+{
+  "id": "yha:strength_boost_3",
+  "category": "ATTRIBUTE",
+  "rarity": "EPIC",
+  "qualityRange": [1, 100],
+  "combinable": true,
+  "attributes": [
+    {
+      "id": "minecraft:attack_damage",
+      "minModifier": 5.0,
+      "maxModifier": 8.5
+    },
+    {
+      "id": "minecraft:attack_speed",
+      "minModifier": 0.05,
+      "maxModifier": 0.2
+    }
+  ],
+  "description": "A high-end strength variant requiring multiple builder rarities.",
+  "combination": {
+    "requires": [
+      {
+        "id": "yha:strength_boost_2",
+        "minQuality": 65
+      }
+    ],
+    "builder": [
+      {
+        "count": 1,
+        "minQuality": 40,
+        "rarity": "COMMON"
+      },
+      {
+        "count": 1,
+        "minQuality": 70,
+        "rarity": "RARE"
+      }
+    ],
+    "successRate": 55
+  }
+}

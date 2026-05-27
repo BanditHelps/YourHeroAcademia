@@ -1,16 +1,19 @@
 package com.github.bandithelps.gene.combination;
 
 import com.github.bandithelps.gene.GeneCategory;
+import com.github.bandithelps.gene.GeneRarity;
 import com.github.bandithelps.gene.GeneType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class CombinationGraph {
@@ -38,10 +41,9 @@ public final class CombinationGraph {
 
     public static CombinationGraph generate(long worldSeed, List<GeneType> allGeneTypes) {
         List<GeneType> safeTypes = allGeneTypes == null ? List.of() : allGeneTypes;
-        List<String> builderPool = safeTypes.stream()
+        List<GeneType> builderPool = safeTypes.stream()
                 .filter(type -> type.getCategory() == GeneCategory.BUILDER)
-                .map(GeneType::getId)
-                .sorted(String::compareToIgnoreCase)
+                .sorted(Comparator.comparing(GeneType::getId, String::compareToIgnoreCase))
                 .toList();
 
         List<GeneType> combinable = safeTypes.stream()
@@ -73,26 +75,24 @@ public final class CombinationGraph {
                 ));
             }
 
-            int builderCount = Math.max(0, sourceRecipe.getBuilderCount());
-            int builderMinQuality = Math.max(1, sourceRecipe.getBuilderMinQuality());
-            if (builderCount > builderPool.size()) {
+            BuilderResolution builderResolution = resolveBuilderIds(
+                    worldSeed,
+                    outputId,
+                    builderPool,
+                    sourceRecipe.getBuilderRequirements()
+            );
+            if (!builderResolution.valid()) {
                 resolved.put(outputId, new ResolvedCombinationRecipe(
                         outputId,
                         sourceRecipe.getSuccessRate(),
                         requirements,
                         false,
-                        "Builder requirement exceeds registered builder pool."
+                        builderResolution.invalidReason()
                 ));
                 continue;
             }
-
-            List<String> resolvedBuilders = resolveBuilderIds(worldSeed, outputId, builderPool, builderCount);
-            for (String builderId : resolvedBuilders) {
-                requirements.add(new ResolvedCombinationRecipe.ResolvedRequirement(
-                        builderId.toLowerCase(Locale.ROOT),
-                        builderMinQuality,
-                        true
-                ));
+            for (ResolvedCombinationRecipe.ResolvedRequirement builderRequirement : builderResolution.resolvedRequirements()) {
+                requirements.add(builderRequirement);
             }
 
             resolved.put(outputId, new ResolvedCombinationRecipe(
@@ -108,20 +108,78 @@ public final class CombinationGraph {
         return new CombinationGraph(worldSeed, Collections.unmodifiableMap(resolved), Collections.unmodifiableMap(overlapGroups));
     }
 
-    private static List<String> resolveBuilderIds(long worldSeed, String outputGeneId, List<String> builderPool, int builderCount) {
-        if (builderCount <= 0 || builderPool.isEmpty()) {
-            return List.of();
+    private static BuilderResolution resolveBuilderIds(
+            long worldSeed,
+            String outputGeneId,
+            List<GeneType> builderPool,
+            List<GeneType.BuilderRequirement> builderRequirements
+    ) {
+        if (builderRequirements == null || builderRequirements.isEmpty()) {
+            return BuilderResolution.success(List.of());
         }
-        List<String> mutablePool = new ArrayList<>(builderPool);
+        if (builderPool.isEmpty()) {
+            return BuilderResolution.invalid("Builder requirement exists but no builder genes are registered.");
+        }
+
         long salt = outputGeneId.toLowerCase(Locale.ROOT).hashCode();
         Random random = new Random(worldSeed ^ (salt * 341873128712L));
-        List<String> picks = new ArrayList<>();
-        for (int i = 0; i < builderCount && !mutablePool.isEmpty(); i++) {
-            int index = random.nextInt(mutablePool.size());
-            picks.add(mutablePool.remove(index));
+        Set<String> usedBuilderIds = new HashSet<>();
+        List<ResolvedCombinationRecipe.ResolvedRequirement> resolved = new ArrayList<>();
+
+        for (GeneType.BuilderRequirement builderRequirement : builderRequirements) {
+            int count = Math.max(0, builderRequirement.getCount());
+            int minQuality = Math.max(1, builderRequirement.getMinQuality());
+            if (count <= 0) {
+                continue;
+            }
+            List<GeneType> candidates = builderPool.stream()
+                    .filter(type -> !usedBuilderIds.contains(type.getId().toLowerCase(Locale.ROOT)))
+                    .filter(type -> matchesRarity(type, builderRequirement.getRarity()))
+                    .collect(Collectors.toCollection(ArrayList::new));
+            if (count > candidates.size()) {
+                String rarityText = builderRequirement.getRarity() == null
+                        ? "any rarity"
+                        : builderRequirement.getRarity().name();
+                return BuilderResolution.invalid(
+                        "Builder requirement exceeds registered builder pool for rarity " + rarityText + "."
+                );
+            }
+
+            for (int i = 0; i < count; i++) {
+                int index = random.nextInt(candidates.size());
+                GeneType picked = candidates.remove(index);
+                String builderId = picked.getId().toLowerCase(Locale.ROOT);
+                usedBuilderIds.add(builderId);
+                resolved.add(new ResolvedCombinationRecipe.ResolvedRequirement(
+                        builderId,
+                        minQuality,
+                        true
+                ));
+            }
         }
-        picks.sort(String::compareToIgnoreCase);
-        return picks;
+
+        return BuilderResolution.success(resolved);
+    }
+
+    private static boolean matchesRarity(GeneType type, GeneRarity requiredRarity) {
+        if (requiredRarity == null) {
+            return true;
+        }
+        return type.getRarity() == requiredRarity;
+    }
+
+    private record BuilderResolution(
+            boolean valid,
+            List<ResolvedCombinationRecipe.ResolvedRequirement> resolvedRequirements,
+            String invalidReason
+    ) {
+        private static BuilderResolution success(List<ResolvedCombinationRecipe.ResolvedRequirement> resolvedRequirements) {
+            return new BuilderResolution(true, resolvedRequirements, "");
+        }
+
+        private static BuilderResolution invalid(String invalidReason) {
+            return new BuilderResolution(false, List.of(), invalidReason);
+        }
     }
 
     private static Map<String, List<String>> detectOverlapGroups(Iterable<ResolvedCombinationRecipe> recipes) {

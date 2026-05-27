@@ -175,14 +175,47 @@ public final class GeneRegistry {
             }
         }
 
-        JsonObject builderObject = combinationJson.has("builder") && combinationJson.get("builder").isJsonObject()
-                ? combinationJson.getAsJsonObject("builder")
-                : null;
-        int builderCount = builderObject != null && builderObject.has("count") ? builderObject.get("count").getAsInt() : 0;
-        int builderMinQuality = builderObject != null && builderObject.has("minQuality") ? builderObject.get("minQuality").getAsInt() : 1;
+        List<GeneType.BuilderRequirement> builderRequirements = parseBuilderRequirements(combinationJson);
         int successRate = combinationJson.has("successRate") ? combinationJson.get("successRate").getAsInt() : 100;
 
-        return new GeneType.CombinationRecipe(requirements, builderCount, builderMinQuality, successRate);
+        return new GeneType.CombinationRecipe(requirements, builderRequirements, successRate);
+    }
+
+    private static List<GeneType.BuilderRequirement> parseBuilderRequirements(JsonObject combinationJson) {
+        List<GeneType.BuilderRequirement> builderRequirements = new ArrayList<>();
+        if (!combinationJson.has("builder")) {
+            return builderRequirements;
+        }
+
+        JsonElement builderElement = combinationJson.get("builder");
+        if (builderElement.isJsonArray()) {
+            for (JsonElement element : builderElement.getAsJsonArray()) {
+                if (!element.isJsonObject()) {
+                    continue;
+                }
+                builderRequirements.add(parseBuilderRequirement(element.getAsJsonObject(), true));
+            }
+            return builderRequirements;
+        }
+
+        if (builderElement.isJsonObject()) {
+            builderRequirements.add(parseBuilderRequirement(builderElement.getAsJsonObject(), false));
+            return builderRequirements;
+        }
+
+        throw new JsonParseException("builder must be an object or array");
+    }
+
+    private static GeneType.BuilderRequirement parseBuilderRequirement(JsonObject builderObject, boolean rarityRequired) {
+        int count = builderObject.has("count") ? builderObject.get("count").getAsInt() : 0;
+        int minQuality = builderObject.has("minQuality") ? builderObject.get("minQuality").getAsInt() : 1;
+        GeneRarity rarity = null;
+        if (builderObject.has("rarity")) {
+            rarity = GeneRarity.valueOf(builderObject.get("rarity").getAsString().toUpperCase(Locale.ROOT));
+        } else if (rarityRequired) {
+            throw new JsonParseException("builder array entries must define rarity");
+        }
+        return new GeneType.BuilderRequirement(count, minQuality, rarity);
     }
 
     private static String requireString(JsonObject json, String key) {

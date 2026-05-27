@@ -106,14 +106,12 @@ public final class GeneType {
 
     public static final class CombinationRecipe {
         private final List<Requirement> requirements;
-        private final int builderCount;
-        private final int builderMinQuality;
+        private final List<BuilderRequirement> builderRequirements;
         private final int successRate;
 
-        public CombinationRecipe(List<Requirement> requirements, int builderCount, int builderMinQuality, int successRate) {
+        public CombinationRecipe(List<Requirement> requirements, List<BuilderRequirement> builderRequirements, int successRate) {
             this.requirements = requirements != null ? new ArrayList<>(requirements) : new ArrayList<>();
-            this.builderCount = builderCount;
-            this.builderMinQuality = builderMinQuality;
+            this.builderRequirements = builderRequirements != null ? new ArrayList<>(builderRequirements) : new ArrayList<>();
             this.successRate = successRate;
         }
 
@@ -121,16 +119,36 @@ public final class GeneType {
             return Collections.unmodifiableList(this.requirements);
         }
 
-        public int getBuilderCount() {
-            return this.builderCount;
-        }
-
-        public int getBuilderMinQuality() {
-            return this.builderMinQuality;
+        public List<BuilderRequirement> getBuilderRequirements() {
+            return Collections.unmodifiableList(this.builderRequirements);
         }
 
         public int getSuccessRate() {
             return this.successRate;
+        }
+    }
+
+    public static final class BuilderRequirement {
+        private final int count;
+        private final int minQuality;
+        private final GeneRarity rarity;
+
+        public BuilderRequirement(int count, int minQuality, GeneRarity rarity) {
+            this.count = count;
+            this.minQuality = minQuality;
+            this.rarity = rarity;
+        }
+
+        public int getCount() {
+            return this.count;
+        }
+
+        public int getMinQuality() {
+            return this.minQuality;
+        }
+
+        public GeneRarity getRarity() {
+            return this.rarity;
         }
     }
 
