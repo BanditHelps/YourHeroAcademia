@@ -4,6 +4,7 @@
   "rarity": "EPIC",
   "qualityRange": [1, 100],
   "combinable": true,
+  "combinationOnly": true,
   "attributes": [
     {
       "id": "minecraft:attack_damage",

@@ -14,6 +14,7 @@ public final class GeneType {
     private final int qualityMin;
     private final int qualityMax;
     private final boolean combinable;
+    private final boolean combinationOnly;
     private final CombinationRecipe combinationRecipe;
     private final List<String> mobs;
     private final List<AttributeEffect> attributeEffects;
@@ -28,7 +29,8 @@ public final class GeneType {
             boolean combinable,
             CombinationRecipe combinationRecipe,
             List<String> mobs,
-            List<AttributeEffect> attributeEffects
+            List<AttributeEffect> attributeEffects,
+            boolean combinationOnly
     ) {
         this.id = Objects.requireNonNull(id, "id cannot be null");
         this.category = Objects.requireNonNull(category, "category cannot be null");
@@ -37,9 +39,25 @@ public final class GeneType {
         this.qualityMin = qualityMin;
         this.qualityMax = qualityMax;
         this.combinable = combinable;
+        this.combinationOnly = combinationOnly;
         this.combinationRecipe = combinationRecipe;
         this.mobs = mobs != null ? new ArrayList<>(mobs) : new ArrayList<>();
         this.attributeEffects = attributeEffects != null ? new ArrayList<>(attributeEffects) : new ArrayList<>();
+    }
+
+    public GeneType(
+            String id,
+            GeneCategory category,
+            GeneRarity rarity,
+            String description,
+            int qualityMin,
+            int qualityMax,
+            boolean combinable,
+            CombinationRecipe combinationRecipe,
+            List<String> mobs,
+            List<AttributeEffect> attributeEffects
+    ) {
+        this(id, category, rarity, description, qualityMin, qualityMax, combinable, combinationRecipe, mobs, attributeEffects, false);
     }
 
     public GeneType(String id, String description, int qualityMin, int qualityMax) {
@@ -78,6 +96,10 @@ public final class GeneType {
         return this.combinable;
     }
 
+    public boolean isCombinationOnly() {
+        return this.combinationOnly;
+    }
+
     public CombinationRecipe getCombinationRecipe() {
         return this.combinationRecipe;
     }
@@ -91,6 +113,9 @@ public final class GeneType {
     }
 
     public boolean canAppearInMob(String mobId) {
+        if (this.combinationOnly) {
+            return false;
+        }
         if (this.mobs.isEmpty()) {
             return true;
         }

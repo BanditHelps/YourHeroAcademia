@@ -105,6 +105,7 @@ public final class GeneRegistry {
         }
 
         boolean combinable = json.has("combinable") && json.get("combinable").getAsBoolean();
+        boolean combinationOnly = json.has("combinationOnly") && json.get("combinationOnly").getAsBoolean();
         String description = json.has("description") ? json.get("description").getAsString() : "";
         List<String> mobs = parseMobs(json);
         List<GeneType.AttributeEffect> attributeEffects = category == GeneCategory.ATTRIBUTE
@@ -118,7 +119,7 @@ public final class GeneRegistry {
             throw new JsonParseException("combinable genes must define a combination recipe");
         }
 
-        return new GeneType(id, category, rarity, description, qualityMin, qualityMax, combinable, recipe, mobs, attributeEffects);
+        return new GeneType(id, category, rarity, description, qualityMin, qualityMax, combinable, recipe, mobs, attributeEffects, combinationOnly);
     }
 
     private static List<GeneType.AttributeEffect> parseAttributeEffects(JsonObject json) {

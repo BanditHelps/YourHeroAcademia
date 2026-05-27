@@ -177,6 +177,7 @@ public final class GeneUtil {
 
         if (availableGeneTypes.isEmpty()) {
             availableGeneTypes = GeneRegistry.getInstance().getAllGeneTypes().stream()
+                    .filter(type -> !type.isCombinationOnly())
                     .collect(Collectors.toCollection(ArrayList::new));
         }
         if (availableGeneTypes.isEmpty()) {
