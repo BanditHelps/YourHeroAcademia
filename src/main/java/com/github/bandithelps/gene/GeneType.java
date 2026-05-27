@@ -16,6 +16,7 @@ public final class GeneType {
     private final boolean combinable;
     private final CombinationRecipe combinationRecipe;
     private final List<String> mobs;
+    private final AttributeEffect attributeEffect;
 
     public GeneType(
             String id,
@@ -26,7 +27,8 @@ public final class GeneType {
             int qualityMax,
             boolean combinable,
             CombinationRecipe combinationRecipe,
-            List<String> mobs
+            List<String> mobs,
+            AttributeEffect attributeEffect
     ) {
         this.id = Objects.requireNonNull(id, "id cannot be null");
         this.category = Objects.requireNonNull(category, "category cannot be null");
@@ -37,10 +39,11 @@ public final class GeneType {
         this.combinable = combinable;
         this.combinationRecipe = combinationRecipe;
         this.mobs = mobs != null ? new ArrayList<>(mobs) : new ArrayList<>();
+        this.attributeEffect = attributeEffect;
     }
 
     public GeneType(String id, String description, int qualityMin, int qualityMax) {
-        this(id, GeneCategory.ATTRIBUTE, GeneRarity.COMMON, description, qualityMin, qualityMax, false, null, Collections.emptyList());
+        this(id, GeneCategory.ATTRIBUTE, GeneRarity.COMMON, description, qualityMin, qualityMax, false, null, Collections.emptyList(), null);
     }
 
     public GeneType(String id, String description) {
@@ -81,6 +84,10 @@ public final class GeneType {
 
     public List<String> getMobs() {
         return Collections.unmodifiableList(this.mobs);
+    }
+
+    public AttributeEffect getAttributeEffect() {
+        return this.attributeEffect;
     }
 
     public boolean canAppearInMob(String mobId) {
@@ -124,6 +131,39 @@ public final class GeneType {
 
         public int getSuccessRate() {
             return this.successRate;
+        }
+    }
+
+    public static final class AttributeEffect {
+        private final String attributeId;
+        private final double minModifier;
+        private final double maxModifier;
+
+        public AttributeEffect(String attributeId, double minModifier, double maxModifier) {
+            this.attributeId = Objects.requireNonNull(attributeId, "attributeId cannot be null");
+            this.minModifier = minModifier;
+            this.maxModifier = maxModifier;
+        }
+
+        public String getAttributeId() {
+            return this.attributeId;
+        }
+
+        public double getMinModifier() {
+            return this.minModifier;
+        }
+
+        public double getMaxModifier() {
+            return this.maxModifier;
+        }
+
+        public double resolveModifierForQuality(int quality, int qualityMin, int qualityMax) {
+            if (qualityMax <= qualityMin) {
+                return this.maxModifier;
+            }
+            double clampedQuality = Math.max(qualityMin, Math.min(qualityMax, quality));
+            double qualityProgress = (clampedQuality - qualityMin) / (double) (qualityMax - qualityMin);
+            return this.minModifier + (this.maxModifier - this.minModifier) * qualityProgress;
         }
     }
 

@@ -107,6 +107,7 @@ public final class GeneRegistry {
         boolean combinable = json.has("combinable") && json.get("combinable").getAsBoolean();
         String description = json.has("description") ? json.get("description").getAsString() : "";
         List<String> mobs = parseMobs(json);
+        GeneType.AttributeEffect attributeEffect = category == GeneCategory.ATTRIBUTE ? parseAttributeEffect(json) : null;
 
         GeneType.CombinationRecipe recipe = null;
         if (json.has("combination") && json.get("combination").isJsonObject()) {
@@ -115,7 +116,21 @@ public final class GeneRegistry {
             throw new JsonParseException("combinable genes must define a combination recipe");
         }
 
-        return new GeneType(id, category, rarity, description, qualityMin, qualityMax, combinable, recipe, mobs);
+        return new GeneType(id, category, rarity, description, qualityMin, qualityMax, combinable, recipe, mobs, attributeEffect);
+    }
+
+    private static GeneType.AttributeEffect parseAttributeEffect(JsonObject json) {
+        String attributeId = requireString(json, "attribute");
+        Identifier.parse(attributeId);
+        if (!json.has("minModifier")) {
+            throw new JsonParseException("Missing required key: minModifier");
+        }
+        if (!json.has("maxModifier")) {
+            throw new JsonParseException("Missing required key: maxModifier");
+        }
+        double minModifier = json.get("minModifier").getAsDouble();
+        double maxModifier = json.get("maxModifier").getAsDouble();
+        return new GeneType.AttributeEffect(attributeId, minModifier, maxModifier);
     }
 
     private static GeneType.CombinationRecipe parseCombination(JsonObject combinationJson) {

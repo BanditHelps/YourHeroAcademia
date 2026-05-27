@@ -9,8 +9,10 @@ import com.github.bandithelps.gene.GeneRegistry;
 import com.github.bandithelps.gene.GeneType;
 import com.github.bandithelps.gene.SideEffect;
 import java.security.SecureRandom;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -60,7 +62,19 @@ public final class GeneUtil {
                     }
                 }
             }
-            GeneType type = new GeneType(typeId, description);
+            GeneType type = GeneRegistry.getInstance().getGeneType(typeId)
+                    .orElseGet(() -> new GeneType(
+                            typeId,
+                            category,
+                            GeneRarity.COMMON,
+                            description,
+                            1,
+                            100,
+                            false,
+                            null,
+                            Collections.emptyList(),
+                            null
+                    ));
             return new Gene(id, name, category, type, description, quality, sideEffects);
         } catch (Exception e) {
             return null;
@@ -103,7 +117,7 @@ public final class GeneUtil {
             if (parts.length > 3) {
                 String[] geneData = parts[3].split(",");
                 for (String geneStr : geneData) {
-                    Gene gene = parseGene(geneStr);
+                    Gene gene = parseGeneToken(geneStr);
                     if (gene != null) {
                         genes.add(gene);
                     }
@@ -125,8 +139,28 @@ public final class GeneUtil {
         sb.append(dna.getHarvestTime()).append(";");
         sb.append(dna.getGenes().stream()
                 .map(GeneUtil::serializeGene)
+                .map(value -> Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8)))
                 .collect(Collectors.joining(",")));
         return sb.toString();
+    }
+
+    private static Gene parseGeneToken(String token) {
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+        String trimmed = token.trim();
+
+        // Backward-compatible path for legacy non-encoded DNA data.
+        if (trimmed.contains("|")) {
+            return parseGene(trimmed);
+        }
+
+        try {
+            String decoded = new String(Base64.getDecoder().decode(trimmed), StandardCharsets.UTF_8);
+            return parseGene(decoded);
+        } catch (IllegalArgumentException ignored) {
+            return parseGene(trimmed);
+        }
     }
 
     public static DNA generateDNA(UUID entityUuid, String entityName) {

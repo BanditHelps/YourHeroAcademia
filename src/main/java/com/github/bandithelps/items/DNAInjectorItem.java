@@ -1,9 +1,8 @@
 package com.github.bandithelps.items;
 
-import com.github.bandithelps.capabilities.dna.DNAAttachments;
+import com.github.bandithelps.capabilities.dna.DNAUpdateService;
 import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.gene.Gene;
-import com.github.bandithelps.gene.GeneEffectHandler;
 import com.github.bandithelps.utils.gene.GeneUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,11 +83,10 @@ public class DNAInjectorItem extends Item {
             return InteractionResult.FAIL;
         }
 
-        var dna = DNAAttachments.get(player);
-        dna.setDNA(genes);
-        dna.setDNAFatigued(true);
-
-        GeneEffectHandler.applyGeneEffects(player);
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) {
+            return InteractionResult.FAIL;
+        }
+        DNAUpdateService.setDNA(serverPlayer, genes, true);
 
         int fatigueTicks = 24000;
         player.addEffect(new MobEffectInstance(
