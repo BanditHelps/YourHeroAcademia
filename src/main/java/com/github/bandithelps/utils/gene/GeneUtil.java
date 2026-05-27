@@ -73,7 +73,7 @@ public final class GeneUtil {
                             false,
                             null,
                             Collections.emptyList(),
-                            null
+                            Collections.emptyList()
                     ));
             return new Gene(id, name, category, type, description, quality, sideEffects);
         } catch (Exception e) {

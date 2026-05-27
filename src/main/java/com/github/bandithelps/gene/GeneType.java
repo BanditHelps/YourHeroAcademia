@@ -16,7 +16,7 @@ public final class GeneType {
     private final boolean combinable;
     private final CombinationRecipe combinationRecipe;
     private final List<String> mobs;
-    private final AttributeEffect attributeEffect;
+    private final List<AttributeEffect> attributeEffects;
 
     public GeneType(
             String id,
@@ -28,7 +28,7 @@ public final class GeneType {
             boolean combinable,
             CombinationRecipe combinationRecipe,
             List<String> mobs,
-            AttributeEffect attributeEffect
+            List<AttributeEffect> attributeEffects
     ) {
         this.id = Objects.requireNonNull(id, "id cannot be null");
         this.category = Objects.requireNonNull(category, "category cannot be null");
@@ -39,7 +39,7 @@ public final class GeneType {
         this.combinable = combinable;
         this.combinationRecipe = combinationRecipe;
         this.mobs = mobs != null ? new ArrayList<>(mobs) : new ArrayList<>();
-        this.attributeEffect = attributeEffect;
+        this.attributeEffects = attributeEffects != null ? new ArrayList<>(attributeEffects) : new ArrayList<>();
     }
 
     public GeneType(String id, String description, int qualityMin, int qualityMax) {
@@ -86,8 +86,8 @@ public final class GeneType {
         return Collections.unmodifiableList(this.mobs);
     }
 
-    public AttributeEffect getAttributeEffect() {
-        return this.attributeEffect;
+    public List<AttributeEffect> getAttributeEffects() {
+        return Collections.unmodifiableList(this.attributeEffects);
     }
 
     public boolean canAppearInMob(String mobId) {

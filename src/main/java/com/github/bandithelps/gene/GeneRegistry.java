@@ -107,7 +107,9 @@ public final class GeneRegistry {
         boolean combinable = json.has("combinable") && json.get("combinable").getAsBoolean();
         String description = json.has("description") ? json.get("description").getAsString() : "";
         List<String> mobs = parseMobs(json);
-        GeneType.AttributeEffect attributeEffect = category == GeneCategory.ATTRIBUTE ? parseAttributeEffect(json) : null;
+        List<GeneType.AttributeEffect> attributeEffects = category == GeneCategory.ATTRIBUTE
+                ? parseAttributeEffects(json)
+                : Collections.emptyList();
 
         GeneType.CombinationRecipe recipe = null;
         if (json.has("combination") && json.get("combination").isJsonObject()) {
@@ -116,11 +118,36 @@ public final class GeneRegistry {
             throw new JsonParseException("combinable genes must define a combination recipe");
         }
 
-        return new GeneType(id, category, rarity, description, qualityMin, qualityMax, combinable, recipe, mobs, attributeEffect);
+        return new GeneType(id, category, rarity, description, qualityMin, qualityMax, combinable, recipe, mobs, attributeEffects);
     }
 
-    private static GeneType.AttributeEffect parseAttributeEffect(JsonObject json) {
-        String attributeId = requireString(json, "attribute");
+    private static List<GeneType.AttributeEffect> parseAttributeEffects(JsonObject json) {
+        List<GeneType.AttributeEffect> effects = new ArrayList<>();
+        if (json.has("attributes") && json.get("attributes").isJsonArray()) {
+            JsonArray attributesArray = json.getAsJsonArray("attributes");
+            for (JsonElement element : attributesArray) {
+                if (!element.isJsonObject()) {
+                    continue;
+                }
+                effects.add(parseAttributeEffectObject(element.getAsJsonObject()));
+            }
+            if (effects.isEmpty()) {
+                throw new JsonParseException("attributes must include at least one valid object entry");
+            }
+            return effects;
+        }
+
+        // Legacy fallback for older datapacks that still use singular fields.
+        if (json.has("attribute")) {
+            effects.add(parseAttributeEffectObject(json));
+            return effects;
+        }
+
+        throw new JsonParseException("Attribute genes must define an attributes array");
+    }
+
+    private static GeneType.AttributeEffect parseAttributeEffectObject(JsonObject json) {
+        String attributeId = json.has("id") ? json.get("id").getAsString() : requireString(json, "attribute");
         Identifier.parse(attributeId);
         if (!json.has("minModifier")) {
             throw new JsonParseException("Missing required key: minModifier");

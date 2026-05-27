@@ -4,9 +4,13 @@
   "rarity": "RARE",
   "qualityRange": [1, 100],
   "combinable": true,
-  "attribute": "minecraft:attack_damage",
-  "minModifier": 3.0,
-  "maxModifier": 5.0,
+  "attributes": [
+    {
+      "id": "minecraft:attack_damage",
+      "minModifier": 3.0,
+      "maxModifier": 5.0
+    }
+  ],
   "description": "An advanced variant of the strength gene.",
   "combination": {
     "requires": [

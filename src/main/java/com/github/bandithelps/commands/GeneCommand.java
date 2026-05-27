@@ -487,7 +487,7 @@ public class GeneCommand {
                 false,
                 null,
                 List.of(),
-                null
+                List.of()
         );
         return new Gene(
                 UUID.nameUUIDFromBytes(("yha_empty_slot_" + slot).getBytes(java.nio.charset.StandardCharsets.UTF_8)),

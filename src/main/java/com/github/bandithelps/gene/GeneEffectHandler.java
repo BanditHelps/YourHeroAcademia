@@ -96,32 +96,34 @@ public final class GeneEffectHandler {
     }
 
     private static void applyAttributeEffect(ServerPlayer player, Gene gene, Map<Identifier, String> playerModifiers) {
-        GeneType.AttributeEffect attributeEffect = gene.getType().getAttributeEffect();
-        if (attributeEffect == null) {
+        if (gene.getType().getAttributeEffects().isEmpty()) {
             YourHeroAcademia.LOGGER.warn("Attribute gene {} has no attribute effect definition", gene.getType().getId());
             return;
         }
 
-        String attributeId = attributeEffect.getAttributeId();
-        Holder<Attribute> attributeHolder = resolveAttribute(attributeId);
-        if (attributeHolder == null) {
-            YourHeroAcademia.LOGGER.warn("Unknown attribute {} for gene {}", attributeId, gene.getType().getId());
-            return;
-        }
+        for (int i = 0; i < gene.getType().getAttributeEffects().size(); i++) {
+            GeneType.AttributeEffect attributeEffect = gene.getType().getAttributeEffects().get(i);
+            String attributeId = attributeEffect.getAttributeId();
+            Holder<Attribute> attributeHolder = resolveAttribute(attributeId);
+            if (attributeHolder == null) {
+                YourHeroAcademia.LOGGER.warn("Unknown attribute {} for gene {}", attributeId, gene.getType().getId());
+                continue;
+            }
 
-        AttributeInstance instance = player.getAttribute(attributeHolder);
-        if (instance == null) {
-            return;
-        }
+            AttributeInstance instance = player.getAttribute(attributeHolder);
+            if (instance == null) {
+                continue;
+            }
 
-        double modifier = attributeEffect.resolveModifierForQuality(
-                gene.getQuality(),
-                gene.getType().getQualityMin(),
-                gene.getType().getQualityMax()
-        );
-        Identifier modifierId = createGeneModifierId(gene.getId());
-        instance.addOrUpdateTransientModifier(new AttributeModifier(modifierId, modifier, ATTRIBUTE_GENE_OPERATION));
-        playerModifiers.put(modifierId, attributeId);
+            double modifier = attributeEffect.resolveModifierForQuality(
+                    gene.getQuality(),
+                    gene.getType().getQualityMin(),
+                    gene.getType().getQualityMax()
+            );
+            Identifier modifierId = createGeneModifierId(gene.getId(), i);
+            instance.addOrUpdateTransientModifier(new AttributeModifier(modifierId, modifier, ATTRIBUTE_GENE_OPERATION));
+            playerModifiers.put(modifierId, attributeId);
+        }
     }
 
     private static void applyQuirkEffect(ServerPlayer player, Gene gene, Map<Identifier, String> playerModifiers) {
@@ -145,8 +147,8 @@ public final class GeneEffectHandler {
         }
     }
 
-    private static Identifier createGeneModifierId(UUID geneId) {
-        return Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "gene/attribute/" + geneId);
+    private static Identifier createGeneModifierId(UUID geneId, int effectIndex) {
+        return Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "gene/attribute/" + geneId + "/" + effectIndex);
     }
 
     public static void clearGeneEffects(ServerPlayer player) {
