@@ -21,7 +21,8 @@
     ],
     "builder": {
       "count": 1,
-      "minQuality": 30
+      "minQuality": 30,
+      "rarity": "UNCOMMON"
     },
     "successRate": 75
   }

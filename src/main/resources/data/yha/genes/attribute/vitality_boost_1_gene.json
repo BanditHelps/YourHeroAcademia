@@ -1,18 +1,21 @@
 {
   "id": "yha:vitality_boost_1",
   "category": "ATTRIBUTE",
-  "rarity": "RARE",
+  "rarity": "UNCOMMON",
   "qualityRange": [1, 100],
   "combinable": false,
   "attributes": [
     {
-      "id": "minecraft:attack_damage",
-      "minModifier": 0.5,
-      "maxModifier": 3.0
+      "id": "minecraft:max_health",
+      "minModifier": 1.0,
+      "maxModifier": 6.0
     }
   ],
-  "description": "A common gene found in many mobs, granting enhanced strength.",
+  "description": "An uncommon gene extracted from the brutes of this world, granting enhanced health.",
   "mobs": [
-    "minecraft:iron_golem"
+    "minecraft:iron_golem",
+    "minecraft:ravager",
+    "minecraft:wither",
+    "minecraft:warden"
   ]
 }
