@@ -4,7 +4,7 @@
   "rarity": "COMMON",
   "qualityRange": [1, 100],
   "combinable": false,
-  "description": "A common gene found in many mobs, granting enhanced strength.",
+  "description": "A common gene that seems to have no use",
   "mobs": [
     "minecraft:villager",
     "minecraft:husk"

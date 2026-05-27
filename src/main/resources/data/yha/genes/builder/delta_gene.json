@@ -1,8 +1,8 @@
 {
-  "id": "yha:alpha",
+  "id": "yha:delta",
   "category": "BUILDER",
   "rarity": "COMMON",
   "qualityRange": [1, 100],
   "combinable": false,
-  "description": "A common gene that seems to have no use"
+  "description": "A gene that seems to have no use"
 }

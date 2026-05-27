@@ -1,0 +1,8 @@
+{
+  "id": "yha:omicron",
+  "category": "BUILDER",
+  "rarity": "RARE",
+  "qualityRange": [40, 100],
+  "combinable": false,
+  "description": "A gene that seems to have no use"
+}

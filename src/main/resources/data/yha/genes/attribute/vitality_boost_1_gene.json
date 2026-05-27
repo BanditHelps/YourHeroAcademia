@@ -1,0 +1,18 @@
+{
+  "id": "yha:vitality_boost_1",
+  "category": "ATTRIBUTE",
+  "rarity": "RARE",
+  "qualityRange": [1, 100],
+  "combinable": false,
+  "attributes": [
+    {
+      "id": "minecraft:attack_damage",
+      "minModifier": 0.5,
+      "maxModifier": 3.0
+    }
+  ],
+  "description": "A common gene found in many mobs, granting enhanced strength.",
+  "mobs": [
+    "minecraft:iron_golem"
+  ]
+}
