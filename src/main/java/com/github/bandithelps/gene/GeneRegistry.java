@@ -111,6 +111,9 @@ public final class GeneRegistry {
         List<GeneType.AttributeEffect> attributeEffects = category == GeneCategory.ATTRIBUTE
                 ? parseAttributeEffects(json)
                 : Collections.emptyList();
+        List<GeneType.ResistanceEffect> resistanceEffects = category == GeneCategory.RESISTANCE
+                ? parseResistanceEffects(json)
+                : Collections.emptyList();
 
         GeneType.CombinationRecipe recipe = null;
         if (json.has("combination") && json.get("combination").isJsonObject()) {
@@ -119,7 +122,7 @@ public final class GeneRegistry {
             throw new JsonParseException("combinable genes must define a combination recipe");
         }
 
-        return new GeneType(id, category, rarity, description, qualityMin, qualityMax, combinable, recipe, mobs, attributeEffects, combinationOnly);
+        return new GeneType(id, category, rarity, description, qualityMin, qualityMax, combinable, recipe, mobs, attributeEffects, resistanceEffects, combinationOnly);
     }
 
     private static List<GeneType.AttributeEffect> parseAttributeEffects(JsonObject json) {
@@ -159,6 +162,44 @@ public final class GeneRegistry {
         double minModifier = json.get("minModifier").getAsDouble();
         double maxModifier = json.get("maxModifier").getAsDouble();
         return new GeneType.AttributeEffect(attributeId, minModifier, maxModifier);
+    }
+
+    private static List<GeneType.ResistanceEffect> parseResistanceEffects(JsonObject json) {
+        if (!json.has("resistances") || !json.get("resistances").isJsonArray()) {
+            throw new JsonParseException("Resistance genes must define a resistances array");
+        }
+        List<GeneType.ResistanceEffect> effects = new ArrayList<>();
+        JsonArray resistancesArray = json.getAsJsonArray("resistances");
+        for (JsonElement element : resistancesArray) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+            effects.add(parseResistanceEffectObject(element.getAsJsonObject()));
+        }
+        if (effects.isEmpty()) {
+            throw new JsonParseException("resistances must include at least one valid object entry");
+        }
+        return effects;
+    }
+
+    private static GeneType.ResistanceEffect parseResistanceEffectObject(JsonObject json) {
+        String kindRaw = requireString(json, "kind");
+        GeneType.ResistanceKind kind = GeneType.ResistanceKind.valueOf(kindRaw.toUpperCase(Locale.ROOT));
+
+        if (kind == GeneType.ResistanceKind.WITHER_NULLIFY) {
+            return new GeneType.ResistanceEffect(kind, 1.0D, 1.0D);
+        }
+
+        if (!json.has("minValue")) {
+            throw new JsonParseException("Missing required key: minValue");
+        }
+        if (!json.has("maxValue")) {
+            throw new JsonParseException("Missing required key: maxValue");
+        }
+
+        double minValue = json.get("minValue").getAsDouble();
+        double maxValue = json.get("maxValue").getAsDouble();
+        return new GeneType.ResistanceEffect(kind, minValue, maxValue);
     }
 
     private static GeneType.CombinationRecipe parseCombination(JsonObject combinationJson) {

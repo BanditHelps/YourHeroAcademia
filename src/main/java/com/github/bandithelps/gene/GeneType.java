@@ -18,6 +18,7 @@ public final class GeneType {
     private final CombinationRecipe combinationRecipe;
     private final List<String> mobs;
     private final List<AttributeEffect> attributeEffects;
+    private final List<ResistanceEffect> resistanceEffects;
 
     public GeneType(
             String id,
@@ -30,6 +31,7 @@ public final class GeneType {
             CombinationRecipe combinationRecipe,
             List<String> mobs,
             List<AttributeEffect> attributeEffects,
+            List<ResistanceEffect> resistanceEffects,
             boolean combinationOnly
     ) {
         this.id = Objects.requireNonNull(id, "id cannot be null");
@@ -43,6 +45,7 @@ public final class GeneType {
         this.combinationRecipe = combinationRecipe;
         this.mobs = mobs != null ? new ArrayList<>(mobs) : new ArrayList<>();
         this.attributeEffects = attributeEffects != null ? new ArrayList<>(attributeEffects) : new ArrayList<>();
+        this.resistanceEffects = resistanceEffects != null ? new ArrayList<>(resistanceEffects) : new ArrayList<>();
     }
 
     public GeneType(
@@ -57,7 +60,23 @@ public final class GeneType {
             List<String> mobs,
             List<AttributeEffect> attributeEffects
     ) {
-        this(id, category, rarity, description, qualityMin, qualityMax, combinable, combinationRecipe, mobs, attributeEffects, false);
+        this(id, category, rarity, description, qualityMin, qualityMax, combinable, combinationRecipe, mobs, attributeEffects, Collections.emptyList(), false);
+    }
+
+    public GeneType(
+            String id,
+            GeneCategory category,
+            GeneRarity rarity,
+            String description,
+            int qualityMin,
+            int qualityMax,
+            boolean combinable,
+            CombinationRecipe combinationRecipe,
+            List<String> mobs,
+            List<AttributeEffect> attributeEffects,
+            boolean combinationOnly
+    ) {
+        this(id, category, rarity, description, qualityMin, qualityMax, combinable, combinationRecipe, mobs, attributeEffects, Collections.emptyList(), combinationOnly);
     }
 
     public GeneType(String id, String description, int qualityMin, int qualityMax) {
@@ -110,6 +129,10 @@ public final class GeneType {
 
     public List<AttributeEffect> getAttributeEffects() {
         return Collections.unmodifiableList(this.attributeEffects);
+    }
+
+    public List<ResistanceEffect> getResistanceEffects() {
+        return Collections.unmodifiableList(this.resistanceEffects);
     }
 
     public boolean canAppearInMob(String mobId) {
@@ -201,12 +224,41 @@ public final class GeneType {
         }
 
         public double resolveModifierForQuality(int quality, int qualityMin, int qualityMax) {
-            if (qualityMax <= qualityMin) {
-                return this.maxModifier;
-            }
-            double clampedQuality = Math.max(qualityMin, Math.min(qualityMax, quality));
-            double qualityProgress = (clampedQuality - qualityMin) / (double) (qualityMax - qualityMin);
-            return this.minModifier + (this.maxModifier - this.minModifier) * qualityProgress;
+            return interpolateByQuality(this.minModifier, this.maxModifier, quality, qualityMin, qualityMax);
+        }
+    }
+
+    public enum ResistanceKind {
+        FIRE_TICK_DAMAGE,
+        POISON_DAMAGE_AVOIDANCE,
+        WITHER_NULLIFY
+    }
+
+    public static final class ResistanceEffect {
+        private final ResistanceKind kind;
+        private final double minValue;
+        private final double maxValue;
+
+        public ResistanceEffect(ResistanceKind kind, double minValue, double maxValue) {
+            this.kind = Objects.requireNonNull(kind, "kind cannot be null");
+            this.minValue = minValue;
+            this.maxValue = maxValue;
+        }
+
+        public ResistanceKind getKind() {
+            return this.kind;
+        }
+
+        public double getMinValue() {
+            return this.minValue;
+        }
+
+        public double getMaxValue() {
+            return this.maxValue;
+        }
+
+        public double resolveValueForQuality(int quality, int qualityMin, int qualityMax) {
+            return interpolateByQuality(this.minValue, this.maxValue, quality, qualityMin, qualityMax);
         }
     }
 
@@ -226,5 +278,14 @@ public final class GeneType {
         public int getMinQuality() {
             return this.minQuality;
         }
+    }
+
+    private static double interpolateByQuality(double minValue, double maxValue, int quality, int qualityMin, int qualityMax) {
+        if (qualityMax <= qualityMin) {
+            return maxValue;
+        }
+        double clampedQuality = Math.max(qualityMin, Math.min(qualityMax, quality));
+        double qualityProgress = (clampedQuality - qualityMin) / (double) (qualityMax - qualityMin);
+        return minValue + (maxValue - minValue) * qualityProgress;
     }
 }
