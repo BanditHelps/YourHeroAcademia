@@ -401,7 +401,7 @@ public class GeneCommand {
         source.sendSuccess(() -> Component.literal("DNA Fatigued: ").withColor(0xAAAAAA)
                 .append(Component.literal(String.valueOf(DNAAttachments.get(player).isDNAFatigued()))
                         .withColor(DNAAttachments.get(player).isDNAFatigued() ? 0xFF5555 : 0x55FF55)), false);
-        List<Gene> slotGenes = normalizeSlotGenes(dna);
+        List<Gene> slotGenes = buildDisplaySlotGenes(dna);
         source.sendSuccess(() -> Component.literal("Genes (" + countOccupiedGenes(slotGenes) + "/" + MAX_DNA_SLOTS + "):").withColor(0xFFD700), false);
 
         int slot = 1;
@@ -474,6 +474,38 @@ public class GeneCommand {
             }
         }
         return slots;
+    }
+
+    private static List<Gene> buildDisplaySlotGenes(DNA dna) {
+        List<Gene> normalized = normalizeSlotGenes(dna);
+        List<Gene> existing = dna.getGenes();
+        if (existing.isEmpty() || hasExplicitSlotLayout(existing)) {
+            return normalized;
+        }
+
+        List<Gene> resolved = new ArrayList<>(MAX_DNA_SLOTS);
+        for (int i = 0; i < MAX_DNA_SLOTS; i++) {
+            resolved.add(createEmptySlotGene(i + 1));
+        }
+
+        int[] slotOrder = GeneUtil.getDeterministicSlotOrderForSource(dna.getSourceUuid());
+        int limit = Math.min(MAX_DNA_SLOTS, existing.size());
+        for (int i = 0; i < limit; i++) {
+            resolved.set(slotOrder[i], existing.get(i));
+        }
+        return resolved;
+    }
+
+    private static boolean hasExplicitSlotLayout(List<Gene> genes) {
+        if (genes.size() < MAX_DNA_SLOTS) {
+            return false;
+        }
+        for (Gene gene : genes) {
+            if (isEmptySlotGene(gene)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Gene createEmptySlotGene(int slot) {

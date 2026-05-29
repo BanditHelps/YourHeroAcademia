@@ -15,6 +15,7 @@ public final class GeneType {
     private final int qualityMax;
     private final boolean combinable;
     private final boolean combinationOnly;
+    private final boolean ignorePlayerDNA;
     private final CombinationRecipe combinationRecipe;
     private final List<String> mobs;
     private final List<AttributeEffect> attributeEffects;
@@ -32,7 +33,8 @@ public final class GeneType {
             List<String> mobs,
             List<AttributeEffect> attributeEffects,
             List<ResistanceEffect> resistanceEffects,
-            boolean combinationOnly
+            boolean combinationOnly,
+            boolean ignorePlayerDNA
     ) {
         this.id = Objects.requireNonNull(id, "id cannot be null");
         this.category = Objects.requireNonNull(category, "category cannot be null");
@@ -42,6 +44,7 @@ public final class GeneType {
         this.qualityMax = qualityMax;
         this.combinable = combinable;
         this.combinationOnly = combinationOnly;
+        this.ignorePlayerDNA = ignorePlayerDNA;
         this.combinationRecipe = combinationRecipe;
         this.mobs = mobs != null ? new ArrayList<>(mobs) : new ArrayList<>();
         this.attributeEffects = attributeEffects != null ? new ArrayList<>(attributeEffects) : new ArrayList<>();
@@ -60,7 +63,7 @@ public final class GeneType {
             List<String> mobs,
             List<AttributeEffect> attributeEffects
     ) {
-        this(id, category, rarity, description, qualityMin, qualityMax, combinable, combinationRecipe, mobs, attributeEffects, Collections.emptyList(), false);
+        this(id, category, rarity, description, qualityMin, qualityMax, combinable, combinationRecipe, mobs, attributeEffects, Collections.emptyList(), false, false);
     }
 
     public GeneType(
@@ -76,7 +79,24 @@ public final class GeneType {
             List<AttributeEffect> attributeEffects,
             boolean combinationOnly
     ) {
-        this(id, category, rarity, description, qualityMin, qualityMax, combinable, combinationRecipe, mobs, attributeEffects, Collections.emptyList(), combinationOnly);
+        this(id, category, rarity, description, qualityMin, qualityMax, combinable, combinationRecipe, mobs, attributeEffects, Collections.emptyList(), combinationOnly, false);
+    }
+
+    public GeneType(
+            String id,
+            GeneCategory category,
+            GeneRarity rarity,
+            String description,
+            int qualityMin,
+            int qualityMax,
+            boolean combinable,
+            CombinationRecipe combinationRecipe,
+            List<String> mobs,
+            List<AttributeEffect> attributeEffects,
+            List<ResistanceEffect> resistanceEffects,
+            boolean combinationOnly
+    ) {
+        this(id, category, rarity, description, qualityMin, qualityMax, combinable, combinationRecipe, mobs, attributeEffects, resistanceEffects, combinationOnly, false);
     }
 
     public GeneType(String id, String description, int qualityMin, int qualityMax) {
@@ -117,6 +137,10 @@ public final class GeneType {
 
     public boolean isCombinationOnly() {
         return this.combinationOnly;
+    }
+
+    public boolean isIgnoredForPlayerDNA() {
+        return this.ignorePlayerDNA;
     }
 
     public CombinationRecipe getCombinationRecipe() {

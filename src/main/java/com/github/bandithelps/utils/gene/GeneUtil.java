@@ -24,7 +24,10 @@ public final class GeneUtil {
     private static final Random RANDOM = new SecureRandom();
     private static final int GENE_NAME_LENGTH = 5;
     private static final int GUARANTEED_GENES_ON_SUCCESS = 2;
+    private static final int GUARANTEED_PLAYER_GENES = 3;
     private static final int FALLBACK_MAX_GENES = 6;
+    private static final int TOTAL_DNA_SLOTS = 6;
+    private static final int SOURCE_UUID_ROLL_ATTEMPTS = 16;
     private static final String SIDE_EFFECT_DELIMITER = "&";
     private static final List<GeneRarity> RARITY_DESC_ORDER = Arrays.asList(
             GeneRarity.LEGENDARY,
@@ -221,6 +224,96 @@ public final class GeneUtil {
         return generateDNA(UUID.randomUUID(), entityName);
     }
 
+    public static DNA generateInitialPlayerDNA(long worldSeed, UUID playerUuid, String playerName) {
+        long mixedSeed = worldSeed ^ playerUuid.getMostSignificantBits() ^ playerUuid.getLeastSignificantBits();
+        Random seededRandom = new Random(mixedSeed);
+        List<Gene> genes = new ArrayList<>();
+        List<GeneType> eligibleGeneTypes = GeneRegistry.getInstance().getAllGeneTypes().stream()
+                .filter(type -> !type.isIgnoredForPlayerDNA())
+                .collect(Collectors.toCollection(ArrayList::new));
+        List<GeneType> availableGeneTypes = new ArrayList<>(eligibleGeneTypes);
+
+        if (eligibleGeneTypes.isEmpty()) {
+            return new DNA(playerName, playerUuid, genes);
+        }
+
+        int maxGenes = Math.max(GUARANTEED_PLAYER_GENES, FALLBACK_MAX_GENES);
+        int guaranteed = Math.min(GUARANTEED_PLAYER_GENES, maxGenes);
+
+        for (int i = 0; i < guaranteed && !availableGeneTypes.isEmpty(); i++) {
+            Gene selected = selectGeneByRarity(availableGeneTypes, seededRandom);
+            if (selected == null) {
+                break;
+            }
+            genes.add(selected);
+        }
+
+        while (genes.size() < guaranteed) {
+            GeneType fallbackType = eligibleGeneTypes.get(seededRandom.nextInt(eligibleGeneTypes.size()));
+            genes.add(createGeneFromType(fallbackType, seededRandom, 0));
+        }
+
+        while (genes.size() < maxGenes && !availableGeneTypes.isEmpty()) {
+            if (!passesExtraGeneRoll(genes.size() + 1, seededRandom)) {
+                break;
+            }
+            Gene selected = selectGeneByRarity(availableGeneTypes, seededRandom);
+            if (selected == null) {
+                break;
+            }
+            genes.add(selected);
+        }
+
+        Collections.shuffle(genes, seededRandom);
+        UUID sourceUuid = selectStarterSourceUuid(seededRandom, genes.size());
+        return new DNA(playerName, sourceUuid, genes);
+    }
+
+    private static UUID selectStarterSourceUuid(Random random, int occupiedSlots) {
+        UUID fallback = UUID.nameUUIDFromBytes(("starter:" + random.nextLong()).getBytes(StandardCharsets.UTF_8));
+        int normalizedOccupiedSlots = Math.max(0, Math.min(TOTAL_DNA_SLOTS, occupiedSlots));
+        if (normalizedOccupiedSlots == 0 || normalizedOccupiedSlots >= TOTAL_DNA_SLOTS) {
+            return fallback;
+        }
+
+        for (int attempt = 0; attempt < SOURCE_UUID_ROLL_ATTEMPTS; attempt++) {
+            UUID candidate = new UUID(random.nextLong(), random.nextLong());
+            int[] slotOrder = getDeterministicSlotOrder(candidate);
+            boolean hitsUpperHalf = false;
+            for (int i = 0; i < normalizedOccupiedSlots; i++) {
+                if (slotOrder[i] >= (TOTAL_DNA_SLOTS / 2)) {
+                    hitsUpperHalf = true;
+                    break;
+                }
+            }
+            if (hitsUpperHalf) {
+                return candidate;
+            }
+        }
+
+        return fallback;
+    }
+
+    private static int[] getDeterministicSlotOrder(UUID sourceUuid) {
+        int[] slots = {0, 1, 2, 3, 4, 5};
+        long seed = sourceUuid.getMostSignificantBits() ^ sourceUuid.getLeastSignificantBits();
+        Random random = new Random(seed);
+        for (int i = slots.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            int temp = slots[i];
+            slots[i] = slots[j];
+            slots[j] = temp;
+        }
+        return slots;
+    }
+
+    public static int[] getDeterministicSlotOrderForSource(UUID sourceUuid) {
+        if (sourceUuid == null) {
+            return new int[]{0, 1, 2, 3, 4, 5};
+        }
+        return getDeterministicSlotOrder(sourceUuid);
+    }
+
     private static Gene selectGeneByRarity(List<GeneType> availableGeneTypes, Random random) {
         if (availableGeneTypes.isEmpty()) {
             return null;
@@ -254,6 +347,10 @@ public final class GeneUtil {
         String selectedTypeId = selectedType.getId();
         availableGeneTypes.removeIf(type -> type.getId().equalsIgnoreCase(selectedTypeId));
 
+        return createGeneFromType(selectedType, random, rarityDrops);
+    }
+
+    private static Gene createGeneFromType(GeneType selectedType, Random random, int rarityDrops) {
         int quality = rollQuality(selectedType, random, rarityDrops);
         List<SideEffect> sideEffects = generateSideEffects(selectedType.getCategory(), random);
         String name = generateGeneName(random);

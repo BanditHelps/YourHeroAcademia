@@ -3,6 +3,7 @@ package com.github.bandithelps.blocks;
 import com.github.bandithelps.Config;
 import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.capabilities.dna.DNAAttachments;
+import com.github.bandithelps.gene.DNA;
 import com.github.bandithelps.gene.Gene;
 import com.github.bandithelps.items.DNAInjectorItem;
 import com.github.bandithelps.items.GeneVialItem;
@@ -12,6 +13,7 @@ import com.github.bandithelps.utils.gene.GeneUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -101,24 +103,26 @@ public class BioPrinterBlockEntity extends BlockEntity {
         if (!isUsableBy(player) || this.processing || this.awaitingInjectorExtraction) {
             return false;
         }
-        String dna = DNAAttachments.get(player).getDNA();
-        String[] parsed = parseDnaSlots(dna);
-        boolean hasAny = false;
-        for (String slot : parsed) {
-            if (slot != null && !slot.isBlank()) {
-                hasAny = true;
-                break;
-            }
+        String dnaRaw = DNAAttachments.get(player).getDNA();
+        DNA parsedDna = GeneUtil.parseDNA(dnaRaw);
+        if (parsedDna == null) {
+            return false;
         }
-        if (!hasAny) {
+
+        String[] parsed = resolveDnaSlots(parsedDna);
+        if (!hasAnyGene(parsed)) {
             return false;
         }
         copySlots(parsed, this.genomeSlots);
         copySlots(parsed, this.importedGenomeSlots);
         clearFlags(this.slotModifiedByVial);
         this.baseImported = true;
-        this.sourceName = player.getName().getString();
-        this.sourceUuid = player.getUUID().toString();
+        this.sourceName = parsedDna.getSourceName() == null || parsedDna.getSourceName().isBlank()
+                ? player.getName().getString()
+                : parsedDna.getSourceName();
+        this.sourceUuid = parsedDna.getSourceUuid() == null
+                ? player.getUUID().toString()
+                : parsedDna.getSourceUuid().toString();
         this.awaitingInjectorExtraction = false;
         this.processing = false;
         this.processingProgress = 0;
@@ -327,17 +331,54 @@ public class BioPrinterBlockEntity extends BlockEntity {
         return false;
     }
 
-    private static String[] parseDnaSlots(String dna) {
-        String[] parsed = createEmptySlots();
-        if (dna == null || dna.isBlank()) {
-            return parsed;
+    private static String[] resolveDnaSlots(DNA dna) {
+        String[] resolved = createEmptySlots();
+        if (dna == null || dna.isEmpty()) {
+            return resolved;
         }
-        String[] pieces = dna.split(",");
-        for (int i = 0; i < Math.min(SLOT_COUNT, pieces.length); i++) {
-            String trimmed = pieces[i] == null ? "" : pieces[i].trim();
-            parsed[i] = trimmed;
+
+        List<Gene> genes = dna.getGenes();
+        if (hasExplicitSlotLayout(genes)) {
+            int limit = Math.min(SLOT_COUNT, genes.size());
+            for (int i = 0; i < limit; i++) {
+                Gene gene = genes.get(i);
+                if (gene == null || isEmptySlotGene(gene)) {
+                    resolved[i] = "";
+                } else {
+                    resolved[i] = GeneUtil.serializeGene(gene);
+                }
+            }
+            return resolved;
         }
-        return parsed;
+
+        int[] slotOrder = GeneUtil.getDeterministicSlotOrderForSource(dna.getSourceUuid());
+        int limit = Math.min(SLOT_COUNT, genes.size());
+        for (int i = 0; i < limit; i++) {
+            Gene gene = genes.get(i);
+            if (gene == null || isEmptySlotGene(gene)) {
+                continue;
+            }
+            resolved[slotOrder[i]] = GeneUtil.serializeGene(gene);
+        }
+        return resolved;
+    }
+
+    private static boolean hasExplicitSlotLayout(List<Gene> genes) {
+        if (genes == null || genes.size() < SLOT_COUNT) {
+            return false;
+        }
+        for (Gene gene : genes) {
+            if (isEmptySlotGene(gene)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isEmptySlotGene(Gene gene) {
+        return gene != null
+                && gene.getType() != null
+                && "yha:empty_slot".equalsIgnoreCase(gene.getType().getId());
     }
 
     private static String buildDnaString(String[] slots) {
