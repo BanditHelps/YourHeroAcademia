@@ -3,6 +3,7 @@
   "category": "ATTRIBUTE",
   "rarity": "LEGENDARY",
   "qualityRange": [100, 100],
+  "ignorePlayerDNA": true,
   "combinable": true,
   "attributes": [
     {

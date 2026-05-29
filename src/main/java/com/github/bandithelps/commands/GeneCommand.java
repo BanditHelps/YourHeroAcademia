@@ -1,5 +1,6 @@
 package com.github.bandithelps.commands;
 
+import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.capabilities.dna.DNAAttachments;
 import com.github.bandithelps.capabilities.dna.DNAUpdateService;
 import com.github.bandithelps.gene.DNA;
@@ -13,9 +14,11 @@ import com.github.bandithelps.gene.combination.CombinationGraph;
 import com.github.bandithelps.gene.combination.CombinationManager;
 import com.github.bandithelps.gene.combination.ResolvedCombinationRecipe;
 import com.github.bandithelps.items.GeneVialItem;
-import com.github.bandithelps.network.OpenGeneCombinationBrowserPayload;
+import com.github.bandithelps.network.GeneCombinationBrowserDataPayload;
 import com.github.bandithelps.utils.gene.GeneAliasUtil;
 import com.github.bandithelps.utils.gene.GeneUtil;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -28,11 +31,13 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.threetag.palladium.network.OpenScreenPacket;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -46,6 +51,8 @@ import java.util.stream.Collectors;
 public class GeneCommand {
     private static final int MAX_DNA_SLOTS = 6;
     private static final String EMPTY_SLOT_TYPE_ID = "yha:empty_slot";
+    private static final Identifier GENE_COMBINATION_BROWSER_SCREEN_ID =
+            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "power/gene_combinations_browser");
     private static final SuggestionProvider<CommandSourceStack> GENE_ID_SUGGESTIONS = (context, builder) -> {
         String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
         for (GeneType type : GeneRegistry.getInstance().getAllGeneTypes()) {
@@ -295,7 +302,8 @@ public class GeneCommand {
     private static int openCombinationBrowser(CommandSourceStack source) throws CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         CombinationGraph graph = CombinationManager.getGraph();
-        PacketDistributor.sendToPlayer(player, new OpenGeneCombinationBrowserPayload(buildBrowserLines(graph)));
+        PacketDistributor.sendToPlayer(player, new GeneCombinationBrowserDataPayload(buildBrowserPayloadEntries(graph)));
+        PacketDistributor.sendToPlayer(player, new OpenScreenPacket(GENE_COMBINATION_BROWSER_SCREEN_ID));
         source.sendSuccess(() -> Component.literal("Opened resolved combination browser."), false);
         return 1;
     }
@@ -355,26 +363,59 @@ public class GeneCommand {
         return recipe.getOutputGeneId() + " <- [" + requirements + "] success=" + recipe.getSuccessRate() + "% " + status;
     }
 
-    private static List<String> buildBrowserLines(CombinationGraph graph) {
-        List<String> lines = new ArrayList<>();
-        lines.add("seed=" + graph.getWorldSeed()
-                + " recipes=" + graph.getAllRecipes().size()
-                + " invalid=" + graph.getInvalidCount()
-                + " overlaps=" + graph.getOverlapGroups().size());
-        lines.add("------------------------------------------------");
+    private static List<String> buildBrowserPayloadEntries(CombinationGraph graph) {
         List<ResolvedCombinationRecipe> ordered = graph.getAllRecipes().stream()
                 .sorted(Comparator.comparing(ResolvedCombinationRecipe::getOutputGeneId))
                 .toList();
+        List<String> encoded = new ArrayList<>(ordered.size());
         for (ResolvedCombinationRecipe recipe : ordered) {
-            lines.add(describeRecipe(recipe));
+            JsonObject object = new JsonObject();
+            GeneType outputType = GeneRegistry.getInstance().getGeneType(recipe.getOutputGeneId()).orElse(null);
+            object.addProperty("outputId", recipe.getOutputGeneId());
+            object.addProperty("displayName", outputType == null ? displayNameFromId(recipe.getOutputGeneId()) : displayNameFromId(outputType.getId()));
+            object.addProperty("category", outputType == null ? "" : outputType.getCategory().name());
+            addGeneMetadata(object, outputType);
+            object.addProperty("successRate", recipe.getSuccessRate());
+            object.addProperty("valid", recipe.isValid());
+            object.addProperty("invalidReason", recipe.getInvalidReason());
+
+            JsonArray requirements = new JsonArray();
+            for (ResolvedCombinationRecipe.ResolvedRequirement requirement : recipe.getRequirements()) {
+                JsonObject requirementObject = new JsonObject();
+                GeneType requirementType = GeneRegistry.getInstance().getGeneType(requirement.geneId()).orElse(null);
+                requirementObject.addProperty("geneId", requirement.geneId());
+                requirementObject.addProperty("displayName",
+                        requirementType == null ? displayNameFromId(requirement.geneId()) : displayNameFromId(requirementType.getId()));
+                requirementObject.addProperty("category", requirementType == null ? "" : requirementType.getCategory().name());
+                addGeneMetadata(requirementObject, requirementType);
+                requirementObject.addProperty("minQuality", requirement.minQuality());
+                requirementObject.addProperty("builderResolved", requirement.builderResolved());
+                requirements.add(requirementObject);
+            }
+            object.add("requirements", requirements);
+            encoded.add(object.toString());
         }
-        if (!graph.getOverlapGroups().isEmpty()) {
-            lines.add("------------------------------------------------");
-            lines.add("Overlaps:");
-            graph.getOverlapGroups().forEach((signature, outputs) ->
-                    lines.add("sig=[" + signature + "] -> " + String.join(", ", outputs)));
+        return encoded;
+    }
+
+    private static void addGeneMetadata(JsonObject target, GeneType geneType) {
+        if (geneType == null) {
+            target.addProperty("rarity", "");
+            target.addProperty("qualityMin", 1);
+            target.addProperty("qualityMax", 100);
+            target.addProperty("description", "");
+            target.add("mobs", new JsonArray());
+            return;
         }
-        return lines;
+        target.addProperty("rarity", geneType.getRarity().name());
+        target.addProperty("qualityMin", geneType.getQualityMin());
+        target.addProperty("qualityMax", geneType.getQualityMax());
+        target.addProperty("description", geneType.getDescription());
+        JsonArray mobs = new JsonArray();
+        for (String mobId : geneType.getMobs()) {
+            mobs.add(mobId);
+        }
+        target.add("mobs", mobs);
     }
 
     private static int showDnaInfo(CommandSourceStack source, Player player) throws CommandSyntaxException {

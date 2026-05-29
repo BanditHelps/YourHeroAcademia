@@ -29,6 +29,6 @@ public record GeneCombinationBrowserDataPayload(List<String> lines) implements C
     }
 
     public static void handle(GeneCombinationBrowserDataPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientGeneCombinationBrowserState.setLines(payload.lines()));
+        context.enqueueWork(() -> ClientGeneCombinationBrowserState.setRecipesFromPayload(payload.lines()));
     }
 }
