@@ -4,7 +4,6 @@ import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.abilities.blockdisplayanims.BDTrailAbility;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.RgbaDisplayEntity;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
@@ -237,9 +236,9 @@ public class BlockDisplaySummoner {
             double initialY = centerY + beginningOffset.y;
             double initialZ = centerZ + beginningOffset.z;
 
-            double endX = centerX + endingOffset.x;;
+            double endX = centerX + endingOffset.x;
             double endY = centerY + endingOffset.y;
-            double endZ = centerZ + endingOffset.z;;
+            double endZ = centerZ + endingOffset.z;
 
             Vector3f startPos = new Vector3f((float)initialX, (float)initialY, (float)initialZ);
             Vector3f endPos = new Vector3f((float)endX, (float)endY, (float)endZ);
@@ -403,11 +402,9 @@ public class BlockDisplaySummoner {
                 double z = centerZ + endRadius * Math.cos(theta);
 
                 double dx = x - centerX;
-                double dy = y - centerY;
-                double dz = z - centerZ;
+                double newZ = y - centerY;
 
-                double newY = dz;
-                double newZ = dy;
+                double newY = z - centerZ;
 
                 Vector3f startPos = new Vector3f((float)centerX, (float)centerY, (float)centerZ);
                 Vector3f endPos = new Vector3f((float) ((float)centerX + dx), (float) ((float)centerY + newY), (float) ((float)centerZ + newZ));
@@ -492,11 +489,9 @@ public class BlockDisplaySummoner {
             double z = centerZ + radius * Math.cos(theta);
 
             double dx = x - centerX;
-            double dy = y - centerY;
-            double dz = z - centerZ;
+            double newZ = y - centerY;
 
-            double newY = dz;
-            double newZ = dy;
+            double newY = z - centerZ;
 
             Vector3f startPos = new Vector3f((float)centerX, (float)centerY, (float)centerZ);
             Vector3f endPos = new Vector3f((float) ((float)centerX + dx), (float) ((float)centerY + newY), (float) ((float)centerZ + newZ));

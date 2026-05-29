@@ -1,6 +1,5 @@
 package com.github.bandithelps.utils.blockdisplays;
 
-import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.blocks.ConfigurableFaceColorBlock;
 import com.github.bandithelps.blocks.ModBlocks;
 import com.mojang.serialization.Codec;

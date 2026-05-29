@@ -35,7 +35,7 @@ public class BDDomeAbility extends Ability {
                     Value.CODEC.optionalFieldOf("radius", new StaticValue(5.0)).forGetter((ab) -> ab.radius),
                     Value.CODEC.optionalFieldOf("tick_speed", new StaticValue(40)).forGetter((ab) -> ab.tickSpeed),
                     Value.CODEC.optionalFieldOf("density", new StaticValue(50)).forGetter((ab) -> ab.density),
-                    PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("palette", Arrays.asList(Identifier.parse("minecraft:diamond_block"))).forGetter((ab) -> ab.palette),
+                    PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("palette", List.of(Identifier.parse("minecraft:diamond_block"))).forGetter((ab) -> ab.palette),
                     PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("location_offset", new Vector3f(0.0f, 0.0f, 0.0f)).forGetter((ab) -> ab.locationOffset),
                     PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("rotation_offset", new Vector3f(0.0f, 0.0f, 0.0f)).forGetter((ab) -> ab.rotationOffset),
                     PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("initial_scale", new Vector3f(0.3f, 0.3f, 0.3f)).forGetter((ab) -> ab.initialScale),
@@ -141,7 +141,7 @@ public class BDDomeAbility extends Ability {
                     .add("random_decay", TYPE_BOOLEAN, "Whether or not the block displays disappear randomly or all at the same time")
                     .add("random_rotation", TYPE_BOOLEAN, "Whether or not the block displays spawn with a randomized right_rotation value")
                     .add("relative", TYPE_BOOLEAN, "Controls if the location_offset is based on the player's relative coordinates. i.e ^ ^ ^ instead of ~ ~ ~")
-                    .addExampleObject(new BDDomeAbility(new StaticValue(5.0f), new StaticValue(40), new StaticValue(50.0f), Arrays.asList(Identifier.parse("minecraft:diamond_block")), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0.3f, 0.3f, 0.3f), new Vector3f(0.6f, 0.6f, 0.6f), new StaticValue(40f), true, true, false, BlockDisplayVisualOptions.DEFAULT, AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
+                    .addExampleObject(new BDDomeAbility(new StaticValue(5.0f), new StaticValue(40), new StaticValue(50.0f), List.of(Identifier.parse("minecraft:diamond_block")), new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new Vector3f(0.3f, 0.3f, 0.3f), new Vector3f(0.6f, 0.6f, 0.6f), new StaticValue(40f), true, true, false, BlockDisplayVisualOptions.DEFAULT, AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
 
     }

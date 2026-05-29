@@ -13,7 +13,6 @@ import com.github.bandithelps.client.renderers.entity.SmokeCanisterProjectileRen
 import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
 import com.github.bandithelps.conditions.cost.CostRegister;
-//import com.github.bandithelps.conditions.unlocking_handlers.UnlockingHandlerRegister;
 import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
@@ -37,35 +36,25 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.SoundType;
-import net.minecraft.world.level.material.MapColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.network.PacketDistributor;
 
-// The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(YourHeroAcademia.MODID)
 @EventBusSubscriber(modid = YourHeroAcademia.MODID)
 public final class YourHeroAcademia {
@@ -73,42 +62,16 @@ public final class YourHeroAcademia {
 
     public static final String MODID = "yha";
     public static final Logger LOGGER = LogUtils.getLogger();
-    // Create a Deferred Register to hold Blocks which will all be registered under the "yourheroacademia" namespace
-//    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
-    // Create a Deferred Register to hold Items which will all be registered under the "yourheroacademia" namespace
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
     // Create a Deferred Register to hold CreativeModeTabs which will all be registered under the "yourheroacademia" namespace
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
-
-    // Creates a new BlockItem with the id "yourheroacademia:example_block", combining the namespace and path
-    public static final DeferredItem<BlockItem> EXAMPLE_BLOCK_ITEM = ITEMS.registerSimpleBlockItem("example_block", ModBlocks.EXAMPLE_BLOCK);
-//    public static final DeferredBlock<TreadmillBlock> TREADMILL_BLOCK = BLOCKS.registerBlock(
-//            "treadmill",
-//            TreadmillBlock::new,
-//            p -> p.mapColor(MapColor.METAL)
-//                    .strength(2.5F)
-//                    .sound(SoundType.METAL)
-//                    .noOcclusion()
-//    );
-
     public static final DeferredItem<BlockItem> TREADMILL_BLOCK_ITEM = ITEMS.registerSimpleBlockItem("treadmill", ModBlocks.TREADMILL_BLOCK);
-//    public static final DeferredBlock<DNAAnalyzerBlock> DNA_ANALYZER_BLOCK = BLOCKS.register(
-//            "dna_analyzer",
-//            DNAAnalyzerBlock::new
-//    );
-//    public static final DeferredBlock<DNASplicerBlock> DNA_SPLICER_BLOCK = BLOCKS.register(
-//            "dna_splicer",
-//            DNASplicerBlock::new
-//    );
     public static final DeferredItem<BlockItem> DNA_ANALYZER_ITEM = ITEMS.registerSimpleBlockItem("dna_analyzer", ModBlocks.DNA_ANALYZER);
     public static final DeferredItem<BlockItem> DNA_SPLICER_ITEM = ITEMS.registerSimpleBlockItem("dna_splicer", ModBlocks.DNA_SPLICER);
     public static final DeferredItem<BlockItem> GENE_COMBINER_ITEM = ITEMS.registerSimpleBlockItem("gene_combiner", ModBlocks.GENE_COMBINER);
     public static final DeferredItem<BlockItem> BIO_PRINTER_ITEM = ITEMS.registerSimpleBlockItem("bio_printer", ModBlocks.BIO_PRINTER);
 
-    // Creates a new food item with the id "yourheroacademia:example_id", nutrition 1 and saturation 2
-    public static final DeferredItem<Item> EXAMPLE_ITEM = ITEMS.registerSimpleItem("example_item", p -> p.food(new FoodProperties.Builder()
-            .alwaysEdible().nutrition(1).saturationModifier(2f).build()));
     public static final DeferredItem<Item> EMPTY_CANISTER = ITEMS.registerSimpleItem("empty_canister");
     public static final DeferredItem<Item> FILLED_SMOKE_CANISTER = ITEMS.register("filled_smoke_canister", () -> new SmokeCanisterItem(new Item.Properties()
             .stacksTo(16)
@@ -137,14 +100,27 @@ public final class YourHeroAcademia {
             .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "genetic_slop")))));
     public static final DeferredItem<BlockItem> SAMPLE_REFRIGERATOR = ITEMS.registerSimpleBlockItem("sample_refrigerator", ModBlocks.EXAMPLE_BLOCK);
 
-    // Creates a creative tab with the id "yourheroacademia:example_tab" for the example item, that is placed after the combat tab
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("example_tab", () -> CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup.yourheroacademia")) //The language key for the title of your CreativeModeTab
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> YHA_MAIN_TAB = CREATIVE_MODE_TABS.register("yha_main_tab", () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.yourheroacademia"))
             .withTabsBefore(CreativeModeTabs.COMBAT)
-            .icon(() -> EXAMPLE_ITEM.get().getDefaultInstance())
+            .icon(() -> DNA_ANALYZER_ITEM.get().getDefaultInstance())
             .displayItems((parameters, output) -> {
-                output.accept(EXAMPLE_ITEM.get()); // Add the example item to the tab. For your own tabs, this method is preferred over the event
+                output.accept(DNA_ANALYZER_ITEM.get());
                 output.accept(TREADMILL_BLOCK_ITEM.get());
+                output.accept(DNA_SPLICER_ITEM.get());
+                output.accept(GENE_COMBINER_ITEM.get());
+                output.accept(BIO_PRINTER_ITEM.get());
+                output.accept(EMPTY_CANISTER.get());
+                output.accept(FILLED_SMOKE_CANISTER.get());
+                output.accept(INFUSED_SMOKE_CANISTER.get());
+                output.accept(PIPETTE.get());
+                output.accept(TISSUE_EXTRACTOR.get());
+                output.accept(TISSUE_SAMPLE.get());
+                output.accept(EMPTY_GENE_VIAL.get());
+                output.accept(GENE_VIAL.get());
+                output.accept(DNA_INJECTOR.get());
+                output.accept(GENETIC_SLOP.get());
+                output.accept(SAMPLE_REFRIGERATOR.get());
             }).build());
 
     // The constructor for the mod class is the first code that is run when your mod is loaded.
@@ -153,11 +129,8 @@ public final class YourHeroAcademia {
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
 
-        // Register the Deferred Register to the mod event bus so blocks get registered
 
-        // Register the Deferred Register to the mod event bus so items get registered
         ITEMS.register(modEventBus);
-        // Register the Deferred Register to the mod event bus so tabs get registered
         CREATIVE_MODE_TABS.register(modEventBus);
 
         // Custom palladium stuff
@@ -165,7 +138,6 @@ public final class YourHeroAcademia {
         ConditionRegister.CONDITIONS.register(modEventBus);
         CostRegister.COST_SERIALIZERS.register(modEventBus);
 
-//        UnlockingHandlerRegister.UNLOCKING_HANDLERS.register(modEventBus);
         YhaDialogActions.ACTIONS.register(modEventBus);
 
         QuirkAttributes.ATTRIBUTES.register(modEventBus);
@@ -187,56 +159,20 @@ public final class YourHeroAcademia {
         // Do not add this line if there are no @SubscribeEvent-annotated functions in this class, like onServerStarting() below.
 //        NeoForge.EVENT_BUS.register(this);
 
-        // Register the item to a creative tab
-        modEventBus.addListener(this::addCreative);
         modEventBus.addListener(YhaNetwork::registerPayloads);
-
-        // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
         // Some common setup code
-        LOGGER.info("HELLO FROM COMMON SETUP");
-
-        if (Config.LOG_DIRT_BLOCK.getAsBoolean()) {
-            LOGGER.info("DIRT BLOCK >> {}", BuiltInRegistries.BLOCK.getKey(Blocks.DIRT));
-        }
-
-        LOGGER.info("{}{}", Config.MAGIC_NUMBER_INTRODUCTION.get(), Config.MAGIC_NUMBER.getAsInt());
-
-        Config.ITEM_STRINGS.get().forEach((item) -> LOGGER.info("ITEM >> {}", item));
-    }
-
-    // Add the example block item to the building blocks tab
-    private void addCreative(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
-            event.accept(EXAMPLE_BLOCK_ITEM);
-            event.accept(TREADMILL_BLOCK_ITEM);
-            event.accept(DNA_ANALYZER_ITEM);
-            event.accept(DNA_SPLICER_ITEM);
-            event.accept(GENE_COMBINER_ITEM);
-            event.accept(BIO_PRINTER_ITEM);
-        } else if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
-            event.accept(EMPTY_CANISTER);
-            event.accept(FILLED_SMOKE_CANISTER);
-            event.accept(INFUSED_SMOKE_CANISTER);
-            event.accept(PIPETTE);
-            event.accept(TISSUE_EXTRACTOR);
-            event.accept(TISSUE_SAMPLE);
-            event.accept(EMPTY_GENE_VIAL);
-            event.accept(GENE_VIAL);
-            event.accept(DNA_INJECTOR);
-            event.accept(GENETIC_SLOP);
-            event.accept(SAMPLE_REFRIGERATOR);
-        }
+//        LOGGER.info("HELLO FROM COMMON SETUP");
     }
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
-        LOGGER.info("HELLO from server starting");
+        LOGGER.info("Server Starting...");
         GeneRegistry.getInstance().reload(event.getServer().getResourceManager());
         CombinationManager.rebuildForServer(event.getServer());
     }

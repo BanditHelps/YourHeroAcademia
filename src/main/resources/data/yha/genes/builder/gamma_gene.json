@@ -6,11 +6,3 @@
   "combinable": false,
   "description": "A rare builder gene used in advanced recipes."
 }
-{
-  "id": "yha:gamma",
-  "category": "BUILDER",
-  "rarity": "COMMON",
-  "qualityRange": [1, 100],
-  "combinable": false,
-  "description": "A gene that seems to have no use"
-}

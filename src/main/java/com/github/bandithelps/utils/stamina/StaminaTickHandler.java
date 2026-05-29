@@ -1,8 +1,6 @@
 package com.github.bandithelps.utils.stamina;
 
 import com.github.bandithelps.YourHeroAcademia;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.monster.zombie.Husk;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;

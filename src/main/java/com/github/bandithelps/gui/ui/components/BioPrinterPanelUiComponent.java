@@ -411,7 +411,7 @@ public class BioPrinterPanelUiComponent extends UiComponent {
             int centerX = panelX + (panelWidth / 2);
             int startY = panelY + 22;
             int totalHeight = (SLOT_SIZE * 3) + (SLOT_GAP_Y * 2);
-            float time = minecraft.level != null ? minecraft.level.getGameTime() : (System.currentTimeMillis() / 50L);
+            float time = minecraft.level != null ? minecraft.level.getGameTime() : ((float) System.currentTimeMillis() / 50L);
             for (int i = 0; i < totalHeight; i += 2) {
                 float angle = (i * 0.22F) + (time * 0.12F);
                 int spread = 4 + Math.round((float) Math.sin(angle) * 5.0F);
@@ -585,11 +585,10 @@ public class BioPrinterPanelUiComponent extends UiComponent {
         private InventoryEntry getInventoryEntryAt(List<InventoryEntry> entries, int mouseX, int mouseY) {
             int x = this.getX() + 6;
             int y = this.getY() + 8 + LIST_HEADER_HEIGHT;
-            int width = LIST_WIDTH;
             int visible = Math.min(VISIBLE_ROWS, Math.max(0, entries.size() - this.scrollOffset));
             for (int i = 0; i < visible; i++) {
                 int rowY = y + (i * ROW_HEIGHT);
-                if (mouseX >= x + 2 && mouseX < x + width - 2 && mouseY >= rowY && mouseY < rowY + ROW_HEIGHT) {
+                if (mouseX >= x + 2 && mouseX < x + LIST_WIDTH - 2 && mouseY >= rowY && mouseY < rowY + ROW_HEIGHT) {
                     return entries.get(this.scrollOffset + i);
                 }
             }

@@ -224,10 +224,7 @@ public final class TreadmillBlockEvents {
 
     public static boolean isStandingOnTreadmill(Player player) {
         BlockPos feetPos = player.blockPosition();
-        if (isTreadmillOrAdjacent(player, feetPos) || isTreadmillOrAdjacent(player, feetPos.below())) {
-            return true;
-        }
-        return false;
+        return isTreadmillOrAdjacent(player, feetPos) || isTreadmillOrAdjacent(player, feetPos.below());
     }
 
     private static boolean isTreadmillOrAdjacent(Player player, BlockPos pos) {

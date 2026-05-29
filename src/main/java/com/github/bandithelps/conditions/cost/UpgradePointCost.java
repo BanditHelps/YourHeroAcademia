@@ -19,8 +19,6 @@ import net.threetag.palladium.logic.cost.Cost;
 import net.threetag.palladium.logic.cost.CostDisplay;
 import net.threetag.palladium.logic.cost.CostSerializer;
 
-import java.util.stream.Stream;
-
 /**
  * Defines a new cost type that can be used in the buyable condition for powers
  */

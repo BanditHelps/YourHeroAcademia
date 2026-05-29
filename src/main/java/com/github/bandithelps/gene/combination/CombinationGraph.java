@@ -91,9 +91,7 @@ public final class CombinationGraph {
                 ));
                 continue;
             }
-            for (ResolvedCombinationRecipe.ResolvedRequirement builderRequirement : builderResolution.resolvedRequirements()) {
-                requirements.add(builderRequirement);
-            }
+            requirements.addAll(builderResolution.resolvedRequirements());
 
             resolved.put(outputId, new ResolvedCombinationRecipe(
                     outputId,

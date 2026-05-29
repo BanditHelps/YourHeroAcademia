@@ -412,7 +412,7 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
         }
 
         private void drawMixerAnimation(GuiGraphicsExtractor gui, int centerX, int centerY, boolean active, float progress, Minecraft minecraft) {
-            float time = minecraft.level != null ? minecraft.level.getGameTime() : (System.currentTimeMillis() / 50L);
+            float time = minecraft.level != null ? minecraft.level.getGameTime() : ((float) System.currentTimeMillis() / 50L);
             float speed = active ? 0.4F : 0.08F;
             for (int i = 0; i < 20; i++) {
                 float angle = (time * speed) + (i * 0.4F);

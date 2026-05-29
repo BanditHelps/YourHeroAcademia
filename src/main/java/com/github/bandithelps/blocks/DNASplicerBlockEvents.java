@@ -1,7 +1,6 @@
 package com.github.bandithelps.blocks;
 
 import com.github.bandithelps.YourHeroAcademia;
-import com.github.bandithelps.YourHeroAcademiaClient;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;

@@ -230,7 +230,7 @@ public class DNASplicerBlockEntity extends BlockEntity {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < genes.length; i++) {
             if (genes[i] != null && !genes[i].isEmpty()) {
-                if (sb.length() > 0) {
+                if (!sb.isEmpty()) {
                     sb.append(",");
                 }
                 sb.append(genes[i]);

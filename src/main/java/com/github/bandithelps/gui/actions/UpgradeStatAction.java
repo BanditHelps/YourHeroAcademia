@@ -6,7 +6,6 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.server.dialog.action.Action;
 import net.minecraft.util.ExtraCodecs;
-import net.threetag.palladium.dialog.PalladiumDialogActions;
 
 import java.util.Map;
 import java.util.Optional;

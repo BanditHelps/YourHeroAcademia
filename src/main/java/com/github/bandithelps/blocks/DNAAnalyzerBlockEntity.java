@@ -348,12 +348,11 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         if (selectedSlots == null || selectedSlots.length == 0) {
             return new int[0];
         }
-        int[] filtered = Arrays.stream(selectedSlots)
+        return Arrays.stream(selectedSlots)
                 .filter(index -> index >= 0 && index < 6)
                 .distinct()
                 .sorted()
                 .toArray();
-        return filtered;
     }
 
     private static boolean isValidSelectionForUnlockedModes(int[] unlockedModes, int[] selection) {

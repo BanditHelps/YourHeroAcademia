@@ -475,7 +475,7 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
             int helixHeight = 90;
             float animationTime = minecraft.level != null
                     ? minecraft.level.getGameTime() + partialTick
-                    : (System.currentTimeMillis() / 50L);
+                    : ((float) System.currentTimeMillis() / 50L);
             drawHelix(gui, helixX, helixY, helixHeight, animationTime, activeMode, sampleUuid, processingProgress);
 
             String[] slots = state == null ? emptySlots() : normalizeSlots(state.geneSlots());
