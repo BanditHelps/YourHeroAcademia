@@ -120,7 +120,7 @@ public final class GeneUtil {
             if (parts.length > 3) {
                 String[] geneData = parts[3].split(",");
                 for (String geneStr : geneData) {
-                    Gene gene = parseGeneToken(geneStr);
+                    Gene gene = parseEncodedGeneToken(geneStr);
                     if (gene != null) {
                         genes.add(gene);
                     }
@@ -147,22 +147,16 @@ public final class GeneUtil {
         return sb.toString();
     }
 
-    private static Gene parseGeneToken(String token) {
+    private static Gene parseEncodedGeneToken(String token) {
         if (token == null || token.isBlank()) {
             return null;
         }
         String trimmed = token.trim();
-
-        // Backward-compatible path for legacy non-encoded DNA data.
-        if (trimmed.contains("|")) {
-            return parseGene(trimmed);
-        }
-
         try {
             String decoded = new String(Base64.getDecoder().decode(trimmed), StandardCharsets.UTF_8);
             return parseGene(decoded);
         } catch (IllegalArgumentException ignored) {
-            return parseGene(trimmed);
+            return null;
         }
     }
 

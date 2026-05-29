@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class GeneVialItem extends Item {
-    private static final String TAG_GENES = "genes";
     private static final String TAG_GENE_LIST = "geneList";
     private static final String TAG_GENE_COUNT = "geneCount";
     private static final String TAG_SOURCE_NAME = "sourceName";
@@ -36,21 +35,12 @@ public class GeneVialItem extends Item {
     }
 
     public static void setGenes(ItemStack stack, String genesData, String sourceName, String sourceUuid) {
-        String normalizedGenes = genesData == null ? "" : genesData;
-        List<String> geneList = parseLegacyGeneList(normalizedGenes);
-        if (!geneList.isEmpty()) {
-            setGenes(stack, geneList, sourceName, sourceUuid);
-            return;
+        List<String> normalizedGenes = new ArrayList<>();
+        String normalizedGene = genesData == null ? "" : genesData.trim();
+        if (!normalizedGene.isEmpty() && GeneUtil.parseGene(normalizedGene) != null) {
+            normalizedGenes.add(normalizedGene);
         }
-        CompoundTag customTag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        CompoundTag vialTag = new CompoundTag();
-        vialTag.putString(TAG_GENES, normalizedGenes);
-        vialTag.putInt(TAG_GENE_COUNT, normalizedGenes.isBlank() ? 0 : normalizedGenes.split(",").length);
-        vialTag.putString(TAG_SOURCE_NAME, sourceName == null ? "" : sourceName);
-        vialTag.putString(TAG_SOURCE_UUID, sourceUuid == null ? "" : sourceUuid);
-
-        customTag.put("gene_vial", vialTag);
-        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(customTag));
+        setGenes(stack, normalizedGenes, sourceName, sourceUuid);
     }
 
     public static void setGenes(ItemStack stack, List<String> genes, String sourceName, String sourceUuid) {
@@ -72,8 +62,6 @@ public class GeneVialItem extends Item {
             genesList.add(StringTag.valueOf(gene));
         }
         vialTag.put(TAG_GENE_LIST, genesList);
-        // Legacy field retained for compatibility with older readers.
-        vialTag.putString(TAG_GENES, String.join(",", normalizedGenes));
         vialTag.putInt(TAG_GENE_COUNT, geneCount);
         vialTag.putString(TAG_SOURCE_NAME, sourceName == null ? "" : sourceName);
         vialTag.putString(TAG_SOURCE_UUID, sourceUuid == null ? "" : sourceUuid);
@@ -100,10 +88,8 @@ public class GeneVialItem extends Item {
                 String value = listTag.getString(i).orElse("");
                 genes.add(value);
             }
-            return genes;
         }
-        String legacy = vialTag.getString(TAG_GENES).orElse("");
-        return parseLegacyGeneList(legacy);
+        return genes;
     }
 
     public static int getGeneCount(ItemStack stack) {
@@ -185,35 +171,4 @@ public class GeneVialItem extends Item {
         }
     }
 
-    private static List<Gene> parseGenes(List<String> geneParts) {
-        List<Gene> genes = new ArrayList<>();
-        if (geneParts == null || geneParts.isEmpty()) {
-            return genes;
-        }
-        for (String genePart : geneParts) {
-            Gene gene = GeneUtil.parseGene(genePart);
-            if (gene != null) {
-                genes.add(gene);
-            }
-        }
-        return genes;
-    }
-
-    private static List<String> parseLegacyGeneList(String genesRaw) {
-        List<String> genes = new ArrayList<>();
-        if (genesRaw == null || genesRaw.isBlank()) {
-            return genes;
-        }
-        String[] geneParts = genesRaw.split(",");
-        for (String genePart : geneParts) {
-            String trimmed = genePart.trim();
-            if (trimmed.isEmpty()) {
-                continue;
-            }
-            if (GeneUtil.parseGene(trimmed) != null) {
-                genes.add(trimmed);
-            }
-        }
-        return genes;
-    }
 }

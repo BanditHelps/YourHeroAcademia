@@ -25,13 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class TissueSampleItem extends Item {
     private static final String TAG_DNA = "dna";
     private static final String TAG_SOURCE_NAME = "sourceName";
     private static final String TAG_SOURCE_UUID = "sourceUuid";
-    private static final String TAG_GENES = "genes";
     private static final String TAG_GENE_LIST = "geneList";
     private static final String TAG_HARVEST_TIME = "harvestTime";
     private static final DateTimeFormatter HARVEST_TIME_FORMATTER =
@@ -54,10 +52,6 @@ public class TissueSampleItem extends Item {
             genesList.add(StringTag.valueOf(GeneUtil.serializeGene(resolved)));
         }
         dnaTag.put(TAG_GENE_LIST, genesList);
-        // Legacy field retained for compatibility with older samples/readers.
-        dnaTag.putString(TAG_GENES, dna.getGenes().stream()
-                .map(gene -> GeneUtil.serializeGene(GeneAliasUtil.applyAlias(level, sourceUuid, gene)))
-                .collect(Collectors.joining(",")));
 
         customTag.put(TAG_DNA, dnaTag);
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(customTag));
@@ -81,28 +75,15 @@ public class TissueSampleItem extends Item {
         long harvestTime = dnaTag.getLong(TAG_HARVEST_TIME).orElse(System.currentTimeMillis());
         List<Gene> genes = new ArrayList<>();
 
-        if (dnaTag.contains(TAG_GENE_LIST)) {
-            ListTag geneListTag = dnaTag.getList(TAG_GENE_LIST).orElse(new ListTag());
-            for (int i = 0; i < geneListTag.size(); i++) {
-                String genePart = geneListTag.getString(i).orElse("");
-                if (genePart.isEmpty()) {
-                    continue;
-                }
-                Gene gene = GeneUtil.parseGene(genePart);
-                if (gene != null) {
-                    genes.add(gene);
-                }
+        ListTag geneListTag = dnaTag.getList(TAG_GENE_LIST).orElse(new ListTag());
+        for (int i = 0; i < geneListTag.size(); i++) {
+            String genePart = geneListTag.getString(i).orElse("");
+            if (genePart.isEmpty()) {
+                continue;
             }
-        } else {
-            String genesRaw = dnaTag.getString(TAG_GENES).orElse("");
-            if (!genesRaw.isEmpty()) {
-                String[] geneParts = genesRaw.split(",");
-                for (String genePart : geneParts) {
-                    Gene gene = GeneUtil.parseGene(genePart);
-                    if (gene != null) {
-                        genes.add(gene);
-                    }
-                }
+            Gene gene = GeneUtil.parseGene(genePart);
+            if (gene != null) {
+                genes.add(gene);
             }
         }
 
@@ -126,18 +107,15 @@ public class TissueSampleItem extends Item {
 
     public static String getGenesData(ItemStack stack) {
         CompoundTag dnaTag = getDNAData(stack);
-        if (dnaTag.contains(TAG_GENE_LIST)) {
-            ListTag geneListTag = dnaTag.getList(TAG_GENE_LIST).orElse(new ListTag());
-            List<String> parts = new ArrayList<>();
-            for (int i = 0; i < geneListTag.size(); i++) {
-                String value = geneListTag.getString(i).orElse("");
-                if (!value.isEmpty()) {
-                    parts.add(value);
-                }
+        ListTag geneListTag = dnaTag.getList(TAG_GENE_LIST).orElse(new ListTag());
+        List<String> parts = new ArrayList<>();
+        for (int i = 0; i < geneListTag.size(); i++) {
+            String value = geneListTag.getString(i).orElse("");
+            if (!value.isEmpty()) {
+                parts.add(value);
             }
-            return String.join(",", parts);
         }
-        return dnaTag.getString(TAG_GENES).orElse("");
+        return String.join(",", parts);
     }
 
     public static boolean hasDNA(ItemStack stack) {

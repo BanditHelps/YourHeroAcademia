@@ -10,9 +10,12 @@ import com.github.bandithelps.items.GeneVialItem;
 import com.github.bandithelps.network.BioPrinterSyncPayload;
 import com.github.bandithelps.utils.gene.GeneAliasUtil;
 import com.github.bandithelps.utils.gene.GeneUtil;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -216,13 +219,13 @@ public class BioPrinterBlockEntity extends BlockEntity {
         if (held.isEmpty() || held.getItem() != YourHeroAcademia.DNA_INJECTOR.get()) {
             return false;
         }
-        String dna = buildDnaString(this.printedGenome);
-        if (dna.isBlank()) {
-            return false;
-        }
         String resolvedSourceName = this.sourceName == null || this.sourceName.isBlank() ? "Bio Printer" : this.sourceName;
         String resolvedSourceUuid = this.sourceUuid == null ? "" : this.sourceUuid;
-        DNAInjectorItem.setDNA(held, resolvedSourceName, resolvedSourceUuid, dna);
+        String serializedDNA = buildSerializedDnaString(this.printedGenome, resolvedSourceName, resolvedSourceUuid);
+        if (serializedDNA.isBlank()) {
+            return false;
+        }
+        DNAInjectorItem.setDNA(held, resolvedSourceName, resolvedSourceUuid, serializedDNA);
         resetMachineState();
         setChanged();
         syncToClient();
@@ -382,14 +385,37 @@ public class BioPrinterBlockEntity extends BlockEntity {
                 && "yha:empty_slot".equalsIgnoreCase(gene.getType().getId());
     }
 
-    private static String buildDnaString(String[] slots) {
+    private static String buildSerializedDnaString(String[] slots, String sourceName, String sourceUuidRaw) {
         List<String> genes = new ArrayList<>();
         for (String slot : slots) {
             if (slot != null && !slot.isBlank()) {
-                genes.add(slot);
+                Gene parsed = GeneUtil.parseGene(slot);
+                if (parsed != null) {
+                    genes.add(GeneUtil.serializeGene(parsed));
+                }
             }
         }
-        return String.join(",", genes);
+        if (genes.isEmpty()) {
+            return "";
+        }
+        UUID sourceUuid;
+        try {
+            sourceUuid = UUID.fromString(sourceUuidRaw);
+        } catch (Exception ignored) {
+            sourceUuid = UUID.nameUUIDFromBytes(("bio_printer:" + sourceName).getBytes(StandardCharsets.UTF_8));
+        }
+        List<Gene> parsedGenes = new ArrayList<>(genes.size());
+        for (String serializedGene : genes) {
+            Gene parsed = GeneUtil.parseGene(serializedGene);
+            if (parsed != null) {
+                parsedGenes.add(parsed);
+            }
+        }
+        if (parsedGenes.isEmpty()) {
+            return "";
+        }
+        DNA dna = new DNA(sourceName, sourceUuid, parsedGenes, System.currentTimeMillis());
+        return GeneUtil.serializeDNA(dna);
     }
 
     private static String[] buildGenomeLabels(String[] slots) {

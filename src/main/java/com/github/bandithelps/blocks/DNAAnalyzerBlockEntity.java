@@ -42,7 +42,6 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     public static final String TAG_PROCESSING_PROGRESS = "processingProgress";
     public static final String TAG_PROCESSING_TOTAL_TICKS = "processingTotalTicks";
     public static final String TAG_AWAITING_VIAL_COLLECTION = "awaitingVialCollection";
-    public static final String TAG_PENDING_GENES = "pendingGenes";
     public static final String TAG_PENDING_GENE_LIST = "pendingGeneList";
 
     public static final int SLOT_SAMPLE = 0;
@@ -63,7 +62,6 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     private int processingProgress = 0;
     private int processingTotalTicks = 0;
     private boolean awaitingVialCollection = false;
-    private String pendingGenes = "";
     private List<String> pendingGeneList = new ArrayList<>();
     private String[] geneSlots = createEmptyGeneSlots();
     private String sourceName = "";
@@ -82,7 +80,6 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         processingProgress = tag.getInt(TAG_PROCESSING_PROGRESS).orElse(0);
         processingTotalTicks = tag.getInt(TAG_PROCESSING_TOTAL_TICKS).orElse(0);
         awaitingVialCollection = tag.getBoolean(TAG_AWAITING_VIAL_COLLECTION).orElse(false);
-        pendingGenes = tag.getString(TAG_PENDING_GENES).orElse("");
         pendingGeneList = new ArrayList<>();
         if (tag.contains(TAG_PENDING_GENE_LIST)) {
             ListTag pendingListTag = tag.getList(TAG_PENDING_GENE_LIST).orElse(new ListTag());
@@ -115,7 +112,6 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         tag.putInt(TAG_PROCESSING_PROGRESS, processingProgress);
         tag.putInt(TAG_PROCESSING_TOTAL_TICKS, processingTotalTicks);
         tag.putBoolean(TAG_AWAITING_VIAL_COLLECTION, awaitingVialCollection);
-        tag.putString(TAG_PENDING_GENES, pendingGenes);
         ListTag pendingList = new ListTag();
         for (String gene : pendingGeneList) {
             pendingList.add(StringTag.valueOf(gene == null ? "" : gene));
@@ -170,7 +166,6 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         processingProgress = 0;
         processingTotalTicks = 0;
         awaitingVialCollection = false;
-        pendingGenes = "";
         pendingGeneList = new ArrayList<>();
         sourceName = dnaView.sourceName();
         sourceUuid = dnaView.sourceUuid();
@@ -258,8 +253,6 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         }
 
         pendingGeneList = selectedSerializedGenes;
-        // Legacy string retained for older readers.
-        pendingGenes = String.join(",", selectedSerializedGenes);
         processing = true;
         processingProgress = 0;
         processingTotalTicks = getProcessingTicksForPlayer(player);
@@ -269,7 +262,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     }
 
     public boolean collectProcessedGenes(ItemStack heldStack, Player player, InteractionHand hand) {
-        if (!awaitingVialCollection || processing || (pendingGeneList.isEmpty() && pendingGenes.isBlank())) {
+        if (!awaitingVialCollection || processing || pendingGeneList.isEmpty()) {
             return false;
         }
         if (heldStack.isEmpty() || heldStack.getItem() != YourHeroAcademia.EMPTY_GENE_VIAL.get()) {
@@ -277,11 +270,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         }
 
         ItemStack filledVial = new ItemStack(YourHeroAcademia.GENE_VIAL.get());
-        if (!pendingGeneList.isEmpty()) {
-            GeneVialItem.setGenes(filledVial, pendingGeneList, sourceName, sourceUuid);
-        } else {
-            GeneVialItem.setGenes(filledVial, pendingGenes, sourceName, sourceUuid);
-        }
+        GeneVialItem.setGenes(filledVial, pendingGeneList, sourceName, sourceUuid);
 
         heldStack.shrink(1);
         if (heldStack.isEmpty()) {
@@ -419,7 +408,6 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         processingProgress = 0;
         processingTotalTicks = 0;
         awaitingVialCollection = false;
-        pendingGenes = "";
         pendingGeneList = new ArrayList<>();
         geneSlots = createEmptyGeneSlots();
         sourceName = "";

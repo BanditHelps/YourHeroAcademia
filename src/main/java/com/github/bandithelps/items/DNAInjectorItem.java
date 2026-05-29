@@ -2,9 +2,9 @@ package com.github.bandithelps.items;
 
 import com.github.bandithelps.capabilities.dna.DNAUpdateService;
 import com.github.bandithelps.effects.ModEffects;
+import com.github.bandithelps.gene.DNA;
 import com.github.bandithelps.gene.Gene;
 import com.github.bandithelps.utils.gene.GeneUtil;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
@@ -79,15 +79,15 @@ public class DNAInjectorItem extends Item {
             return InteractionResult.FAIL;
         }
 
-        String genes = getGenes(stack);
-        if (genes == null || genes.isEmpty()) {
+        String dnaData = getGenes(stack);
+        if (dnaData == null || dnaData.isEmpty()) {
             return InteractionResult.FAIL;
         }
 
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.FAIL;
         }
-        DNAUpdateService.setDNA(serverPlayer, genes, true);
+        DNAUpdateService.setDNA(serverPlayer, dnaData, true);
 
         int fatigueTicks = 24000;
         player.addEffect(new MobEffectInstance(
@@ -117,12 +117,17 @@ public class DNAInjectorItem extends Item {
             return;
         }
         tooltipAdder.accept(Component.literal("Source: " + getSourceName(stack)).withStyle(ChatFormatting.AQUA));
-        String genesRaw = getGenes(stack);
-        if (genesRaw == null || genesRaw.isBlank()) {
+        String dnaRaw = getGenes(stack);
+        if (dnaRaw == null || dnaRaw.isBlank()) {
             tooltipAdder.accept(Component.literal("No stored genome data").withStyle(ChatFormatting.DARK_GRAY));
             return;
         }
-        List<Gene> genes = parseGenes(genesRaw);
+        DNA parsedDNA = GeneUtil.parseDNA(dnaRaw);
+        if (parsedDNA == null || parsedDNA.isEmpty()) {
+            tooltipAdder.accept(Component.literal("Stored DNA is invalid").withStyle(ChatFormatting.RED));
+            return;
+        }
+        List<Gene> genes = parsedDNA.getGenes();
         tooltipAdder.accept(Component.literal("Printed Genes: " + genes.size()).withStyle(ChatFormatting.GOLD));
         for (int i = 0; i < genes.size(); i++) {
             Gene gene = genes.get(i);
@@ -137,22 +142,4 @@ public class DNAInjectorItem extends Item {
         }
     }
 
-    private static List<Gene> parseGenes(String genesRaw) {
-        List<Gene> genes = new ArrayList<>();
-        if (genesRaw == null || genesRaw.isBlank()) {
-            return genes;
-        }
-        String[] parts = genesRaw.split(",");
-        for (String part : parts) {
-            String trimmed = part == null ? "" : part.trim();
-            if (trimmed.isBlank()) {
-                continue;
-            }
-            Gene parsed = GeneUtil.parseGene(trimmed);
-            if (parsed != null) {
-                genes.add(parsed);
-            }
-        }
-        return genes;
-    }
 }
