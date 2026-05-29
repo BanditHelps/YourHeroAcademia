@@ -48,6 +48,9 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     private static final int EXTRACT_COUNT_LOW_INTELLIGENCE = 3;
     private static final int EXTRACT_COUNT_MID_INTELLIGENCE = 2;
     private static final int EXTRACT_COUNT_HIGH_INTELLIGENCE = 1;
+    private static final int[] UNLOCKED_MODES_LOW = new int[]{EXTRACT_COUNT_LOW_INTELLIGENCE};
+    private static final int[] UNLOCKED_MODES_MID = new int[]{EXTRACT_COUNT_LOW_INTELLIGENCE, EXTRACT_COUNT_MID_INTELLIGENCE};
+    private static final int[] UNLOCKED_MODES_HIGH = new int[]{EXTRACT_COUNT_LOW_INTELLIGENCE, EXTRACT_COUNT_MID_INTELLIGENCE, EXTRACT_COUNT_HIGH_INTELLIGENCE};
     private static final int MIN_PROCESS_TICKS = 40;
     private static final int MAX_PROCESS_TICKS = 180;
     private static final double MID_INTELLIGENCE_THRESHOLD = 25.0D;
@@ -234,9 +237,9 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
             return;
         }
 
-        int extractCount = getExtractionCountForPlayer(player);
+        int[] unlockedModes = getUnlockedExtractionModesForPlayer(player);
         int[] normalizedSelection = normalizeSelection(selectedSlots);
-        if (!isValidSelectionForExtractCount(extractCount, normalizedSelection)) {
+        if (!isValidSelectionForUnlockedModes(unlockedModes, normalizedSelection)) {
             return;
         }
 
@@ -353,7 +356,19 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         return filtered;
     }
 
-    private static boolean isValidSelectionForExtractCount(int extractCount, int[] selection) {
+    private static boolean isValidSelectionForUnlockedModes(int[] unlockedModes, int[] selection) {
+        if (unlockedModes == null || unlockedModes.length == 0) {
+            return false;
+        }
+        for (int mode : unlockedModes) {
+            if (isValidSelectionForMode(mode, selection)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isValidSelectionForMode(int extractCount, int[] selection) {
         if (extractCount == EXTRACT_COUNT_LOW_INTELLIGENCE) {
             return matchesSelection(selection, 0, 1, 2) || matchesSelection(selection, 3, 4, 5);
         }
@@ -373,18 +388,18 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         return Arrays.equals(selection, expected);
     }
 
-    private int getExtractionCountForPlayer(Player player) {
+    private int[] getUnlockedExtractionModesForPlayer(Player player) {
         if (player == null) {
-            return EXTRACT_COUNT_LOW_INTELLIGENCE;
+            return UNLOCKED_MODES_LOW;
         }
         double intelligence = player.getAttributeValue(IntelligenceAttributes.INTELLIGENCE);
         if (intelligence >= HIGH_INTELLIGENCE_THRESHOLD) {
-            return EXTRACT_COUNT_HIGH_INTELLIGENCE;
+            return UNLOCKED_MODES_HIGH;
         }
         if (intelligence >= MID_INTELLIGENCE_THRESHOLD) {
-            return EXTRACT_COUNT_MID_INTELLIGENCE;
+            return UNLOCKED_MODES_MID;
         }
-        return EXTRACT_COUNT_LOW_INTELLIGENCE;
+        return UNLOCKED_MODES_LOW;
     }
 
     private int getProcessingTicksForPlayer(Player player) {

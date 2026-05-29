@@ -40,6 +40,9 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
     private static final int HELIX_DRAW_WIDTH = 40;
     private static final int HELIX_HALF_WIDTH = HELIX_DRAW_WIDTH / 2;
     private static final int HELIX_TO_SLOT_GAP = 10;
+    private static final int EXTRACT_COUNT_LOW_INTELLIGENCE = 3;
+    private static final int EXTRACT_COUNT_MID_INTELLIGENCE = 2;
+    private static final int EXTRACT_COUNT_HIGH_INTELLIGENCE = 1;
     private static final double MID_INTELLIGENCE_THRESHOLD = 25.0D;
     private static final double HIGH_INTELLIGENCE_THRESHOLD = 60.0D;
 
@@ -60,6 +63,7 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
     private int selectedSlot = -1;
     private int descriptionScrollOffset = 0;
     private int[] selectedIsolationSlots = new int[0];
+    private int selectedExtractionCount = EXTRACT_COUNT_LOW_INTELLIGENCE;
 
     public DnaAnalyzerPanelUiComponent(
             String title,
@@ -490,18 +494,21 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
 
             int hoveredSlot = drawGeneSlots(this.owner, minecraft, gui, slots, genes, leftSlotsX, rightSlotsX, slotsStartY, mouseX, mouseY);
             if (isolateMode) {
-                List<IsolationOption> options = buildIsolationOptions(leftSlotsX, rightSlotsX, slotsStartY, getExtractionCountForPlayer(minecraft));
+                int[] unlockedModes = getUnlockedExtractionModesForPlayer(minecraft);
+                this.owner.selectedExtractionCount = normalizeSelectedExtractionMode(this.owner.selectedExtractionCount, unlockedModes);
+                List<IsolationOption> options = buildIsolationOptions(leftSlotsX, rightSlotsX, slotsStartY, this.owner.selectedExtractionCount);
                 if (!isSelectionPresent(this.owner.selectedIsolationSlots, options)) {
                     this.owner.selectedIsolationSlots = new int[0];
                 }
                 IsolationOption hoveredOption = getHoveredOption(options, mouseX, mouseY);
                 drawIsolationOptionHighlights(gui, options, hoveredOption, this.owner.selectedIsolationSlots);
-                drawIsolateInfo(gui, minecraft, x + 12, y + 102, width - 24, y + height - 8, options);
+                drawIsolateInfo(gui, minecraft, x + 12, y + 102, width - 24, y + height - 8, options, unlockedModes, this.owner.selectedExtractionCount);
                 boolean canSplice = state != null
                         && state.analyzed()
                         && !state.processing()
                         && !state.awaitingVialCollection()
                         && selectionHasAnyFilledGenes(this.owner.selectedIsolationSlots, slots);
+                drawModeButton(gui, minecraft, x, y, width, height, unlockedModes.length > 1, processing, awaitingVialCollection);
                 drawSpliceButton(gui, minecraft, x, y, width, height, canSplice, processing, awaitingVialCollection);
             } else {
                 drawSelectedGeneInfo(this.owner, minecraft, gui, genes, x + 12, y + 102, width - 24, y + height - 8);
@@ -532,6 +539,17 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
             boolean isolateMode = ClientDNAAnalyzerToolState.isActive(ClientDNAAnalyzerToolState.TOOL_ISOLATE);
 
             if (isolateMode) {
+                int[] unlockedModes = getUnlockedExtractionModesForPlayer(Minecraft.getInstance());
+                this.owner.selectedExtractionCount = normalizeSelectedExtractionMode(this.owner.selectedExtractionCount, unlockedModes);
+                if (isPointInsideModeButton((int) event.x(), (int) event.y())) {
+                    if (unlockedModes.length > 1) {
+                        this.owner.selectedExtractionCount = cycleExtractionMode(this.owner.selectedExtractionCount, unlockedModes);
+                        this.owner.selectedIsolationSlots = new int[0];
+                        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                    }
+                    return true;
+                }
+
                 boolean canSplice = state != null && state.analyzed() && selectionHasAnyFilledGenes(this.owner.selectedIsolationSlots, slots);
                 if (isPointInsideSpliceButton((int) event.x(), (int) event.y())) {
                     if (canSplice) {
@@ -540,7 +558,7 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
                     return true;
                 }
 
-                List<IsolationOption> options = buildIsolationOptions(leftSlotsX, rightSlotsX, slotsStartY, getExtractionCountForPlayer(Minecraft.getInstance()));
+                List<IsolationOption> options = buildIsolationOptions(leftSlotsX, rightSlotsX, slotsStartY, this.owner.selectedExtractionCount);
                 IsolationOption clickedOption = getHoveredOption(options, (int) event.x(), (int) event.y());
                 if (clickedOption != null) {
                     if (Arrays.equals(this.owner.selectedIsolationSlots, clickedOption.slots())) {
@@ -629,18 +647,42 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
             minecraft.setScreen(new DnaAnalyzerRenamePopupScreen(minecraft.screen, analyzerPos, slot, safeText(gene.getName(), "")));
         }
 
-        private int getExtractionCountForPlayer(Minecraft minecraft) {
+        private int[] getUnlockedExtractionModesForPlayer(Minecraft minecraft) {
             if (minecraft.player == null) {
-                return 3;
+                return new int[]{EXTRACT_COUNT_LOW_INTELLIGENCE};
             }
             double intelligence = minecraft.player.getAttributeValue(IntelligenceAttributes.INTELLIGENCE);
             if (intelligence >= HIGH_INTELLIGENCE_THRESHOLD) {
-                return 1;
+                return new int[]{EXTRACT_COUNT_LOW_INTELLIGENCE, EXTRACT_COUNT_MID_INTELLIGENCE, EXTRACT_COUNT_HIGH_INTELLIGENCE};
             }
             if (intelligence >= MID_INTELLIGENCE_THRESHOLD) {
-                return 2;
+                return new int[]{EXTRACT_COUNT_LOW_INTELLIGENCE, EXTRACT_COUNT_MID_INTELLIGENCE};
             }
-            return 3;
+            return new int[]{EXTRACT_COUNT_LOW_INTELLIGENCE};
+        }
+
+        private int normalizeSelectedExtractionMode(int selectedMode, int[] unlockedModes) {
+            if (unlockedModes == null || unlockedModes.length == 0) {
+                return EXTRACT_COUNT_LOW_INTELLIGENCE;
+            }
+            for (int mode : unlockedModes) {
+                if (mode == selectedMode) {
+                    return selectedMode;
+                }
+            }
+            return unlockedModes[unlockedModes.length - 1];
+        }
+
+        private int cycleExtractionMode(int selectedMode, int[] unlockedModes) {
+            if (unlockedModes == null || unlockedModes.length == 0) {
+                return EXTRACT_COUNT_LOW_INTELLIGENCE;
+            }
+            for (int i = 0; i < unlockedModes.length; i++) {
+                if (unlockedModes[i] == selectedMode) {
+                    return unlockedModes[(i + 1) % unlockedModes.length];
+                }
+            }
+            return unlockedModes[0];
         }
 
         private List<IsolationOption> buildIsolationOptions(int leftX, int rightX, int startY, int extractCount) {
@@ -723,7 +765,9 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
                 int y,
                 int width,
                 int bottomY,
-                List<IsolationOption> options
+                List<IsolationOption> options,
+                int[] unlockedModes,
+                int selectedMode
         ) {
             gui.fill(x, y, x + width, bottomY, 0x88101824);
             gui.fill(x, y, x + width, y + 1, 0xAA476485);
@@ -731,8 +775,13 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
             gui.fill(x, y, x + 1, bottomY, 0xAA476485);
             gui.fill(x + width - 1, y, x + width, bottomY, 0xAA476485);
             gui.text(minecraft.font, "Isolation Mode", x + 6, y + 4, 0xFFE6F2FF, false);
-            gui.text(minecraft.font, "Select a highlighted section.", x + 6, y + 16, 0xFF9AA9BC, false);
-            gui.text(minecraft.font, "Click Splice to extract selection.", x + 6, y + 27, 0xFF9AA9BC, false);
+            String modeLine = "Splice Mode: " + selectedMode;
+            gui.text(minecraft.font, modeLine, x + 6, y + 16, 0xFFB7D9FF, false);
+            if (unlockedModes.length > 1) {
+                gui.text(minecraft.font, "Use Mode to toggle control level.", x + 6, y + 27, 0xFF9AA9BC, false);
+            } else {
+                gui.text(minecraft.font, "Raise INT to unlock extra modes.", x + 6, y + 27, 0xFF9AA9BC, false);
+            }
             String selected = "None";
             for (IsolationOption option : options) {
                 if (Arrays.equals(this.owner.selectedIsolationSlots, option.slots())) {
@@ -741,6 +790,34 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
                 }
             }
             gui.text(minecraft.font, "Selection: " + selected, x + 6, y + 40, 0xFFB7D9FF, false);
+        }
+
+        private void drawModeButton(
+                GuiGraphicsExtractor gui,
+                Minecraft minecraft,
+                int x,
+                int y,
+                int width,
+                int height,
+                boolean canToggleMode,
+                boolean processing,
+                boolean awaitingVialCollection
+        ) {
+            int buttonX = x + width - 138;
+            int buttonY = y + height - 26;
+            int buttonW = 58;
+            int buttonH = 16;
+            boolean disabled = !canToggleMode || processing || awaitingVialCollection;
+            int border = disabled ? 0xFF3A4A5E : 0xFF79B8FF;
+            int fill = disabled ? 0xAA1C222B : 0xAA1C3D54;
+            gui.fill(buttonX, buttonY, buttonX + buttonW, buttonY + buttonH, fill);
+            gui.fill(buttonX, buttonY, buttonX + buttonW, buttonY + 1, border);
+            gui.fill(buttonX, buttonY + buttonH - 1, buttonX + buttonW, buttonY + buttonH, border);
+            gui.fill(buttonX, buttonY, buttonX + 1, buttonY + buttonH, border);
+            gui.fill(buttonX + buttonW - 1, buttonY, buttonX + buttonW, buttonY + buttonH, border);
+            String text = "Mode " + this.owner.selectedExtractionCount;
+            int color = disabled ? 0xFF738398 : 0xFFE6F2FF;
+            gui.text(minecraft.font, text, buttonX + (buttonW - minecraft.font.width(text)) / 2, buttonY + 4, color, false);
         }
 
         private void drawSpliceButton(
@@ -795,8 +872,14 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
         }
 
         private boolean isPointInsideSpliceButton(int mouseX, int mouseY) {
-            int buttonX = this.getX() + this.getWidth() - 68;
-            int buttonY = this.getY() + this.getHeight() - 24;
+            int buttonX = this.getX() + this.getWidth() - 72;
+            int buttonY = this.getY() + this.getHeight() - 26;
+            return mouseX >= buttonX && mouseX < buttonX + 58 && mouseY >= buttonY && mouseY < buttonY + 16;
+        }
+
+        private boolean isPointInsideModeButton(int mouseX, int mouseY) {
+            int buttonX = this.getX() + this.getWidth() - 138;
+            int buttonY = this.getY() + this.getHeight() - 26;
             return mouseX >= buttonX && mouseX < buttonX + 58 && mouseY >= buttonY && mouseY < buttonY + 16;
         }
 
