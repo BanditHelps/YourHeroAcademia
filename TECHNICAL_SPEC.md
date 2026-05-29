@@ -1,5 +1,10 @@
 # Technical Implementation Specification - Gene System
 
+## 基因编辑系统兼容性状态
+
+**兼容性版本:** NeoForge 1.26.1
+**最后更新状态:** BUILD SUCCESSFUL
+
 ## 1. Java Package Structure and Class Organization
 
 ### Package Hierarchy
@@ -466,6 +471,31 @@ Side effects are code-only for performance. Add new effects by:
 - Stores in memory for recipe lookups
 - Debug export to JSON
 
+### 7.5 Resistance Gene Payload (Current Backend)
+`RESISTANCE` genes are loaded from datapacks through `GeneRegistry` and define one or more entries in `resistances`.
+
+```json
+{
+  "id": "yha:heat_resistance",
+  "category": "RESISTANCE",
+  "rarity": "UNCOMMON",
+  "qualityRange": [1, 100],
+  "combinable": false,
+  "resistances": [
+    {
+      "kind": "FIRE_TICK_DAMAGE",
+      "minValue": 0.12,
+      "maxValue": 0.55
+    }
+  ]
+}
+```
+
+Supported `kind` values:
+- `FIRE_TICK_DAMAGE` (requires `minValue`/`maxValue`)
+- `POISON_DAMAGE_AVOIDANCE` (requires `minValue`/`maxValue`)
+- `WITHER_NULLIFY` (binary; no values required)
+
 ## 8. Integration Points with Existing Mod
 
 ### 8.1 Capability Integration
@@ -492,6 +522,11 @@ public static final DeferredHolder<Capability<?>, Capability<IDNAData>> DNA_CAPA
 - Palladium attribute modifiers (for Attribute genes)
 - Ability unlocking (for Ability/Quirk genes)
 - Direct event listeners (for Resistance genes)
+
+Resistance listener behavior currently includes:
+- fire tick reduction only for `minecraft:on_fire` (does not affect lava)
+- poison tick mitigation via quality-scaled random avoidance (capped below 100%)
+- wither nullification by rejecting wither effect application
 
 ### 8.4 Config Options (add to Config.java)
 ```java

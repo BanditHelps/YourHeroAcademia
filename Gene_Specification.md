@@ -68,6 +68,40 @@ As I said before, the genes need to be data driven, meaning they are to be defin
 
 What is important here is that "builder" is generic and applies to the entire category instead of a specific gene. This is because any gene that has a combination that uses a builder, will be randomized per world. See the Gene Fusing section for more detail.
 
+### Resistance Gene Payload (Implemented)
+Resistance genes now support a dedicated `resistances` array that can define one or more resistance effects in a single gene, similar to how attribute genes can define multiple attribute entries.
+
+```json
+{
+  "id": "yha:example_resistance",
+  "category": "RESISTANCE",
+  "rarity": "RARE",
+  "qualityRange": [1, 100],
+  "combinable": false,
+  "resistances": [
+    {
+      "kind": "FIRE_TICK_DAMAGE",
+      "minValue": 0.15,
+      "maxValue": 0.60
+    },
+    {
+      "kind": "POISON_DAMAGE_AVOIDANCE",
+      "minValue": 0.10,
+      "maxValue": 0.70
+    },
+    {
+      "kind": "WITHER_NULLIFY"
+    }
+  ],
+  "description": "Example resistance gene."
+}
+```
+
+Supported resistance kinds:
+- `FIRE_TICK_DAMAGE` - quality-scaled damage reduction for fire tick damage only (`minecraft:on_fire`)
+- `POISON_DAMAGE_AVOIDANCE` - quality-scaled chance to heavily reduce poison tick damage (never fully guaranteed by backend cap)
+- `WITHER_NULLIFY` - blocks the wither effect from being applied
+
 ### Gene Fusing
 In order to incentivize exploring the world and experimenting, not all genes will be obtainable via a tissue extractor. Instead, they will be the products of "fusing". Fusing is the act of combining two or more genes together to create a new gene. To keep it interesting between every playthrough, the recipes for the genes will be pseudo-random. To accomplish this, we will use the builder genes. Above in the Gene Data Definition section, you can see there is a property for combination. To make the gene, you see we listed a specific Identifier for one of the components. That one will not change between playthroughs. The "builder" component will though. By defining the builders as generic, and only specifying a count, I want it so that the world itself will decide what builders are needed. This way, each time a new world is generated, it will have a different value for the builder genes, randomizing the recipe some.
 
@@ -104,3 +138,8 @@ Here is a run down of the gameplay loop to ensure that all of the steps are know
 4. Now, the player is ready to analyze the sample, so they take it out of the refrigerator and place the sample in the DNA Analyzer. Once they open the GUI and click "Analyze", a short process begins. Once it is done processing, the entire genome is displayed, and it seems that the villager had the builder genes "EWWEW" and "HYRRE", as well as the attribute gene labeled "SRRED". At this point, they cannot see the side effects if they exist, but they can tell that EWWEW is the gamma builder, HYRRE is the alpha builder, and both are at 56% quality. The SRRED reads as an attribute of strength + 2.
 5. The player wants to extract the strength + 2 attribute. However, since they only have the basic intelligence, they are only skilled enough to either extract the three gene slots on the left of the DNA, or the 3 on the right. Since the attribute is on the right, they extract that and with it comes the HYRRE gene. The tissue sample is destroyed, but the spliced genome is returned to the player as an item vial.
 6. The player now wants to splice that with their own dna. To do this, they first take a sample from themselves. Next, they place it in the DNA Splicer. Now, they can choose what side they want to splice the gene slots they extracted. Either the left or the right side. Once they choose, it creates a new injection, and gives it to the player. Once the player injects it into themself, they gain the abilities of their new DNA.
+
+
+## Commands
+In order to debug and test all the functionality, I need a set of commands that can be used to create genes, generate gene sequences, edit dna, viewing the available genes, and more. 
+They should be registered under the "/yha gene" command. 
