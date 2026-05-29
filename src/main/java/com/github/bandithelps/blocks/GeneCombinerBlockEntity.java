@@ -3,7 +3,6 @@ package com.github.bandithelps.blocks;
 import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.gene.Gene;
 import com.github.bandithelps.gene.combination.CombinationManager;
-import com.github.bandithelps.gui.menu.GeneCombinerMenu;
 import com.github.bandithelps.items.GeneVialItem;
 import com.github.bandithelps.network.GeneCombinerSyncPayload;
 import com.github.bandithelps.utils.gene.GeneUtil;
@@ -17,20 +16,17 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
-import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.MenuProvider;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-public class GeneCombinerBlockEntity extends BlockEntity implements Container, MenuProvider {
+public class GeneCombinerBlockEntity extends BlockEntity {
     public static final int INPUT_SLOTS = 4;
     public static final int SLOT_OUTPUT = 4;
     private static final int PROCESS_TICKS = 60;
@@ -45,33 +41,6 @@ public class GeneCombinerBlockEntity extends BlockEntity implements Container, M
     private int lastResultGeneCount = 0;
     private String lastResultLabel = "";
     private UUID processingPlayer;
-    private final ContainerData menuData = new ContainerData() {
-        @Override
-        public int get(int index) {
-            return switch (index) {
-                case 0 -> GeneCombinerBlockEntity.this.processingProgress;
-                case 1 -> GeneCombinerBlockEntity.this.processingTotalTicks;
-                case 2 -> GeneCombinerBlockEntity.this.processing ? 1 : 0;
-                default -> 0;
-            };
-        }
-
-        @Override
-        public void set(int index, int value) {
-            switch (index) {
-                case 0 -> GeneCombinerBlockEntity.this.processingProgress = value;
-                case 1 -> GeneCombinerBlockEntity.this.processingTotalTicks = value;
-                case 2 -> GeneCombinerBlockEntity.this.processing = value > 0;
-                default -> {
-                }
-            }
-        }
-
-        @Override
-        public int getCount() {
-            return 3;
-        }
-    };
 
     public GeneCombinerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GENE_COMBINER.get(), pos, state);
@@ -389,7 +358,7 @@ public class GeneCombinerBlockEntity extends BlockEntity implements Container, M
         if (stack.isEmpty() || this.processingPlayer == null || this.level == null || this.level.isClientSide()) {
             return false;
         }
-        ServerPlayer player = ((net.minecraft.server.level.ServerLevel) this.level)
+        ServerPlayer player = ((ServerLevel) this.level)
                 .getServer()
                 .getPlayerList()
                 .getPlayer(this.processingPlayer);
@@ -471,7 +440,7 @@ public class GeneCombinerBlockEntity extends BlockEntity implements Container, M
         if (this.level == null || this.level.isClientSide()) {
             return;
         }
-        var serverLevel = (net.minecraft.server.level.ServerLevel) this.level;
+        ServerLevel serverLevel = (ServerLevel) this.level;
         PacketDistributor.sendToPlayersNear(
                 serverLevel,
                 null,
@@ -530,94 +499,5 @@ public class GeneCombinerBlockEntity extends BlockEntity implements Container, M
         NO_INPUT,
         NO_RECIPE,
         TOO_FAR
-    }
-
-    @Override
-    public Component getDisplayName() {
-        return Component.translatable("block.yha.gene_combiner");
-    }
-
-    @Override
-    public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
-        return new GeneCombinerMenu(containerId, inventory, this, this.menuData);
-    }
-
-    @Override
-    public int getContainerSize() {
-        return SLOT_OUTPUT + 1;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        for (int i = 0; i < getContainerSize(); i++) {
-            if (!this.inventory.getStack(i).isEmpty()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public ItemStack getItem(int slot) {
-        return this.inventory.getStack(slot);
-    }
-
-    @Override
-    public ItemStack removeItem(int slot, int amount) {
-        ItemStack existing = this.inventory.getStack(slot);
-        if (existing.isEmpty()) {
-            return ItemStack.EMPTY;
-        }
-        ItemStack removed = existing.split(amount);
-        if (existing.isEmpty()) {
-            this.inventory.setStack(slot, ItemStack.EMPTY);
-        }
-        setChanged();
-        syncToClient();
-        return removed;
-    }
-
-    @Override
-    public ItemStack removeItemNoUpdate(int slot) {
-        ItemStack existing = this.inventory.getStack(slot);
-        this.inventory.setStack(slot, ItemStack.EMPTY);
-        setChanged();
-        syncToClient();
-        return existing;
-    }
-
-    @Override
-    public void setItem(int slot, ItemStack stack) {
-        if (slot < 0 || slot >= getContainerSize()) {
-            return;
-        }
-        this.inventory.setStack(slot, stack);
-        setChanged();
-        syncToClient();
-    }
-
-    @Override
-    public boolean stillValid(Player player) {
-        return isUsableBy(player);
-    }
-
-    @Override
-    public void clearContent() {
-        for (int i = 0; i < getContainerSize(); i++) {
-            this.inventory.setStack(i, ItemStack.EMPTY);
-        }
-        this.lastResultKind = "empty";
-        this.lastResultGeneCount = 0;
-        this.lastResultLabel = "";
-        setChanged();
-        syncToClient();
-    }
-
-    @Override
-    public boolean canPlaceItem(int slot, ItemStack stack) {
-        if (slot >= 0 && slot < INPUT_SLOTS) {
-            return stack.getItem() == YourHeroAcademia.GENE_VIAL.get();
-        }
-        return false;
     }
 }

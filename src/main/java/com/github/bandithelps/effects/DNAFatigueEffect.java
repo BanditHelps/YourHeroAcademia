@@ -5,8 +5,8 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
 
-public class DNATirednessEffect extends MobEffect {
-    protected DNATirednessEffect(MobEffectCategory category, int color) {
+public class DNAFatigueEffect extends MobEffect {
+    protected DNAFatigueEffect(MobEffectCategory category, int color) {
         super(category, color);
     }
 

@@ -16,44 +16,4 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 public final class DNASplicerBlockEvents {
     private DNASplicerBlockEvents() {
     }
-
-    @SubscribeEvent
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (event.getHand() != InteractionHand.MAIN_HAND) {
-            return;
-        }
-
-        BlockPos pos = event.getPos();
-        BlockState state = event.getLevel().getBlockState(pos);
-        if (state.getBlock() != ModBlocks.DNA_SPLICER.get()) {
-            return;
-        }
-
-        Player player = event.getEntity();
-        ItemStack held = player.getItemInHand(event.getHand());
-
-        if (event.getLevel().isClientSide()) {
-            event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.SUCCESS);
-            return;
-        }
-
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS);
-
-        if (held.isEmpty()) {
-            return;
-        }
-
-        BlockEntity be = event.getLevel().getBlockEntity(pos);
-        if (!(be instanceof DNASplicerBlockEntity splicer)) {
-            return;
-        }
-
-        if (held.getItem() == YourHeroAcademia.TISSUE_SAMPLE.get()) {
-            splicer.insertDNA(held);
-        } else if (held.getItem() == YourHeroAcademia.GENE_VIAL.get()) {
-            splicer.insertVial(held);
-        }
-    }
 }

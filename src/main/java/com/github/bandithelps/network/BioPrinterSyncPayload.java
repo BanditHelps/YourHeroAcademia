@@ -3,6 +3,8 @@ package com.github.bandithelps.network;
 import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.client.bio_printer.ClientBioPrinterState;
 import io.netty.buffer.ByteBuf;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -50,7 +52,7 @@ public record BioPrinterSyncPayload(
                         return out;
                     },
                     array -> {
-                        List<Boolean> out = new java.util.ArrayList<>(array.length);
+                        List<Boolean> out = new ArrayList<>(array.length);
                         for (boolean value : array) {
                             out.add(value);
                         }

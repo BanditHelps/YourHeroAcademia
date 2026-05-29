@@ -13,6 +13,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -302,9 +303,7 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
 
     private static String[] emptySlots() {
         String[] slots = new String[6];
-        for (int i = 0; i < slots.length; i++) {
-            slots[i] = "";
-        }
+        Arrays.fill(slots, "");
         return slots;
     }
 
@@ -632,7 +631,7 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
 
         @Override
         protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
-            narrationElementOutput.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE, this.getMessage());
+            narrationElementOutput.add(NarratedElementType.TITLE, this.getMessage());
         }
 
         private void openRenamePopup(int slot, Gene gene) {

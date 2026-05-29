@@ -62,8 +62,6 @@ public class YhaDialogActions {
         return -1;
     }
 
-
-
     static {
         ACTIONS = DeferredRegister.create(Registries.DIALOG_ACTION_TYPE, YourHeroAcademia.MODID);
         UPGRADE_STAT_ACTION = ACTIONS.register("upgrade_stat", () -> UpgradeStatAction.CODEC);

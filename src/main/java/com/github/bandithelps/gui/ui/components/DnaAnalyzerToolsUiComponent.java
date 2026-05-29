@@ -8,6 +8,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -238,7 +239,7 @@ public class DnaAnalyzerToolsUiComponent extends UiComponent {
 
         @Override
         protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
-            narrationElementOutput.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE, this.getMessage());
+            narrationElementOutput.add(NarratedElementType.TITLE, this.getMessage());
         }
 
         private int getToolIndexAt(int mouseX, int mouseY) {

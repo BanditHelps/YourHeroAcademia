@@ -80,7 +80,7 @@ public final class ClientGeneCombinationBrowserState {
             List<RequirementEntry> requirements = List.of();
             JsonArray requirementsArray = root.getAsJsonArray("requirements");
             if (requirementsArray != null && !requirementsArray.isEmpty()) {
-                java.util.ArrayList<RequirementEntry> decoded = new java.util.ArrayList<>();
+                ArrayList<RequirementEntry> decoded = new ArrayList<>();
                 for (JsonElement element : requirementsArray) {
                     if (!element.isJsonObject()) {
                         continue;

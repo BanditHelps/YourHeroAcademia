@@ -3,6 +3,10 @@ package com.github.bandithelps.capabilities.dna;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
+/**
+ * Used to track when DNA changes, so things like attributes can be updated without
+ * constantly checking every tick.
+ */
 public final class PlayerDNAChangedEvent extends PlayerEvent {
     private final String previousDNA;
     private final String currentDNA;

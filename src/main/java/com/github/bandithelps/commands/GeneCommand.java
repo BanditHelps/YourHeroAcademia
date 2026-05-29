@@ -39,13 +39,7 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.threetag.palladium.network.OpenScreenPacket;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class GeneCommand {
@@ -72,15 +66,11 @@ public class GeneCommand {
 
     public static void register(LiteralArgumentBuilder<CommandSourceStack> builder, CommandBuildContext context) {
         builder.then(Commands.literal("gene")
-                .then(Commands.literal("generate")
-                        .executes(c -> generateDna(c.getSource(), c.getSource().getPlayerOrException()))
-                        .then(Commands.argument("player", EntityArgument.player())
-                                .executes(c -> generateDna(c.getSource(), EntityArgument.getPlayer(c, "player")))))
-                .then(Commands.literal("get")
-                        .executes(c -> getDna(c.getSource(), c.getSource().getPlayerOrException())))
-                .then(Commands.literal("clear")
-                        .executes(c -> clearDna(c.getSource(), c.getSource().getPlayerOrException())))
                 .then(Commands.literal("dna")
+                        .then(Commands.literal("generate")
+                                .executes(c -> generateDna(c.getSource(), c.getSource().getPlayerOrException()))
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .executes(c -> generateDna(c.getSource(), EntityArgument.getPlayer(c, "player")))))
                         .then(Commands.literal("info")
                                 .executes(c -> showDnaInfo(c.getSource(), c.getSource().getPlayerOrException()))
                                 .then(Commands.argument("player", EntityArgument.player())
@@ -132,9 +122,7 @@ public class GeneCommand {
                         .then(Commands.argument("geneId", StringArgumentType.string()).suggests(GENE_ID_SUGGESTIONS)
                                 .executes(c -> createGeneVial(c.getSource(), c.getSource().getPlayerOrException(), StringArgumentType.getString(c, "geneId"), 50))
                                 .then(Commands.argument("quality", IntegerArgumentType.integer(1, 100))
-                                        .executes(c -> createGeneVial(c.getSource(), c.getSource().getPlayerOrException(), StringArgumentType.getString(c, "geneId"), IntegerArgumentType.getInteger(c, "quality"))))))
-                .then(Commands.literal("info")
-                        .executes(c -> showDnaInfo(c.getSource(), c.getSource().getPlayerOrException()))));
+                                        .executes(c -> createGeneVial(c.getSource(), c.getSource().getPlayerOrException(), StringArgumentType.getString(c, "geneId"), IntegerArgumentType.getInteger(c, "quality")))))));
     }
 
     private static int generateDna(CommandSourceStack source, Player player) throws CommandSyntaxException {
@@ -145,21 +133,6 @@ public class GeneCommand {
         String dnaString = GeneUtil.serializeDNA(dna);
         DNAUpdateService.setDNA(serverPlayer, dnaString, false);
         source.sendSuccess(() -> Component.literal("Generated DNA for " + player.getName().getString() + " with " + dna.getGeneCount() + " genes."), true);
-        return dna.getGeneCount();
-    }
-
-    private static int getDna(CommandSourceStack source, Player player) throws CommandSyntaxException {
-        String dnaString = DNAAttachments.get(player).getDNA();
-        if (dnaString == null || dnaString.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("No DNA found for " + player.getName().getString() + "."), true);
-            return 0;
-        }
-        DNA dna = GeneUtil.parseDNA(dnaString);
-        if (dna == null) {
-            source.sendSuccess(() -> Component.literal("Invalid DNA data for " + player.getName().getString() + "."), true);
-            return 0;
-        }
-        source.sendSuccess(() -> Component.literal("DNA for " + player.getName().getString() + ": " + dna.getGeneCount() + " genes from " + dna.getSourceName()), true);
         return dna.getGeneCount();
     }
 
@@ -315,7 +288,7 @@ public class GeneCommand {
             GeneCategory category = GeneCategory.values()[(int) (Math.random() * GeneCategory.values().length)];
             String name = geneId.toUpperCase();
             GeneType type = new GeneType("yha:gene_" + geneId.toLowerCase(), "Custom gene", 1, 100);
-            gene = new Gene(name, category, type, "Custom created gene", quality, java.util.Collections.emptyList());
+            gene = new Gene(name, category, type, "Custom created gene", quality, Collections.emptyList());
         } else {
             String name = displayNameFromId(geneType.getId());
             int clampedQuality = Math.max(geneType.getQualityMin(), Math.min(geneType.getQualityMax(), quality));
@@ -330,7 +303,7 @@ public class GeneCommand {
             );
         }
 
-        ItemStack vialStack = new ItemStack(Items.POTION);
+        ItemStack vialStack = new ItemStack(YourHeroAcademia.GENE_VIAL.get());
         GeneVialItem.setGenes(vialStack, GeneUtil.serializeGene(gene));
 
         player.getInventory().add(vialStack);
@@ -345,7 +318,7 @@ public class GeneCommand {
             path = id.substring(separator + 1);
         }
 
-        return java.util.Arrays.stream(path.split("_"))
+        return Arrays.stream(path.split("_"))
                 .filter(part -> !part.isEmpty())
                 .map(part -> part.substring(0, 1).toUpperCase(Locale.ROOT) + part.substring(1).toLowerCase(Locale.ROOT))
                 .collect(Collectors.joining(" "));

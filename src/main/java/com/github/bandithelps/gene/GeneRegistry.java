@@ -156,12 +156,6 @@ public final class GeneRegistry {
             return effects;
         }
 
-        // Legacy fallback for older datapacks that still use singular fields.
-        if (json.has("attribute")) {
-            effects.add(parseAttributeEffectObject(json));
-            return effects;
-        }
-
         throw new JsonParseException("Attribute genes must define an attributes array");
     }
 

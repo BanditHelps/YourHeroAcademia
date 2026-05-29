@@ -1,6 +1,7 @@
 package com.github.bandithelps.network;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.blocks.DNAAnalyzerBlockEntity;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -53,7 +54,7 @@ public record DNAAnalyzerExtractPayload(
             }
             var level = player.level();
             var be = level.getBlockEntity(payload.blockPos());
-            if (be instanceof com.github.bandithelps.blocks.DNAAnalyzerBlockEntity analyzer) {
+            if (be instanceof DNAAnalyzerBlockEntity analyzer) {
                 analyzer.beginSpliceProcessing(player, payload.slotIndexes());
             }
         });

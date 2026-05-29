@@ -88,7 +88,6 @@ public final class GeneEffectHandler {
 
         switch (gene.getCategory()) {
             case ATTRIBUTE -> applyAttributeEffect(player, gene, playerModifiers);
-            case QUIRK -> applyQuirkEffect(player, gene, playerModifiers);
             default -> {
                 // Placeholder for future gene categories.
             }
@@ -123,16 +122,6 @@ public final class GeneEffectHandler {
             Identifier modifierId = createGeneModifierId(gene.getId(), i);
             instance.addOrUpdateTransientModifier(new AttributeModifier(modifierId, modifier, ATTRIBUTE_GENE_OPERATION));
             playerModifiers.put(modifierId, attributeId);
-        }
-    }
-
-    private static void applyQuirkEffect(ServerPlayer player, Gene gene, Map<Identifier, String> playerModifiers) {
-        AttributeInstance quirkInstance = player.getAttribute(QuirkAttributes.QUIRK_FACTOR);
-        if (quirkInstance != null) {
-            double quirkBonus = gene.getQuality() / 100.0 * 25.0;
-            Identifier modId = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "gene/quirk/" + gene.getId());
-            quirkInstance.addOrUpdateTransientModifier(new AttributeModifier(modId, quirkBonus, AttributeModifier.Operation.ADD_VALUE));
-            playerModifiers.put(modId, "yha:quirk_factor");
         }
     }
 

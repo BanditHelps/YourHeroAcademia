@@ -1,10 +1,14 @@
 package com.github.bandithelps.blocks;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.Identifier;
 
+/**
+ * Used to help mimic an inventory for Palladium screens. Used mainly by the genetic machines.
+ */
 public class ItemStackSlot {
     private final ItemStack[] stacks;
 
@@ -34,7 +38,7 @@ public class ItemStackSlot {
         for (ItemStack stack : this.stacks) {
             CompoundTag slotTag = new CompoundTag();
             if (!stack.isEmpty()) {
-                Identifier key = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem());
+                Identifier key = BuiltInRegistries.ITEM.getKey(stack.getItem());
                 slotTag.putString("id", key.toString());
                 slotTag.putInt("count", stack.getCount());
             }
@@ -53,7 +57,7 @@ public class ItemStackSlot {
             CompoundTag slotTag = listTag.getCompound(i).orElse(new CompoundTag());
             if (slotTag.contains("id")) {
                 String id = slotTag.getString("id").orElse("minecraft:air");
-                var optItem = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(Identifier.parse(id));
+                var optItem = BuiltInRegistries.ITEM.get(Identifier.parse(id));
                 if (optItem.isPresent()) {
                     int count = slotTag.getInt("count").orElse(1);
                     if (count <= 0) count = 1;

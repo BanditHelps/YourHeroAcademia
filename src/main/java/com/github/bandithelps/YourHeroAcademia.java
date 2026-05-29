@@ -191,7 +191,6 @@ public final class YourHeroAcademia {
 
     @SubscribeEvent
     static void yhaCommands(RegisterYhaCommandsEvent event) {
-        ScreenCommand.register(event.getBuilder(), event.getBuildContext());
         StaminaCommand.register(event.getBuilder(), event.getBuildContext());
         BodyCommand.register(event.getBuilder(), event.getBuildContext());
         BdCommand.register(event.getBuilder(), event.getBuildContext());

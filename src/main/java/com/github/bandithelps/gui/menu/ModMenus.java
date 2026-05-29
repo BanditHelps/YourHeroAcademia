@@ -11,9 +11,6 @@ public final class ModMenus {
     public static final DeferredRegister<MenuType<?>> MENUS =
             DeferredRegister.create(Registries.MENU, YourHeroAcademia.MODID);
 
-    public static final DeferredHolder<MenuType<?>, MenuType<GeneCombinerMenu>> GENE_COMBINER =
-            MENUS.register("gene_combiner", () -> new MenuType<>(GeneCombinerMenu::new, FeatureFlags.DEFAULT_FLAGS));
-
     private ModMenus() {
     }
 }

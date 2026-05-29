@@ -11,9 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 
 //
-
 // See OpenScreenAction.java in palladium
-
 //
 
 public record UpgradeStatAction(String key) implements Action{

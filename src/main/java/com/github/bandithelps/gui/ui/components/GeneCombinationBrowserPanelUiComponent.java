@@ -17,6 +17,7 @@ import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.input.KeyEvent;
@@ -256,7 +257,7 @@ public class GeneCombinationBrowserPanelUiComponent extends UiComponent {
 
         @Override
         protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
-            narrationElementOutput.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE, this.getMessage());
+            narrationElementOutput.add(NarratedElementType.TITLE, this.getMessage());
         }
 
         private void drawLeftPanel(GuiGraphicsExtractor gui, int x, int y, int width, int height, int mouseX, int mouseY) {

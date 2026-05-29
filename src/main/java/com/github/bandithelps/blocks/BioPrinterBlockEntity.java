@@ -17,6 +17,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -268,7 +269,7 @@ public class BioPrinterBlockEntity extends BlockEntity {
         if (this.level == null || this.level.isClientSide()) {
             return;
         }
-        var serverLevel = (net.minecraft.server.level.ServerLevel) this.level;
+        ServerLevel serverLevel = (ServerLevel) this.level;
         PacketDistributor.sendToPlayersNear(
                 serverLevel,
                 null,
@@ -292,6 +293,7 @@ public class BioPrinterBlockEntity extends BlockEntity {
         );
     }
 
+    // Depending on the size of the gene vial, we can only place it in certain positions
     private static boolean isValidPlacementStart(int slotLength, int startSlot) {
         if (slotLength == 3) {
             return startSlot == 0 || startSlot == 3;

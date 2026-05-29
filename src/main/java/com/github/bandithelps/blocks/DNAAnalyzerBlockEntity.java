@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -147,15 +148,6 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         syncToClient();
     }
 
-    private static String[] parseGeneSlots(String genesRaw) {
-        String[] allGenes = genesRaw.isEmpty() ? new String[0] : genesRaw.split(",");
-        String[] slots = new String[6];
-        for (int i = 0; i < 6; i++) {
-            slots[i] = i < allGenes.length ? allGenes[i].trim() : "";
-        }
-        return slots;
-    }
-
     public boolean insertSample(ItemStack sampleStack, Player player) {
         if (!inventory.getStack(SLOT_SAMPLE).isEmpty() || processing || awaitingVialCollection) {
             return false;
@@ -224,7 +216,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         );
         geneSlots[slotIndex] = GeneUtil.serializeGene(renamedGene);
         GeneAliasUtil.setAlias(this.level, sourceUuid, gene.getType().getId(), normalizedName);
-        if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+        if (this.level instanceof ServerLevel serverLevel) {
             GeneAliasSyncEvents.broadcastAliasUpdate(serverLevel, sourceUuid, gene.getType().getId(), normalizedName);
         }
         refreshInsertedSampleAliases();
@@ -295,7 +287,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         if (heldStack.isEmpty()) {
             player.setItemInHand(hand, filledVial);
         } else if (!player.getInventory().add(filledVial)) {
-            if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            if (this.level instanceof ServerLevel serverLevel) {
                 ItemEntity vialEntity = new ItemEntity(
                         serverLevel,
                         this.worldPosition.getX() + 0.5D,
@@ -330,7 +322,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
             player.setItemInHand(hand, returnedSample);
             return true;
         }
-        if (!player.getInventory().add(returnedSample) && this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+        if (!player.getInventory().add(returnedSample) && this.level instanceof ServerLevel serverLevel) {
             ItemEntity sampleEntity = new ItemEntity(
                     serverLevel,
                     this.worldPosition.getX() + 0.5D,
@@ -356,7 +348,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
     }
 
     private static boolean isValidSelectionForUnlockedModes(int[] unlockedModes, int[] selection) {
-        if (unlockedModes == null || unlockedModes.length == 0) {
+        if (unlockedModes == null) {
             return false;
         }
         for (int mode : unlockedModes) {
@@ -502,7 +494,7 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         if (this.level == null || this.level.isClientSide()) {
             return;
         }
-        var serverLevel = (net.minecraft.server.level.ServerLevel) this.level;
+        ServerLevel serverLevel = (ServerLevel) this.level;
         PacketDistributor.sendToPlayersNear(
                 serverLevel,
                 null,
@@ -532,32 +524,12 @@ public class DNAAnalyzerBlockEntity extends BlockEntity {
         return slots;
     }
 
-    public boolean hasSample() {
-        return !inventory.getStack(SLOT_SAMPLE).isEmpty();
-    }
-
-    public boolean isAnalyzed() {
-        return analyzed;
-    }
-
-    public int getAnalyzeProgress() {
-        return processingProgress;
-    }
-
-    public String[] getGeneSlots() {
-        return geneSlots;
-    }
-
     public String getSourceName() {
         return sourceName;
     }
 
     public String getSourceUuid() {
         return sourceUuid;
-    }
-
-    public ItemStackSlot getInventory() {
-        return inventory;
     }
 
     public void syncToPlayer(ServerPlayer player) {
