@@ -1,0 +1,29 @@
+{
+  "id": "yha:strength_boost_2",
+  "category": "ATTRIBUTE",
+  "rarity": "RARE",
+  "qualityRange": [1, 100],
+  "combinable": true,
+  "attributes": [
+    {
+      "id": "minecraft:attack_damage",
+      "minModifier": 3.0,
+      "maxModifier": 5.0
+    }
+  ],
+  "description": "An advanced variant of the strength gene.",
+  "combination": {
+    "requires": [
+      {
+        "id": "yha:strength_boost_1",
+        "minQuality": 50
+      }
+    ],
+    "builder": {
+      "count": 1,
+      "minQuality": 30,
+      "rarity": "UNCOMMON"
+    },
+    "successRate": 75
+  }
+}

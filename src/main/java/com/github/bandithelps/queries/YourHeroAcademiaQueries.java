@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 @EventBusSubscriber(modid = YourHeroAcademia.MODID)
 public class YourHeroAcademiaQueries implements ObjectValue {
     private final EntityContext context;
-    private final Map<String, Supplier<Object>> functions = new HashMap();
+    private final Map<String, Supplier<Object>> functions = new HashMap<>();
 
 
     @SubscribeEvent

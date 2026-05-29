@@ -3,10 +3,8 @@ package com.github.bandithelps.values;
 import com.github.bandithelps.capabilities.body.BodyPart;
 import com.github.bandithelps.capabilities.body.DamageState;
 import net.threetag.palladium.documentation.SettingType;
-import net.threetag.palladium.entity.PlayerSlot;
 
 import java.util.Arrays;
-import java.util.List;
 
 public interface ModSettingTypes {
     SettingType TYPE_BODY_PART = SettingType.enumList(BodyPart.exampleValues().stream().map(Object::toString).toList());

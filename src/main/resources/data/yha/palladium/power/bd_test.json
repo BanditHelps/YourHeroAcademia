@@ -23,7 +23,7 @@
       "state":{
         "enabling": {
           "type": "palladium:key_bind",
-          "behaviour": "action",
+          "behaviour": "activation",
           "cooldown": 0
         }
       }
@@ -82,7 +82,7 @@
       "state":{
         "enabling": {
           "type": "palladium:key_bind",
-          "behaviour": "action",
+          "behaviour": "activation",
           "cooldown": 0
         }
       }
@@ -155,7 +155,7 @@
       "state":{
         "enabling": {
           "type": "palladium:key_bind",
-          "behaviour": "action"
+          "behaviour": "activation"
         }
       }
     },

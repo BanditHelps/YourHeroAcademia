@@ -1,0 +1,40 @@
+{
+  "type": "palladium:multi_column",
+  "layouts": [
+    {
+      "width": 398,
+      "height": 218,
+      "padding": 6,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/default"
+      },
+      "components": [
+        {
+          "type": "palladium:text_box",
+          "text": "Gene Combination Browser",
+          "properties": {
+            "alignment": "top_center",
+            "width": 180,
+            "height": 17,
+            "x": 12,
+            "y": -4
+          }
+        },
+        {
+          "type": "yha:gene_combination_browser_panel",
+          "frame_color": 7977727,
+          "panel_color": 1714482,
+          "text_color": 15135487,
+          "properties": {
+            "alignment": "top_center",
+            "x": 0,
+            "y": 11,
+            "width": 386,
+            "height": 197
+          }
+        }
+      ]
+    }
+  ]
+}

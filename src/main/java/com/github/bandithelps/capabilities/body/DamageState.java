@@ -41,7 +41,7 @@ public enum DamageState {
      * @return
      */
     public static Collection<String> exampleValues() {
-        List<String> parts = new ArrayList();
+        List<String> parts = new ArrayList<>();
         parts.add("healthy");
         parts.add("sprained");
         parts.add("broken");

@@ -1,0 +1,37 @@
+{
+  "id": "yha:vitality_boost_3",
+  "category": "ATTRIBUTE",
+  "rarity": "EPIC",
+  "qualityRange": [30, 100],
+  "combinable": true,
+  "attributes": [
+    {
+      "id": "minecraft:max_health",
+      "minModifier": 11.0,
+      "maxModifier": 16.0
+    }
+  ],
+  "description": "An epic gene mutated to provide a higher vitality than the previous generation.",
+  "mobs": [
+    "minecraft:wither",
+    "minecraft:warden"
+  ],
+  "combination": {
+    "requires": [
+      {
+        "id": "yha:vitality_boost_1",
+        "minQuality": 70
+      },
+      {
+        "id": "yha:vitality_boost_2",
+        "minQuality": 80
+      }
+    ],
+    "builder": {
+      "count": 2,
+      "minQuality": 50,
+      "rarity": "UNCOMMON"
+    },
+    "successRate": 80
+  }
+}

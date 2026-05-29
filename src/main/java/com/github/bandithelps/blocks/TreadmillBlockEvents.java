@@ -63,7 +63,7 @@ public final class TreadmillBlockEvents {
         }
         BlockPos clickedPos = event.getPos();
         BlockState clickedState = event.getLevel().getBlockState(clickedPos);
-        if (clickedState.getBlock() != YourHeroAcademia.TREADMILL_BLOCK.get()) {
+        if (clickedState.getBlock() != ModBlocks.TREADMILL_BLOCK.get()) {
             return;
         }
 
@@ -224,10 +224,7 @@ public final class TreadmillBlockEvents {
 
     public static boolean isStandingOnTreadmill(Player player) {
         BlockPos feetPos = player.blockPosition();
-        if (isTreadmillOrAdjacent(player, feetPos) || isTreadmillOrAdjacent(player, feetPos.below())) {
-            return true;
-        }
-        return false;
+        return isTreadmillOrAdjacent(player, feetPos) || isTreadmillOrAdjacent(player, feetPos.below());
     }
 
     private static boolean isTreadmillOrAdjacent(Player player, BlockPos pos) {
@@ -244,7 +241,7 @@ public final class TreadmillBlockEvents {
     }
 
     private static boolean isTreadmillState(BlockState state) {
-        return state.getBlock() == YourHeroAcademia.TREADMILL_BLOCK.get();
+        return state.getBlock() == ModBlocks.TREADMILL_BLOCK.get();
     }
 
     private static BlockPos getFootPos(BlockPos pos, BlockState state) {

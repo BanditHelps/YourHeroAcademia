@@ -1,0 +1,19 @@
+{
+  "id": "yha:heat_resistance",
+  "category": "RESISTANCE",
+  "rarity": "UNCOMMON",
+  "qualityRange": [1, 100],
+  "combinable": false,
+  "resistances": [
+    {
+      "kind": "FIRE_TICK_DAMAGE",
+      "minValue": 0.12,
+      "maxValue": 0.55
+    }
+  ],
+  "description": "A defensive mutation that dulls the burn from lingering flames.",
+  "mobs": [
+    "minecraft:blaze",
+    "minecraft:magma_cube"
+  ]
+}

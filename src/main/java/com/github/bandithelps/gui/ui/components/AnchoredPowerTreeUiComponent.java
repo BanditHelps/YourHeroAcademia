@@ -10,7 +10,6 @@ import net.minecraft.resources.ResourceKey;
 import net.threetag.palladium.client.gui.screen.power.PowerUiScreen;
 import net.threetag.palladium.client.gui.ui.background.RepeatingTextureBackground;
 import net.threetag.palladium.client.gui.ui.background.UiBackground;
-import net.threetag.palladium.client.gui.ui.component.PowerTreeUiComponent;
 import net.threetag.palladium.client.gui.ui.component.UiComponent;
 import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
 import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;

@@ -356,7 +356,7 @@ public class SprayAttackAbility extends Ability {
                             false,
                             false,
                             new ParticleConfig(
-                                    Arrays.asList(Identifier.fromNamespaceAndPath("minecraft", "flame")),
+                                    List.of(Identifier.fromNamespaceAndPath("minecraft", "flame")),
                                     new StaticValue(2.0f),
                                     new StaticValue(0.05f),
                                     new StaticValue(1.1f),
@@ -365,7 +365,7 @@ public class SprayAttackAbility extends Ability {
                                     new StaticValue(0.6f),
                                     Optional.of(new StaticValue(9.0f))
                             ),
-                            Arrays.asList(Identifier.fromNamespaceAndPath("minecraft", "weakness")),
+                            List.of(Identifier.fromNamespaceAndPath("minecraft", "weakness")),
                             new StaticValue(40),
                             new StaticValue(0),
                             true,

@@ -558,7 +558,7 @@ public final class BodyCommand {
     }
 
     private static String validPartsCsv() {
-        return java.util.Arrays.stream(BodyPart.values())
+        return Arrays.stream(BodyPart.values())
                 .map(BodyPart::getId)
                 .sorted()
                 .collect(Collectors.joining(", "));

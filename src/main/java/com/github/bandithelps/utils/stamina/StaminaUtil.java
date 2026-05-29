@@ -4,7 +4,6 @@ import com.github.bandithelps.capabilities.stamina.IStaminaData;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaSyncEvents;
 import com.github.bandithelps.values.ModDamageTypes;
-import com.github.bandithelps.values.StaminaConstants;
 import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;

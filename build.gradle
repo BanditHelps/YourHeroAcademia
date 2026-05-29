@@ -166,7 +166,9 @@ configurations {
 dependencies {
 
     // Development Palladium Version
-    implementation "maven.modrinth:palladium-previews:5a49a36+26.1.2"
+//    implementation files('libs/palladium-5.0.0+26.1.2.jar')
+    implementation "maven.modrinth:palladium-previews:0a45fcd+26.1.2"
+
 
     // Player Animation Library
     // temporary fix
@@ -177,6 +179,7 @@ dependencies {
         exclude group: 'io.netty', module: 'netty-buffer'
     }
     implementation files('libs/PlayerAnimationLibNeo-bigjar.jar')
+
     // Curios
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
     runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"

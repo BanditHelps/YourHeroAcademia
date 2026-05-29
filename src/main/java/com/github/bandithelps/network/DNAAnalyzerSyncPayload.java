@@ -1,0 +1,96 @@
+package com.github.bandithelps.network;
+
+import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.client.dna_analyzer.ClientDNAAnalyzerState;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import java.util.Arrays;
+import java.util.List;
+
+public record DNAAnalyzerSyncPayload(
+        BlockPos blockPos,
+        boolean analyzed,
+        boolean processing,
+        int processingProgress,
+        int processingTotalTicks,
+        boolean awaitingVialCollection,
+        String sourceName,
+        String sourceUuid,
+        String[] geneSlots
+) implements CustomPacketPayload {
+    public static final Type<DNAAnalyzerSyncPayload> TYPE =
+            new Type<>(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "dna_analyzer_sync"));
+
+    private static final StreamCodec<ByteBuf, List<String>> STRING_LIST_CODEC =
+            ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list());
+
+    private static final StreamCodec<ByteBuf, String[]> STRING_ARRAY_CODEC =
+            STRING_LIST_CODEC.map(
+                    list -> list.toArray(new String[0]),
+                    Arrays::asList
+            );
+
+    public DNAAnalyzerSyncPayload {
+        sourceName = sourceName == null ? "" : sourceName;
+        sourceUuid = sourceUuid == null ? "" : sourceUuid;
+        if (geneSlots == null) {
+            geneSlots = new String[0];
+        } else {
+            String[] sanitized = new String[geneSlots.length];
+            for (int i = 0; i < geneSlots.length; i++) {
+                sanitized[i] = geneSlots[i] == null ? "" : geneSlots[i];
+            }
+            geneSlots = sanitized;
+        }
+    }
+
+    public static final StreamCodec<ByteBuf, DNAAnalyzerSyncPayload> STREAM_CODEC = StreamCodec.composite(
+            BlockPos.STREAM_CODEC,
+            DNAAnalyzerSyncPayload::blockPos,
+            ByteBufCodecs.BOOL,
+            DNAAnalyzerSyncPayload::analyzed,
+            ByteBufCodecs.BOOL,
+            DNAAnalyzerSyncPayload::processing,
+            ByteBufCodecs.VAR_INT,
+            DNAAnalyzerSyncPayload::processingProgress,
+            ByteBufCodecs.VAR_INT,
+            DNAAnalyzerSyncPayload::processingTotalTicks,
+            ByteBufCodecs.BOOL,
+            DNAAnalyzerSyncPayload::awaitingVialCollection,
+            ByteBufCodecs.STRING_UTF8,
+            DNAAnalyzerSyncPayload::sourceName,
+            ByteBufCodecs.STRING_UTF8,
+            DNAAnalyzerSyncPayload::sourceUuid,
+            STRING_ARRAY_CODEC,
+            DNAAnalyzerSyncPayload::geneSlots,
+            DNAAnalyzerSyncPayload::new
+    );
+
+    public String[] geneSlots() {
+        return this.geneSlots;
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(DNAAnalyzerSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientDNAAnalyzerState.set(
+                payload.blockPos(),
+                payload.analyzed(),
+                payload.processing(),
+                payload.processingProgress(),
+                payload.processingTotalTicks(),
+                payload.awaitingVialCollection(),
+                payload.sourceName(),
+                payload.sourceUuid(),
+                payload.geneSlots()
+        ));
+    }
+}

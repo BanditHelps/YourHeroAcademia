@@ -1,0 +1,40 @@
+{
+  "type": "palladium:multi_column",
+  "layouts": [
+    {
+      "width": 376,
+      "height": 218,
+      "padding": 6,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/default"
+      },
+      "components": [
+        {
+          "type": "palladium:text_box",
+          "text": "Bio Printer",
+          "properties": {
+            "alignment": "top_center",
+            "width": 160,
+            "height": 18,
+            "x": 40,
+            "y": -4
+          }
+        },
+        {
+          "type": "yha:bio_printer_panel",
+          "frame_color": 7977727,
+          "panel_color": 1714482,
+          "text_color": 15135487,
+          "properties": {
+            "alignment": "top_center",
+            "x": 0,
+            "y": 10,
+            "width": 362,
+            "height": 194
+          }
+        }
+      ]
+    }
+  ]
+}

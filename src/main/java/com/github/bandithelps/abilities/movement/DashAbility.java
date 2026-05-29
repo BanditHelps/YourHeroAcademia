@@ -1,6 +1,5 @@
 package com.github.bandithelps.abilities.movement;
 
-import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;

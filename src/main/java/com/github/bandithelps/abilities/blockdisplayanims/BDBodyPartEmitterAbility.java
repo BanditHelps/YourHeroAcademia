@@ -12,7 +12,6 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
@@ -47,7 +46,7 @@ public class BDBodyPartEmitterAbility extends Ability {
                     Value.CODEC.optionalFieldOf("interpolation_ticks", new StaticValue(5.0f)).forGetter((ab) -> ab.interpolationTicks),
                     Value.CODEC.optionalFieldOf("lifetime", new StaticValue(14.0f)).forGetter((ab) -> ab.lifetime),
                     PalladiumCodecs.listOrPrimitive(Codec.STRING).fieldOf("parts").forGetter((ab) -> ab.parts),
-                    PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("palette", Arrays.asList(Identifier.parse("minecraft:blue_stained_glass"))).forGetter((ab) -> ab.palette),
+                    PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("palette", List.of(Identifier.parse("minecraft:blue_stained_glass"))).forGetter((ab) -> ab.palette),
                     PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("location_offset", new Vector3f(0.0f, 0.0f, 0.0f)).forGetter((ab) -> ab.locationOffset),
                     PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("drift_offset", new Vector3f(0.0f, 0.08f, 0.0f)).forGetter((ab) -> ab.driftOffset),
                     PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("initial_scale", new Vector3f(0.22f, 0.22f, 0.22f)).forGetter((ab) -> ab.initialScale),

@@ -2,10 +2,8 @@ package com.github.bandithelps.capabilities.body;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
-import net.threetag.palladium.entity.PlayerSlot;
 
 import java.util.*;
 
@@ -87,7 +85,7 @@ public enum BodyPart {
      * @return
      */
     public static Collection<String> exampleValues() {
-        List<String> parts = new ArrayList();
+        List<String> parts = new ArrayList<>();
         parts.add(HEAD.getId());
         parts.add(CHEST.getId());
         parts.add(LEFT_ARM.getId());

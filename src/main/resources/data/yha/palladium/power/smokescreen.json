@@ -64,8 +64,11 @@
       "bar_type": "bar",
       "state": {
         "unlocking": {
-          "type": "yha:upgrade_point_buyable",
-          "cost": 5,
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 5
+          },
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
@@ -117,7 +120,7 @@
         "description": "Shoot a focused beam at your targets, blinding them completely",
         "list_index": 0,
         "hidden_in_gui": false,
-        "gui_position": [1, -1]
+        "gui_position": [5.5, -1]
       },
       "state": {
         "enabling": {
@@ -275,7 +278,7 @@
       "state":{
         "enabling": {
           "type": "palladium:key_bind",
-          "behaviour": "action"
+          "behaviour": "activation"
         }
       }
     },
@@ -326,8 +329,11 @@
       },
       "state": {
         "unlocking": {
-          "type": "yha:upgrade_point_buyable",
-          "cost": 3,
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
@@ -337,7 +343,7 @@
         },
         "enabling": {
           "type": "palladium:key_bind",
-          "behaviour": "action"
+          "behaviour": "activation"
         }
       }
     },
@@ -360,7 +366,7 @@
       "state": {
         "enabling": {
           "type": "palladium:key_bind",
-          "behaviour": "action"
+          "behaviour": "activation"
         }
       }
     },

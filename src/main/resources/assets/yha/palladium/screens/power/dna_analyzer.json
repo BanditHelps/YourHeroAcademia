@@ -1,0 +1,147 @@
+{
+  "type": "palladium:multi_column",
+  "layouts": [
+    {
+      "width": 40,
+      "height": 200,
+      "padding": 6,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/modal_with_header"
+      },
+      "components": [
+        {
+          "type": "palladium:text_box",
+          "text": "Tools",
+          "properties": {
+            "alignment": "top_center",
+            "y": -2,
+            "x": 4,
+            "width": 45,
+            "height": 17
+          }
+        },
+        {
+          "type": "yha:dna_analyzer_tools",
+          "frame_color": 7977727,
+          "slot_color": 1714482,
+          "slot_active_color": 10146559,
+          "text_color": 15135487,
+          "tools": [
+            {
+              "id": "rename",
+              "label": "",
+              "icon": "minecraft:name_tag",
+              "tooltip": "Rename a gene alias"
+            },
+            {
+              "id": "isolate",
+              "label": "",
+              "icon": "minecraft:shears",
+              "tooltip": "Select genes to splice"
+            }
+          ],
+          "properties": {
+            "alignment": "top_center",
+            "x": -1,
+            "y": 13,
+            "width": 29,
+            "height": 175
+          }
+        }
+      ]
+    },
+    {
+      "width": 280,
+      "height": 200,
+      "padding": 6,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/default"
+      },
+      "components": [
+        {
+          "type": "palladium:text_box",
+          "text": "Genome Workstation",
+          "properties": {
+            "alignment": "top_center",
+            "width": 120,
+            "height": 17,
+            "y": 2,
+            "x": 5
+          }
+        },
+        {
+          "type": "yha:dna_analyzer_panel",
+          "frame_color": 7977727,
+          "slot_color": 1714482,
+          "slot_active_color": 10146559,
+          "text_color": 15135487,
+          "properties": {
+            "alignment": "top_center",
+            "x": 0,
+            "y": 22,
+            "width": 256,
+            "height": 165
+          }
+        }
+      ]
+    },
+    {
+      "width": 136,
+      "height": 180,
+      "padding": 2,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/modal_with_header"
+      },
+      "components": [
+        {
+          "type": "palladium:text_box",
+          "text": "Specimen Data",
+          "properties": {
+            "alignment": "top_center",
+            "x": 15,
+            "y": 1,
+            "width": 112,
+            "height": 17
+          }
+        },
+        {
+          "type": "palladium:icon",
+          "icon": "minecraft:experience_bottle",
+          "properties": {
+            "alignment": "top_left",
+            "x": 6,
+            "y": 22,
+            "width": 12,
+            "height": 12
+          }
+        },
+        {
+          "type": "yha:player_attribute_value",
+          "attribute": "intelligence",
+          "label": "INT",
+          "decimals": 2,
+          "properties": {
+            "alignment": "top_left",
+            "x": 22,
+            "y": 27,
+            "width": 104,
+            "height": 12
+          }
+        },
+        {
+          "type": "yha:dna_analyzer_info",
+          "properties": {
+            "alignment": "top_left",
+            "x": 6,
+            "y": 40,
+            "width": 122,
+            "height": 116
+          }
+        }
+      ]
+    }
+  ]
+}

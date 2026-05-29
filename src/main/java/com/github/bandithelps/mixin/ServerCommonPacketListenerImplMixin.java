@@ -28,7 +28,7 @@ public abstract class ServerCommonPacketListenerImplMixin {
 
     @Inject(
             method = "handleCustomClickAction",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;handleCustomClickAction(Lnet/minecraft/resources/Identifier;Ljava/util/Optional;)V"),
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;handleCustomClickAction(Lnet/minecraft/resources/Identifier;Ljava/util/Optional;Lnet/minecraft/server/level/ServerPlayer;Lcom/mojang/authlib/GameProfile;)V"),
             cancellable = true
     )
     private void handleCustomClickAction(ServerboundCustomClickActionPacket packet, CallbackInfo ci) {
