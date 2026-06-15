@@ -50,6 +50,7 @@ public class SprayAttackAbility extends Ability {
             Collections.emptyList(),
             new StaticValue(2.0f),
             new StaticValue(0.05f),
+            new StaticValue(0.35f),
             new StaticValue(0.9f),
             new StaticValue(0.0f),
             new StaticValue(-0.2f),
@@ -148,6 +149,7 @@ public class SprayAttackAbility extends Ability {
         int amplifier = Math.max(0, this.effectAmplifier.getAsInt(context));
         float particleDensity = Math.max(0.0f, this.particleConfig.density.getAsFloat(context));
         float particleSpread = Math.max(0.0f, this.particleConfig.spread.getAsFloat(context));
+        float particleVelocity = Math.max(0.0f, this.particleConfig.velocity.getAsFloat(context));
         float originForward = this.particleConfig.originForward.getAsFloat(context);
         float originRight = this.particleConfig.originRight.getAsFloat(context);
         float originUp = this.particleConfig.originUp.getAsFloat(context);
@@ -181,7 +183,7 @@ public class SprayAttackAbility extends Ability {
             targetHits = List.of(firstHit);
         }
 
-        this.spawnSprayParticles(serverLevel, start, end, hitRadius, particleDensity, particleSpread, this.resolveParticles());
+        this.spawnSprayParticles(serverLevel, start, look, effectiveDistance, hitRadius, particleDensity, particleSpread, particleVelocity, this.resolveParticles());
 
         List<Holder<MobEffect>> effects = this.resolveEffects();
         List<LivingEntity> targets = targetHits.stream().map(TargetHit::target).toList();
@@ -250,15 +252,18 @@ public class SprayAttackAbility extends Ability {
             }
 
             Vec3 targetCenter = target.getBoundingBox().getCenter();
-            Vec3 fromStart = targetCenter.subtract(start);
-            double projection = fromStart.dot(look);
-            if (projection < 0.0d || projection > range) {
+            double centerProjection = targetCenter.subtract(start).dot(look);
+            double projection = Math.max(0.0d, Math.min(centerProjection, range));
+
+            AABB expandedBounds = target.getBoundingBox().inflate(hitRadius);
+            Optional<Vec3> impactPoint = expandedBounds.clip(start, end);
+            if (impactPoint.isPresent()) {
+                targets.add(new TargetHit(target, projection));
                 continue;
             }
 
-            Vec3 closestPoint = start.add(look.scale(projection));
-            double allowedRadius = hitRadius + (target.getBbWidth() * 0.5d);
-            if (targetCenter.distanceToSqr(closestPoint) <= (allowedRadius * allowedRadius)) {
+            // If spray starts inside the target volume this tick, still count it as an immediate hit.
+            if (expandedBounds.contains(start)) {
                 targets.add(new TargetHit(target, projection));
             }
         }
@@ -277,33 +282,48 @@ public class SprayAttackAbility extends Ability {
         return resolved;
     }
 
-    private void spawnSprayParticles(ServerLevel level, Vec3 start, Vec3 end, float hitRadius, float density, float spread, List<SimpleParticleType> particles) {
-        if (particles.isEmpty() || density <= 0.0f) {
+    private void spawnSprayParticles(ServerLevel level, Vec3 start, Vec3 look, float distance, float hitRadius, float density, float spread, float velocity, List<SimpleParticleType> particles) {
+        if (particles.isEmpty() || density <= 0.0f || velocity <= 0.0f || distance <= 0.0f) {
             return;
         }
 
-        double length = start.distanceTo(end);
-        int points = Math.max(1, Math.round((float) length * density));
+        int particlesPerTick = Math.max(1, Math.round(distance * density));
+        double nozzleRadius = Math.max(0.02d, hitRadius * 0.2d);
 
-        for (int i = 0; i <= points; i++) {
-            double progress = i / (double) points;
-            Vec3 point = start.lerp(end, progress);
+        for (int i = 0; i < particlesPerTick; i++) {
+            double offsetX = (level.getRandom().nextDouble() - 0.5d) * 2.0d * nozzleRadius;
+            double offsetY = (level.getRandom().nextDouble() - 0.5d) * 2.0d * nozzleRadius;
+            double offsetZ = (level.getRandom().nextDouble() - 0.5d) * 2.0d * nozzleRadius;
+            Vec3 spawnPos = start.add(offsetX, offsetY, offsetZ);
+
+            Vec3 randomizedDirection = look.add(
+                    level.getRandom().nextGaussian() * spread,
+                    level.getRandom().nextGaussian() * spread,
+                    level.getRandom().nextGaussian() * spread
+            );
+            if (randomizedDirection.lengthSqr() < 1.0E-6d) {
+                randomizedDirection = look;
+            } else {
+                randomizedDirection = randomizedDirection.normalize();
+            }
+
+            if (randomizedDirection.dot(look) <= 0.0d) {
+                randomizedDirection = look;
+            }
 
             SimpleParticleType particle = particles.get(level.getRandom().nextInt(particles.size()));
-            double offsetX = (level.getRandom().nextDouble() - 0.5d) * 2.0d * hitRadius;
-            double offsetY = (level.getRandom().nextDouble() - 0.5d) * 2.0d * hitRadius;
-            double offsetZ = (level.getRandom().nextDouble() - 0.5d) * 2.0d * hitRadius;
+            Vec3 motion = randomizedDirection.scale(velocity);
 
             level.sendParticles(
                     particle,
-                    point.x + offsetX,
-                    point.y + offsetY,
-                    point.z + offsetZ,
-                    1,
-                    spread,
-                    spread,
-                    spread,
-                    0.0d
+                    spawnPos.x,
+                    spawnPos.y,
+                    spawnPos.z,
+                    0,
+                    motion.x,
+                    motion.y,
+                    motion.z,
+                    1.0d
             );
         }
     }
@@ -341,7 +361,7 @@ public class SprayAttackAbility extends Ability {
                     .add("max_targets_per_tick", TYPE_INT, "Maximum number of targets affected per update. 0 means no cap.")
                     .add("pass_through_walls", TYPE_BOOLEAN, "Whether the spray can pass through solid blocks. If false, spray stops at first wall.")
                     .add("pass_through_entities", TYPE_BOOLEAN, "Whether the spray can continue past entities. If false, spray stops at first target hit.")
-                    .add("particle_config", TYPE_VALUE, "Visual spray settings object. Supports particles, density, spread, growth_per_tick, max_distance, and camera-relative origin offsets (origin_forward/origin_right/origin_up).")
+                    .add("particle_config", TYPE_VALUE, "Visual spray settings object. Supports particles, density, spread, velocity, growth_per_tick, max_distance, and camera-relative origin offsets (origin_forward/origin_right/origin_up).")
                     .add("effects", TYPE_IDENTIFIER, "A list of mob effect ids to apply on hit.")
                     .add("effect_duration", TYPE_VALUE, "Duration in ticks for applied effects.")
                     .add("effect_amplifier", TYPE_VALUE, "Amplifier for applied effects.")
@@ -359,6 +379,7 @@ public class SprayAttackAbility extends Ability {
                                     List.of(Identifier.fromNamespaceAndPath("minecraft", "flame")),
                                     new StaticValue(2.0f),
                                     new StaticValue(0.05f),
+                                    new StaticValue(0.4f),
                                     new StaticValue(1.1f),
                                     new StaticValue(-0.35f),
                                     new StaticValue(-0.25f),
@@ -385,6 +406,7 @@ public class SprayAttackAbility extends Ability {
                         PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("particles", Collections.emptyList()).forGetter((cfg) -> cfg.particles),
                         Value.CODEC.optionalFieldOf("density", new StaticValue(2.0f)).forGetter((cfg) -> cfg.density),
                         Value.CODEC.optionalFieldOf("spread", new StaticValue(0.05f)).forGetter((cfg) -> cfg.spread),
+                        Value.CODEC.optionalFieldOf("velocity", new StaticValue(0.35f)).forGetter((cfg) -> cfg.velocity),
                         Value.CODEC.optionalFieldOf("origin_forward", new StaticValue(0.9f)).forGetter((cfg) -> cfg.originForward),
                         Value.CODEC.optionalFieldOf("origin_right", new StaticValue(0.0f)).forGetter((cfg) -> cfg.originRight),
                         Value.CODEC.optionalFieldOf("origin_up", new StaticValue(-0.2f)).forGetter((cfg) -> cfg.originUp),
@@ -395,6 +417,7 @@ public class SprayAttackAbility extends Ability {
         public final List<Identifier> particles;
         public final Value density;
         public final Value spread;
+        public final Value velocity;
         public final Value originForward;
         public final Value originRight;
         public final Value originUp;
@@ -405,6 +428,7 @@ public class SprayAttackAbility extends Ability {
                 List<Identifier> particles,
                 Value density,
                 Value spread,
+                Value velocity,
                 Value originForward,
                 Value originRight,
                 Value originUp,
@@ -414,6 +438,7 @@ public class SprayAttackAbility extends Ability {
             this.particles = particles;
             this.density = density;
             this.spread = spread;
+            this.velocity = velocity;
             this.originForward = originForward;
             this.originRight = originRight;
             this.originUp = originUp;
