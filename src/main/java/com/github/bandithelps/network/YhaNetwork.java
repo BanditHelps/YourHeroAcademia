@@ -30,5 +30,8 @@ public final class YhaNetwork {
         registrar.playToServer(BioPrinterTransferPayload.TYPE, BioPrinterTransferPayload.STREAM_CODEC, BioPrinterTransferPayload::handle);
         registrar.playToServer(BioPrinterPrintPayload.TYPE, BioPrinterPrintPayload.STREAM_CODEC, BioPrinterPrintPayload::handle);
         registrar.playToClient(GeneCombinationBrowserDataPayload.TYPE, GeneCombinationBrowserDataPayload.STREAM_CODEC, GeneCombinationBrowserDataPayload::handle);
+        registrar.playToClient(BlackwhipSwingPayload.TYPE, BlackwhipSwingPayload.STREAM_CODEC, BlackwhipSwingPayload::handle);
+        registrar.playToClient(BlackwhipStruggleStatusPayload.TYPE, BlackwhipStruggleStatusPayload.STREAM_CODEC, BlackwhipStruggleStatusPayload::handle);
+        registrar.playToServer(BlackwhipStruggleTapPayload.TYPE, BlackwhipStruggleTapPayload.STREAM_CODEC, BlackwhipStruggleTapPayload::handle);
     }
 }

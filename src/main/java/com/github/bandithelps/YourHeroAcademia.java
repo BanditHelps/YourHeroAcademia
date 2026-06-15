@@ -7,6 +7,7 @@ import com.github.bandithelps.blocks.*;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.dna.DNAAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
+import com.github.bandithelps.client.renderers.entity.BlackwhipEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.PotionGeneratorEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.RgbaDisplayEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.SmokeCanisterProjectileRenderer;
@@ -195,6 +196,7 @@ public final class YourHeroAcademia {
         BodyCommand.register(event.getBuilder(), event.getBuildContext());
         BdCommand.register(event.getBuilder(), event.getBuildContext());
         GeneCommand.register(event.getBuilder(), event.getBuildContext());
+        BlackwhipCommand.register(event.getBuilder(), event.getBuildContext());
     }
 
     @SubscribeEvent
@@ -207,5 +209,6 @@ public final class YourHeroAcademia {
         event.registerEntityRenderer(ModEntities.POTION_GENERATOR.get(), PotionGeneratorEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.RGBA_DISPLAY.get(), RgbaDisplayEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.SMOKE_CANISTER_PROJECTILE.get(), SmokeCanisterProjectileRenderer::new);
+        event.registerEntityRenderer(ModEntities.BLACKWHIP.get(), BlackwhipEntityRenderer::new);
     }
 }

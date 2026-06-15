@@ -10,6 +10,19 @@ import com.github.bandithelps.abilities.bodydata.BodyPartValueTickAbility;
 import com.github.bandithelps.abilities.bodydata.DamageBodyPartAbility;
 import com.github.bandithelps.abilities.bodydata.HealBodyPartAbility;
 import com.github.bandithelps.abilities.bodydata.SetBodyStringAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipAoeTagAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipAuraAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipBlockGrabAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipBubbleShieldAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipDetachAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipLashAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipMoveTaggedAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipQuadZipAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipRestrainAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipRestrictAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipTagAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipYankAbility;
+import com.github.bandithelps.abilities.blackwhip.BlackwhipZipAbility;
 import com.github.bandithelps.abilities.decay.DecayFistAbility;
 import com.github.bandithelps.abilities.decay.DecayInstabilityAbility;
 import com.github.bandithelps.abilities.decay.EnvironmentDecayAbility;
@@ -45,6 +58,19 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, EnvironmentDecayAbility.Serializer> ENVIRONMENT_DECAY;
     public static final DeferredHolder<AbilitySerializer<?>, RotAbility.Serializer> ROT_WAVE;
     public static final DeferredHolder<AbilitySerializer<?>, DecayInstabilityAbility.Serializer> DECAY_INSTABILITY;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipTagAbility.Serializer> BLACKWHIP_TAG;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipAoeTagAbility.Serializer> BLACKWHIP_AOE_TAG;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipDetachAbility.Serializer> BLACKWHIP_DETACH;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipRestrictAbility.Serializer> BLACKWHIP_RESTRICT;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipMoveTaggedAbility.Serializer> BLACKWHIP_MOVE_TAGGED;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipRestrainAbility.Serializer> BLACKWHIP_RESTRAIN;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipZipAbility.Serializer> BLACKWHIP_ZIP;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipQuadZipAbility.Serializer> BLACKWHIP_QUAD_ZIP;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipAuraAbility.Serializer> BLACKWHIP_AURA;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipBubbleShieldAbility.Serializer> BLACKWHIP_BUBBLE_SHIELD;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipBlockGrabAbility.Serializer> BLACKWHIP_BLOCK_GRAB;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipLashAbility.Serializer> BLACKWHIP_LASH;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipYankAbility.Serializer> BLACKWHIP_YANK;
 
     static {
         ABILITIES = DeferredRegister.create(PalladiumRegistryKeys.ABILITY_SERIALIZER, YourHeroAcademia.MODID);
@@ -66,6 +92,19 @@ public class AbilityRegister {
         ENVIRONMENT_DECAY = ABILITIES.register("environment_decay", EnvironmentDecayAbility.Serializer::new);
         ROT_WAVE = ABILITIES.register("rot_wave", RotAbility.Serializer::new);
         DECAY_INSTABILITY = ABILITIES.register("decay_instability", DecayInstabilityAbility.Serializer::new);
+        BLACKWHIP_TAG = ABILITIES.register("blackwhip_tag", BlackwhipTagAbility.Serializer::new);
+        BLACKWHIP_AOE_TAG = ABILITIES.register("blackwhip_aoe_tag", BlackwhipAoeTagAbility.Serializer::new);
+        BLACKWHIP_DETACH = ABILITIES.register("blackwhip_detach", BlackwhipDetachAbility.Serializer::new);
+        BLACKWHIP_RESTRICT = ABILITIES.register("blackwhip_restrict", BlackwhipRestrictAbility.Serializer::new);
+        BLACKWHIP_MOVE_TAGGED = ABILITIES.register("blackwhip_move_tagged", BlackwhipMoveTaggedAbility.Serializer::new);
+        BLACKWHIP_RESTRAIN = ABILITIES.register("blackwhip_restrain", BlackwhipRestrainAbility.Serializer::new);
+        BLACKWHIP_ZIP = ABILITIES.register("blackwhip_zip", BlackwhipZipAbility.Serializer::new);
+        BLACKWHIP_QUAD_ZIP = ABILITIES.register("blackwhip_quad_zip", BlackwhipQuadZipAbility.Serializer::new);
+        BLACKWHIP_AURA = ABILITIES.register("blackwhip_aura", BlackwhipAuraAbility.Serializer::new);
+        BLACKWHIP_BUBBLE_SHIELD = ABILITIES.register("blackwhip_bubble_shield", BlackwhipBubbleShieldAbility.Serializer::new);
+        BLACKWHIP_BLOCK_GRAB = ABILITIES.register("blackwhip_block_grab", BlackwhipBlockGrabAbility.Serializer::new);
+        BLACKWHIP_LASH = ABILITIES.register("blackwhip_lash", BlackwhipLashAbility.Serializer::new);
+        BLACKWHIP_YANK = ABILITIES.register("blackwhip_yank", BlackwhipYankAbility.Serializer::new);
     }
 
 }

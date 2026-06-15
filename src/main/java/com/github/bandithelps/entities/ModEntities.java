@@ -47,6 +47,22 @@ public class ModEntities {
                     ))
     );
 
+    public static final Supplier<EntityType<BlackwhipEntity>> BLACKWHIP = ENTITY_TYPES.register(
+            "blackwhip",
+            () -> EntityType.Builder.of(
+                            BlackwhipEntity::new,
+                            MobCategory.MISC
+                    )
+                    .noSave()
+                    .sized(0.5f, 0.5f)
+                    .clientTrackingRange(96)
+                    .updateInterval(1)
+                    .build(ResourceKey.create(
+                            Registries.ENTITY_TYPE,
+                            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "blackwhip")
+                    ))
+    );
+
     public static final Supplier<EntityType<SmokeCanisterProjectileEntity>> SMOKE_CANISTER_PROJECTILE = ENTITY_TYPES.register(
             "smoke_canister_projectile",
             () -> EntityType.Builder.<SmokeCanisterProjectileEntity>of(
