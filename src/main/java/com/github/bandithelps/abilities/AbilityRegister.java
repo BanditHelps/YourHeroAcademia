@@ -9,6 +9,11 @@ import com.github.bandithelps.abilities.bodydata.DisplayBodyBarAbility;
 import com.github.bandithelps.abilities.bodydata.BodyPartValueTickAbility;
 import com.github.bandithelps.abilities.bodydata.DamageBodyPartAbility;
 import com.github.bandithelps.abilities.bodydata.HealBodyPartAbility;
+import com.github.bandithelps.abilities.bodydata.SetBodyStringAbility;
+import com.github.bandithelps.abilities.decay.DecayFistAbility;
+import com.github.bandithelps.abilities.decay.DecayInstabilityAbility;
+import com.github.bandithelps.abilities.decay.EnvironmentDecayAbility;
+import com.github.bandithelps.abilities.decay.RotAbility;
 import com.github.bandithelps.abilities.common.PlaySoundAbility;
 import com.github.bandithelps.abilities.common.PotionGeneratorAbility;
 import com.github.bandithelps.abilities.common.SmokeCanisterChargeAbility;
@@ -35,6 +40,11 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, SprayAttackAbility.Serializer> SPRAY_ATTACK;
     public static final DeferredHolder<AbilitySerializer<?>, PlaySoundAbility.Serializer> PLAY_SOUND;
     public static final DeferredHolder<AbilitySerializer<?>, SmokeCanisterChargeAbility.Serializer> SMOKE_CANISTER_CHARGE;
+    public static final DeferredHolder<AbilitySerializer<?>, SetBodyStringAbility.Serializer> SET_BODY_STRING;
+    public static final DeferredHolder<AbilitySerializer<?>, DecayFistAbility.Serializer> DECAY_FIST;
+    public static final DeferredHolder<AbilitySerializer<?>, EnvironmentDecayAbility.Serializer> ENVIRONMENT_DECAY;
+    public static final DeferredHolder<AbilitySerializer<?>, RotAbility.Serializer> ROT_WAVE;
+    public static final DeferredHolder<AbilitySerializer<?>, DecayInstabilityAbility.Serializer> DECAY_INSTABILITY;
 
     static {
         ABILITIES = DeferredRegister.create(PalladiumRegistryKeys.ABILITY_SERIALIZER, YourHeroAcademia.MODID);
@@ -51,6 +61,11 @@ public class AbilityRegister {
         SPRAY_ATTACK = ABILITIES.register("spray_attack", SprayAttackAbility.Serializer::new);
         PLAY_SOUND = ABILITIES.register("play_sound", PlaySoundAbility.Serializer::new);
         SMOKE_CANISTER_CHARGE = ABILITIES.register("smoke_canister_charge", SmokeCanisterChargeAbility.Serializer::new);
+        SET_BODY_STRING = ABILITIES.register("set_body_string", SetBodyStringAbility.Serializer::new);
+        DECAY_FIST = ABILITIES.register("decay_fist", DecayFistAbility.Serializer::new);
+        ENVIRONMENT_DECAY = ABILITIES.register("environment_decay", EnvironmentDecayAbility.Serializer::new);
+        ROT_WAVE = ABILITIES.register("rot_wave", RotAbility.Serializer::new);
+        DECAY_INSTABILITY = ABILITIES.register("decay_instability", DecayInstabilityAbility.Serializer::new);
     }
 
 }

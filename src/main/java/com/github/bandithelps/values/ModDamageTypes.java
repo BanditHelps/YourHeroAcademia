@@ -16,6 +16,8 @@ public class ModDamageTypes {
             ResourceKey.create(Registries.DAMAGE_TYPE, Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "exhaustion"));
     public static final ResourceKey<DamageType> SPRAY_ATTACK_DAMAGE =
             ResourceKey.create(Registries.DAMAGE_TYPE, Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "spray_attack"));
+    public static final ResourceKey<DamageType> DECAY_DAMAGE =
+            ResourceKey.create(Registries.DAMAGE_TYPE, Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "decay"));
 
     public static void applyExhaustionDamage(ServerPlayer player, float damage) {
         DamageSource exhaustionDamage = new DamageSource(player.level().registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(ModDamageTypes.EXHAUSTION_DAMAGE));
@@ -24,6 +26,14 @@ public class ModDamageTypes {
 
     public static DamageSource sprayDamageSource(ServerLevel level, Entity attacker) {
         return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(ModDamageTypes.SPRAY_ATTACK_DAMAGE), attacker);
+    }
+
+    public static DamageSource decayDamageSource(ServerLevel level, Entity attacker) {
+        return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(ModDamageTypes.DECAY_DAMAGE), attacker);
+    }
+
+    public static DamageSource decayDamageSource(ServerLevel level) {
+        return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(ModDamageTypes.DECAY_DAMAGE));
     }
 
 }

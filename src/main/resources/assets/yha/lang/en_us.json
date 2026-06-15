@@ -22,8 +22,14 @@
   "item.yha.genetic_slop": "Genetic Slop",
 
   "effect.yha.smoke_blind": "Smoke Blindness",
+  "effect.yha.decay": "Decay",
 
   "ability.yha.dash": "Dash",
+  "ability.yha.set_body_string": "Set Body String",
+  "ability.yha.decay_fist": "Decaying Touch",
+  "ability.yha.environment_decay": "Environmental Decay",
+  "ability.yha.rot_wave": "Rot Wave",
+  "ability.yha.decay_instability": "Decay Instability",
   "ability.yha.damage_body_part": "Damage Body Part",
   "ability.yha.change_body_value": "Change Body Value",
   "ability.yha.display_body_bar": "Display Body Bar",
@@ -40,6 +46,8 @@
   "attribute.yha.quirk_factor": "Quirk Factor",
 
   "death.attack.exhaustion": "%1$s overexerted themselves and paid the price.",
+  "death.attack.decay": "%1$s rotted away.",
+  "death.attack.decay.player": "%1$s was rotted away by %2$s.",
 
 
 

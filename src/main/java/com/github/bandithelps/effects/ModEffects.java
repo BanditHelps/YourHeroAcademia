@@ -12,5 +12,6 @@ public class ModEffects {
     public static final Holder<MobEffect> SMOKE_BLIND = MOD_EFFECTS.register("smoke_blind", () -> new SmokeBlindEffect(MobEffectCategory.HARMFUL, 0xFFFFFF));
     public static final Holder<MobEffect> SUFFOCATION = MOD_EFFECTS.register("suffocation", () -> new SuffocationEffect(MobEffectCategory.HARMFUL, 0xFFFFFF));
     public static final Holder<MobEffect> DNA_FATIGUE = MOD_EFFECTS.register("dna_fatigue", () -> new DNAFatigueEffect(MobEffectCategory.HARMFUL, 0x9966CC));
+    public static final Holder<MobEffect> DECAY = MOD_EFFECTS.register("decay", () -> new DecayEffect(MobEffectCategory.HARMFUL, 0x4B0082));
 
 }
