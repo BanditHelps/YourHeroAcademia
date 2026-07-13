@@ -82,6 +82,8 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
         long gameTime = level != null ? level.getGameTime() : entity.tickCount;
         state.time = gameTime + partial;
 
+        state.ageTicks = entity.tickCount + partial;
+
         int travel = Math.max(1, entity.getTravelTicks());
         state.extendProgress = Mth.clamp((entity.tickCount + partial) / (float) travel, 0f, 1f);
 
@@ -119,41 +121,70 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
         state.camForward = new Vec3(camLook.x(), camLook.y(), camLook.z()).normalize();
         state.camPos = camera.pos;
 
+        boolean ropeStyle;
         List<List<Vec3>> strands = new ArrayList<>();
         switch (state.style) {
-            case AURA -> strands.addAll(buildAuraStrands(state));
-            case BUBBLE -> strands.addAll(buildBubbleStrands(state));
-            case WRAP -> { /* rings only */ }
+            case AURA -> { strands.addAll(buildAuraStrands(state)); ropeStyle = false; }
+            case BUBBLE -> { strands.addAll(buildBubbleStrands(state)); ropeStyle = false; }
+            case WRAP -> ropeStyle = false;
             default -> {
                 List<Vec3> rope = buildRope(state);
                 if (rope.size() >= 2) {
                     strands.add(rope);
                 }
+                ropeStyle = true;
             }
         }
 
+        boolean wrapStyle = false;
         if (state.drawWrap) {
             strands.addAll(buildWrapRings(state));
+            wrapStyle = true;
         }
 
         if (strands.isEmpty()) {
             return;
         }
 
-        float base = Math.max(0.02f, state.thickness * 0.065f);
-        float noiseAmp = Math.min(base * 0.75f, 0.08f) * Math.max(0.15f, state.jaggedness * 1.4f);
-        float alphaScale = state.active ? 1.0f : (1.0f - state.retractProgress);
+        // Build a camera-facing frame for each strand once, with a touch of organic shimmer baked in.
+        // The frame is shared by every layer so the dark core, glow body and halo stay perfectly aligned.
+        float base = Math.max(0.025f, state.thickness * 0.07f);
+        float shimmer = Math.min(base * 0.9f, 0.06f) * Math.max(0.1f, state.jaggedness);
+        float alphaScale = state.active ? 1.0f : smooth(1.0f - state.retractProgress);
+        // Energy intensifies briefly on spawn (the "crack" flash) then settles to a steady glow.
+        float spawnFlash = (float) Math.exp(-state.ageTicks * 0.18f);
+        TaperMode taper = ropeStyle ? TaperMode.WHIP : (wrapStyle ? TaperMode.NONE : TaperMode.SPINDLE);
 
-        // Outer glow pass (wide, additive/emissive).
+        List<RibbonFrame> frames = new ArrayList<>(strands.size());
+        for (List<Vec3> pts : strands) {
+            RibbonFrame f = buildFrame(pts, state, shimmer, taper);
+            if (f != null) {
+                frames.add(f);
+            }
+        }
+        if (frames.isEmpty()) {
+            return;
+        }
+
+        int glow = state.glowColor;
+        int core = state.coreColor;
+
+        // Emissive passes: a soft wide halo, then the glowing body with flowing energy bands.
         collector.submitCustomGeometry(poseStack, GLOW_TYPE, (pose, buffer) -> {
-            for (List<Vec3> pts : strands) {
-                drawRibbon(buffer, pose, pts, base * 1.25f, state.glowColor, state, noiseAmp, alphaScale);
+            for (RibbonFrame f : frames) {
+                // Wide soft bloom halo - reads as light bleeding off the strand.
+                emitLayer(buffer, pose, f, base * 2.6f, glow,
+                        0.16f * alphaScale * (1.0f + 0.6f * spawnFlash), state, 0.0f, 0.55f, spawnFlash);
+                // Main glowing body with bright energy pulses travelling toward the tip.
+                emitLayer(buffer, pose, f, base * 1.15f, glow,
+                        0.95f * alphaScale, state, 1.0f, 1.0f, spawnFlash);
             }
         });
-        // Inner dark core pass (narrow, translucent).
+        // Translucent pass: the near-black inner core that gives Blackwhip its signature dark spine.
         collector.submitCustomGeometry(poseStack, CORE_TYPE, (pose, buffer) -> {
-            for (List<Vec3> pts : strands) {
-                drawRibbon(buffer, pose, pts, base * 0.54f, state.coreColor, state, noiseAmp, alphaScale);
+            for (RibbonFrame f : frames) {
+                emitLayer(buffer, pose, f, base * 0.5f, core,
+                        alphaScale, state, 0.0f, 1.2f, 0.0f);
             }
         });
     }
@@ -166,12 +197,47 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
         if (!state.hasEnd) {
             return List.of();
         }
-        float reach = state.active ? state.extendProgress : (1.0f - state.retractProgress);
+        // Snappy whip extend: shoot out fast, settle at the target (ease-out cubic).
+        float raw = state.active ? state.extendProgress : (1.0f - state.retractProgress);
+        float reach = state.active ? (1.0f - (float) Math.pow(1.0 - raw, 3.0)) : raw;
         Vec3 end = state.start.add(state.end.subtract(state.start).scale(reach));
-        double len = end.subtract(state.start).length();
-        int segments = Math.max(12, (int) Math.min(72, len * 6.0));
-        float curve = state.style == BlackwhipStyle.SWING_ROPE ? state.curve * 0.35f : state.curve;
-        return buildCurve(state.start, end, curve, segments);
+
+        Vec3 axis = end.subtract(state.start);
+        double len = axis.length();
+        if (len < 1.0e-4) {
+            return List.of();
+        }
+        Vec3 dir = axis.scale(1.0 / len);
+        Vec3 side = new Vec3(0, 1, 0).cross(dir);
+        if (side.lengthSqr() < 1.0e-6) {
+            side = new Vec3(1, 0, 0).cross(dir);
+        }
+        side = side.normalize();
+        Vec3 lift = dir.cross(side).normalize();
+
+        int segments = Math.max(16, (int) Math.min(96, len * 7.0));
+        float curve = state.style == BlackwhipStyle.SWING_ROPE ? state.curve * 0.3f : state.curve;
+        double arc = len * curve * 0.18;
+        // Whip-crack shockwave: a transverse ripple that races toward the tip and decays after launch.
+        double crack = Math.exp(-state.ageTicks * 0.16) * Math.min(1.0, len * 0.18);
+        double sag = state.style == BlackwhipStyle.SWING_ROPE ? len * 0.05 : len * 0.02;
+        double idle = 0.012 * len;
+
+        List<Vec3> pts = new ArrayList<>(segments + 1);
+        for (int i = 0; i <= segments; i++) {
+            double t = i / (double) segments;
+            Vec3 p = state.start.add(axis.scale(t));
+            double bend = Math.sin(Math.PI * t);
+            p = p.add(lift.scale(arc * bend)).add(new Vec3(0, -sag * bend, 0));
+            double envelope = t * t; // ripple grows toward the free end
+            double wavePhase = t * 9.0 - state.time * 0.6;
+            double crackOff = crack * envelope * Math.sin(wavePhase);
+            double idleOff = idle * bend * Math.sin(t * 3.3 + state.time * 0.07);
+            p = p.add(side.scale(crackOff + idleOff))
+                 .add(lift.scale(0.5 * crack * envelope * Math.cos(wavePhase * 1.3)));
+            pts.add(p);
+        }
+        return pts;
     }
 
     private static List<List<Vec3>> buildAuraStrands(BlackwhipRenderState state) {
@@ -293,31 +359,53 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
     }
 
     // ---------------------------------------------------------------------
-    // Ribbon rendering
+    // Ribbon rendering - soft-edged, layered "energy ribbon"
     // ---------------------------------------------------------------------
 
-    private static void drawRibbon(VertexConsumer buffer, PoseStack.Pose pose, List<Vec3> points,
-                                   float baseHalfWidth, int argb, BlackwhipRenderState state, float noiseAmp, float alphaScale) {
+    /** How the strand width tapers along its length. */
+    private enum TaperMode {
+        /** Constant width (wrap rings). */
+        NONE,
+        /** Thick at the base, tapering to a fine point at the tip (ropes / lashes). */
+        WHIP,
+        /** Tapered at both ends, fullest in the middle (aura tendrils / bubble petals). */
+        SPINDLE
+    }
+
+    /**
+     * A precomputed, camera-facing skeleton for one strand: each sample carries its local-space
+     * centre, the billboard normal, the along-length parameter, and the tapered width factor. Every
+     * render layer reuses this so the dark core, glow and halo stay locked together.
+     */
+    private static final class RibbonFrame {
+        final Vec3[] center;
+        final Vec3[] normal;
+        final float[] t;
+        final float[] widthFactor;
+
+        RibbonFrame(Vec3[] center, Vec3[] normal, float[] t, float[] widthFactor) {
+            this.center = center;
+            this.normal = normal;
+            this.t = t;
+            this.widthFactor = widthFactor;
+        }
+    }
+
+    private static RibbonFrame buildFrame(List<Vec3> points, BlackwhipRenderState state, float shimmer, TaperMode taper) {
         int n = points.size();
         if (n < 2) {
-            return;
+            return null;
         }
-        int light = FULL_BRIGHT;
-        int a0 = (argb >> 24) & 0xFF;
-        int r0 = (argb >> 16) & 0xFF;
-        int g0 = (argb >> 8) & 0xFF;
-        int b0 = argb & 0xFF;
-
         Vec3 cf = state.camForward;
         Vec3 origin = state.renderOrigin;
 
-        // Precompute ribbon edge vertices for each point.
-        Vec3[] left = new Vec3[n];
-        Vec3[] right = new Vec3[n];
-        float[] alpha = new float[n];
-        int[][] rgb = new int[n][3];
+        Vec3[] center = new Vec3[n];
+        Vec3[] normal = new Vec3[n];
+        float[] tArr = new float[n];
+        float[] widthFactor = new float[n];
+
         for (int i = 0; i < n; i++) {
-            double t = i / (double) (n - 1);
+            float t = i / (float) (n - 1);
             Vec3 p = points.get(i);
             Vec3 tangent;
             if (i == 0) tangent = points.get(1).subtract(p);
@@ -326,44 +414,125 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
             if (tangent.lengthSqr() < 1e-6) tangent = new Vec3(0, 1, 0);
             tangent = tangent.normalize();
 
-            Vec3 noise = computeNoise(tangent, t, state.time, noiseAmp);
-            Vec3 local = p.add(noise).subtract(origin);
+            Vec3 noise = computeNoise(tangent, t, state.time, shimmer);
+            center[i] = p.add(noise).subtract(origin);
 
-            Vec3 normal = cf.cross(tangent);
-            if (normal.lengthSqr() < 1e-6) normal = new Vec3(0, 1, 0);
-            normal = normal.normalize();
+            Vec3 nrm = cf.cross(tangent);
+            if (nrm.lengthSqr() < 1e-6) nrm = new Vec3(0, 1, 0);
+            normal[i] = nrm.normalize();
 
-            float halfWidth = (float) (baseHalfWidth * (0.85 + 0.15 * (1.0 - t)));
-            left[i] = local.add(normal.scale(halfWidth));
-            right[i] = local.add(normal.scale(-halfWidth));
+            tArr[i] = t;
+            widthFactor[i] = taperFactor(taper, t);
+        }
+        return new RibbonFrame(center, normal, tArr, widthFactor);
+    }
 
-            float speck = speckle(t, state.time);
-            float shade = (speck - 0.5f) * 0.4f;
-            rgb[i][0] = clampByte(Math.round(r0 * (1.0f + shade)));
-            rgb[i][1] = clampByte(Math.round(g0 * (1.0f + shade)));
-            rgb[i][2] = clampByte(Math.round(b0 * (1.0f + shade)));
-            alpha[i] = (a0 / 255f) * alphaScale;
+    private static float taperFactor(TaperMode taper, float t) {
+        return switch (taper) {
+            case NONE -> 1.0f;
+            // Full at the base, easing to a fine point - the classic whip silhouette.
+            case WHIP -> 0.30f + 0.70f * (float) Math.pow(1.0 - t, 0.8);
+            // Pointed at both ends, fattest in the belly.
+            case SPINDLE -> 0.25f + 0.75f * (float) Math.pow(Math.sin(Math.PI * t), 0.65);
+        };
+    }
+
+    /**
+     * Emits one soft-edged ribbon layer. The cross-section is drawn as two triangle strips that fade
+     * from a solid bright centre line to fully transparent edges, giving each strand a round, glowing,
+     * volumetric feel instead of a flat painted strip. When {@code flow > 0} bright energy pulses crawl
+     * along the strand toward the tip, and {@code tipBoost} flares the leading point.
+     */
+    private static void emitLayer(VertexConsumer buffer, PoseStack.Pose pose, RibbonFrame f,
+                                  float halfWidth, int argb, float alphaMul,
+                                  BlackwhipRenderState state, float flow, float edgeSoftness, float tipBoost) {
+        int n = f.center.length;
+        if (n < 2) {
+            return;
+        }
+        int light = FULL_BRIGHT;
+        float baseA = ((argb >> 24) & 0xFF) / 255f;
+        int r0 = (argb >> 16) & 0xFF;
+        int g0 = (argb >> 8) & 0xFF;
+        int b0 = argb & 0xFF;
+        Vec3 cf = state.camForward;
+
+        Vec3[] edgeL = new Vec3[n];
+        Vec3[] edgeR = new Vec3[n];
+        int[][] rgb = new int[n][3];
+        float[] centerA = new float[n];
+
+        // Closed loops (wrap rings) must not fade their ends, or a gap appears at the seam.
+        boolean closed = f.center[0].distanceToSqr(f.center[n - 1]) < 1.0e-4;
+
+        for (int i = 0; i < n; i++) {
+            float t = f.t[i];
+            float hw = halfWidth * f.widthFactor[i];
+            edgeL[i] = f.center[i].add(f.normal[i].scale(hw));
+            edgeR[i] = f.center[i].add(f.normal[i].scale(-hw));
+
+            float bright = 1.0f;
+            float white = 0.0f;
+            float a = baseA * alphaMul;
+
+            if (flow > 0.0f) {
+                // Two travelling octaves form sparse, bright energy bands sliding toward the tip.
+                double e1 = Math.sin(t * 11.0 - state.time * 0.45 + state.seed);
+                double e2 = Math.sin(t * 26.0 - state.time * 0.80 + state.seed * 1.7);
+                float energy = (float) Mth.clamp(0.5 + 0.5 * (0.62 * e1 + 0.38 * e2), 0.0, 1.0);
+                float hot = (float) Math.pow(energy, 2.4);
+                bright = 0.72f + 0.55f * energy;
+                white = 0.65f * hot * flow;
+                a *= 0.80f + 0.45f * energy;
+            }
+
+            // Tip flourish: the leading 18% flares brighter and whiter (the snapping spark).
+            float tipZone = Mth.clamp((t - 0.82f) / 0.18f, 0.0f, 1.0f);
+            if (tipBoost > 0.0f && tipZone > 0.0f) {
+                float s = smooth(tipZone) * tipBoost;
+                bright += 0.8f * s;
+                white = Math.min(1.0f, white + 0.7f * s);
+                a += 0.5f * s * baseA;
+            }
+
+            // Fade the very ends so strands melt away instead of stopping with a hard cap.
+            if (!closed) {
+                a *= smooth(Mth.clamp(t / 0.06f, 0.0f, 1.0f));         // base
+                a *= smooth(Mth.clamp((1.0f - t) / 0.10f, 0.0f, 1.0f)); // tip
+            }
+
+            rgb[i][0] = mixWhite(clampByte(Math.round(r0 * bright)), white);
+            rgb[i][1] = mixWhite(clampByte(Math.round(g0 * bright)), white);
+            rgb[i][2] = mixWhite(clampByte(Math.round(b0 * bright)), white);
+            centerA[i] = Mth.clamp(a, 0.0f, 1.0f);
         }
 
+        float edgeA = Mth.clamp(1.0f - edgeSoftness, 0.0f, 1.0f);
         for (int i = 0; i < n - 1; i++) {
-            emitQuad(buffer, pose, left[i], right[i], right[i + 1], left[i + 1],
-                    rgb[i], rgb[i + 1], alpha[i], alpha[i + 1], cf, light);
+            // Left edge -> centre seam.
+            softQuad(buffer, pose, cf, light,
+                    edgeL[i], f.center[i], edgeL[i + 1], f.center[i + 1],
+                    rgb[i], rgb[i + 1], centerA[i] * edgeA, centerA[i], centerA[i + 1] * edgeA, centerA[i + 1]);
+            // Centre seam -> right edge.
+            softQuad(buffer, pose, cf, light,
+                    f.center[i], edgeR[i], f.center[i + 1], edgeR[i + 1],
+                    rgb[i], rgb[i + 1], centerA[i], centerA[i] * edgeA, centerA[i + 1], centerA[i + 1] * edgeA);
         }
     }
 
-    private static void emitQuad(VertexConsumer buffer, PoseStack.Pose pose,
-                                 Vec3 li, Vec3 ri, Vec3 rj, Vec3 lj,
-                                 int[] ci, int[] cj, float ai, float aj, Vec3 normal, int light) {
-        // Front winding
-        vertex(buffer, pose, li, ci, ai, normal, light, 0f, 0f);
-        vertex(buffer, pose, ri, ci, ai, normal, light, 1f, 0f);
-        vertex(buffer, pose, rj, cj, aj, normal, light, 1f, 1f);
-        vertex(buffer, pose, lj, cj, aj, normal, light, 0f, 1f);
-        // Back winding (so the ribbon is visible from both sides)
-        vertex(buffer, pose, lj, cj, aj, normal, light, 0f, 1f);
-        vertex(buffer, pose, rj, cj, aj, normal, light, 1f, 1f);
-        vertex(buffer, pose, ri, ci, ai, normal, light, 1f, 0f);
-        vertex(buffer, pose, li, ci, ai, normal, light, 0f, 0f);
+    /** A camera-facing quad strip segment with independent per-corner alpha, drawn double-sided. */
+    private static void softQuad(VertexConsumer buffer, PoseStack.Pose pose, Vec3 normal, int light,
+                                 Vec3 a0, Vec3 b0, Vec3 a1, Vec3 b1,
+                                 int[] ci, int[] cj, float aA, float aB, float aC, float aD) {
+        vertex(buffer, pose, a0, ci, aA, normal, light, 0f, 0f);
+        vertex(buffer, pose, b0, ci, aB, normal, light, 1f, 0f);
+        vertex(buffer, pose, b1, cj, aD, normal, light, 1f, 1f);
+        vertex(buffer, pose, a1, cj, aC, normal, light, 0f, 1f);
+        // Reverse winding so the billboard shows from behind too.
+        vertex(buffer, pose, a1, cj, aC, normal, light, 0f, 1f);
+        vertex(buffer, pose, b1, cj, aD, normal, light, 1f, 1f);
+        vertex(buffer, pose, b0, ci, aB, normal, light, 1f, 0f);
+        vertex(buffer, pose, a0, ci, aA, normal, light, 0f, 0f);
     }
 
     private static void vertex(VertexConsumer buffer, PoseStack.Pose pose, Vec3 pos, int[] rgb, float alpha,
@@ -374,6 +543,15 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
                 .setOverlay(OverlayTexture.NO_OVERLAY)
                 .setLight(light)
                 .setNormal(pose, (float) normal.x, (float) normal.y, (float) normal.z);
+    }
+
+    private static int mixWhite(int channel, float white) {
+        return clampByte(channel + Math.round((255 - channel) * Mth.clamp(white, 0f, 1f)));
+    }
+
+    private static float smooth(float x) {
+        x = Mth.clamp(x, 0f, 1f);
+        return x * x * (3f - 2f * x);
     }
 
     // ---------------------------------------------------------------------
@@ -439,13 +617,6 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
         return n1.scale(a1).add(n2.scale(a2));
     }
 
-    private static float speckle(double x, double time) {
-        double v1 = Math.sin(x * 13.11 + time * 0.83) * Math.cos(x * 11.73 - time * 1.07);
-        double v2 = Math.sin(x * 31.33 - time * 1.71) * Math.cos(x * 27.59 + time * 0.61);
-        double v = 0.5 * (v1 * 0.5 + 0.5) + 0.5 * (v2 * 0.5 + 0.5);
-        return (float) Mth.clamp(v, 0.0, 1.0);
-    }
-
     private static int clampByte(int v) {
         return Mth.clamp(v, 0, 255);
     }
@@ -493,9 +664,11 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
         state.rightYaw = rightYaw;
         state.ownerHeight = player.getBbHeight();
 
-        double hipHeight = Math.max(0.30, Math.min(0.65, player.getBbHeight() * 0.48));
-        double crouch = player.isCrouching() ? -0.18 : 0.0;
-        Vec3 hipBase = state.ownerPos.add(0, hipHeight + crouch, 0);
+        // Anchor at the arm/hand instead of the hip: shoulder height, offset out to the arm, and pushed
+        // slightly forward so the whip reads as firing from the hand.
+        double shoulderHeight = Math.max(0.55, Math.min(1.45, player.getBbHeight() * 0.72));
+        double crouch = player.isCrouching() ? -0.22 : 0.0;
+        Vec3 armBase = state.ownerPos.add(0, shoulderHeight + crouch, 0);
 
         float side = switch (anchor) {
             case LEFT_HAND -> -1.0f;
@@ -503,10 +676,13 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
             default -> player.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
         };
 
+        // Lateral arm offset (~half shoulder width) and a forward reach to approximate the extended hand.
+        Vec3 toArm = rightYaw.scale(0.34 * side);
+
         if (anchor == BlackwhipAnchor.RIGHT_HIGH) {
-            return hipBase.add(rightYaw.scale(0.20 * side)).add(0, 0.35, 0).add(fwdYaw.scale(0.60));
+            return armBase.add(toArm).add(0, 0.18, 0).add(fwdYaw.scale(0.55));
         }
 
-        return hipBase.add(rightYaw.scale(0.20 * side)).add(fwdYaw.scale(-0.05));
+        return armBase.add(toArm).add(fwdYaw.scale(0.30));
     }
 }

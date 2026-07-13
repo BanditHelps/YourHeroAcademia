@@ -45,6 +45,7 @@ public class BlackwhipRenderState extends EntityRenderState {
     public float extendProgress = 1.0f; // 0..1 grow-in
     public boolean active = true;
     public float retractProgress = 0.0f; // 0..1 shrink-out
+    public float ageTicks = 0.0f; // ticks (with partial) since spawn, drives the whip-crack decay
 
     // Frame helpers.
     public Vec3 renderOrigin = Vec3.ZERO; // interpolated entity pos (local-space origin)
