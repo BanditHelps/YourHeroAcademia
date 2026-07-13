@@ -9,10 +9,10 @@
         "type": "palladium:sprite",
         "sprite": "palladium:background/modal_with_footer"
       },
-      "components": [
+      "widgets": [
         {
           "type": "palladium:text_box",
-          "text": "Decay",
+          "text": "Smokescreen",
           "properties": {
             "alignment": "top_center",
             "width": 86,
@@ -21,16 +21,28 @@
         },
         {
           "type": "yha:body_display_bar",
-          "id": "decay_instability",
+          "id": "smoke_capacity",
           "show_icon": true,
           "show_label": true,
-          "description": "How unstable your decay has become. Max it out and your power will turn on you.",
+          "description": "Tracks your body's internal smoke reserves.",
           "properties": {
             "alignment": "top_center",
             "x": 3,
             "y": 36,
             "width": 72,
             "height": 8
+          }
+        },
+        {
+          "type": "palladium:button",
+          "text": "Awaken",
+          "properties": {
+            "alignment": "bottom_center",
+            "width": 80,
+            "action": {
+              "type": "palladium:open_screen",
+              "screen": "test:test_screen"
+            }
           }
         }
       ]
@@ -41,10 +53,10 @@
       "components": [
         {
           "type": "palladium:power_tree",
-          "power": "yha:decay",
+          "power": "yha:smokescreen",
           "background": {
             "type": "palladium:repeating_texture",
-            "texture": "minecraft:textures/block/black_concrete.png"
+            "texture": "minecraft:textures/block/purple_stained_glass.png"
           },
           "properties": {
             "alignment": "center",

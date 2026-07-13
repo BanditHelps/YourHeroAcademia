@@ -9,7 +9,7 @@
         "type": "palladium:sprite",
         "sprite": "palladium:background/modal_with_footer"
       },
-      "components": [
+      "widgets": [
         {
           "type": "palladium:text_box",
           "text": "Blackwhip",

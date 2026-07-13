@@ -24,14 +24,14 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
-import net.threetag.palladium.client.gui.ui.component.UiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
-import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
+import net.threetag.palladium.client.gui.ui.widget.UiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetProperties;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 import net.threetag.palladium.client.gui.ui.screen.UiScreen;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 import org.lwjgl.glfw.GLFW;
 
-public class GeneCombinationBrowserPanelUiComponent extends UiComponent {
+public class GeneCombinationBrowserPanelUiComponent extends UiWidget {
     public static final MapCodec<GeneCombinationBrowserPanelUiComponent> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Codec.INT.optionalFieldOf("frame_color", 0xFF79B8FF).forGetter(GeneCombinationBrowserPanelUiComponent::getFrameColor),
             Codec.INT.optionalFieldOf("panel_color", 0xCC172231).forGetter(GeneCombinationBrowserPanelUiComponent::getPanelColor),
@@ -43,7 +43,7 @@ public class GeneCombinationBrowserPanelUiComponent extends UiComponent {
     private final int panelColor;
     private final int textColor;
 
-    public GeneCombinationBrowserPanelUiComponent(int frameColor, int panelColor, int textColor, UiComponentProperties properties) {
+    public GeneCombinationBrowserPanelUiComponent(int frameColor, int panelColor, int textColor, UiWidgetProperties properties) {
         super(properties);
         this.frameColor = withOpaqueAlpha(frameColor);
         this.panelColor = withOpaqueAlpha(panelColor);
@@ -51,7 +51,7 @@ public class GeneCombinationBrowserPanelUiComponent extends UiComponent {
     }
 
     @Override
-    public UiComponentSerializer<?> getSerializer() {
+    public UiWidgetSerializer<?> getSerializer() {
         return YhaUiComponentSerializers.GENE_COMBINATION_BROWSER_PANEL;
     }
 
@@ -790,14 +790,14 @@ public class GeneCombinationBrowserPanelUiComponent extends UiComponent {
         }
     }
 
-    public static class Serializer extends UiComponentSerializer<GeneCombinationBrowserPanelUiComponent> {
+    public static class Serializer extends UiWidgetSerializer<GeneCombinationBrowserPanelUiComponent> {
         @Override
         public MapCodec<GeneCombinationBrowserPanelUiComponent> codec() {
             return GeneCombinationBrowserPanelUiComponent.CODEC;
         }
 
         @Override
-        public void addDocumentation(CodecDocumentationBuilder<UiComponent, GeneCombinationBrowserPanelUiComponent> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<UiWidget, GeneCombinationBrowserPanelUiComponent> builder, HolderLookup.Provider provider) {
             builder.setName("Gene Combination Browser Panel")
                     .setDescription("Visual recipe browser with searchable gene list, clickable graph nodes, and back navigation.");
         }

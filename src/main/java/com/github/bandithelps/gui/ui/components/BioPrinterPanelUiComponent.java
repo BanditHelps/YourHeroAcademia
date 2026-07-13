@@ -31,13 +31,13 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import net.threetag.palladium.client.gui.ui.component.UiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
-import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
+import net.threetag.palladium.client.gui.ui.widget.UiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetProperties;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 import net.threetag.palladium.client.gui.ui.screen.UiScreen;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 
-public class BioPrinterPanelUiComponent extends UiComponent {
+public class BioPrinterPanelUiComponent extends UiWidget {
     private static final int INPUT_SLOTS = 6;
     private static final int ROW_HEIGHT = 20;
     private static final int VISIBLE_ROWS = 7;
@@ -58,7 +58,7 @@ public class BioPrinterPanelUiComponent extends UiComponent {
     private final int panelColor;
     private final int textColor;
 
-    public BioPrinterPanelUiComponent(int frameColor, int panelColor, int textColor, UiComponentProperties properties) {
+    public BioPrinterPanelUiComponent(int frameColor, int panelColor, int textColor, UiWidgetProperties properties) {
         super(properties);
         this.frameColor = withOpaqueAlpha(frameColor);
         this.panelColor = withOpaqueAlpha(panelColor);
@@ -66,7 +66,7 @@ public class BioPrinterPanelUiComponent extends UiComponent {
     }
 
     @Override
-    public UiComponentSerializer<?> getSerializer() {
+    public UiWidgetSerializer<?> getSerializer() {
         return YhaUiComponentSerializers.BIO_PRINTER_PANEL;
     }
 
@@ -743,14 +743,14 @@ public class BioPrinterPanelUiComponent extends UiComponent {
         }
     }
 
-    public static class Serializer extends UiComponentSerializer<BioPrinterPanelUiComponent> {
+    public static class Serializer extends UiWidgetSerializer<BioPrinterPanelUiComponent> {
         @Override
         public MapCodec<BioPrinterPanelUiComponent> codec() {
             return BioPrinterPanelUiComponent.CODEC;
         }
 
         @Override
-        public void addDocumentation(CodecDocumentationBuilder<UiComponent, BioPrinterPanelUiComponent> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<UiWidget, BioPrinterPanelUiComponent> builder, HolderLookup.Provider provider) {
             builder.setName("Bio Printer Panel")
                     .setDescription("Bio printer panel with DNA import, genome editing, and print controls.");
         }

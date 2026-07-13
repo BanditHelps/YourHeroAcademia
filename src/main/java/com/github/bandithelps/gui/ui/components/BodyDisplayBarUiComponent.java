@@ -16,10 +16,10 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.threetag.palladium.client.gui.ui.UiAlignment;
-import net.threetag.palladium.client.gui.ui.component.RenderableUiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
-import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
+import net.threetag.palladium.client.gui.ui.widget.RenderableUiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetProperties;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 import net.threetag.palladium.logic.context.DataContext;
 
@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class BodyDisplayBarUiComponent extends RenderableUiComponent {
+public class BodyDisplayBarUiComponent extends RenderableUiWidget {
     private static final int DEFAULT_BAR_WIDTH = 72;
     private static final int DEFAULT_BAR_HEIGHT = 6;
     private static final int DEFAULT_ICON_SIZE = 6;
@@ -61,7 +61,7 @@ public class BodyDisplayBarUiComponent extends RenderableUiComponent {
             boolean showLabel,
             int valueDecimals,
             String description,
-            UiComponentProperties properties
+            UiWidgetProperties properties
     ) {
         super(properties);
         this.displayBarId = displayBarId;
@@ -74,7 +74,7 @@ public class BodyDisplayBarUiComponent extends RenderableUiComponent {
     }
 
     @Override
-    public UiComponentSerializer<?> getSerializer() {
+    public UiWidgetSerializer<?> getSerializer() {
         return YhaUiComponentSerializers.BODY_DISPLAY_BAR;
     }
 
@@ -306,14 +306,14 @@ public class BodyDisplayBarUiComponent extends RenderableUiComponent {
         return String.format(Locale.ROOT, "%.1f%%", ratio * 100.0F);
     }
 
-    public static class Serializer extends UiComponentSerializer<BodyDisplayBarUiComponent> {
+    public static class Serializer extends UiWidgetSerializer<BodyDisplayBarUiComponent> {
         @Override
         public MapCodec<BodyDisplayBarUiComponent> codec() {
             return BodyDisplayBarUiComponent.CODEC;
         }
 
         @Override
-        public void addDocumentation(CodecDocumentationBuilder<UiComponent, BodyDisplayBarUiComponent> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<UiWidget, BodyDisplayBarUiComponent> builder, HolderLookup.Provider provider) {
             builder.setName("Body Display Bar")
                     .setDescription("Renders a registered body display bar by id.")
                     .add("id", TYPE_STRING, "The id of the body display bar to render.")

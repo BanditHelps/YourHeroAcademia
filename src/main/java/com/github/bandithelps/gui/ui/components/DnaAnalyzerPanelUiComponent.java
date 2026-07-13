@@ -24,9 +24,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import net.threetag.palladium.client.gui.ui.component.UiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
-import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
+import net.threetag.palladium.client.gui.ui.widget.UiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetProperties;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 import net.threetag.palladium.client.gui.ui.screen.UiScreen;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 
@@ -34,7 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class DnaAnalyzerPanelUiComponent extends UiComponent {
+public class DnaAnalyzerPanelUiComponent extends UiWidget {
     private static final int SLOT_WIDTH = 72;
     private static final int SLOT_HEIGHT = 24;
     private static final int SLOT_ROW_GAP = 10;
@@ -72,7 +72,7 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
             int slotColor,
             int slotActiveColor,
             int textColor,
-            UiComponentProperties properties
+            UiWidgetProperties properties
     ) {
         super(properties);
         this.title = title == null || title.isBlank() ? "" : title;
@@ -83,7 +83,7 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
     }
 
     @Override
-    public UiComponentSerializer<?> getSerializer() {
+    public UiWidgetSerializer<?> getSerializer() {
         return YhaUiComponentSerializers.DNA_ANALYZER_PANEL;
     }
 
@@ -919,14 +919,14 @@ public class DnaAnalyzerPanelUiComponent extends UiComponent {
         return -1;
     }
 
-    public static class Serializer extends UiComponentSerializer<DnaAnalyzerPanelUiComponent> {
+    public static class Serializer extends UiWidgetSerializer<DnaAnalyzerPanelUiComponent> {
         @Override
         public MapCodec<DnaAnalyzerPanelUiComponent> codec() {
             return DnaAnalyzerPanelUiComponent.CODEC;
         }
 
         @Override
-        public void addDocumentation(CodecDocumentationBuilder<UiComponent, DnaAnalyzerPanelUiComponent> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<UiWidget, DnaAnalyzerPanelUiComponent> builder, HolderLookup.Provider provider) {
             builder.setName("DNA Analyzer Panel")
                     .setDescription("Renders a modern DNA panel with a helix, six gene slots, and slot tooltips.");
         }

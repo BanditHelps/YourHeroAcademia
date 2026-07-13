@@ -9,7 +9,7 @@
         "type": "palladium:sprite",
         "sprite": "palladium:background/default"
       },
-      "components": [
+      "widgets": [
         {
           "type": "palladium:text_box",
           "text": "Gene Combiner",

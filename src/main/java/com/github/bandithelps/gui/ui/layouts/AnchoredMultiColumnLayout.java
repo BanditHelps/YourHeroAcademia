@@ -8,7 +8,7 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
-import net.threetag.palladium.client.gui.ui.component.UiComponent;
+import net.threetag.palladium.client.gui.ui.widget.UiWidget;
 import net.threetag.palladium.client.gui.ui.layout.UiLayout;
 import net.threetag.palladium.client.gui.ui.layout.UiLayoutSerializer;
 import net.threetag.palladium.client.gui.ui.screen.UiScreen;
@@ -76,16 +76,16 @@ public class AnchoredMultiColumnLayout extends UiLayout {
     }
 
     @Override
-    public void renderBackground(GuiGraphicsExtractor guiGraphics, int x, int y) {
+    public void renderBackground(GuiGraphicsExtractor guiGraphics, int x, int y, int width, int height) {
         for (int i = 0; i < this.layouts.size(); i++) {
-            this.layouts.get(i).renderBackground(guiGraphics, x + this.columnStarts.get(i) + this.anchorShift + this.xOffset, y);
+            this.layouts.get(i).renderBackground(guiGraphics, x + this.columnStarts.get(i) + this.anchorShift + this.xOffset, y, width, height);
         }
     }
 
     @Override
-    public void addComponents(UiScreen screen, int x, int y, BiConsumer<UiComponent, AbstractWidget> consumer) {
+    public void addWidgets(UiScreen screen, int x, int y, int width, int height, BiConsumer<UiWidget, AbstractWidget> consumer) {
         for (int i = 0; i < this.layouts.size(); i++) {
-            this.layouts.get(i).addComponents(screen, x + this.columnStarts.get(i) + this.anchorShift + this.xOffset, y, consumer);
+            this.layouts.get(i).addWidgets(screen, x + this.columnStarts.get(i) + this.anchorShift + this.xOffset, y, width, height, consumer);
         }
     }
 

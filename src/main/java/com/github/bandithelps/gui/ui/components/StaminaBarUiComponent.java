@@ -11,16 +11,16 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.threetag.palladium.client.gui.ui.UiAlignment;
-import net.threetag.palladium.client.gui.ui.component.RenderableUiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
-import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
+import net.threetag.palladium.client.gui.ui.widget.RenderableUiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetProperties;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 import net.threetag.palladium.logic.context.DataContext;
 
 import java.util.List;
 
-public class StaminaBarUiComponent extends RenderableUiComponent {
+public class StaminaBarUiComponent extends RenderableUiWidget {
     private static final int DEFAULT_BAR_WIDTH = 84;
     private static final int DEFAULT_BAR_HEIGHT = 10;
     private static final int BAR_BACKGROUND_COLOR = 0xCC101018;
@@ -38,7 +38,7 @@ public class StaminaBarUiComponent extends RenderableUiComponent {
     private final int barHeight;
     private final boolean showLabel;
 
-    public StaminaBarUiComponent(int barWidth, int barHeight, boolean showLabel, UiComponentProperties properties) {
+    public StaminaBarUiComponent(int barWidth, int barHeight, boolean showLabel, UiWidgetProperties properties) {
         super(properties);
         this.barWidth = Math.max(3, barWidth);
         this.barHeight = Math.max(3, barHeight);
@@ -46,7 +46,7 @@ public class StaminaBarUiComponent extends RenderableUiComponent {
     }
 
     @Override
-    public UiComponentSerializer<?> getSerializer() {
+    public UiWidgetSerializer<?> getSerializer() {
         return YhaUiComponentSerializers.STAMINA_BAR;
     }
 
@@ -105,14 +105,14 @@ public class StaminaBarUiComponent extends RenderableUiComponent {
         graphics.fill(x + width - 1, y, x + width, y + height, BAR_FRAME_COLOR);
     }
 
-    public static class Serializer extends UiComponentSerializer<StaminaBarUiComponent> {
+    public static class Serializer extends UiWidgetSerializer<StaminaBarUiComponent> {
         @Override
         public MapCodec<StaminaBarUiComponent> codec() {
             return StaminaBarUiComponent.CODEC;
         }
 
         @Override
-        public void addDocumentation(CodecDocumentationBuilder<UiComponent, StaminaBarUiComponent> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<UiWidget, StaminaBarUiComponent> builder, HolderLookup.Provider provider) {
             builder.setName("Stamina Bar")
                     .setDescription("Renders a stamina bar with hover tooltip for current and max values.")
                     .add("width", TYPE_INT, "Optional width override for the bar.")

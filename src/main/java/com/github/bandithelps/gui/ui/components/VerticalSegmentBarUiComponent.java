@@ -12,10 +12,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.threetag.palladium.client.gui.ui.UiAlignment;
-import net.threetag.palladium.client.gui.ui.component.RenderableUiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
-import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
+import net.threetag.palladium.client.gui.ui.widget.RenderableUiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetProperties;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 import net.threetag.palladium.logic.context.DataContext;
 
@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class VerticalSegmentBarUiComponent extends RenderableUiComponent {
+public class VerticalSegmentBarUiComponent extends RenderableUiWidget {
     private static final int DEFAULT_BAR_WIDTH = 16;
     private static final int DEFAULT_BAR_HEIGHT = 92;
     private static final int DEFAULT_SEGMENT_GAP = 1;
@@ -79,7 +79,7 @@ public class VerticalSegmentBarUiComponent extends RenderableUiComponent {
             boolean showValue,
             int emptyColor,
             int fillColor,
-            UiComponentProperties properties
+            UiWidgetProperties properties
     ) {
         super(properties);
         this.label = label == null ? "" : label.trim();
@@ -99,7 +99,7 @@ public class VerticalSegmentBarUiComponent extends RenderableUiComponent {
     }
 
     @Override
-    public UiComponentSerializer<?> getSerializer() {
+    public UiWidgetSerializer<?> getSerializer() {
         return YhaUiComponentSerializers.VERTICAL_SEGMENT_BAR;
     }
 
@@ -256,14 +256,14 @@ public class VerticalSegmentBarUiComponent extends RenderableUiComponent {
         return fillColor;
     }
 
-    public static class Serializer extends UiComponentSerializer<VerticalSegmentBarUiComponent> {
+    public static class Serializer extends UiWidgetSerializer<VerticalSegmentBarUiComponent> {
         @Override
         public MapCodec<VerticalSegmentBarUiComponent> codec() {
             return VerticalSegmentBarUiComponent.CODEC;
         }
 
         @Override
-        public void addDocumentation(CodecDocumentationBuilder<UiComponent, VerticalSegmentBarUiComponent> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<UiWidget, VerticalSegmentBarUiComponent> builder, HolderLookup.Provider provider) {
             builder.setName("Vertical Segment Bar")
                     .setDescription("Renders a vertical segmented upgrade bar from body float current and max keys.")
                     .add("label", TYPE_STRING, "Label shown above the bar.")

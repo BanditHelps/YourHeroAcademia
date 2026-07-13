@@ -1,7 +1,6 @@
 {
   "name": "Blackwhip",
   "parent": "yha:quirk",
-  "screen": "yha:power/blackwhip",
   "icon": "minecraft:lead",
   "gui_display_type": "tree",
   "abilities": {

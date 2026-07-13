@@ -19,16 +19,16 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ItemStack;
-import net.threetag.palladium.client.gui.ui.component.UiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
-import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
+import net.threetag.palladium.client.gui.ui.widget.UiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetProperties;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 import net.threetag.palladium.client.gui.ui.screen.UiScreen;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class DnaAnalyzerToolsUiComponent extends UiComponent {
+public class DnaAnalyzerToolsUiComponent extends UiWidget {
     private static final int BUTTON_HEIGHT = 22;
     private static final int BUTTON_GAP = 5;
     private static final int INNER_PADDING = 4;
@@ -57,7 +57,7 @@ public class DnaAnalyzerToolsUiComponent extends UiComponent {
             int slotActiveColor,
             int textColor,
             List<ToolDefinition> tools,
-            UiComponentProperties properties
+            UiWidgetProperties properties
     ) {
         super(properties);
         this.title = title == null ? "" : title;
@@ -69,7 +69,7 @@ public class DnaAnalyzerToolsUiComponent extends UiComponent {
     }
 
     @Override
-    public UiComponentSerializer<?> getSerializer() {
+    public UiWidgetSerializer<?> getSerializer() {
         return YhaUiComponentSerializers.DNA_ANALYZER_TOOLS;
     }
 
@@ -298,14 +298,14 @@ public class DnaAnalyzerToolsUiComponent extends UiComponent {
         }
     }
 
-    public static class Serializer extends UiComponentSerializer<DnaAnalyzerToolsUiComponent> {
+    public static class Serializer extends UiWidgetSerializer<DnaAnalyzerToolsUiComponent> {
         @Override
         public MapCodec<DnaAnalyzerToolsUiComponent> codec() {
             return DnaAnalyzerToolsUiComponent.CODEC;
         }
 
         @Override
-        public void addDocumentation(CodecDocumentationBuilder<UiComponent, DnaAnalyzerToolsUiComponent> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<UiWidget, DnaAnalyzerToolsUiComponent> builder, HolderLookup.Provider provider) {
             builder.setName("DNA Analyzer Tools")
                     .setDescription("Renders toggleable DNA analyzer tool buttons with optional item icons.");
         }

@@ -15,14 +15,14 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.threetag.palladium.client.gui.ui.UiAlignment;
-import net.threetag.palladium.client.gui.ui.component.*;
+import net.threetag.palladium.client.gui.ui.widget.*;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 import net.threetag.palladium.logic.context.DataContext;
 import net.threetag.palladium.util.PalladiumCodecs;
 
 import java.util.Locale;
 
-public class PlayerAttributeValueUiComponent extends RenderableUiComponent {
+public class PlayerAttributeValueUiComponent extends RenderableUiWidget {
 
     private static final int BASE_VALUE_COLOR = 0xFFB0B0B0;
     private static final int BUFFED_VALUE_COLOR = 0xFF55FF55;
@@ -35,7 +35,7 @@ public class PlayerAttributeValueUiComponent extends RenderableUiComponent {
             Codec.INT.optionalFieldOf("decimals", 2).forGetter(PlayerAttributeValueUiComponent::getDecimals),
             PalladiumCodecs.COLOR_INT_CODEC.optionalFieldOf("color", 0xFFFFFFFF).forGetter(PlayerAttributeValueUiComponent::getColor),
             Codec.BOOL.optionalFieldOf("shadow", true).forGetter(PlayerAttributeValueUiComponent::hasShadow),
-            AbstractStringUiComponent.TEXT_ALIGNMENT_CODEC.optionalFieldOf("alignment", TextAlignment.LEFT).forGetter(PlayerAttributeValueUiComponent::getTextAlignment),
+            AbstractStringUiWidget.TEXT_ALIGNMENT_CODEC.optionalFieldOf("alignment", TextAlignment.LEFT).forGetter(PlayerAttributeValueUiComponent::getTextAlignment),
             propertiesCodec()
     ).apply(instance, PlayerAttributeValueUiComponent::new));
 
@@ -53,7 +53,7 @@ public class PlayerAttributeValueUiComponent extends RenderableUiComponent {
             int color,
             boolean shadow,
             TextAlignment alignment,
-            UiComponentProperties properties
+            UiWidgetProperties properties
     ) {
         super(properties);
         this.attributeId = attributeId;
@@ -159,18 +159,18 @@ public class PlayerAttributeValueUiComponent extends RenderableUiComponent {
     public TextAlignment getTextAlignment() { return alignment; }
 
     @Override
-    public UiComponentSerializer<?> getSerializer() {
+    public UiWidgetSerializer<?> getSerializer() {
         return YhaUiComponentSerializers.PLAYER_ATTRIBUTE_VALUE;
     }
 
-    public static class Serializer extends UiComponentSerializer<PlayerAttributeValueUiComponent> {
+    public static class Serializer extends UiWidgetSerializer<PlayerAttributeValueUiComponent> {
         @Override
         public MapCodec<PlayerAttributeValueUiComponent> codec() {
             return PlayerAttributeValueUiComponent.CODEC;
         }
 
         @Override
-        public void addDocumentation(CodecDocumentationBuilder<UiComponent, PlayerAttributeValueUiComponent> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<UiWidget, PlayerAttributeValueUiComponent> builder, HolderLookup.Provider provider) {
             builder.setName("Player Attribute Value")
                     .setDescription("Renders a labeled player attribute value and colors it based on vanilla player defaults.")
                     .add("attribute", TYPE_STRING, "Attribute id to render (e.g. quirk_factor, attack_strength, movement_speed).")

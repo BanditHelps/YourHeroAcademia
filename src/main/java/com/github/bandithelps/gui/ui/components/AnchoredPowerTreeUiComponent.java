@@ -10,9 +10,9 @@ import net.minecraft.resources.ResourceKey;
 import net.threetag.palladium.client.gui.screen.power.PowerUiScreen;
 import net.threetag.palladium.client.gui.ui.background.RepeatingTextureBackground;
 import net.threetag.palladium.client.gui.ui.background.UiBackground;
-import net.threetag.palladium.client.gui.ui.component.UiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
-import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
+import net.threetag.palladium.client.gui.ui.widget.UiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetProperties;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 import net.threetag.palladium.client.gui.ui.screen.UiScreen;
 import net.threetag.palladium.client.gui.widget.PowerTreePopulator;
 import net.threetag.palladium.client.gui.widget.PowerTreeWidget;
@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Field;
 import java.util.Optional;
 
-public class AnchoredPowerTreeUiComponent extends UiComponent {
+public class AnchoredPowerTreeUiComponent extends UiWidget {
     public static final MapCodec<AnchoredPowerTreeUiComponent> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
             ResourceKey.codec(PalladiumRegistryKeys.POWER).optionalFieldOf("power").forGetter((c) -> Optional.ofNullable(c.power)),
             UiBackground.Codecs.CODEC.optionalFieldOf("background", RepeatingTextureBackground.RED_WOOL).forGetter((c) -> c.background),
@@ -53,7 +53,7 @@ public class AnchoredPowerTreeUiComponent extends UiComponent {
             boolean scrollable,
             float startGridX,
             float startGridY,
-            UiComponentProperties properties
+            UiWidgetProperties properties
     ) {
         super(properties);
         this.power = power;
@@ -65,7 +65,7 @@ public class AnchoredPowerTreeUiComponent extends UiComponent {
     }
 
     @Override
-    public UiComponentSerializer<?> getSerializer() {
+    public UiWidgetSerializer<?> getSerializer() {
         return YhaUiComponentSerializers.ANCHORED_POWER_TREE;
     }
 
@@ -109,14 +109,14 @@ public class AnchoredPowerTreeUiComponent extends UiComponent {
         return startGridY;
     }
 
-    public static class Serializer extends UiComponentSerializer<AnchoredPowerTreeUiComponent> {
+    public static class Serializer extends UiWidgetSerializer<AnchoredPowerTreeUiComponent> {
         @Override
         public MapCodec<AnchoredPowerTreeUiComponent> codec() {
             return AnchoredPowerTreeUiComponent.CODEC;
         }
 
         @Override
-        public void addDocumentation(CodecDocumentationBuilder<UiComponent, AnchoredPowerTreeUiComponent> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<UiWidget, AnchoredPowerTreeUiComponent> builder, HolderLookup.Provider provider) {
             builder.setName("Anchored Power Tree")
                     .setDescription("Power tree with optional fixed origin and optional drag scrolling.")
                     .addOptional("power", TYPE_POWER, "Power to render; defaults to active power on a power screen.")

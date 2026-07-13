@@ -8,14 +8,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.HolderLookup;
 import net.threetag.palladium.client.gui.ui.UiAlignment;
-import net.threetag.palladium.client.gui.ui.component.RenderableUiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
-import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
+import net.threetag.palladium.client.gui.ui.widget.RenderableUiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetProperties;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 import net.threetag.palladium.logic.context.DataContext;
 
-public class DnaAnalyzerInfoUiComponent extends RenderableUiComponent {
+public class DnaAnalyzerInfoUiComponent extends RenderableUiWidget {
     public static final MapCodec<DnaAnalyzerInfoUiComponent> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
             Codec.INT.optionalFieldOf("label_color", 0xFF9FC9EE).forGetter(DnaAnalyzerInfoUiComponent::getLabelColor),
             Codec.INT.optionalFieldOf("value_color", 0xFFE6F2FF).forGetter(DnaAnalyzerInfoUiComponent::getValueColor),
@@ -25,14 +25,14 @@ public class DnaAnalyzerInfoUiComponent extends RenderableUiComponent {
     private final int labelColor;
     private final int valueColor;
 
-    public DnaAnalyzerInfoUiComponent(int labelColor, int valueColor, UiComponentProperties properties) {
+    public DnaAnalyzerInfoUiComponent(int labelColor, int valueColor, UiWidgetProperties properties) {
         super(properties);
         this.labelColor = withOpaqueAlpha(labelColor);
         this.valueColor = withOpaqueAlpha(valueColor);
     }
 
     @Override
-    public UiComponentSerializer<?> getSerializer() {
+    public UiWidgetSerializer<?> getSerializer() {
         return YhaUiComponentSerializers.DNA_ANALYZER_INFO;
     }
 
@@ -136,14 +136,14 @@ public class DnaAnalyzerInfoUiComponent extends RenderableUiComponent {
         return this.valueColor;
     }
 
-    public static class Serializer extends UiComponentSerializer<DnaAnalyzerInfoUiComponent> {
+    public static class Serializer extends UiWidgetSerializer<DnaAnalyzerInfoUiComponent> {
         @Override
         public MapCodec<DnaAnalyzerInfoUiComponent> codec() {
             return DnaAnalyzerInfoUiComponent.CODEC;
         }
 
         @Override
-        public void addDocumentation(CodecDocumentationBuilder<UiComponent, DnaAnalyzerInfoUiComponent> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<UiWidget, DnaAnalyzerInfoUiComponent> builder, HolderLookup.Provider provider) {
             builder.setName("DNA Analyzer Info")
                     .setDescription("Renders specimen details from the active DNA analyzer state.");
         }

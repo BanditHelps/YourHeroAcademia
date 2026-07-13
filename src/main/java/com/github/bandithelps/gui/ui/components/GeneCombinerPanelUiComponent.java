@@ -30,13 +30,13 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import net.threetag.palladium.client.gui.ui.component.UiComponent;
-import net.threetag.palladium.client.gui.ui.component.UiComponentProperties;
-import net.threetag.palladium.client.gui.ui.component.UiComponentSerializer;
+import net.threetag.palladium.client.gui.ui.widget.UiWidget;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetProperties;
+import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 import net.threetag.palladium.client.gui.ui.screen.UiScreen;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 
-public class GeneCombinerPanelUiComponent extends UiComponent {
+public class GeneCombinerPanelUiComponent extends UiWidget {
     private static final int INPUT_SLOTS = 4;
     private static final int ROW_HEIGHT = 20;
     private static final int VISIBLE_ROWS = 7;
@@ -55,7 +55,7 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
     private final int panelColor;
     private final int textColor;
 
-    public GeneCombinerPanelUiComponent(int frameColor, int panelColor, int textColor, UiComponentProperties properties) {
+    public GeneCombinerPanelUiComponent(int frameColor, int panelColor, int textColor, UiWidgetProperties properties) {
         super(properties);
         this.frameColor = withOpaqueAlpha(frameColor);
         this.panelColor = withOpaqueAlpha(panelColor);
@@ -63,7 +63,7 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
     }
 
     @Override
-    public UiComponentSerializer<?> getSerializer() {
+    public UiWidgetSerializer<?> getSerializer() {
         return YhaUiComponentSerializers.GENE_COMBINER_PANEL;
     }
 
@@ -713,14 +713,14 @@ public class GeneCombinerPanelUiComponent extends UiComponent {
         }
     }
 
-    public static class Serializer extends UiComponentSerializer<GeneCombinerPanelUiComponent> {
+    public static class Serializer extends UiWidgetSerializer<GeneCombinerPanelUiComponent> {
         @Override
         public MapCodec<GeneCombinerPanelUiComponent> codec() {
             return GeneCombinerPanelUiComponent.CODEC;
         }
 
         @Override
-        public void addDocumentation(CodecDocumentationBuilder<UiComponent, GeneCombinerPanelUiComponent> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<UiWidget, GeneCombinerPanelUiComponent> builder, HolderLookup.Provider provider) {
             builder.setName("Gene Combiner Panel")
                     .setDescription("Container-free gene combiner panel with inventory vial list and drag/drop input slots.");
         }
