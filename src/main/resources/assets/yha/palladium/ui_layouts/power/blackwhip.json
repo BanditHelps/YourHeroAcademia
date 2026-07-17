@@ -38,7 +38,7 @@
     {
       "width": 250,
       "height": 200,
-      "components": [
+      "widgets": [
         {
           "type": "palladium:power_tree",
           "power": "yha:blackwhip",
@@ -62,7 +62,7 @@
         "type": "palladium:sprite",
         "sprite": "palladium:background/default"
       },
-      "components": [
+      "widgets": [
         {
           "type": "palladium:icon",
           "icon": "minecraft:command_block",

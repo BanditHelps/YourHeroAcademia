@@ -255,7 +255,7 @@
     {
       "width": 250,
       "height": 200,
-      "components": [
+      "widgets": [
         {
           "type": "yha:vertical_segment_bar",
           "label": "",
@@ -443,7 +443,7 @@
         "type": "palladium:sprite",
         "sprite": "palladium:background/default"
       },
-      "components": [
+      "widgets": [
         {
           "type": "palladium:icon",
           "icon": "minecraft:command_block",

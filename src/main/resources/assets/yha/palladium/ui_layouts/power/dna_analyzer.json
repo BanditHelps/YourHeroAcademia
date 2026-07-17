@@ -59,7 +59,7 @@
         "type": "palladium:sprite",
         "sprite": "palladium:background/default"
       },
-      "components": [
+      "widgets": [
         {
           "type": "palladium:text_box",
           "text": "Genome Workstation",
@@ -95,7 +95,7 @@
         "type": "palladium:sprite",
         "sprite": "palladium:background/modal_with_header"
       },
-      "components": [
+      "widgets": [
         {
           "type": "palladium:text_box",
           "text": "Specimen Data",
