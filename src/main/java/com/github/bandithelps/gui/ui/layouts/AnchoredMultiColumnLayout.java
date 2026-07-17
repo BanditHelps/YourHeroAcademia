@@ -83,7 +83,7 @@ public class AnchoredMultiColumnLayout extends UiLayout {
     }
 
     @Override
-    public void addWidgets(UiScreen screen, int x, int y, int width, int height, BiConsumer<UiWidget, AbstractWidget> consumer) {
+    public void addWidgets(UiScreen screen, int x, int y, int width, int height, WidgetConsumer consumer) {
         for (int i = 0; i < this.layouts.size(); i++) {
             this.layouts.get(i).addWidgets(screen, x + this.columnStarts.get(i) + this.anchorShift + this.xOffset, y, width, height, consumer);
         }

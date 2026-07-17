@@ -167,7 +167,7 @@ dependencies {
 
     // Development Palladium Version
 //    implementation files('libs/palladium-5.0.0+26.1.2.jar')
-    implementation "maven.modrinth:palladium-previews:6912537+26.1.2"
+    implementation "maven.modrinth:palladium-previews:22d9668+26.1.2"
 
 
     // Player Animation Library

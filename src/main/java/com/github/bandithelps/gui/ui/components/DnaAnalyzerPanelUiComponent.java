@@ -29,6 +29,7 @@ import net.threetag.palladium.client.gui.ui.widget.UiWidgetProperties;
 import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 import net.threetag.palladium.client.gui.ui.screen.UiScreen;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
+import net.threetag.palladium.logic.context.DataContext;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,8 +89,8 @@ public class DnaAnalyzerPanelUiComponent extends UiWidget {
     }
 
     @Override
-    public AbstractWidget buildWidget(UiScreen screen, ScreenRectangle rectangle) {
-        return new DnaAnalyzerPanelWidget(this, this.getX(rectangle), this.getY(rectangle), this.getWidth(), this.getHeight());
+    public AbstractWidget buildWidget(UiScreen screen, ScreenRectangle rectangle, DataContext context) {
+        return new DnaAnalyzerPanelWidget(this, this.getX(rectangle, context), this.getY(rectangle, context), this.getWidth(context), this.getHeight(context));
     }
 
     private static void drawPanelBackground(GuiGraphicsExtractor gui, int x, int y, int width, int height, int frameColor) {

@@ -29,6 +29,7 @@ import net.threetag.palladium.client.gui.ui.widget.UiWidgetProperties;
 import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 import net.threetag.palladium.client.gui.ui.screen.UiScreen;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
+import net.threetag.palladium.logic.context.DataContext;
 import org.lwjgl.glfw.GLFW;
 
 public class GeneCombinationBrowserPanelUiComponent extends UiWidget {
@@ -56,8 +57,8 @@ public class GeneCombinationBrowserPanelUiComponent extends UiWidget {
     }
 
     @Override
-    public AbstractWidget buildWidget(UiScreen screen, ScreenRectangle rectangle) {
-        return new BrowserWidget(this, this.getX(rectangle), this.getY(rectangle), this.getWidth(), this.getHeight());
+    public AbstractWidget buildWidget(UiScreen screen, ScreenRectangle rectangle, DataContext context) {
+        return new BrowserWidget(this, this.getX(rectangle, context), this.getY(rectangle, context), this.getWidth(context), this.getHeight(context));
     }
 
     public int getFrameColor() {

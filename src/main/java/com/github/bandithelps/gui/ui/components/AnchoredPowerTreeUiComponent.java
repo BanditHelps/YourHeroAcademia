@@ -17,6 +17,7 @@ import net.threetag.palladium.client.gui.ui.screen.UiScreen;
 import net.threetag.palladium.client.gui.widget.PowerTreePopulator;
 import net.threetag.palladium.client.gui.widget.PowerTreeWidget;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
+import net.threetag.palladium.logic.context.DataContext;
 import net.threetag.palladium.power.Power;
 import net.threetag.palladium.power.PowerInstance;
 import net.threetag.palladium.power.PowerUtil;
@@ -69,8 +70,9 @@ public class AnchoredPowerTreeUiComponent extends UiWidget {
         return YhaUiComponentSerializers.ANCHORED_POWER_TREE;
     }
 
+
     @Override
-    public AbstractWidget buildWidget(UiScreen screen, ScreenRectangle rectangle) {
+    public AbstractWidget buildWidget(UiScreen screen, ScreenRectangle rectangle, DataContext context) {
         PowerInstance powerInstance = null;
         if (this.power != null) {
             powerInstance = PowerUtil.getPowerHandler(screen.getMinecraft().player).getPowerInstance(this.power.identifier());
@@ -82,10 +84,10 @@ public class AnchoredPowerTreeUiComponent extends UiWidget {
                 screen,
                 powerInstance,
                 this.background,
-                this.getX(rectangle),
-                this.getY(rectangle),
-                this.getWidth(),
-                this.getHeight(),
+                this.getX(rectangle, context),
+                this.getY(rectangle, context),
+                this.getWidth(context),
+                this.getHeight(context),
                 this.autoCenter,
                 this.scrollable,
                 this.startGridX,
