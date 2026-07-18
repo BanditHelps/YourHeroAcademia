@@ -23,6 +23,8 @@ import com.github.bandithelps.abilities.blackwhip.BlackwhipRestrictAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipTagAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipYankAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipZipAbility;
+import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainDetachAbility;
+import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainTagAbility;
 import com.github.bandithelps.abilities.decay.DecayFistAbility;
 import com.github.bandithelps.abilities.decay.DecayInstabilityAbility;
 import com.github.bandithelps.abilities.decay.EnvironmentDecayAbility;
@@ -71,6 +73,8 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipBlockGrabAbility.Serializer> BLACKWHIP_BLOCK_GRAB;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipLashAbility.Serializer> BLACKWHIP_LASH;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipYankAbility.Serializer> BLACKWHIP_YANK;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainTagAbility.Serializer> BLACKWHIP_CHAIN_TAG;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainDetachAbility.Serializer> BLACKWHIP_CHAIN_DETACH;
 
     static {
         ABILITIES = DeferredRegister.create(PalladiumRegistryKeys.ABILITY_SERIALIZER, YourHeroAcademia.MODID);
@@ -105,6 +109,8 @@ public class AbilityRegister {
         BLACKWHIP_BLOCK_GRAB = ABILITIES.register("blackwhip_block_grab", BlackwhipBlockGrabAbility.Serializer::new);
         BLACKWHIP_LASH = ABILITIES.register("blackwhip_lash", BlackwhipLashAbility.Serializer::new);
         BLACKWHIP_YANK = ABILITIES.register("blackwhip_yank", BlackwhipYankAbility.Serializer::new);
+        BLACKWHIP_CHAIN_TAG = ABILITIES.register("blackwhip_chain_tag", BlackwhipChainTagAbility.Serializer::new);
+        BLACKWHIP_CHAIN_DETACH = ABILITIES.register("blackwhip_chain_detach", BlackwhipChainDetachAbility.Serializer::new);
     }
 
 }

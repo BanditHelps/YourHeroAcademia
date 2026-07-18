@@ -1,0 +1,111 @@
+{
+  "name": "Blackwhip (Chain)",
+  "parent": "yha:quirk",
+  "icon": "minecraft:chain",
+  "gui_display_type": "tree",
+  "abilities": {
+    "quirk_info": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Blackwhip (Chain)",
+        "description": "Manifest tendrils as a physical IK chain. Grab targets, wrap their waist, and break free by cutting the links.",
+        "icon": "minecraft:chain",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [0, 0]
+      }
+    },
+
+    "register_tether_bar": {
+      "type": "yha:display_body_bar",
+      "properties": {
+        "hidden_in_bar": true,
+        "hidden_in_gui": true
+      },
+      "id": "blackwhip_chain_connected_count",
+      "label": "Chain Tethers",
+      "part": "chest",
+      "key": "blackwhip_chain_connected_count",
+      "min": 0,
+      "max": 8,
+      "left_color": "#0c1f1a",
+      "right_color": "#25be9c",
+      "bar_type": "bar",
+      "state": {
+        "enabling": {
+          "type": "yha:body_float",
+          "part": "chest",
+          "key": "blackwhip_chain_connected_count",
+          "operator": ">=",
+          "target": -1
+        }
+      }
+    },
+
+    "blackwhip_chain_tag": {
+      "type": "yha:blackwhip_chain_tag",
+      "range": {
+        "type": "palladium:molang_float",
+        "molang": "12 + yha.quirk_factor() * 2"
+      },
+      "base_max_tethers": 2,
+      "max_distance": {
+        "type": "palladium:molang_float",
+        "molang": "28 + yha.quirk_factor() * 4"
+      },
+      "ttl_ticks": 0,
+      "segment_count": 4,
+      "link_length": 0.85,
+      "chain_hp": {
+        "type": "palladium:molang_float",
+        "molang": "18 + yha.quirk_factor() * 2"
+      },
+      "thickness": 1.0,
+      "travel_ticks": 6,
+      "properties": {
+        "title": "Chain Grab",
+        "description": "Send out a physical tendril chain to latch onto the entity you are looking at. Attack the chain to break it. Max tethers = 2 + Quirk Factor.",
+        "icon": "minecraft:lead",
+        "list_index": 0,
+        "hidden_in_gui": false,
+        "gui_position": [-1, -1],
+        "stamina_interval": 20,
+        "stamina_interval_cost": 6
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "held"
+        },
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "quirk_info"
+        }
+      }
+    },
+
+    "blackwhip_chain_detach": {
+      "type": "yha:blackwhip_chain_detach",
+      "range": 20,
+      "all": true,
+      "properties": {
+        "title": "Detach",
+        "description": "Release all of your active chain tethers at once.",
+        "icon": "minecraft:shears",
+        "list_index": 1,
+        "hidden_in_gui": false,
+        "gui_position": [-1, -2]
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "activation"
+        },
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "blackwhip_chain_tag"
+        }
+      }
+    }
+  }
+}

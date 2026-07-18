@@ -10,6 +10,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
+import com.github.bandithelps.client.blackwhip.BlackwhipSegmentPickClient;
+import com.github.bandithelps.entities.BlackwhipSegmentEntity;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
@@ -27,6 +29,7 @@ public class YourHeroAcademiaClient {
 
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
+        BlackwhipSegmentEntity.CLIENT_PICK_FILTER = BlackwhipSegmentPickClient::isPickableForLocalPlayer;
         YourHeroAcademia.LOGGER.info("HELLO FROM CLIENT SETUP");
         YourHeroAcademia.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
     }

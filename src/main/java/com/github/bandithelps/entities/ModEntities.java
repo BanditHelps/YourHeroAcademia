@@ -63,6 +63,38 @@ public class ModEntities {
                     ))
     );
 
+    public static final Supplier<EntityType<BlackwhipChainEntity>> BLACKWHIP_CHAIN = ENTITY_TYPES.register(
+            "blackwhip_chain",
+            () -> EntityType.Builder.of(
+                            BlackwhipChainEntity::new,
+                            MobCategory.MISC
+                    )
+                    .noSave()
+                    .sized(0.5f, 0.5f)
+                    .clientTrackingRange(96)
+                    .updateInterval(1)
+                    .build(ResourceKey.create(
+                            Registries.ENTITY_TYPE,
+                            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "blackwhip_chain")
+                    ))
+    );
+
+    public static final Supplier<EntityType<BlackwhipSegmentEntity>> BLACKWHIP_SEGMENT = ENTITY_TYPES.register(
+            "blackwhip_segment",
+            () -> EntityType.Builder.of(
+                            BlackwhipSegmentEntity::new,
+                            MobCategory.MISC
+                    )
+                    .noSave()
+                    .sized(0.35f, 0.35f)
+                    .clientTrackingRange(96)
+                    .updateInterval(1)
+                    .build(ResourceKey.create(
+                            Registries.ENTITY_TYPE,
+                            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "blackwhip_segment")
+                    ))
+    );
+
     public static final Supplier<EntityType<SmokeCanisterProjectileEntity>> SMOKE_CANISTER_PROJECTILE = ENTITY_TYPES.register(
             "smoke_canister_projectile",
             () -> EntityType.Builder.<SmokeCanisterProjectileEntity>of(

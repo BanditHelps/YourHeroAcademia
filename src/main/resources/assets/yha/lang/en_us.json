@@ -52,6 +52,11 @@
   "ability.yha.blackwhip_aura": "Aura",
   "ability.yha.blackwhip_bubble_shield": "Bubble Shield",
   "ability.yha.blackwhip_block_grab": "Block Grab",
+  "ability.yha.blackwhip_chain_tag": "Chain Grab",
+  "ability.yha.blackwhip_chain_detach": "Detach",
+
+  "entity.yha.blackwhip_chain": "Blackwhip Chain",
+  "entity.yha.blackwhip_segment": "Blackwhip Segment",
 
   "condition.yha.body_health": "Body Health",
   "condition.yha.body_float": "Body String",
