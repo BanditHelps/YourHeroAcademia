@@ -32,6 +32,7 @@ public class BlackwhipRenderState extends EntityRenderState {
 
     // Visual params.
     public int coreColor = 0xFF101A1A;
+    public int outerColor = 0xE025BE9C;
     public int glowColor = 0xB325BE9C;
     public float thickness = 1.0f;
     public float curve = 0.6f;

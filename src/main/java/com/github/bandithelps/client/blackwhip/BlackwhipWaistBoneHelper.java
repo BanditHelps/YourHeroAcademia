@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Client waist / wrap polish for chain Blackwhip tips.
+ * Client waist / wrap helpers for chain Blackwhip tips.
  */
 public final class BlackwhipWaistBoneHelper {
 
@@ -30,7 +30,7 @@ public final class BlackwhipWaistBoneHelper {
             yaw = player.yBodyRot;
         }
         Vec3 pos = player.getPosition(partialTick);
-        double waistY = player.getBbHeight() * (player.isCrouching() ? 0.42 : 0.48);
+        double waistY = player.getBbHeight() * (player.isCrouching() ? 0.42 : 0.50);
         Vec3 fwd = Vec3.directionFromRotation(0, yaw).normalize();
         return Optional.of(pos.add(0, waistY, 0).add(fwd.scale(0.08)));
     }
@@ -47,24 +47,52 @@ public final class BlackwhipWaistBoneHelper {
     }
 
     /**
-     * Pulls the last wrap joints onto a client torso helix so player wraps read clearly.
+     * Locks the rope tip to the live interpolated target, redistributes mid joints between the
+     * already-locked wrist and that tip, then appends a mid-hitbox coil rebuilt every frame.
+     *
+     * @return true if a coil was appended
      */
-    public static void polishWrapJoints(List<Vec3> joints, int wrapJoints, LivingEntity target, Vec3 fromOwner, float partialTick) {
-        if (joints.size() < 3 || wrapJoints < 2 || target == null) {
-            return;
+    public static boolean attachTipAndCoil(List<Vec3> joints, LivingEntity target, Vec3 wrist,
+                                           float wrapTurns, float extendProgress, float partialTick) {
+        if (joints.size() < 2 || target == null) {
+            return false;
         }
-        Vec3 ownerApprox = fromOwner;
-        Vec3[] helix = BlackwhipChainAnchors.buildWaistHelix(target, ownerApprox, wrapJoints, 1.6f);
-        int n = joints.size();
-        int start = Math.max(1, n - wrapJoints);
-        for (int i = 0; i < wrapJoints; i++) {
-            int ji = start + i;
-            if (ji >= n) {
+
+        // Drop trailing tip proxies that sit on top of the rope tip.
+        while (joints.size() > 2) {
+            Vec3 last = joints.get(joints.size() - 1);
+            Vec3 prev = joints.get(joints.size() - 2);
+            if (last.distanceToSqr(prev) < 1.0e-4) {
+                joints.remove(joints.size() - 1);
+            } else {
                 break;
             }
-            Vec3 helixPt = helix[Math.min(i, helix.length - 1)];
-            // Strong blend toward helix for a visible coil.
-            joints.set(ji, joints.get(ji).lerp(helixPt, 0.75));
         }
+
+        Vec3 tip = BlackwhipChainAnchors.resolveWaistEntry(target, wrist, partialTick);
+        // Blend tip toward entry while extending so the latch doesn't pop in.
+        float tipBlend = Mth.clamp(extendProgress, 0.0f, 1.0f);
+        tip = joints.get(joints.size() - 1).lerp(tip, tipBlend);
+
+        BlackwhipChainAnchors.redistributeJoints(joints, wrist, tip);
+
+        if (extendProgress < 0.45f) {
+            return false;
+        }
+
+        float wrapBlend = Mth.clamp((extendProgress - 0.45f) / 0.55f, 0.0f, 1.0f);
+        Vec3[] coil = BlackwhipChainAnchors.buildRenderCoil(
+                target, wrist, BlackwhipChainAnchors.RENDER_COIL_SAMPLES, wrapTurns, partialTick);
+        int keep = Math.max(2, Math.round((coil.length - 1) * wrapBlend) + 1);
+
+        Vec3 lockedTip = joints.get(joints.size() - 1);
+        for (int i = 0; i < keep; i++) {
+            Vec3 pt = coil[i];
+            if (i == 0 && lockedTip.distanceToSqr(pt) < 0.01) {
+                continue;
+            }
+            joints.add(pt);
+        }
+        return true;
     }
 }

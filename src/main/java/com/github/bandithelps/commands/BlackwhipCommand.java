@@ -2,6 +2,8 @@ package com.github.bandithelps.commands;
 
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.body.BodySyncEvents;
+import com.github.bandithelps.entities.BlackwhipChainEntity;
+import com.github.bandithelps.entities.BlackwhipEntity;
 import com.github.bandithelps.utils.blackwhip.BlackwhipColors;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -15,9 +17,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * {@code /yha blackwhip color <core> <glow>} customizes a player's Blackwhip colors (stored as body
- * strings, so the choice persists and syncs to all viewers). {@code /yha blackwhip color reset}
- * restores the canon teal/black look.
+ * {@code /yha blackwhip color <inner> <outer> <glow>} customizes a player's Blackwhip colors
+ * (stored as body strings, so the choice persists and syncs to all viewers). A 2-arg form
+ * {@code /yha blackwhip color <inner> <glow>} derives outer from glow. {@code reset} restores
+ * the canon teal/black look. Active whips update immediately.
  */
 public final class BlackwhipCommand {
 
@@ -31,45 +34,100 @@ public final class BlackwhipCommand {
     public static void register(LiteralArgumentBuilder<CommandSourceStack> builder, CommandBuildContext context) {
         LiteralArgumentBuilder<CommandSourceStack> blackwhip = Commands.literal("blackwhip");
 
+        // Quick alias: /yha blackwhip reset [player]
+        blackwhip.then(Commands.literal("reset")
+                .executes(c -> resetColors(c.getSource(), c.getSource().getPlayerOrException()))
+                .then(Commands.argument("player", EntityArgument.player())
+                        .executes(c -> resetColors(c.getSource(), EntityArgument.getPlayer(c, "player")))));
+
         blackwhip.then(Commands.literal("color")
                 .then(Commands.literal("reset")
                         .executes(c -> resetColors(c.getSource(), c.getSource().getPlayerOrException()))
                         .then(Commands.argument("player", EntityArgument.player())
                                 .executes(c -> resetColors(c.getSource(), EntityArgument.getPlayer(c, "player")))))
-                .then(Commands.argument("core", StringArgumentType.word())
-                        .then(Commands.argument("glow", StringArgumentType.word())
-                                .executes(c -> setColors(
+                .then(Commands.argument("inner", StringArgumentType.word())
+                        .then(Commands.argument("outerOrGlow", StringArgumentType.word())
+                                // 2-arg: /yha blackwhip color <inner> <glow>
+                                .executes(c -> setColorsTwoArg(
                                         c.getSource(),
                                         c.getSource().getPlayerOrException(),
-                                        StringArgumentType.getString(c, "core"),
-                                        StringArgumentType.getString(c, "glow")))
-                                .then(Commands.argument("player", EntityArgument.player())
+                                        StringArgumentType.getString(c, "inner"),
+                                        StringArgumentType.getString(c, "outerOrGlow")))
+                                // 3-arg: /yha blackwhip color <inner> <outer> <glow> [player]
+                                .then(Commands.argument("glow", StringArgumentType.word())
                                         .executes(c -> setColors(
                                                 c.getSource(),
-                                                EntityArgument.getPlayer(c, "player"),
-                                                StringArgumentType.getString(c, "core"),
-                                                StringArgumentType.getString(c, "glow")))))));
+                                                c.getSource().getPlayerOrException(),
+                                                StringArgumentType.getString(c, "inner"),
+                                                StringArgumentType.getString(c, "outerOrGlow"),
+                                                StringArgumentType.getString(c, "glow")))
+                                        .then(Commands.argument("player", EntityArgument.player())
+                                                .executes(c -> setColors(
+                                                        c.getSource(),
+                                                        EntityArgument.getPlayer(c, "player"),
+                                                        StringArgumentType.getString(c, "inner"),
+                                                        StringArgumentType.getString(c, "outerOrGlow"),
+                                                        StringArgumentType.getString(c, "glow"))))))));
 
         builder.then(blackwhip);
     }
 
-    private static int setColors(CommandSourceStack source, ServerPlayer player, String coreHex, String glowHex) throws CommandSyntaxException {
-        validateHex(coreHex);
+    private static int setColorsTwoArg(CommandSourceStack source, ServerPlayer player, String innerHex, String glowHex)
+            throws CommandSyntaxException {
+        validateHex(innerHex);
         validateHex(glowHex);
-        BodyAttachments.get(player).setCustomString(player, BlackwhipColors.PART, BlackwhipColors.CORE_KEY, coreHex);
+        int glow = BlackwhipColors.resolve(glowHex, BlackwhipColors.DEFAULT_GLOW, 0xB3);
+        String outerHex = String.format("%08X", BlackwhipColors.deriveOuter(glow));
+        return applyColors(source, player, innerHex, outerHex, glowHex, true);
+    }
+
+    private static int setColors(CommandSourceStack source, ServerPlayer player,
+                                 String innerHex, String outerHex, String glowHex) throws CommandSyntaxException {
+        validateHex(innerHex);
+        validateHex(outerHex);
+        validateHex(glowHex);
+        return applyColors(source, player, innerHex, outerHex, glowHex, false);
+    }
+
+    private static int applyColors(CommandSourceStack source, ServerPlayer player,
+                                   String innerHex, String outerHex, String glowHex, boolean derivedOuter) {
+        BodyAttachments.get(player).setCustomString(player, BlackwhipColors.PART, BlackwhipColors.CORE_KEY, innerHex);
+        BodyAttachments.get(player).setCustomString(player, BlackwhipColors.PART, BlackwhipColors.OUTER_KEY, outerHex);
         BodyAttachments.get(player).setCustomString(player, BlackwhipColors.PART, BlackwhipColors.GLOW_KEY, glowHex);
         BodySyncEvents.syncNow(player);
+        pushColorsToActiveWhips(player);
+        String note = derivedOuter ? " (outer derived from glow)" : "";
         source.sendSuccess(() -> Component.literal("Set Blackwhip colors for " + player.getName().getString()
-                + " (core=" + coreHex + ", glow=" + glowHex + "). New whips will use these colors."), true);
+                + " (inner=" + innerHex + ", outer=" + outerHex + ", glow=" + glowHex + ")" + note
+                + ". Active and new whips use these colors."), true);
         return 1;
     }
 
     private static int resetColors(CommandSourceStack source, ServerPlayer player) {
         BodyAttachments.get(player).removeCustomString(player, BlackwhipColors.PART, BlackwhipColors.CORE_KEY);
+        BodyAttachments.get(player).removeCustomString(player, BlackwhipColors.PART, BlackwhipColors.OUTER_KEY);
         BodyAttachments.get(player).removeCustomString(player, BlackwhipColors.PART, BlackwhipColors.GLOW_KEY);
         BodySyncEvents.syncNow(player);
+        pushColorsToActiveWhips(player);
         source.sendSuccess(() -> Component.literal("Reset Blackwhip colors for " + player.getName().getString() + "."), true);
         return 1;
+    }
+
+    private static void pushColorsToActiveWhips(ServerPlayer player) {
+        int core = BlackwhipColors.getCore(player);
+        int outer = BlackwhipColors.getOuter(player);
+        int glow = BlackwhipColors.getGlow(player);
+        int ownerId = player.getId();
+        for (BlackwhipChainEntity chain : BlackwhipChainEntity.activeServerChains()) {
+            if (chain.getOwnerId() == ownerId) {
+                chain.setColors(core, outer, glow);
+            }
+        }
+        for (BlackwhipEntity whip : BlackwhipEntity.activeServerWhips()) {
+            if (whip.getOwnerId() == ownerId) {
+                whip.setColors(core, outer, glow);
+            }
+        }
     }
 
     private static void validateHex(String hex) throws CommandSyntaxException {

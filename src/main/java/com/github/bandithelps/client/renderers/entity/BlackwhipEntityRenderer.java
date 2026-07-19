@@ -64,6 +64,7 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
 
         state.style = entity.getStyle();
         state.coreColor = entity.getCoreColor();
+        state.outerColor = entity.getOuterColor();
         state.glowColor = entity.getGlowColor();
         state.thickness = Math.max(0.05f, entity.getThickness());
         state.curve = entity.getCurve();
@@ -167,20 +168,18 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
         }
 
         int glow = state.glowColor;
+        int outer = state.outerColor;
         int core = state.coreColor;
 
-        // Emissive passes: a soft wide halo, then the glowing body with flowing energy bands.
+        // Halo = glow, mid body = outer, dark spine = inner/core.
         collector.submitCustomGeometry(poseStack, GLOW_TYPE, (pose, buffer) -> {
             for (RibbonFrame f : frames) {
-                // Wide soft bloom halo - reads as light bleeding off the strand.
                 emitLayer(buffer, pose, f, base * 2.6f, glow,
                         0.16f * alphaScale * (1.0f + 0.6f * spawnFlash), state, 0.0f, 0.55f, spawnFlash);
-                // Main glowing body with bright energy pulses travelling toward the tip.
-                emitLayer(buffer, pose, f, base * 1.15f, glow,
+                emitLayer(buffer, pose, f, base * 1.15f, outer,
                         0.95f * alphaScale, state, 1.0f, 1.0f, spawnFlash);
             }
         });
-        // Translucent pass: the near-black inner core that gives Blackwhip its signature dark spine.
         collector.submitCustomGeometry(poseStack, CORE_TYPE, (pose, buffer) -> {
             for (RibbonFrame f : frames) {
                 emitLayer(buffer, pose, f, base * 0.5f, core,

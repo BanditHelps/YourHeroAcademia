@@ -13,6 +13,8 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
+import java.util.List;
+
 /**
  * Shared wrist / waist attach math for chain Blackwhip (server IK + client render root lock).
  */
@@ -20,8 +22,15 @@ public final class BlackwhipChainAnchors {
 
     public static final int MIN_SEGMENTS = 4;
     public static final int MAX_SEGMENTS = 24;
-    public static final int MIN_WRAP_JOINTS = 4;
-    public static final int MAX_WRAP_JOINTS = 8;
+    /** Tip hit-proxy segments parked at the waist entry (visual coil is client-authored). */
+    public static final int MIN_WRAP_JOINTS = 1;
+    public static final int MAX_WRAP_JOINTS = 2;
+    /** Dense samples for the client-side wrap coil ribbon. */
+    public static final int RENDER_COIL_SAMPLES = 36;
+    /** Extra radius beyond the AABB so wrap rings sit outside the body. */
+    public static final double WRAP_RADIUS_PAD = 0.22;
+    /** Half the vertical gap between the two mid-torso wrap rings (fraction of hitbox height). */
+    public static final double WRAP_RING_HALF_SPACING = 0.14;
 
     private BlackwhipChainAnchors() {
     }
@@ -44,46 +53,93 @@ public final class BlackwhipChainAnchors {
         right = right.normalize();
 
         float side = living.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
-        double crouch = living.isCrouching() ? -0.18 : 0.0;
-        double wristY = Math.max(0.45, Math.min(1.25, living.getBbHeight() * 0.52)) + crouch;
+        double crouch = living.isCrouching() ? -0.20 : 0.0;
+        // Lower forearm / wrist band — sits on the hand rather than floating ahead of it.
+        double wristY = Math.max(0.42, Math.min(1.20, living.getBbHeight() * 0.49)) + crouch;
 
-        // Arm forward with a little look-pitch so the hand tracks looking up/down.
-        double pitchRad = Math.toRadians(Mth.clamp(pitch, -60.0f, 60.0f));
+        // Mild look-pitch so the hand tracks looking up/down without becoming a wand.
+        double pitchRad = Math.toRadians(Mth.clamp(pitch, -45.0f, 45.0f) * 0.55f);
         Vec3 armDir = fwd.scale(Math.cos(pitchRad)).add(0, -Math.sin(pitchRad), 0).normalize();
 
         return pos
                 .add(0, wristY, 0)
-                .add(right.scale(0.32 * side))
-                .add(armDir.scale(0.50))
-                .add(right.scale(0.04 * side)); // slight outward bias off the torso
+                .add(right.scale(0.29 * side))
+                .add(armDir.scale(0.24));
+    }
+
+    /**
+     * First-person local visual attach (client only). Places the whip root near the held hand
+     * relative to the camera so it reads as emerging from the arm like in the anime.
+     */
+    public static Vec3 resolveFirstPersonHand(LivingEntity owner, float partialTick) {
+        Vec3 eye = owner.getEyePosition(partialTick);
+        float yaw = Mth.lerp(partialTick, owner.yRotO, owner.getYRot());
+        float pitch = Mth.lerp(partialTick, owner.xRotO, owner.getXRot());
+        Vec3 look = Vec3.directionFromRotation(pitch, yaw).normalize();
+        Vec3 right = look.cross(new Vec3(0, 1, 0));
+        if (right.lengthSqr() < 1.0e-6) {
+            right = Vec3.directionFromRotation(0, yaw).cross(new Vec3(0, 1, 0));
+        }
+        if (right.lengthSqr() < 1.0e-6) {
+            right = new Vec3(1, 0, 0);
+        }
+        right = right.normalize();
+        Vec3 up = right.cross(look).normalize();
+
+        float side = owner.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
+        // Slightly below/right of center FOV, a short distance ahead of the camera.
+        return eye
+                .add(look.scale(0.42))
+                .add(right.scale(0.28 * side))
+                .add(up.scale(-0.22));
     }
 
     public static Vec3 resolveOwnerWrist(Entity owner) {
         return resolveOwnerWrist(owner, 1.0f);
     }
 
-    /** Entry point onto the waist band facing the owner (contact side). */
+    /**
+     * Client render AABB from interpolated entity pose so wrap/tip track the drawn model,
+     * not the tick-old box.
+     */
+    public static AABB interpolatedAabb(LivingEntity target, float partialTick) {
+        Vec3 pos = target.getPosition(partialTick);
+        double halfW = target.getBbWidth() * 0.5;
+        double h = target.getBbHeight();
+        return new AABB(pos.x - halfW, pos.y, pos.z - halfW, pos.x + halfW, pos.y + h, pos.z + halfW);
+    }
+
+    /** Entry point onto the mid-hitbox band facing the owner (contact side). */
     public static Vec3 resolveWaistEntry(LivingEntity target, Vec3 fromOwner) {
-        AABB bb = target.getBoundingBox();
+        return resolveWaistEntry(target.getBoundingBox(), fromOwner, target.yBodyRot);
+    }
+
+    /** Interpolated client entry at mid hitbox height. */
+    public static Vec3 resolveWaistEntry(LivingEntity target, Vec3 fromOwner, float partialTick) {
+        float yaw = Mth.rotLerp(partialTick, target.yBodyRotO, target.yBodyRot);
+        return resolveWaistEntry(interpolatedAabb(target, partialTick), fromOwner, yaw);
+    }
+
+    public static Vec3 resolveWaistEntry(AABB bb, Vec3 fromOwner, float bodyYaw) {
         double cx = (bb.minX + bb.maxX) * 0.5;
         double cz = (bb.minZ + bb.maxZ) * 0.5;
-        double radius = Math.max(bb.getXsize(), bb.getZsize()) * 0.5 + 0.08;
-        double waistY = bb.minY + bb.getYsize() * 0.48;
+        double radius = Math.max(bb.getXsize(), bb.getZsize()) * 0.5 + WRAP_RADIUS_PAD;
+        // Meet the lower wrap ring (mid-hitbox minus spacing).
+        double waistY = bb.minY + bb.getYsize() * (0.50 - WRAP_RING_HALF_SPACING);
         Vec3 center = new Vec3(cx, waistY, cz);
         Vec3 flat = new Vec3(fromOwner.x - cx, 0, fromOwner.z - cz);
         if (flat.lengthSqr() < 1.0e-6) {
-            float yaw = target.yBodyRot;
-            flat = Vec3.directionFromRotation(0, yaw).scale(-1.0);
+            flat = Vec3.directionFromRotation(0, bodyYaw).scale(-1.0);
         }
         flat = flat.normalize();
         return center.add(flat.scale(radius));
     }
 
+    /** Tip hit-proxy count only (1–2); the visible coil is built on the client. */
     public static int wrapJointCount(LivingEntity target) {
         AABB bb = target.getBoundingBox();
         double girth = Math.max(bb.getXsize(), bb.getZsize());
-        int bySize = 4 + (int) Math.floor(girth * 2.0);
-        return Mth.clamp(bySize, MIN_WRAP_JOINTS, MAX_WRAP_JOINTS);
+        return girth > 1.2 ? MAX_WRAP_JOINTS : MIN_WRAP_JOINTS;
     }
 
     /**
@@ -116,6 +172,108 @@ public final class BlackwhipChainAnchors {
             out[i] = new Vec3(cx + Math.cos(angle) * radius, y, cz + Math.sin(angle) * radius);
         }
         return out;
+    }
+
+    /**
+     * Dense nearly-flat mid-hitbox coil for client ribbon rendering. Starts at the waist entry
+     * so it joins the rope tip cleanly, then loops around the torso at ~50% height.
+     */
+    public static Vec3[] buildRenderCoil(LivingEntity target, Vec3 fromOwner, int samples, float turns) {
+        return buildRenderCoil(target, fromOwner, samples, turns, 1.0f);
+    }
+
+    public static Vec3[] buildRenderCoil(LivingEntity target, Vec3 fromOwner, int samples, float turns,
+                                         float partialTick) {
+        AABB bb = interpolatedAabb(target, partialTick);
+        float yaw = Mth.rotLerp(partialTick, target.yBodyRotO, target.yBodyRot);
+        double cx = (bb.minX + bb.maxX) * 0.5;
+        double cz = (bb.minZ + bb.maxZ) * 0.5;
+        double radius = Math.max(bb.getXsize(), bb.getZsize()) * 0.5 + WRAP_RADIUS_PAD;
+        Vec3 entry = resolveWaistEntry(bb, fromOwner, yaw);
+        // Two rings spaced around mid-hitbox (lower → upper over the coil turns).
+        double midY = bb.minY + bb.getYsize() * 0.50;
+        double halfGap = bb.getYsize() * WRAP_RING_HALF_SPACING;
+        double yLow = midY - halfGap;
+        double yHigh = midY + halfGap;
+
+        Vec3 flat = new Vec3(fromOwner.x - cx, 0, fromOwner.z - cz);
+        if (flat.lengthSqr() < 1.0e-6) {
+            flat = Vec3.directionFromRotation(0, yaw).scale(-1.0);
+        }
+        flat = flat.normalize();
+        double baseAngle = Math.atan2(flat.z, flat.x);
+
+        // Prefer two full loops so the spaced bands read as distinct rings.
+        float useTurns = Math.max(2.0f, turns);
+        int n = Math.max(2, samples);
+        Vec3[] out = new Vec3[n];
+        out[0] = entry;
+        for (int i = 1; i < n; i++) {
+            double t = i / (double) (n - 1);
+            double angle = baseAngle + t * useTurns * Math.PI * 2.0;
+            double y = yLow + (yHigh - yLow) * t;
+            out[i] = new Vec3(cx + Math.cos(angle) * radius, y, cz + Math.sin(angle) * radius);
+        }
+        return out;
+    }
+
+    /**
+     * Rescales a polyline so joints[0] stays at {@code root}, joints[n-1] lands on {@code tip},
+     * and intermediate points keep their relative arc-length proportions / sag.
+     */
+    public static void redistributeJoints(List<Vec3> joints, Vec3 root, Vec3 tip) {
+        int n = joints.size();
+        if (n < 2) {
+            return;
+        }
+        if (n == 2) {
+            joints.set(0, root);
+            joints.set(1, tip);
+            return;
+        }
+
+        Vec3 oldRoot = joints.get(0);
+        Vec3 oldTip = joints.get(n - 1);
+
+        double[] cum = new double[n];
+        cum[0] = 0.0;
+        for (int i = 1; i < n; i++) {
+            cum[i] = cum[i - 1] + Math.max(1.0e-6, joints.get(i - 1).distanceTo(joints.get(i)));
+        }
+        double total = cum[n - 1];
+        if (total < 1.0e-6) {
+            for (int i = 0; i < n; i++) {
+                double t = i / (double) (n - 1);
+                joints.set(i, root.lerp(tip, t));
+            }
+            return;
+        }
+
+        Vec3 oldChord = oldTip.subtract(oldRoot);
+        Vec3 newChord = tip.subtract(root);
+        double oldLen = oldChord.length();
+        double newLen = newChord.length();
+        Vec3 oldDir = oldLen > 1.0e-6 ? oldChord.scale(1.0 / oldLen) : new Vec3(0, 1, 0);
+        Vec3 newDir = newLen > 1.0e-6 ? newChord.scale(1.0 / newLen) : oldDir;
+        double scale = oldLen > 1.0e-6 ? newLen / oldLen : 1.0;
+        double oldAng = Math.atan2(oldDir.z, oldDir.x);
+        double newAng = Math.atan2(newDir.z, newDir.x);
+        double dAng = newAng - oldAng;
+        double cos = Math.cos(dAng);
+        double sin = Math.sin(dAng);
+
+        for (int i = 1; i < n - 1; i++) {
+            double t = cum[i] / total;
+            Vec3 p = joints.get(i);
+            Vec3 onOld = oldRoot.lerp(oldTip, t);
+            Vec3 offset = p.subtract(onOld);
+            double rx = (offset.x * cos - offset.z * sin) * scale;
+            double rz = (offset.x * sin + offset.z * cos) * scale;
+            Vec3 onNew = root.lerp(tip, t);
+            joints.set(i, onNew.add(rx, offset.y * scale, rz));
+        }
+        joints.set(0, root);
+        joints.set(n - 1, tip);
     }
 
     public static int desiredSegmentCount(double ropeDist, float linkLength, int wrapJoints) {

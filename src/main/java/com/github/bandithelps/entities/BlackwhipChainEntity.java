@@ -35,6 +35,7 @@ public class BlackwhipChainEntity extends Entity {
     public static final int MAX_SEGMENTS = BlackwhipChainAnchors.MAX_SEGMENTS;
     public static final int MIN_SEGMENTS = BlackwhipChainAnchors.MIN_SEGMENTS;
     public static final int DEFAULT_CORE = 0xFF101A1A;
+    public static final int DEFAULT_OUTER = 0xE025BE9C;
     public static final int DEFAULT_GLOW = 0xB325BE9C;
 
     private static final Set<BlackwhipChainEntity> ACTIVE_SERVER = ConcurrentHashMap.newKeySet();
@@ -52,6 +53,8 @@ public class BlackwhipChainEntity extends Entity {
     private static final EntityDataAccessor<Float> DATA_MAX_HP =
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> DATA_CORE_COLOR =
+            SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_OUTER_COLOR =
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_GLOW_COLOR =
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.INT);
@@ -116,6 +119,7 @@ public class BlackwhipChainEntity extends Entity {
         builder.define(DATA_HP, 20.0f);
         builder.define(DATA_MAX_HP, 20.0f);
         builder.define(DATA_CORE_COLOR, DEFAULT_CORE);
+        builder.define(DATA_OUTER_COLOR, DEFAULT_OUTER);
         builder.define(DATA_GLOW_COLOR, DEFAULT_GLOW);
         builder.define(DATA_THICKNESS, 1.0f);
         builder.define(DATA_TRAVEL_TICKS, 6);
@@ -123,8 +127,8 @@ public class BlackwhipChainEntity extends Entity {
         builder.define(DATA_ACTIVE, true);
         builder.define(DATA_HURT_TICK, 0);
         builder.define(DATA_SEED, 0);
-        builder.define(DATA_WRAP_TURNS, 1.6f);
-        builder.define(DATA_WRAP_JOINTS, 5);
+        builder.define(DATA_WRAP_TURNS, 2.0f);
+        builder.define(DATA_WRAP_JOINTS, 1);
     }
 
     @Override
@@ -412,9 +416,10 @@ public class BlackwhipChainEntity extends Entity {
         float extend = Mth.clamp(this.tickCount / travel, 0.0f, 1.0f);
         extend = 1.0f - (float) Math.pow(1.0 - extend, 3.0);
 
-        int wrapJoints = Mth.clamp(getWrapJoints(), BlackwhipChainAnchors.MIN_WRAP_JOINTS,
-                Math.min(BlackwhipChainAnchors.MAX_WRAP_JOINTS, n - 2));
-        int ropeEnd = Math.max(2, n - wrapJoints);
+        // Tip segments are hit proxies at the entry only; the wrap coil is drawn client-side.
+        int tipJoints = Mth.clamp(getWrapJoints(), BlackwhipChainAnchors.MIN_WRAP_JOINTS,
+                Math.min(BlackwhipChainAnchors.MAX_WRAP_JOINTS, Math.max(1, n - 2)));
+        int ropeEnd = Math.max(2, n - tipJoints);
 
         // Seed only uninitialized joints — never rewrite the whole rope to a straight line each tick
         // (that was the main source of grow/shrink jitter).
@@ -428,8 +433,6 @@ public class BlackwhipChainEntity extends Entity {
         Vec3 reachEntry = root.add(entry.subtract(root).scale(extend));
         float link = BlackwhipChainAnchors.adaptiveLinkLength(
                 root.distanceTo(reachEntry), ropeEnd, getLinkLength());
-
-        Vec3[] helix = BlackwhipChainAnchors.buildWaistHelix(target, root, wrapJoints, getWrapTurns());
 
         // Pin ends; solve middle with adaptive link length so existing joints ease instead of snap.
         joints[0] = root;
@@ -447,30 +450,19 @@ public class BlackwhipChainEntity extends Entity {
             joints[ropeEnd - 1] = reachEntry;
         }
 
-        // Hard-constrain wrap joints onto the helix once mostly extended.
-        if (extend > 0.45f) {
-            float wrapBlend = Mth.clamp((extend - 0.45f) / 0.55f, 0.0f, 1.0f);
-            for (int w = 0; w < wrapJoints; w++) {
-                int ji = ropeEnd + w;
-                if (ji >= n) {
-                    break;
-                }
-                Vec3 helixPt = helix[Math.min(w, helix.length - 1)];
-                joints[ji] = wrapBlend >= 0.99f ? helixPt : reachEntry.lerp(helixPt, wrapBlend);
-            }
-            joints[n - 1] = wrapBlend >= 0.99f ? helix[helix.length - 1]
-                    : reachEntry.lerp(helix[helix.length - 1], wrapBlend);
-        } else {
-            // Still extending: park wrap joints at the rope tip until the coil engages.
-            for (int i = ropeEnd; i < n; i++) {
-                joints[i] = reachEntry;
-            }
+        // Park tip hit proxies at the rope tip / waist entry (no helix scrunch in the segment array).
+        for (int i = ropeEnd; i < n; i++) {
+            joints[i] = reachEntry;
         }
 
-        // Keep the whip draped over terrain instead of phasing through ground/walls.
+        // Collide rope only — never push a wrap path through the target AABB.
         joints[0] = root;
-        BlackwhipChainAnchors.collideJointChain(this.level(), this, joints, n);
+        BlackwhipChainAnchors.collideJointChain(this.level(), this, joints, ropeEnd);
         joints[0] = root;
+        Vec3 tip = joints[ropeEnd - 1];
+        for (int i = ropeEnd; i < n; i++) {
+            joints[i] = tip;
+        }
     }
 
     private void updateRetractJoints(Entity owner) {
@@ -625,9 +617,16 @@ public class BlackwhipChainEntity extends Entity {
         }
     }
 
-    public void setColors(int core, int glow) {
+    public void setColors(int core, int outer, int glow) {
         this.getEntityData().set(DATA_CORE_COLOR, core);
+        this.getEntityData().set(DATA_OUTER_COLOR, outer);
         this.getEntityData().set(DATA_GLOW_COLOR, glow);
+    }
+
+    /** @deprecated prefer {@link #setColors(int, int, int)} */
+    @Deprecated
+    public void setColors(int core, int glow) {
+        setColors(core, DEFAULT_OUTER, glow);
     }
 
     public void setThickness(float thickness) {
@@ -676,6 +675,10 @@ public class BlackwhipChainEntity extends Entity {
 
     public int getCoreColor() {
         return this.getEntityData().get(DATA_CORE_COLOR);
+    }
+
+    public int getOuterColor() {
+        return this.getEntityData().get(DATA_OUTER_COLOR);
     }
 
     public int getGlowColor() {

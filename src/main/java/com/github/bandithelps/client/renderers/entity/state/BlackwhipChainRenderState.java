@@ -15,6 +15,7 @@ public class BlackwhipChainRenderState extends EntityRenderState {
     public Vec3 camForward = new Vec3(0, 0, 1);
 
     public int coreColor = 0xFF101A1A;
+    public int outerColor = 0xE025BE9C;
     public int glowColor = 0xB325BE9C;
     public float thickness = 1.0f;
     public boolean active = true;
@@ -28,4 +29,7 @@ public class BlackwhipChainRenderState extends EntityRenderState {
     /** Optional client-side tip polish (player waist bone). */
     public boolean hasBoneTip = false;
     public Vec3 boneTip = Vec3.ZERO;
+
+    /** True when a dense wrap coil was appended to {@link #joints} for this frame. */
+    public boolean coilAppended = false;
 }

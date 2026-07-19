@@ -39,8 +39,8 @@ public final class BlackwhipChainHelper {
         chain.setThickness(thickness);
         chain.setTravelTicks(travelTicks);
         chain.setRetractTicks(6);
-        chain.setWrapTurns(1.6f);
-        chain.setColors(BlackwhipColors.getCore(owner), BlackwhipColors.getGlow(owner));
+        chain.setWrapTurns(2.0f);
+        chain.setColors(BlackwhipColors.getCore(owner), BlackwhipColors.getOuter(owner), BlackwhipColors.getGlow(owner));
         chain.setSeed(owner.getRandom().nextInt());
         chain.setPos(wrist.x, wrist.y, wrist.z);
         level.addFreshEntity(chain);

@@ -7,6 +7,7 @@ import com.github.bandithelps.entities.BlackwhipSegmentEntity;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -58,6 +59,7 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         super.extractRenderState(entity, state, partial);
 
         state.coreColor = entity.getCoreColor();
+        state.outerColor = entity.getOuterColor();
         state.glowColor = entity.getGlowColor();
         state.thickness = Math.max(0.05f, entity.getThickness());
         state.active = entity.isActive();
@@ -89,38 +91,52 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
             state.joints.add(new Vec3(sx, sy, sz));
         }
 
-        // Glue the ribbon root to the interpolated owner wrist (kills teleported lag).
+        // renderOrigin must match the entity PoseStack translation (interpolated entity pos).
+        // First-person hand is only a world-space joint lock — using it as renderOrigin shifted
+        // the whole ribbon (including the mid-hitbox wrap) down relative to the target.
+        double ex = Mth.lerp(partial, entity.xOld, entity.getX());
+        double ey = Mth.lerp(partial, entity.yOld, entity.getY());
+        double ez = Mth.lerp(partial, entity.zOld, entity.getZ());
+        state.renderOrigin = new Vec3(ex, ey, ez);
+
+        // Glue both ends every frame (classic Blackwhip attach pattern): live wrist + live tip.
+        // Segment positions only seed mid-rope shape / hitboxes — endpoints are render-authored.
         Entity owner = entity.getOwnerId() >= 0 && entity.level() != null
                 ? entity.level().getEntity(entity.getOwnerId()) : null;
+        Vec3 wrist = null;
         if (owner != null && state.joints.size() >= 2) {
-            Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner, partial);
+            wrist = resolveVisualRoot(owner, partial);
             Vec3 seg0 = state.joints.getFirst();
             Vec3 offset = wrist.subtract(seg0);
             for (int i = 0; i < state.joints.size(); i++) {
                 state.joints.set(i, state.joints.get(i).add(offset));
             }
-            state.renderOrigin = wrist;
-        } else if (!state.joints.isEmpty()) {
-            state.renderOrigin = state.joints.getFirst();
-        } else {
-            double ex = Mth.lerp(partial, entity.xOld, entity.getX());
-            double ey = Mth.lerp(partial, entity.yOld, entity.getY());
-            double ez = Mth.lerp(partial, entity.zOld, entity.getZ());
-            state.renderOrigin = new Vec3(ex, ey, ez);
         }
 
         state.hasBoneTip = false;
+        state.coilAppended = false;
         LivingEntity target = entity.getTargetLiving();
-        int wrapJoints = entity.getWrapJoints();
-        if (target != null && state.joints.size() >= 3 && state.extendProgress > 0.55f && state.active) {
-            Vec3 fromOwner = state.joints.getFirst();
-            BlackwhipWaistBoneHelper.polishWrapJoints(state.joints, wrapJoints, target, fromOwner, partial);
+        if (target != null && state.joints.size() >= 2 && state.active && wrist != null) {
+            state.coilAppended = BlackwhipWaistBoneHelper.attachTipAndCoil(
+                    state.joints, target, wrist, entity.getWrapTurns(), state.extendProgress, partial);
             var bone = BlackwhipWaistBoneHelper.resolveWaistTipClient(entity.getTargetId(), partial);
             if (bone.isPresent()) {
                 state.hasBoneTip = true;
                 state.boneTip = bone.get();
             }
         }
+    }
+
+    /** Server IK wrist for others / third-person; first-person hand for local camera owner. */
+    private static Vec3 resolveVisualRoot(Entity owner, float partial) {
+        Minecraft mc = Minecraft.getInstance();
+        if (owner instanceof LivingEntity living
+                && mc.player != null
+                && owner.getId() == mc.player.getId()
+                && mc.options.getCameraType().isFirstPerson()) {
+            return BlackwhipChainAnchors.resolveFirstPersonHand(living, partial);
+        }
+        return BlackwhipChainAnchors.resolveOwnerWrist(owner, partial);
     }
 
     @Override
@@ -133,11 +149,13 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         state.camForward = new Vec3(camLook.x(), camLook.y(), camLook.z()).normalize();
 
         List<Vec3> points = new ArrayList<>(state.joints);
-        float visible = state.active ? state.extendProgress : (1.0f - state.retractProgress);
-        visible = Mth.clamp(visible, 0.05f, 1.0f);
-        int keep = Math.max(2, Math.round((points.size() - 1) * visible) + 1);
-        if (keep < points.size()) {
-            points = new ArrayList<>(points.subList(0, keep));
+        // Active path already encodes extend (rope tip + coil blend). Only truncate while retracting.
+        if (!state.active) {
+            float visible = Mth.clamp(1.0f - state.retractProgress, 0.05f, 1.0f);
+            int keep = Math.max(2, Math.round((points.size() - 1) * visible) + 1);
+            if (keep < points.size()) {
+                points = new ArrayList<>(points.subList(0, keep));
+            }
         }
 
         float base = Math.max(0.025f, state.thickness * 0.07f);
@@ -160,15 +178,20 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         }
 
         int glow = state.glowColor;
+        int outer = state.outerColor;
         int core = state.coreColor;
-        float finalBase = base;
-        float finalAlpha = alphaScale;
+        float finalBase = base * 1.1f;
+        float finalAlpha = alphaScale * 2;
         float finalFlash = spawnFlash;
 
+        // Base: Full thickness multiplier
+        // Edge softness: Higher == Shorter Distance the glow moves
+
+        // Halo = glow, mid body = outer, dark spine = inner/core.
         collector.submitCustomGeometry(poseStack, GLOW_TYPE, (pose, buffer) -> {
             emitLayer(buffer, pose, frame, finalBase * 2.6f, glow,
-                    0.16f * finalAlpha * (1.0f + 0.6f * finalFlash), state, 0.0f, 0.55f, finalFlash);
-            emitLayer(buffer, pose, frame, finalBase * 1.15f, glow,
+                    0.16f * finalAlpha * (1.0f + 0.6f * finalFlash), state, 0.0f, 0.8f, finalFlash);
+            emitLayer(buffer, pose, frame, finalBase * 1.15f, outer,
                     0.95f * finalAlpha, state, 1.0f, 1.0f, finalFlash);
         });
         collector.submitCustomGeometry(poseStack, CORE_TYPE, (pose, buffer) ->

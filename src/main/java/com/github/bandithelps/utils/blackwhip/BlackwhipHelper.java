@@ -24,7 +24,7 @@ public final class BlackwhipHelper {
         BlackwhipEntity whip = new BlackwhipEntity(ModEntities.BLACKWHIP.get(), level);
         whip.setStyle(style);
         whip.setOwnerId(owner.getId());
-        whip.setColors(BlackwhipColors.getCore(owner), BlackwhipColors.getGlow(owner));
+        whip.setColors(BlackwhipColors.getCore(owner), BlackwhipColors.getOuter(owner), BlackwhipColors.getGlow(owner));
         whip.setSeed(owner.getRandom().nextInt());
         whip.setPos(owner.getX(), owner.getY() + owner.getBbHeight() * 0.5, owner.getZ());
         return whip;

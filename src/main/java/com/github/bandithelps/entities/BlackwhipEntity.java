@@ -12,6 +12,9 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * A server-spawned, data-synced entity that represents one or more Blackwhip strands. Rendering is
  * fully driven by the synched data on the client, so the whips appear for every viewer, get recorded
@@ -36,7 +39,10 @@ public class BlackwhipEntity extends Entity {
     private static final EntityDataAccessor<Float> DATA_END_Y = SynchedEntityData.defineId(BlackwhipEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_END_Z = SynchedEntityData.defineId(BlackwhipEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> DATA_CORE_COLOR = SynchedEntityData.defineId(BlackwhipEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_OUTER_COLOR = SynchedEntityData.defineId(BlackwhipEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_GLOW_COLOR = SynchedEntityData.defineId(BlackwhipEntity.class, EntityDataSerializers.INT);
+
+    private static final Set<BlackwhipEntity> ACTIVE_SERVER = ConcurrentHashMap.newKeySet();
     private static final EntityDataAccessor<Float> DATA_THICKNESS = SynchedEntityData.defineId(BlackwhipEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_CURVE = SynchedEntityData.defineId(BlackwhipEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_JAGGED = SynchedEntityData.defineId(BlackwhipEntity.class, EntityDataSerializers.FLOAT);
@@ -48,8 +54,9 @@ public class BlackwhipEntity extends Entity {
     private static final EntityDataAccessor<Boolean> DATA_ACTIVE = SynchedEntityData.defineId(BlackwhipEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Float> DATA_FORWARD_OFFSET = SynchedEntityData.defineId(BlackwhipEntity.class, EntityDataSerializers.FLOAT);
 
-    // Server-side default canon colors (near-black core, teal glow). Overridden per-owner by helper.
+    // Server-side default canon colors (near-black core, teal mid ribbon, translucent teal glow).
     public static final int DEFAULT_CORE = 0xFF101A1A;
+    public static final int DEFAULT_OUTER = 0xE025BE9C;
     public static final int DEFAULT_GLOW = 0xB325BE9C;
 
     /** Optional automatic discard countdown for transient whips (miss/lash). -1 = no auto-discard. */
@@ -60,6 +67,24 @@ public class BlackwhipEntity extends Entity {
     public BlackwhipEntity(EntityType<? extends BlackwhipEntity> type, Level level) {
         super(type, level);
         this.noPhysics = true;
+    }
+
+    public static Set<BlackwhipEntity> activeServerWhips() {
+        return ACTIVE_SERVER;
+    }
+
+    @Override
+    public void onAddedToLevel() {
+        super.onAddedToLevel();
+        if (!this.level().isClientSide()) {
+            ACTIVE_SERVER.add(this);
+        }
+    }
+
+    @Override
+    public void onRemovedFromLevel() {
+        ACTIVE_SERVER.remove(this);
+        super.onRemovedFromLevel();
     }
 
     @Override
@@ -73,6 +98,7 @@ public class BlackwhipEntity extends Entity {
         builder.define(DATA_END_Y, 0.0f);
         builder.define(DATA_END_Z, 0.0f);
         builder.define(DATA_CORE_COLOR, DEFAULT_CORE);
+        builder.define(DATA_OUTER_COLOR, DEFAULT_OUTER);
         builder.define(DATA_GLOW_COLOR, DEFAULT_GLOW);
         builder.define(DATA_THICKNESS, 1.0f);
         builder.define(DATA_CURVE, 0.6f);
@@ -198,9 +224,16 @@ public class BlackwhipEntity extends Entity {
         this.getEntityData().set(DATA_END_MODE, END_NONE);
     }
 
-    public void setColors(int core, int glow) {
+    public void setColors(int core, int outer, int glow) {
         this.getEntityData().set(DATA_CORE_COLOR, core);
+        this.getEntityData().set(DATA_OUTER_COLOR, outer);
         this.getEntityData().set(DATA_GLOW_COLOR, glow);
+    }
+
+    /** @deprecated prefer {@link #setColors(int, int, int)} */
+    @Deprecated
+    public void setColors(int core, int glow) {
+        setColors(core, DEFAULT_OUTER, glow);
     }
 
     public void setThickness(float thickness) {
@@ -271,6 +304,10 @@ public class BlackwhipEntity extends Entity {
 
     public int getCoreColor() {
         return this.getEntityData().get(DATA_CORE_COLOR);
+    }
+
+    public int getOuterColor() {
+        return this.getEntityData().get(DATA_OUTER_COLOR);
     }
 
     public int getGlowColor() {
