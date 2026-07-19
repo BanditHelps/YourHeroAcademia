@@ -172,7 +172,8 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         float alphaScale = state.active ? 1.0f : smooth(1.0f - state.retractProgress);
         float spawnFlash = (float) Math.exp(-state.ageTicks * 0.18f);
 
-        RibbonFrame frame = buildFrame(points, state, Math.min(base * 0.9f, 0.06f));
+        // Mild shimmer under the slow idle pulse — keep amplitude low so layers stay sharp.
+        RibbonFrame frame = buildFrame(points, state, Math.min(base * 0.55f, 0.035f));
         if (frame == null) {
             return;
         }
@@ -225,6 +226,16 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         float[] tArr = new float[n];
         float[] widthFactor = new float[n];
 
+        // Chord length (not dense coil polyline) — polyline length inflated idle sway and folded layers.
+        Vec3 chord = points.get(n - 1).subtract(points.get(0));
+        double chordLen = Math.sqrt(chord.lengthSqr());
+        Vec3 chordDir = chordLen > 1.0e-6 ? chord.scale(1.0 / chordLen) : new Vec3(0, 0, 1);
+        Vec3 side = new Vec3(0, 1, 0).cross(chordDir);
+        if (side.lengthSqr() < 1.0e-6) {
+            side = new Vec3(1, 0, 0).cross(chordDir);
+        }
+        side = side.normalize();
+
         for (int i = 0; i < n; i++) {
             float t = i / (float) (n - 1);
             Vec3 p = points.get(i);
@@ -241,8 +252,10 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
             }
             tangent = tangent.normalize();
 
+            // Visual-only: slow breathe/sway on the ribbon; does not move segment hitboxes.
+            Vec3 pulse = computeIdlePulse(side, t, state.time, state.seed, chordLen);
             Vec3 noise = computeNoise(tangent, t, state.time, shimmer);
-            center[i] = p.add(noise).subtract(origin);
+            center[i] = p.add(pulse).add(noise).subtract(origin);
 
             Vec3 nrm = cf.cross(tangent);
             if (nrm.lengthSqr() < 1e-6) {
@@ -253,6 +266,23 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
             widthFactor[i] = 0.30f + 0.70f * (float) Math.pow(1.0 - t, 0.8);
         }
         return new RibbonFrame(center, normal, tArr, widthFactor);
+    }
+
+    /**
+     * Soft port of the old render-only rope idle sway + aura breathe. Applied only to ribbon
+     * centers so kinematics and attack/destroy hit proxies stay authoritative.
+     * Amplitudes stay small relative to ribbon half-width to avoid layer self-intersection / z-fight.
+     */
+    private static Vec3 computeIdlePulse(Vec3 side, double t, double time, int seed, double chordLen) {
+        double bend = Math.sin(Math.PI * t);
+        if (bend < 1.0e-4) {
+            return Vec3.ZERO;
+        }
+        // Match old rope scale, but clamp — dense tip coils must not inflate motion.
+        double idle = Mth.clamp(0.008 * Math.max(0.5, chordLen), 0.004, 0.04);
+        double idleOff = idle * bend * Math.sin(t * 3.3 + time * 0.07);
+        double breathe = 0.012 * bend * Math.sin(time * 0.03 + seed * 0.01);
+        return side.scale(idleOff).add(0, breathe, 0);
     }
 
     private static void emitLayer(VertexConsumer buffer, PoseStack.Pose pose, RibbonFrame f,
@@ -355,8 +385,9 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         }
         n1 = n1.normalize();
         Vec3 n2 = tangent.cross(n1).normalize();
-        double a1 = Math.sin(time * 0.7 + t * 10.0) * amplitude;
-        double a2 = Math.cos(time * 0.95 + t * 17.0) * (amplitude * 0.7);
+        // Slower / quieter than the old shimmer so it doesn't fight the idle pulse.
+        double a1 = Math.sin(time * 0.35 + t * 8.0) * amplitude;
+        double a2 = Math.cos(time * 0.48 + t * 13.0) * (amplitude * 0.55);
         return n1.scale(a1).add(n2.scale(a2));
     }
 

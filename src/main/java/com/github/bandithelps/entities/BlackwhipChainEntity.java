@@ -421,6 +421,10 @@ public class BlackwhipChainEntity extends Entity {
                 Math.min(BlackwhipChainAnchors.MAX_WRAP_JOINTS, Math.max(1, n - 2)));
         int ropeEnd = Math.max(2, n - tipJoints);
 
+        // Capture prior anchors before overwrite so idle damping can scale with chord motion.
+        Vec3 prevRoot = joints[0];
+        Vec3 prevTip = joints[ropeEnd - 1];
+
         // Seed only uninitialized joints — never rewrite the whole rope to a straight line each tick
         // (that was the main source of grow/shrink jitter).
         for (int i = 0; i < n; i++) {
@@ -428,6 +432,12 @@ public class BlackwhipChainEntity extends Entity {
                 double t = i / (double) (n - 1);
                 joints[i] = root.add(entry.subtract(root).scale(t));
             }
+        }
+
+        // Snapshot mid-joints for motion-aware settling after the kinematic solve.
+        Vec3[] prevMids = new Vec3[Math.max(0, ropeEnd - 2)];
+        for (int i = 1; i < ropeEnd - 1; i++) {
+            prevMids[i - 1] = joints[i];
         }
 
         Vec3 reachEntry = root.add(entry.subtract(root).scale(extend));
@@ -439,13 +449,25 @@ public class BlackwhipChainEntity extends Entity {
         if (ropeEnd >= 2) {
             joints[ropeEnd - 1] = reachEntry;
             solveFabrik(joints, ropeEnd, root, reachEntry, link, 4);
-            double sag = link * 0.08;
-            for (int i = 1; i < ropeEnd - 1; i++) {
-                double envelope = Math.sin(Math.PI * (i / (double) Math.max(1, ropeEnd - 1)));
-                joints[i] = joints[i].add(0, -sag * envelope, 0);
-            }
+            applyMidChainShape(joints, ropeEnd, root, reachEntry, link);
             // Soft re-constrain (one pass) — enough to keep lengths, not enough to pop.
             constrainForward(joints, ropeEnd, root, link);
+            joints[0] = root;
+            joints[ropeEnd - 1] = reachEntry;
+
+            // Damp mid-joints toward the solved pose so idle FABRIK↔shape fights don't bob.
+            double rootMove = prevRoot != null ? prevRoot.distanceTo(root) : 0.0;
+            double tipMove = prevTip != null ? prevTip.distanceTo(reachEntry) : 0.0;
+            double chordMotion = Math.max(rootMove, tipMove);
+            float blend = chordMotion < 0.025
+                    ? 0.20f
+                    : (chordMotion < 0.08 ? 0.45f : 0.70f);
+            for (int i = 1; i < ropeEnd - 1; i++) {
+                Vec3 prev = prevMids[i - 1];
+                if (prev != null && !prev.equals(Vec3.ZERO)) {
+                    joints[i] = prev.lerp(joints[i], blend);
+                }
+            }
             joints[0] = root;
             joints[ropeEnd - 1] = reachEntry;
         }
@@ -462,6 +484,39 @@ public class BlackwhipChainEntity extends Entity {
         Vec3 tip = joints[ropeEnd - 1];
         for (int i = ropeEnd; i < n; i++) {
             joints[i] = tip;
+        }
+    }
+
+    /**
+     * Bias mid-joints with a light mid-chain lift and milder downward sag so the tether keeps a
+     * living belly without the deep catenary dip from pure gravity bias.
+     */
+    private static void applyMidChainShape(Vec3[] joints, int ropeEnd, Vec3 root, Vec3 tip, float link) {
+        Vec3 axis = tip.subtract(root);
+        double axisLen = axis.length();
+        if (axisLen < 1.0e-6) {
+            return;
+        }
+        Vec3 dir = axis.scale(1.0 / axisLen);
+        Vec3 side = new Vec3(0, 1, 0).cross(dir);
+        if (side.lengthSqr() < 1.0e-6) {
+            side = new Vec3(1, 0, 0).cross(dir);
+        }
+        side = side.normalize();
+        Vec3 lift = dir.cross(side).normalize();
+        // Prefer world-up component so horizontal tethers still get a clear mid boost.
+        if (lift.y < 0.0) {
+            lift = lift.scale(-1.0);
+        }
+
+        double liftAmt = link * 0.10;
+        double sagAmt = link * 0.035;
+        int denom = Math.max(1, ropeEnd - 1);
+        for (int i = 1; i < ropeEnd - 1; i++) {
+            double envelope = Math.sin(Math.PI * (i / (double) denom));
+            joints[i] = joints[i]
+                    .add(lift.scale(liftAmt * envelope))
+                    .add(0, -sagAmt * envelope, 0);
         }
     }
 
