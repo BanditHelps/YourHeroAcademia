@@ -7,6 +7,7 @@ import com.github.bandithelps.utils.blackwhip.BlackwhipChainHelper;
 import com.github.bandithelps.utils.quirk.QuirkFactorUtil;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -41,8 +42,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Whip Zip: short press = Simple Zip (instant pull); hold past threshold = Charge Zip
- * (multi-block side anchors, pullback charge, forward launch).
+ * Whip Zip: press casts a chain immediately and pulls toward the hit; hold past threshold
+ * converts into Charge Zip (multi-block side anchors, pullback charge, forward launch).
  */
 public class BlackwhipChainZipAbility extends Ability {
 
@@ -53,15 +54,25 @@ public class BlackwhipChainZipAbility extends Ability {
     private static final float LINK_LENGTH = 0.85f;
     private static final float CHAIN_HP = 18.0f;
     private static final int SEGMENT_COUNT = 8;
-    private static final int MAX_KEEP = 6;
+    private static final int MAX_KEEP = 8;
+    /** Keep reinforcing the zip pull for this many ticks after attach / while held. */
+    private static final int PULL_REINFORCE_TICKS = 8;
 
     private static final Map<UUID, ZipSession> SESSIONS = new ConcurrentHashMap<>();
 
     private static final class ZipSession {
         int heldTicks;
+        boolean missed;
+        boolean hasSimpleAnchor;
+        boolean pulling;
         boolean chargeArmed;
         float pullbackCharge;
         float initialAvgRope;
+        float pullPower;
+        Vec3 simpleAnchor = Vec3.ZERO;
+        BlockPos simpleSupport = BlockPos.ZERO;
+        int simpleChainId = -1;
+        int pullTicksLeft;
         final List<Integer> chargeChainIds = new ArrayList<>();
         final List<Vec3> anchors = new ArrayList<>();
     }
@@ -69,8 +80,8 @@ public class BlackwhipChainZipAbility extends Ability {
     public static final MapCodec<BlackwhipChainZipAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("range", new StaticValue(22.0f)).forGetter((ab) -> ab.range),
-                    Value.CODEC.optionalFieldOf("simple_pull_power", new StaticValue(1.85f)).forGetter((ab) -> ab.simplePullPower),
-                    Value.CODEC.optionalFieldOf("qf_pull_bonus", new StaticValue(0.06f)).forGetter((ab) -> ab.qfPullBonus),
+                    Value.CODEC.optionalFieldOf("simple_pull_power", new StaticValue(0.95f)).forGetter((ab) -> ab.simplePullPower),
+                    Value.CODEC.optionalFieldOf("qf_pull_bonus", new StaticValue(0.04f)).forGetter((ab) -> ab.qfPullBonus),
                     Value.CODEC.optionalFieldOf("simple_visual_ticks", new StaticValue(10.0f)).forGetter((ab) -> ab.simpleVisualTicks),
                     Value.CODEC.optionalFieldOf("charge_threshold_ticks", new StaticValue(7.0f)).forGetter((ab) -> ab.chargeThresholdTicks),
                     Value.CODEC.optionalFieldOf("max_charge_ticks", new StaticValue(28.0f)).forGetter((ab) -> ab.maxChargeTicks),
@@ -131,7 +142,42 @@ public class BlackwhipChainZipAbility extends Ability {
         ZipSession session = new ZipSession();
         session.heldTicks = 0;
         SESSIONS.put(player.getUUID(), session);
-        level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.PLAYERS, 0.4f, 1.35f);
+
+        DataContext context = DataContext.forEntity(entity);
+        double range = this.range.getAsFloat(context);
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle().normalize();
+        BlockHitResult hit = level.clip(new ClipContext(
+                eye, eye.add(look.scale(range)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+
+        if (hit.getType() != HitResult.Type.BLOCK) {
+            session.missed = true;
+            return;
+        }
+
+        Vec3 anchor = hit.getLocation();
+        double qf = QuirkFactorUtil.getQuirkFactor(player);
+        session.pullPower = this.simplePullPower.getAsFloat(context) * (float) (1.0 + qf * this.qfPullBonus.getAsFloat(context));
+
+        // Spawn the chain immediately so the throw is visible on press, not on release.
+        BlackwhipChainEntity chain = BlackwhipChainHelper.spawnAnchoredChain(
+                player, anchor, hit.getBlockPos(), BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,
+                SEGMENT_COUNT, LINK_LENGTH, CHAIN_HP, THICKNESS, range * 1.35, MAX_KEEP, 0);
+        if (chain == null) {
+            session.missed = true;
+            return;
+        }
+
+        session.hasSimpleAnchor = true;
+        session.pulling = true;
+        session.simpleAnchor = anchor;
+        session.simpleSupport = hit.getBlockPos();
+        session.simpleChainId = chain.getId();
+        session.pullTicksLeft = PULL_REINFORCE_TICKS;
+
+        applyZipPull(player, session, 0.85);
+        level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.PLAYERS, 0.55f, 1.35f);
+        level.playSound(null, player.blockPosition(), SoundEvents.LEAD_TIED, SoundSource.PLAYERS, 0.55f, 1.25f);
     }
 
     @Override
@@ -148,7 +194,19 @@ public class BlackwhipChainZipAbility extends Ability {
         session.heldTicks++;
         int threshold = Math.max(1, this.chargeThresholdTicks.getAsInt(context));
 
-        if (!session.chargeArmed && session.heldTicks >= threshold) {
+        // Sustain the zip pull every tick so client move packets can't cancel a single impulse.
+        if (session.pulling && session.hasSimpleAnchor && !session.chargeArmed) {
+            if (session.pullTicksLeft > 0) {
+                double strength = 0.35 + 0.35 * (session.pullTicksLeft / (double) PULL_REINFORCE_TICKS);
+                applyZipPull(player, session, strength);
+                session.pullTicksLeft--;
+            } else {
+                // Keep a lighter reel while the key is still held in simple mode.
+                applyZipPull(player, session, 0.22);
+            }
+        }
+
+        if (!session.missed && !session.chargeArmed && session.heldTicks >= threshold) {
             armCharge(player, level, context, session);
         }
 
@@ -172,18 +230,67 @@ public class BlackwhipChainZipAbility extends Ability {
         DataContext context = DataContext.forEntity(entity);
         int threshold = Math.max(1, this.chargeThresholdTicks.getAsInt(context));
 
-        if (!session.chargeArmed || session.heldTicks < threshold || session.anchors.size() < 2) {
-            retractChargeChains(level, session);
-            performSimpleZip(player, level, context);
+        if (session.chargeArmed && session.anchors.size() >= 2 && session.heldTicks >= threshold) {
+            performChargeLaunch(player, level, context, session);
             return;
         }
 
-        performChargeLaunch(player, level, context, session);
+        // Simple zip finish: light final tug toward the locked press-time anchor, then retract visual.
+        retractChargeChains(level, session);
+        if (session.hasSimpleAnchor) {
+            applyZipPull(player, session, 0.55);
+            finishSimpleChain(level, session, context);
+        } else if (session.missed) {
+            // Silent miss — no valid surface to zip to.
+        } else {
+            // No anchor (spawn failed) — try one last raycast as fallback.
+            performFallbackSimpleZip(player, level, context);
+        }
+    }
+
+    private void applyZipPull(ServerPlayer player, ZipSession session, double strengthScale) {
+        Vec3 center = player.position().add(0, player.getBbHeight() * 0.5, 0);
+        Vec3 toAnchor = session.simpleAnchor.subtract(center);
+        double dist = toAnchor.length();
+        if (dist < 0.85) {
+            session.pulling = false;
+            return;
+        }
+        Vec3 dir = toAnchor.scale(1.0 / dist);
+        double power = session.pullPower * strengthScale;
+        // Mild distance falloff — close zips shouldn't rocket you.
+        double distScale = Mth.clamp(dist / 14.0, 0.55, 1.0);
+        Vec3 current = player.getDeltaMovement();
+        Vec3 pull = dir.scale(power * distScale).add(0.0, 0.06 + 0.03 * strengthScale, 0.0);
+        // Blend more with existing velocity so it feels like a reel, not a teleport dash.
+        player.setDeltaMovement(current.scale(0.45).add(pull.scale(0.7)));
+        player.hurtMarked = true;
+        player.setOnGround(false);
+        player.resetFallDistance();
+    }
+
+    private void finishSimpleChain(ServerLevel level, ZipSession session, DataContext context) {
+        int visualTicks = Math.max(4, this.simpleVisualTicks.getAsInt(context));
+        if (session.simpleChainId >= 0 && level.getEntity(session.simpleChainId) instanceof BlackwhipChainEntity chain) {
+            chain.setLifetimeTicks(visualTicks);
+        }
+    }
+
+    private void retractSimpleChain(ServerLevel level, ZipSession session) {
+        if (session.simpleChainId >= 0 && level.getEntity(session.simpleChainId) instanceof BlackwhipChainEntity chain) {
+            chain.deactivate();
+        }
+        session.simpleChainId = -1;
+        session.pulling = false;
     }
 
     private void armCharge(ServerPlayer player, ServerLevel level, DataContext context, ZipSession session) {
         session.chargeArmed = true;
+        session.pulling = false;
         PacketDistributor.sendToPlayer(player, BlackwhipChainSwingPayload.stop());
+
+        // Swap the simple zip rope for the multi-anchor charge setup.
+        retractSimpleChain(level, session);
 
         double range = this.range.getAsFloat(context);
         int count = Math.max(2, this.sideCount.getAsInt(context));
@@ -219,8 +326,23 @@ public class BlackwhipChainZipAbility extends Ability {
             }
         }
 
-        if (session.anchors.isEmpty()) {
-            level.playSound(null, player.blockPosition(), SoundEvents.SNOWBALL_THROW, SoundSource.PLAYERS, 0.4f, 0.5f);
+        // If charge couldn't latch enough sides, fall back to keeping the original simple zip going.
+        if (session.anchors.size() < 2) {
+            session.chargeArmed = false;
+            retractChargeChains(level, session);
+            if (session.hasSimpleAnchor) {
+                // Re-cast the simple rope so the player still has a visual + pull target.
+                BlackwhipChainEntity chain = BlackwhipChainHelper.spawnAnchoredChain(
+                        player, session.simpleAnchor, session.simpleSupport,
+                        BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,
+                        SEGMENT_COUNT, LINK_LENGTH, CHAIN_HP, THICKNESS,
+                        this.range.getAsFloat(context) * 1.35, MAX_KEEP, 0);
+                if (chain != null) {
+                    session.simpleChainId = chain.getId();
+                    session.pulling = true;
+                    session.pullTicksLeft = Math.max(4, PULL_REINFORCE_TICKS / 2);
+                }
+            }
             return;
         }
 
@@ -258,36 +380,33 @@ public class BlackwhipChainZipAbility extends Ability {
         if (dist > session.initialAvgRope + 0.35 && dist > 1.0e-4) {
             Vec3 toward = toAvg.scale(1.0 / dist).scale(TENSION_PULL);
             player.setDeltaMovement(vel.add(toward));
+            player.hurtMarked = true;
             session.pullbackCharge = Math.min(0.45f, session.pullbackCharge + rate * 0.5f);
         }
     }
 
-    private void performSimpleZip(ServerPlayer player, ServerLevel level, DataContext context) {
+    private void performFallbackSimpleZip(ServerPlayer player, ServerLevel level, DataContext context) {
         double range = this.range.getAsFloat(context);
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle().normalize();
         BlockHitResult hit = level.clip(new ClipContext(
                 eye, eye.add(look.scale(range)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         if (hit.getType() != HitResult.Type.BLOCK) {
-            level.playSound(null, player.blockPosition(), SoundEvents.SNOWBALL_THROW, SoundSource.PLAYERS, 0.4f, 0.55f);
             return;
         }
-
-        Vec3 anchor = hit.getLocation();
+        ZipSession tmp = new ZipSession();
+        tmp.hasSimpleAnchor = true;
+        tmp.simpleAnchor = hit.getLocation();
         double qf = QuirkFactorUtil.getQuirkFactor(player);
+        tmp.pullPower = this.simplePullPower.getAsFloat(context) * (float) (1.0 + qf * this.qfPullBonus.getAsFloat(context));
         int visualTicks = Math.max(4, this.simpleVisualTicks.getAsInt(context));
-        BlackwhipChainHelper.spawnAnchoredChain(
-                player, anchor, hit.getBlockPos(), BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,
+        BlackwhipChainEntity chain = BlackwhipChainHelper.spawnAnchoredChain(
+                player, tmp.simpleAnchor, hit.getBlockPos(), BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,
                 SEGMENT_COUNT, LINK_LENGTH, CHAIN_HP, THICKNESS, range * 1.25, MAX_KEEP, visualTicks);
-
-        Vec3 center = player.position().add(0, player.getBbHeight() * 0.5, 0);
-        Vec3 toAnchor = anchor.subtract(center);
-        double dist = toAnchor.length();
-        Vec3 dir = dist > 1.0e-3 ? toAnchor.scale(1.0 / dist) : look;
-        double power = this.simplePullPower.getAsFloat(context) * (1.0 + qf * this.qfPullBonus.getAsFloat(context));
-        player.setDeltaMovement(dir.scale(power).add(0, 0.22, 0));
-        player.hurtMarked = true;
-        player.resetFallDistance();
+        if (chain != null) {
+            tmp.simpleChainId = chain.getId();
+        }
+        applyZipPull(player, tmp, 0.9);
         level.playSound(null, player.blockPosition(), SoundEvents.LEAD_TIED, SoundSource.PLAYERS, 0.7f, 1.35f);
     }
 
@@ -306,6 +425,7 @@ public class BlackwhipChainZipAbility extends Ability {
         player.setDeltaMovement(look.scale(power).add(0, power * LAUNCH_UP_BIAS, 0));
         player.hurtMarked = true;
         player.resetFallDistance();
+        player.setOnGround(false);
 
         PacketDistributor.sendToPlayer(player, BlackwhipChainSwingPayload.stop());
         retractChargeChains(level, session);
@@ -350,6 +470,7 @@ public class BlackwhipChainZipAbility extends Ability {
         ZipSession session = SESSIONS.remove(player.getUUID());
         if (session != null) {
             retractChargeChains(level, session);
+            retractSimpleChain(level, session);
         }
         BlackwhipChainEntity.retractOwnedByPurpose(player.getId(),
                 BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE, BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
@@ -367,6 +488,9 @@ public class BlackwhipChainZipAbility extends Ability {
                     chain.deactivate();
                 }
             }
+            if (session.simpleChainId >= 0 && level.getEntity(session.simpleChainId) instanceof BlackwhipChainEntity chain) {
+                chain.deactivate();
+            }
         }
         BlackwhipChainEntity.retractOwnedByPurpose(player.getId(),
                 BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE, BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
@@ -383,7 +507,7 @@ public class BlackwhipChainZipAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainZipAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("Tap to Simple Zip (instant pull to a surface). Hold to Charge Zip: side chains latch blocks, lean back to load, release to fling forward.")
+            builder.setDescription("Press to cast a chain and pull toward a surface. Hold to Charge Zip: side chains latch blocks, lean back to load, release to fling forward.")
                     .add("range", TYPE_VALUE, "Raycast reach for simple and charge anchors.")
                     .add("simple_pull_power", TYPE_VALUE, "Velocity for a quick zip pull.")
                     .add("charge_threshold_ticks", TYPE_VALUE, "Hold ticks before charge mode arms.")
@@ -392,7 +516,7 @@ public class BlackwhipChainZipAbility extends Ability {
                     .add("side_angle", TYPE_VALUE, "Cone angle (degrees) for side chains from look.")
                     .add("pullback_charge_rate", TYPE_VALUE, "Extra charge gained while leaning away from anchors.")
                     .addExampleObject(new BlackwhipChainZipAbility(
-                            new StaticValue(22.0f), new StaticValue(1.85f), new StaticValue(0.06f),
+                            new StaticValue(22.0f), new StaticValue(0.95f), new StaticValue(0.04f),
                             new StaticValue(10.0f), new StaticValue(7.0f), new StaticValue(28.0f),
                             new StaticValue(0.95f), new StaticValue(2.55f), new StaticValue(0.08f),
                             new StaticValue(4.0f), new StaticValue(32.0f), new StaticValue(0.035f),

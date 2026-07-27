@@ -79,7 +79,9 @@ public final class BlackwhipChainHelper {
             return null;
         }
         int keep = Math.max(1, maxKeep);
-        if (BlackwhipChainEntity.countOwnedActive(owner.getId()) >= keep) {
+        // Movement ropes should not be blocked by living grab tethers.
+        int active = countTowardKeep(owner.getId(), purpose);
+        if (active >= keep) {
             return null;
         }
 
@@ -114,6 +116,15 @@ public final class BlackwhipChainHelper {
         level.addFreshEntity(chain);
         chain.latchBlock(anchor, support != null ? support : BlockPos.containing(anchor));
         return chain;
+    }
+
+    private static int countTowardKeep(int ownerId, int purpose) {
+        if (purpose == BlackwhipChainEntity.PURPOSE_TAG) {
+            return BlackwhipChainEntity.countOwnedActive(ownerId);
+        }
+        return BlackwhipChainEntity.countOwnedActiveByPurpose(ownerId, BlackwhipChainEntity.PURPOSE_SWING)
+                + BlackwhipChainEntity.countOwnedActiveByPurpose(ownerId, BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE)
+                + BlackwhipChainEntity.countOwnedActiveByPurpose(ownerId, BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
     }
 
     private static void applyOwnerColors(BlackwhipChainEntity chain, LivingEntity owner) {
