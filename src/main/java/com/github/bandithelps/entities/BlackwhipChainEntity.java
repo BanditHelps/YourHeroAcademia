@@ -2,6 +2,7 @@ package com.github.bandithelps.entities;
 
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainTagStore;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -20,6 +21,7 @@ import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
@@ -54,6 +56,17 @@ public class BlackwhipChainEntity extends Entity {
     public static final int PHASE_LATCHED = 1;
     /** Retracting to the wrist before discard. */
     public static final int PHASE_RETRACTING = 2;
+    /** Tip pinned to a fixed world / block anchor (swing, zip). */
+    public static final int PHASE_ANCHORED = 3;
+
+    /** Living-entity grab tether (default). */
+    public static final int PURPOSE_TAG = 0;
+    /** Spider-Man swing rope. */
+    public static final int PURPOSE_SWING = 1;
+    /** Short-lived simple zip pull visual. */
+    public static final int PURPOSE_ZIP_SIMPLE = 2;
+    /** Multi-anchor charge zip tendril. */
+    public static final int PURPOSE_ZIP_CHARGE = 3;
 
     private static final int LATCH_BLEND_TICKS = 5;
     /** Client wrap coil ease after latch (tip settle then helix grow). */
@@ -106,6 +119,14 @@ public class BlackwhipChainEntity extends Entity {
     /** Entity tickCount when latched; -1 while deploying / unused. Drives wrap animation. */
     private static final EntityDataAccessor<Integer> DATA_LATCH_TICK =
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_PURPOSE =
+            SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Float> DATA_ANCHOR_X =
+            SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_ANCHOR_Y =
+            SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_ANCHOR_Z =
+            SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.FLOAT);
 
     private final int[] segmentIds = new int[MAX_SEGMENTS];
     private final Vec3[] joints = new Vec3[MAX_SEGMENTS];
@@ -124,6 +145,11 @@ public class BlackwhipChainEntity extends Entity {
     private int latchTtlTicks;
     private double latchMaxDistance;
     private int latchMaxKeep = 2;
+
+    /** Block supporting an anchored tip; broken/air tears the rope. */
+    private BlockPos supportPos = BlockPos.ZERO;
+    /** Auto-retract countdown for short-lived anchors (simple zip). 0 = no lifetime. */
+    private int lifetimeTicks;
 
     public BlackwhipChainEntity(EntityType<? extends BlackwhipChainEntity> type, Level level) {
         super(type, level);
@@ -176,6 +202,38 @@ public class BlackwhipChainEntity extends Entity {
         }
     }
 
+    /** Retracts active chains owned by {@code ownerId} that match any of {@code purposes}. */
+    public static void retractOwnedByPurpose(int ownerId, int... purposes) {
+        if (ownerId < 0 || purposes == null || purposes.length == 0) {
+            return;
+        }
+        for (BlackwhipChainEntity chain : ACTIVE_SERVER) {
+            if (!chain.isAlive() || !chain.isActive() || chain.getOwnerId() != ownerId) {
+                continue;
+            }
+            int purpose = chain.getPurpose();
+            for (int p : purposes) {
+                if (purpose == p) {
+                    chain.deactivate();
+                    break;
+                }
+            }
+        }
+    }
+
+    public static int countOwnedActiveByPurpose(int ownerId, int purpose) {
+        if (ownerId < 0) {
+            return 0;
+        }
+        int count = 0;
+        for (BlackwhipChainEntity chain : ACTIVE_SERVER) {
+            if (chain.isAlive() && chain.isActive() && chain.getOwnerId() == ownerId && chain.getPurpose() == purpose) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     @Override
     public void onAddedToLevel() {
         super.onAddedToLevel();
@@ -213,6 +271,10 @@ public class BlackwhipChainEntity extends Entity {
         builder.define(DATA_PHASE, PHASE_DEPLOYING);
         builder.define(DATA_MAX_RANGE, 18.0f);
         builder.define(DATA_LATCH_TICK, -1);
+        builder.define(DATA_PURPOSE, PURPOSE_TAG);
+        builder.define(DATA_ANCHOR_X, 0.0f);
+        builder.define(DATA_ANCHOR_Y, 0.0f);
+        builder.define(DATA_ANCHOR_Z, 0.0f);
     }
 
     /**
@@ -247,6 +309,35 @@ public class BlackwhipChainEntity extends Entity {
         this.latchMaxKeep = Math.max(1, maxKeep);
     }
 
+    /**
+     * Pins the tip to a fixed world point on a supporting block. Skips living TagStore registration.
+     * Call after configuring owner / segments / purpose — typically via
+     * {@link com.github.bandithelps.utils.blackwhip.BlackwhipChainHelper#spawnAnchoredChain}.
+     */
+    public void latchBlock(Vec3 point, BlockPos support) {
+        Vec3 tip = point == null ? this.position() : point;
+        this.tipPos = tip;
+        this.tipVelocity = Vec3.ZERO;
+        this.tipReady = true;
+        this.supportPos = support == null ? BlockPos.containing(tip) : support.immutable();
+        setAnchorPoint(tip);
+        setTargetId(-1);
+        setPhase(PHASE_ANCHORED);
+        setLatchTick(this.tickCount);
+        this.latchBlendRemaining = 0;
+        this.getEntityData().set(DATA_ACTIVE, true);
+        this.retractCountdown = -1;
+
+        Entity owner = getOwner();
+        if (owner != null && this.level() instanceof ServerLevel level) {
+            level.playSound(null, owner.blockPosition(), SoundEvents.LEAD_TIED, SoundSource.PLAYERS, 0.65f, 1.15f);
+        }
+    }
+
+    public void setLifetimeTicks(int ticks) {
+        this.lifetimeTicks = Math.max(0, ticks);
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -265,6 +356,10 @@ public class BlackwhipChainEntity extends Entity {
             deactivate();
         }
 
+        if (isAnchored()) {
+            tickAnchoredBreakRules(owner);
+        }
+
         // Keep controller near the wrist for tracking/culling; IK runs in serverPostTick.
         if (owner != null) {
             Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner);
@@ -281,6 +376,27 @@ public class BlackwhipChainEntity extends Entity {
             this.retractCountdown--;
             if (this.retractCountdown == 0) {
                 forceDiscard();
+            }
+        }
+    }
+
+    private void tickAnchoredBreakRules(Entity owner) {
+        if (lifetimeTicks > 0) {
+            lifetimeTicks--;
+            if (lifetimeTicks <= 0) {
+                deactivate();
+                return;
+            }
+        }
+        BlockState support = this.level().getBlockState(supportPos);
+        if (support.isAir() || support.getCollisionShape(this.level(), supportPos).isEmpty()) {
+            deactivate();
+            return;
+        }
+        if (owner != null && latchMaxDistance > 0.0) {
+            Vec3 center = owner.position().add(0, owner.getBbHeight() * 0.5, 0);
+            if (center.distanceTo(getAnchorPoint()) > latchMaxDistance) {
+                deactivate();
             }
         }
     }
@@ -324,6 +440,14 @@ public class BlackwhipChainEntity extends Entity {
             return;
         }
 
+        if (isAnchored()) {
+            tipPos = getAnchorPoint();
+            maybeResizeToTip(owner);
+            updateAnchoredJoints(owner);
+            moveSegments(owner);
+            return;
+        }
+
         LivingEntity target = getTargetLiving();
         if (isLatched() && target != null && target.isAlive()) {
             maybeResize(owner, target);
@@ -333,6 +457,20 @@ public class BlackwhipChainEntity extends Entity {
             updateRetractJoints(owner);
             moveSegments(owner);
         }
+    }
+
+    private void updateAnchoredJoints(Entity owner) {
+        int n = getSegmentCount();
+        if (n < 2) {
+            return;
+        }
+        Vec3 root = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        Vec3 tip = getAnchorPoint();
+        tipPos = tip;
+        int tipJoints = Mth.clamp(getWrapJoints(), BlackwhipChainAnchors.MIN_WRAP_JOINTS,
+                Math.min(BlackwhipChainAnchors.MAX_WRAP_JOINTS, Math.max(1, n - 2)));
+        int ropeEnd = Math.max(2, n - tipJoints);
+        solveRopeToTip(root, tip, ropeEnd, n, 0.55f);
     }
 
     private void tickDeployFlight(Entity owner) {
@@ -1092,7 +1230,7 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     public void setPhase(int phase) {
-        this.getEntityData().set(DATA_PHASE, Mth.clamp(phase, PHASE_DEPLOYING, PHASE_RETRACTING));
+        this.getEntityData().set(DATA_PHASE, Mth.clamp(phase, PHASE_DEPLOYING, PHASE_ANCHORED));
     }
 
     public void setMaxRange(float range) {
@@ -1101,6 +1239,18 @@ public class BlackwhipChainEntity extends Entity {
 
     public void setLatchTick(int tick) {
         this.getEntityData().set(DATA_LATCH_TICK, tick);
+    }
+
+    public void setPurpose(int purpose) {
+        this.getEntityData().set(DATA_PURPOSE, Mth.clamp(purpose, PURPOSE_TAG, PURPOSE_ZIP_CHARGE));
+    }
+
+    public void setAnchorPoint(Vec3 point) {
+        Vec3 p = point == null ? Vec3.ZERO : point;
+        this.getEntityData().set(DATA_ANCHOR_X, (float) p.x);
+        this.getEntityData().set(DATA_ANCHOR_Y, (float) p.y);
+        this.getEntityData().set(DATA_ANCHOR_Z, (float) p.z);
+        this.tipPos = p;
     }
 
     public int getOwnerId() {
@@ -1196,12 +1346,34 @@ public class BlackwhipChainEntity extends Entity {
         return isActive() && getPhase() == PHASE_LATCHED;
     }
 
+    public boolean isAnchored() {
+        return isActive() && getPhase() == PHASE_ANCHORED;
+    }
+
+    public int getPurpose() {
+        return this.getEntityData().get(DATA_PURPOSE);
+    }
+
+    public Vec3 getAnchorPoint() {
+        return new Vec3(
+                this.getEntityData().get(DATA_ANCHOR_X),
+                this.getEntityData().get(DATA_ANCHOR_Y),
+                this.getEntityData().get(DATA_ANCHOR_Z));
+    }
+
+    public BlockPos getSupportPos() {
+        return supportPos;
+    }
+
     /**
      * Client/render helper: tip travel toward max range while deploying; after latch, 0→1 wrap
      * ease so the latch-height coil animates instead of popping in fully formed.
      */
     public float getExtendProgress(float partial) {
         int phase = getPhase();
+        if (phase == PHASE_ANCHORED) {
+            return 1.0f;
+        }
         if (phase == PHASE_LATCHED || phase == PHASE_RETRACTING) {
             int latchAt = getLatchTick();
             if (latchAt < 0) {

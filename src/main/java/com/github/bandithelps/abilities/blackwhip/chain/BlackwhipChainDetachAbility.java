@@ -1,6 +1,7 @@
 package com.github.bandithelps.abilities.blackwhip.chain;
 
 import com.github.bandithelps.abilities.AbilityRegister;
+import com.github.bandithelps.entities.BlackwhipChainEntity;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainTagStore;
 import com.github.bandithelps.utils.blackwhip.BlackwhipTargeting;
 import com.mojang.serialization.Codec;
@@ -65,8 +66,20 @@ public class BlackwhipChainDetachAbility extends Ability {
             }
         }
 
-        if (BlackwhipChainTagStore.getTagCount(player) > 0) {
+        boolean releasedTags = BlackwhipChainTagStore.getTagCount(player) > 0;
+        if (releasedTags) {
             BlackwhipChainTagStore.clearTags(player);
+        }
+
+        // Also drop movement ropes (swing / zip) that are not living TagStore entries.
+        BlackwhipChainSwingAbility.forceStop(player);
+        BlackwhipChainZipAbility.forceStop(player);
+        BlackwhipChainEntity.retractOwnedByPurpose(player.getId(),
+                BlackwhipChainEntity.PURPOSE_SWING,
+                BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,
+                BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
+
+        if (releasedTags || this.all) {
             level.playSound(null, player.blockPosition(), SoundEvents.LEAD_BREAK, SoundSource.PLAYERS, 0.8f, 0.8f);
         }
     }

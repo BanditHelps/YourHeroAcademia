@@ -116,6 +116,16 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         state.hasBoneTip = false;
         state.coilAppended = false;
         state.ropeJointCount = state.joints.size();
+
+        // Block-anchored ropes: pin tip to synched world anchor (no living wrap coil).
+        if (entity.isAnchored() && state.joints.size() >= 2 && wrist != null) {
+            Vec3 tip = entity.getAnchorPoint();
+            state.joints.set(state.joints.size() - 1, tip);
+            BlackwhipChainAnchors.redistributeJoints(state.joints, wrist, tip);
+            state.ropeJointCount = state.joints.size();
+            return;
+        }
+
         // Waist coil only after tip latch — during deploy the tip follows segment joints.
         LivingEntity target = entity.getTargetLiving();
         if (entity.isLatched()
