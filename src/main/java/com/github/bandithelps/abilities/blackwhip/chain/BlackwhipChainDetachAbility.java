@@ -74,6 +74,7 @@ public class BlackwhipChainDetachAbility extends Ability {
         // Also drop movement ropes (swing / zip) that are not living TagStore entries.
         BlackwhipChainSwingAbility.forceStop(player);
         BlackwhipChainZipAbility.forceStop(player);
+        BlackwhipChainChargeZipAbility.forceStop(player);
         BlackwhipChainEntity.retractOwnedByPurpose(player.getId(),
                 BlackwhipChainEntity.PURPOSE_SWING,
                 BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,

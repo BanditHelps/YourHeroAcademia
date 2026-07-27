@@ -1003,8 +1003,9 @@ public class BlackwhipChainEntity extends Entity {
         joints[0] = root;
         BlackwhipChainAnchors.collideJointChain(this.level(), this, joints, ropeEnd);
         joints[0] = root;
-        // During deploy, keep the tip ballistic — do not let block collide pull the tip back.
-        if (isDeploying()) {
+        // Deploy + block-anchored ropes keep the authored tip — collide must not lift a wall/ceiling
+        // latch onto the top face of the support block.
+        if (isDeploying() || isAnchored()) {
             joints[ropeEnd - 1] = tip;
         }
         Vec3 finalTip = joints[ropeEnd - 1];

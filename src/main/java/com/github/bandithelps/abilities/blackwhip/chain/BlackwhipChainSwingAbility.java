@@ -3,6 +3,7 @@ package com.github.bandithelps.abilities.blackwhip.chain;
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import com.github.bandithelps.network.BlackwhipChainSwingPayload;
+import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainHelper;
 import com.github.bandithelps.utils.quirk.QuirkFactorUtil;
 import com.mojang.serialization.MapCodec;
@@ -106,6 +107,8 @@ public class BlackwhipChainSwingAbility extends Ability {
         DataContext context = DataContext.forEntity(entity);
         stopSwing(player, level, false);
 
+        BlackwhipChainZipAbility.forceStop(player);
+        BlackwhipChainChargeZipAbility.forceStop(player);
         BlackwhipChainEntity.retractOwnedByPurpose(player.getId(),
                 BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE, BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
 
@@ -119,7 +122,8 @@ public class BlackwhipChainSwingAbility extends Ability {
             return;
         }
 
-        Vec3 anchor = hit.getLocation();
+        // Latch on the hit face (nudged along the face normal), not the block's top.
+        Vec3 anchor = BlackwhipChainAnchors.surfaceAttachPoint(hit);
         double qf = QuirkFactorUtil.getQuirkFactor(player);
         BlackwhipChainEntity chain = BlackwhipChainHelper.spawnAnchoredChain(
                 player, anchor, hit.getBlockPos(), BlackwhipChainEntity.PURPOSE_SWING,

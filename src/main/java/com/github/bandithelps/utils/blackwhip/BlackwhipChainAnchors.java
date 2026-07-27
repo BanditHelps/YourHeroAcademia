@@ -417,6 +417,20 @@ public final class BlackwhipChainAnchors {
 
     private static final double JOINT_PROBE = 0.22;
     private static final double SURFACE_NUDGE = 0.08;
+    /** Offset along the hit face normal so block latches sit outside the collider. */
+    private static final double ATTACH_NUDGE = 0.12;
+
+    /**
+     * World attach point for a block ray hit: exact impact, nudged along the hit face normal
+     * so the tip sits on that face (not flushed into the block / pushed to the top).
+     */
+    public static Vec3 surfaceAttachPoint(BlockHitResult hit) {
+        if (hit == null || hit.getType() != HitResult.Type.BLOCK) {
+            return hit != null ? hit.getLocation() : Vec3.ZERO;
+        }
+        Direction face = hit.getDirection();
+        return hit.getLocation().add(Vec3.atLowerCornerOf(face.getUnitVec3i()).scale(ATTACH_NUDGE));
+    }
 
     /**
      * Moves {@code to} so the segment from {@code from} does not pass through solid blocks,
@@ -430,6 +444,8 @@ public final class BlackwhipChainAnchors {
             if (hit.getType() == HitResult.Type.BLOCK) {
                 Direction face = hit.getDirection();
                 result = hit.getLocation().add(Vec3.atLowerCornerOf(face.getUnitVec3i()).scale(SURFACE_NUDGE));
+                // Prefer escaping along the hit face so wall/ceiling contacts don't lift to the top.
+                return pushOutOfBlocks(level, result, face);
             }
         }
         return pushOutOfBlocks(level, result);
@@ -437,14 +453,41 @@ public final class BlackwhipChainAnchors {
 
     /** If a joint sits inside solid collision, nudge it into free space (prefer up for ground). */
     public static Vec3 pushOutOfBlocks(Level level, Vec3 pos) {
+        return pushOutOfBlocks(level, pos, Direction.UP);
+    }
+
+    /**
+     * If a joint sits inside solid collision, nudge it into free space.
+     * When {@code prefer} is set (e.g. the hit face), escape along that axis first so side/ceiling
+     * contacts do not default to the top of the block.
+     */
+    public static Vec3 pushOutOfBlocks(Level level, Vec3 pos, Direction prefer) {
         if (!isBlocked(level, pos)) {
             return pos;
         }
-        // Prefer lifting out of the floor first.
-        for (double dy = 0.1; dy <= 2.0; dy += 0.1) {
-            Vec3 up = pos.add(0, dy, 0);
-            if (!isBlocked(level, up)) {
-                return up;
+        Direction axis = prefer != null ? prefer : Direction.UP;
+        Vec3 step = Vec3.atLowerCornerOf(axis.getUnitVec3i());
+        for (double d = 0.1; d <= 2.0; d += 0.1) {
+            Vec3 along = pos.add(step.scale(d));
+            if (!isBlocked(level, along)) {
+                return along;
+            }
+        }
+        // Fallback: try remaining cardinals (UP next if we didn't already).
+        Direction[] fallback = {
+                Direction.UP, Direction.DOWN,
+                Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST
+        };
+        for (Direction dir : fallback) {
+            if (dir == axis) {
+                continue;
+            }
+            Vec3 unit = Vec3.atLowerCornerOf(dir.getUnitVec3i());
+            for (double d = 0.1; d <= 1.0; d += 0.1) {
+                Vec3 candidate = pos.add(unit.scale(d));
+                if (!isBlocked(level, candidate)) {
+                    return candidate;
+                }
             }
         }
         double[][] offsets = {
@@ -459,7 +502,7 @@ public final class BlackwhipChainAnchors {
                 return candidate;
             }
         }
-        return pos.add(0, 0.5, 0);
+        return pos.add(step.scale(0.5));
     }
 
     /**

@@ -23,6 +23,7 @@ import com.github.bandithelps.abilities.blackwhip.BlackwhipRestrictAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipTagAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipYankAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipZipAbility;
+import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainChargeZipAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainDetachAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainSwingAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainTagAbility;
@@ -79,6 +80,7 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainDetachAbility.Serializer> BLACKWHIP_CHAIN_DETACH;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainSwingAbility.Serializer> BLACKWHIP_CHAIN_SWING;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainZipAbility.Serializer> BLACKWHIP_CHAIN_ZIP;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainChargeZipAbility.Serializer> BLACKWHIP_CHAIN_CHARGE_ZIP;
 
     static {
         ABILITIES = DeferredRegister.create(PalladiumRegistryKeys.ABILITY_SERIALIZER, YourHeroAcademia.MODID);
@@ -117,6 +119,7 @@ public class AbilityRegister {
         BLACKWHIP_CHAIN_DETACH = ABILITIES.register("blackwhip_chain_detach", BlackwhipChainDetachAbility.Serializer::new);
         BLACKWHIP_CHAIN_SWING = ABILITIES.register("blackwhip_chain_swing", BlackwhipChainSwingAbility.Serializer::new);
         BLACKWHIP_CHAIN_ZIP = ABILITIES.register("blackwhip_chain_zip", BlackwhipChainZipAbility.Serializer::new);
+        BLACKWHIP_CHAIN_CHARGE_ZIP = ABILITIES.register("blackwhip_chain_charge_zip", BlackwhipChainChargeZipAbility.Serializer::new);
     }
 
 }
