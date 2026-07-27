@@ -123,9 +123,14 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
                 && state.joints.size() >= 2
                 && state.active
                 && wrist != null) {
+            // Grabbed local player in FP: park the wrap under the eyeline so it doesn't fill the lens.
+            // Third-person / other viewers still use the real latch height from the tip hit.
+            float wrapHeight = isLocalFirstPersonTarget(target)
+                    ? BlackwhipChainAnchors.firstPersonTargetWrapHeight(target)
+                    : entity.getWrapHeight();
             int ropeCount = BlackwhipWaistBoneHelper.attachTipAndCoil(
                     state.joints, target, wrist, entity.getWrapTurns(), state.extendProgress,
-                    entity.getWrapHeight(), partial);
+                    wrapHeight, partial);
             if (ropeCount > 0) {
                 state.ropeJointCount = ropeCount;
                 state.coilAppended = state.joints.size() > ropeCount;
@@ -152,6 +157,15 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         return owner != null
                 && mc.player != null
                 && owner.getId() == mc.player.getId()
+                && mc.options.getCameraType().isFirstPerson();
+    }
+
+    /** True when the camera player is the latched target viewing themselves in first person. */
+    private static boolean isLocalFirstPersonTarget(LivingEntity target) {
+        Minecraft mc = Minecraft.getInstance();
+        return target != null
+                && mc.player != null
+                && target.getId() == mc.player.getId()
                 && mc.options.getCameraType().isFirstPerson();
     }
 

@@ -20,6 +20,7 @@ import net.neoforged.neoforge.event.level.ExplosionEvent;
 
 /**
  * Owner/target click-through for chain segments, plus explosion damage against chain joints.
+ * Projectile pass-through is handled on {@link BlackwhipSegmentEntity#canBeHitByProjectile()}.
  */
 @EventBusSubscriber(modid = YourHeroAcademia.MODID)
 public final class BlackwhipChainHitEvents {

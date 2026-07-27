@@ -36,6 +36,11 @@ public final class BlackwhipChainAnchors {
     /** Lowest / highest allowed wrap-band centers (fraction of hitbox height). */
     public static final float MIN_WRAP_HEIGHT = 0.22f;
     public static final float MAX_WRAP_HEIGHT = 0.88f;
+    /**
+     * Extra drop below eyeline (as a fraction of hitbox height) for first-person victim wrap
+     * rendering so the coil sits under the camera instead of filling the lens.
+     */
+    public static final float FIRST_PERSON_WRAP_BELOW_EYE = 0.12f;
 
     private BlackwhipChainAnchors() {
     }
@@ -124,6 +129,20 @@ public final class BlackwhipChainAnchors {
         double halfW = target.getBbWidth() * 0.5;
         double h = target.getBbHeight();
         return new AABB(pos.x - halfW, pos.y, pos.z - halfW, pos.x + halfW, pos.y + h, pos.z + halfW);
+    }
+
+    /**
+     * Client-only wrap height for a grabbed player viewing themselves in first person: band
+     * center sits just below the eyeline so the upper coil ring stays under the camera.
+     */
+    public static float firstPersonTargetWrapHeight(LivingEntity target) {
+        if (target == null || target.getBbHeight() < 1.0e-6) {
+            return DEFAULT_WRAP_HEIGHT;
+        }
+        float eyeFrac = Mth.clamp((float) (target.getEyeHeight() / target.getBbHeight()), 0.5f, 1.0f);
+        // Keep the upper ring under the camera: mid + half-spacing + pad ≤ eye.
+        float mid = eyeFrac - (float) WRAP_RING_HALF_SPACING - FIRST_PERSON_WRAP_BELOW_EYE;
+        return Mth.clamp(mid, MIN_WRAP_HEIGHT, 0.70f);
     }
 
     /**

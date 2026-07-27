@@ -75,6 +75,16 @@ public class BlackwhipSegmentEntity extends Entity {
         return true;
     }
 
+    /**
+     * Segments must stay melee-pickable, but projectiles should never collide with them — otherwise
+     * a latched skeleton/player shooting from inside the wrap band has arrows bounce off the tip
+     * proxies in front of their face. Deploy tip-grab still finds projectiles via its own sweep.
+     */
+    @Override
+    public boolean canBeHitByProjectile() {
+        return false;
+    }
+
     @Override
     public boolean ignoreExplosion(Explosion explosion) {
         return false;
