@@ -16,12 +16,15 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
@@ -33,8 +36,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Server-authoritative IK controller for one Blackwhip chain tether. Owns shared HP and drives a
  * dynamic set of {@link BlackwhipSegmentEntity} hit proxies along FABRIK joints. Chains deploy as a
- * flying tip that latches on tip contact, then pins a wrap helix on the target at the hit
- * height. IK runs in {@link #serverPostTick()} after owner movement settles.
+ * flying tip along the owner's eye look-ray that latches on tip contact (or grabs projectiles),
+ * then pins a wrap helix on the target at the hit height. IK runs in {@link #serverPostTick()}
+ * after owner movement settles.
  */
 public class BlackwhipChainEntity extends Entity {
 
@@ -212,37 +216,25 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     /**
-     * Starts tip flight from the owner's wrist toward the crosshair aim point. {@code direction}
-     * is the eye look vector; the tip path is raised from the wrist so it tracks the cursor
-     * instead of flying parallel below it into the ground.
+     * Starts tip flight along the owner's eye look-ray (projectile-style). {@code direction} is
+     * the look vector; the tip spawns at eye height so it tracks the crosshair. Visual rope root
+     * stays at the wrist via IK — max range is still measured wrist→tip.
      */
     public void beginDeploy(Vec3 direction, double maxRange) {
         Entity owner = getOwner();
-        Vec3 wrist = owner != null ? BlackwhipChainAnchors.resolveOwnerWrist(owner) : this.position();
         Vec3 look = direction.lengthSqr() < 1.0e-6 ? new Vec3(0, 0, 1) : direction.normalize();
         float range = (float) Math.max(1.0, maxRange);
-
-        // Crosshair ray originates at the eyes; aim the tip at that world point so the path
-        // climbs from the wrist toward where the player is looking.
-        Vec3 eye = owner instanceof LivingEntity living
-                ? living.getEyePosition()
-                : wrist.add(0.0, 1.62, 0.0);
-        Vec3 aimPoint = eye.add(look.scale(range));
-        Vec3 dir = aimPoint.subtract(wrist);
-        if (dir.lengthSqr() < 1.0e-6) {
-            dir = look;
-        } else {
-            dir = dir.normalize();
-        }
 
         setMaxRange(range);
         setPhase(PHASE_DEPLOYING);
         setTargetId(-1);
         setLatchTick(-1);
         setWrapHeight(BlackwhipChainAnchors.DEFAULT_WRAP_HEIGHT);
-        this.tipPos = wrist.add(dir.scale(0.15));
+        this.tipPos = owner != null
+                ? BlackwhipChainAnchors.resolveTipSpawn(owner, look)
+                : this.position().add(look.scale(0.25));
         double tipSpeed = range / (double) Math.max(1, getTravelTicks());
-        this.tipVelocity = dir.scale(tipSpeed);
+        this.tipVelocity = look.scale(tipSpeed);
         this.tipReady = true;
         this.latchBlendRemaining = 0;
         this.getEntityData().set(DATA_ACTIVE, true);
@@ -347,17 +339,14 @@ public class BlackwhipChainEntity extends Entity {
         if (!tipReady) {
             beginDeploy(owner.getLookAngle(), getMaxRange());
         }
+        // Point-blank: tip already overlapping a hitbox (spawn inside / against a target).
+        if (tryInteractAtTip(owner)) {
+            return;
+        }
+
         Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner);
         Vec3 prevTip = tipPos;
         Vec3 next = tipPos.add(tipVelocity);
-
-        BlockHitResult blockHit = this.level().clip(new ClipContext(
-                prevTip, next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, owner));
-        if (blockHit.getType() == HitResult.Type.BLOCK) {
-            tipPos = blockHit.getLocation();
-            deactivate();
-            return;
-        }
 
         Vec3 fromWrist = next.subtract(wrist);
         double dist = fromWrist.length();
@@ -366,9 +355,40 @@ public class BlackwhipChainEntity extends Entity {
         if (atMax && dist > 1.0e-6) {
             next = wrist.add(fromWrist.scale(maxRange / dist));
         }
-        tipPos = next;
 
-        if (tryLatchAtTip(owner)) {
+        BlockHitResult blockHit = this.level().clip(new ClipContext(
+                prevTip, next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, owner));
+        double blockDist = blockHit.getType() == HitResult.Type.BLOCK
+                ? prevTip.distanceTo(blockHit.getLocation())
+                : Double.POSITIVE_INFINITY;
+
+        AABB searchBox = new AABB(prevTip, next).inflate(TIP_HIT_INFLATE);
+        double stepDistSqr = Math.max(prevTip.distanceToSqr(next), TIP_HIT_INFLATE * TIP_HIT_INFLATE);
+        EntityHitResult entityHit = ProjectileUtil.getEntityHitResult(
+                owner,
+                prevTip,
+                next,
+                searchBox,
+                e -> isDeployHitCandidate(owner, e),
+                stepDistSqr);
+
+        if (entityHit != null) {
+            double entityDist = prevTip.distanceTo(entityHit.getLocation());
+            if (entityDist <= blockDist) {
+                tipPos = entityHit.getLocation();
+                applyDeployEntityHit(entityHit.getEntity());
+                return;
+            }
+        }
+
+        if (blockHit.getType() == HitResult.Type.BLOCK) {
+            tipPos = blockHit.getLocation();
+            deactivate();
+            return;
+        }
+
+        tipPos = next;
+        if (tryInteractAtTip(owner)) {
             return;
         }
         if (atMax) {
@@ -376,33 +396,71 @@ public class BlackwhipChainEntity extends Entity {
         }
     }
 
-    private boolean tryLatchAtTip(Entity owner) {
+    /** Point sample at the current tip — catches overlaps ProjectileUtil can miss when start is inside. */
+    private boolean tryInteractAtTip(Entity owner) {
         AABB tipBox = new AABB(tipPos, tipPos).inflate(TIP_HIT_INFLATE);
-        List<LivingEntity> candidates = this.level().getEntitiesOfClass(
-                LivingEntity.class,
-                tipBox,
-                e -> e.isAlive() && e.getId() != getOwnerId());
-        if (candidates.isEmpty()) {
-            return false;
-        }
-
-        LivingEntity best = null;
+        Entity best = null;
         double bestDist = Double.MAX_VALUE;
-        for (LivingEntity living : candidates) {
-            if (owner instanceof ServerPlayer player && BlackwhipChainTagStore.isTagged(player, living.getId())) {
-                continue;
-            }
-            double d = living.getBoundingBox().getCenter().distanceToSqr(tipPos);
+        for (Entity e : this.level().getEntities(owner, tipBox, e -> isDeployHitCandidate(owner, e))) {
+            double d = e.getBoundingBox().getCenter().distanceToSqr(tipPos);
             if (d < bestDist) {
                 bestDist = d;
-                best = living;
+                best = e;
             }
         }
         if (best == null) {
             return false;
         }
-        latch(best);
+        applyDeployEntityHit(best);
         return true;
+    }
+
+    private boolean isDeployHitCandidate(Entity owner, Entity e) {
+        if (e == null || e == this || !e.isAlive() || !e.isPickable()) {
+            return false;
+        }
+        if (e.getId() == getOwnerId()) {
+            return false;
+        }
+        if (e instanceof BlackwhipSegmentEntity || e instanceof BlackwhipChainEntity) {
+            return false;
+        }
+        if (e instanceof LivingEntity living) {
+            return !(owner instanceof ServerPlayer player && BlackwhipChainTagStore.isTagged(player, living.getId()));
+        }
+        if (e instanceof Projectile projectile) {
+            Entity projOwner = projectile.getOwner();
+            return projOwner == null || projOwner.getId() != getOwnerId();
+        }
+        return false;
+    }
+
+    private void applyDeployEntityHit(Entity hit) {
+        if (hit instanceof LivingEntity living) {
+            latch(living);
+        } else {
+            grabProjectile(hit);
+        }
+    }
+
+    /**
+     * Tip catches a non-living projectile: stop it, pin the tip, and retract. Does not register a
+     * living tether in {@link BlackwhipChainTagStore}.
+     */
+    private void grabProjectile(Entity projectile) {
+        tipPos = projectile.position().add(0.0, projectile.getBbHeight() * 0.5, 0.0);
+        projectile.setDeltaMovement(Vec3.ZERO);
+        if (this.level() instanceof ServerLevel level) {
+            Entity owner = getOwner();
+            if (owner != null) {
+                level.playSound(null, owner.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE,
+                        SoundSource.PLAYERS, 0.7f, 1.25f);
+            } else {
+                level.playSound(null, this.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE,
+                        SoundSource.NEUTRAL, 0.7f, 1.25f);
+            }
+        }
+        deactivate();
     }
 
     public void latch(LivingEntity target) {

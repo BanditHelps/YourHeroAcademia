@@ -17,7 +17,9 @@ public final class BlackwhipChainHelper {
     }
 
     /**
-     * Spawns a deploying chain that flies along {@code direction} and latches on tip contact.
+     * Spawns a deploying chain whose tip flies along the owner's eye look-ray ({@code direction})
+     * and latches on swept tip contact. Controller entity is placed at the wrist for culling; tip
+     * origin is resolved in {@link BlackwhipChainEntity#beginDeploy}.
      *
      * @return the chain, or {@code null} if the owner already has {@code maxKeep} active chains
      */

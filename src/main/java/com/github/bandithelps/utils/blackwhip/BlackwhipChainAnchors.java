@@ -40,6 +40,18 @@ public final class BlackwhipChainAnchors {
     private BlackwhipChainAnchors() {
     }
 
+    /**
+     * Functional tip spawn for chain deploy: eye height along look, slightly forward so the tip
+     * rides the crosshair ray. Visual rope root remains {@link #resolveOwnerWrist}.
+     */
+    public static Vec3 resolveTipSpawn(Entity owner, Vec3 look) {
+        Vec3 dir = look.lengthSqr() < 1.0e-6 ? new Vec3(0.0, 0.0, 1.0) : look.normalize();
+        Vec3 eye = owner instanceof LivingEntity living
+                ? living.getEyePosition()
+                : owner.position().add(0.0, owner.getBbHeight() * 0.85, 0.0);
+        return eye.add(dir.scale(0.25));
+    }
+
     /** Owner wrist/hand attach. {@code partialTick} is used for interpolated pose on the client. */
     public static Vec3 resolveOwnerWrist(Entity owner, float partialTick) {
         if (!(owner instanceof LivingEntity living)) {
