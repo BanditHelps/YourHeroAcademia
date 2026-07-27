@@ -32,4 +32,16 @@ public class BlackwhipChainRenderState extends EntityRenderState {
 
     /** True when a dense wrap coil was appended to {@link #joints} for this frame. */
     public boolean coilAppended = false;
+
+    /**
+     * Joint count for the wrist→tip rope only (excludes appended wrap coil samples). Used so idle
+     * sway scales from the rope chord instead of the dense helix polyline.
+     */
+    public int ropeJointCount = 0;
+
+    /**
+     * When true, soft-fade the wrist end of the ribbon (first-person local owner only). Third person
+     * and other viewers keep full opacity at the root so the chain reads solid.
+     */
+    public boolean fadeRoot = false;
 }

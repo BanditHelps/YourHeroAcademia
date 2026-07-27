@@ -4,6 +4,7 @@ import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.body.BodySyncEvents;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import com.github.bandithelps.entities.BlackwhipEntity;
+import com.github.bandithelps.utils.blackwhip.BlackwhipChainDebugTurretEvents;
 import com.github.bandithelps.utils.blackwhip.BlackwhipColors;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -14,13 +15,19 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * {@code /yha blackwhip color <inner> <outer> <glow>} customizes a player's Blackwhip colors
  * (stored as body strings, so the choice persists and syncs to all viewers). A 2-arg form
  * {@code /yha blackwhip color <inner> <glow>} derives outer from glow. {@code reset} restores
  * the canon teal/black look. Active whips update immediately.
+ * <p>
+ * {@code /yha blackwhip debug_turret} summons an armor stand that periodically shoots flying
+ * chain tips for deploy/latch testing. {@code clear} removes all debug turrets.
  */
 public final class BlackwhipCommand {
 
@@ -69,7 +76,30 @@ public final class BlackwhipCommand {
                                                         StringArgumentType.getString(c, "outerOrGlow"),
                                                         StringArgumentType.getString(c, "glow"))))))));
 
+        blackwhip.then(Commands.literal("debug_turret")
+                .executes(c -> summonDebugTurret(c.getSource()))
+                .then(Commands.literal("clear")
+                        .executes(c -> clearDebugTurrets(c.getSource()))));
+
         builder.then(blackwhip);
+    }
+
+    private static int summonDebugTurret(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        ServerLevel level = player.level();
+        Vec3 pos = player.position().add(player.getLookAngle().scale(2.0)).add(0, 0.1, 0);
+        ArmorStand stand = BlackwhipChainDebugTurretEvents.summon(level, pos, player.getYRot());
+        source.sendSuccess(() -> Component.literal(
+                "Summoned Blackwhip debug turret '" + BlackwhipChainDebugTurretEvents.DISPLAY_NAME
+                        + "' (id=" + stand.getId() + "). It shoots flying chain tips at nearby players "
+                        + "and waits until the current chain breaks before firing again."), true);
+        return 1;
+    }
+
+    private static int clearDebugTurrets(CommandSourceStack source) {
+        int removed = BlackwhipChainDebugTurretEvents.clearAll(source.getServer());
+        source.sendSuccess(() -> Component.literal("Removed " + removed + " Blackwhip debug turret(s)."), true);
+        return removed;
     }
 
     private static int setColorsTwoArg(CommandSourceStack source, ServerPlayer player, String innerHex, String glowHex)

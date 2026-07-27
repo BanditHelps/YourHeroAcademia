@@ -1,8 +1,8 @@
 package com.github.bandithelps.abilities.blackwhip.chain;
 
 import com.github.bandithelps.abilities.AbilityRegister;
-import com.github.bandithelps.utils.blackwhip.BlackwhipChainTagStore;
-import com.github.bandithelps.utils.blackwhip.BlackwhipTargeting;
+import com.github.bandithelps.entities.BlackwhipChainEntity;
+import com.github.bandithelps.utils.blackwhip.BlackwhipChainHelper;
 import com.github.bandithelps.utils.quirk.QuirkFactorUtil;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Chain-Blackwhip tendril grab: fires an IK chain tether at the entity under the crosshair.
+ * Chain-Blackwhip tendril grab: shoots an IK chain tip along the look direction; latches on tip contact.
  */
 public class BlackwhipChainTagAbility extends Ability {
 
@@ -41,7 +41,7 @@ public class BlackwhipChainTagAbility extends Ability {
                     Value.CODEC.optionalFieldOf("link_length", new StaticValue(1.1f)).forGetter((ab) -> ab.linkLength),
                     Value.CODEC.optionalFieldOf("chain_hp", new StaticValue(20.0f)).forGetter((ab) -> ab.chainHp),
                     Value.CODEC.optionalFieldOf("thickness", new StaticValue(1.0f)).forGetter((ab) -> ab.thickness),
-                    Value.CODEC.optionalFieldOf("travel_ticks", new StaticValue(6.0f)).forGetter((ab) -> ab.travelTicks),
+                    Value.CODEC.optionalFieldOf("travel_ticks", new StaticValue(12.0f)).forGetter((ab) -> ab.travelTicks),
                     propertiesCodec(),
                     stateCodec(),
                     energyBarUsagesCodec()).apply(instance, BlackwhipChainTagAbility::new));
@@ -79,13 +79,13 @@ public class BlackwhipChainTagAbility extends Ability {
         }
         DataContext context = DataContext.forEntity(entity);
         double range = this.range.getAsFloat(context);
-        LivingEntity target = BlackwhipTargeting.raycastLiving(player, range);
-        if (target == null) {
-            return;
-        }
 
         double qf = QuirkFactorUtil.getQuirkFactor(player);
         int maxKeep = Math.max(1, this.baseMaxTethers.getAsInt(context) + (int) Math.floor(qf));
+        if (BlackwhipChainEntity.countOwnedActive(player.getId()) >= maxKeep) {
+            return;
+        }
+
         int ttl = Math.max(0, this.ttlTicks.getAsInt(context));
         double maxDist = this.maxDistance.getAsFloat(context);
         int segments = Math.max(2, this.segmentCount.getAsInt(context));
@@ -94,10 +94,10 @@ public class BlackwhipChainTagAbility extends Ability {
         float thickness = this.thickness.getAsFloat(context);
         int travel = Math.max(1, this.travelTicks.getAsInt(context));
 
-        boolean added = BlackwhipChainTagStore.addTag(
-                player, target, ttl, maxDist, maxKeep, segments, link, hp, thickness, travel);
-        if (added) {
-            level.playSound(null, player.blockPosition(), SoundEvents.LEAD_TIED, SoundSource.PLAYERS, 0.7f, 1.3f);
+        BlackwhipChainEntity chain = BlackwhipChainHelper.spawnFlyingChain(
+                player, player.getLookAngle(), range, segments, link, hp, thickness, travel, ttl, maxDist, maxKeep);
+        if (chain != null) {
+            level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.PLAYERS, 0.55f, 1.4f);
         }
     }
 
@@ -112,20 +112,20 @@ public class BlackwhipChainTagAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainTagAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("Fires an IK chain Blackwhip tether at the entity under the crosshair. Segments share HP and can be broken by damage.")
-                    .add("range", TYPE_VALUE, "Maximum reach of the grab raycast.")
-                    .add("ttl_ticks", TYPE_VALUE, "Ticks before a tag auto-expires (0 = never by time).")
+            builder.setDescription("Shoots an IK chain Blackwhip tip along the look direction. Latches on tip contact. Tip can be damaged or knocked off course while deploying.")
+                    .add("range", TYPE_VALUE, "Maximum tip travel distance before the whip retracts on a miss.")
+                    .add("ttl_ticks", TYPE_VALUE, "Ticks before a latched tag auto-expires (0 = never by time).")
                     .add("max_distance", TYPE_VALUE, "If a tagged entity gets farther than this from the owner, the tag breaks.")
-                    .add("base_max_tethers", TYPE_VALUE, "Base number of simultaneous tethers before quirk-factor scaling.")
+                    .add("base_max_tethers", TYPE_VALUE, "Base number of simultaneous deploying/latched chains before quirk-factor scaling.")
                     .add("segment_count", TYPE_VALUE, "Number of IK joints / hit-proxy segments (2-16).")
                     .add("link_length", TYPE_VALUE, "World-space length of each IK link.")
                     .add("chain_hp", TYPE_VALUE, "Shared hit points for the whole chain.")
                     .add("thickness", TYPE_VALUE, "Visual whip thickness.")
-                    .add("travel_ticks", TYPE_VALUE, "How many ticks the whip takes to extend to the target.")
+                    .add("travel_ticks", TYPE_VALUE, "Ticks for the tip to reach max range (tip speed = range / travel_ticks).")
                     .addExampleObject(new BlackwhipChainTagAbility(
                             new StaticValue(18.0f), new StaticValue(0.0f), new StaticValue(32.0f),
                             new StaticValue(2.0f), new StaticValue(10.0f), new StaticValue(1.1f),
-                            new StaticValue(20.0f), new StaticValue(1.0f), new StaticValue(6.0f),
+                            new StaticValue(20.0f), new StaticValue(1.0f), new StaticValue(12.0f),
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
     }

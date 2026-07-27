@@ -16,21 +16,26 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import java.util.List;
 
 /**
- * Shared wrist / waist attach math for chain Blackwhip (server IK + client render root lock).
+ * Shared wrist / wrap-band attach math for chain Blackwhip (server IK + client render root lock).
  */
 public final class BlackwhipChainAnchors {
 
     public static final int MIN_SEGMENTS = 4;
     public static final int MAX_SEGMENTS = 24;
-    /** Tip hit-proxy segments parked at the waist entry (visual coil is client-authored). */
+    /** Tip hit-proxy segments parked at the wrap entry (visual coil is client-authored). */
     public static final int MIN_WRAP_JOINTS = 1;
     public static final int MAX_WRAP_JOINTS = 2;
     /** Dense samples for the client-side wrap coil ribbon. */
     public static final int RENDER_COIL_SAMPLES = 36;
     /** Extra radius beyond the AABB so wrap rings sit outside the body. */
     public static final double WRAP_RADIUS_PAD = 0.22;
-    /** Half the vertical gap between the two mid-torso wrap rings (fraction of hitbox height). */
+    /** Half the vertical gap between the two wrap rings (fraction of hitbox height). */
     public static final double WRAP_RING_HALF_SPACING = 0.14;
+    /** Fallback wrap band when no latch hit is available. */
+    public static final float DEFAULT_WRAP_HEIGHT = 0.50f;
+    /** Lowest / highest allowed wrap-band centers (fraction of hitbox height). */
+    public static final float MIN_WRAP_HEIGHT = 0.22f;
+    public static final float MAX_WRAP_HEIGHT = 0.88f;
 
     private BlackwhipChainAnchors() {
     }
@@ -109,23 +114,60 @@ public final class BlackwhipChainAnchors {
         return new AABB(pos.x - halfW, pos.y, pos.z - halfW, pos.x + halfW, pos.y + h, pos.z + halfW);
     }
 
-    /** Entry point onto the mid-hitbox band facing the owner (contact side). */
+    /**
+     * Converts a world-space tip hit into a wrap-band height fraction of the target AABB.
+     * Crown hits bias slightly downward onto the upper torso (where most of the hitbox girth
+     * lives); ankle hits bias upward onto the lower torso. Mid-body hits stay near the tip.
+     */
+    public static float computeWrapHeight(LivingEntity target, Vec3 hitPos) {
+        if (target == null || hitPos == null) {
+            return DEFAULT_WRAP_HEIGHT;
+        }
+        return computeWrapHeight(target.getBoundingBox(), hitPos);
+    }
+
+    public static float computeWrapHeight(AABB bb, Vec3 hitPos) {
+        double h = bb.getYsize();
+        if (h < 1.0e-6) {
+            return DEFAULT_WRAP_HEIGHT;
+        }
+        float raw = Mth.clamp((float) ((hitPos.y - bb.minY) / h), 0.0f, 1.0f);
+        float biased = raw;
+        // Above ~shoulders: slide down toward upper chest as we near the crown.
+        if (raw > 0.72f) {
+            float t = (raw - 0.72f) / (1.0f - 0.72f);
+            biased = Mth.lerp(t * t, raw, 0.62f);
+        } else if (raw < 0.28f) {
+            // Below hips: slide up toward lower torso so rings don't hug the feet.
+            float t = (0.28f - raw) / 0.28f;
+            biased = Mth.lerp(t * t, raw, 0.38f);
+        }
+        return Mth.clamp(biased, MIN_WRAP_HEIGHT, MAX_WRAP_HEIGHT);
+    }
+
+    /** Entry point onto the wrap band facing the owner (contact side). */
     public static Vec3 resolveWaistEntry(LivingEntity target, Vec3 fromOwner) {
-        return resolveWaistEntry(target.getBoundingBox(), fromOwner, target.yBodyRot);
+        return resolveWaistEntry(target.getBoundingBox(), fromOwner, target.yBodyRot, DEFAULT_WRAP_HEIGHT);
     }
 
-    /** Interpolated client entry at mid hitbox height. */
-    public static Vec3 resolveWaistEntry(LivingEntity target, Vec3 fromOwner, float partialTick) {
+    public static Vec3 resolveWaistEntry(LivingEntity target, Vec3 fromOwner, float wrapHeight) {
+        return resolveWaistEntry(target.getBoundingBox(), fromOwner, target.yBodyRot, wrapHeight);
+    }
+
+    /** Interpolated client entry at the latch wrap height. */
+    public static Vec3 resolveWaistEntry(LivingEntity target, Vec3 fromOwner, float partialTick,
+                                         float wrapHeight) {
         float yaw = Mth.rotLerp(partialTick, target.yBodyRotO, target.yBodyRot);
-        return resolveWaistEntry(interpolatedAabb(target, partialTick), fromOwner, yaw);
+        return resolveWaistEntry(interpolatedAabb(target, partialTick), fromOwner, yaw, wrapHeight);
     }
 
-    public static Vec3 resolveWaistEntry(AABB bb, Vec3 fromOwner, float bodyYaw) {
+    public static Vec3 resolveWaistEntry(AABB bb, Vec3 fromOwner, float bodyYaw, float wrapHeight) {
         double cx = (bb.minX + bb.maxX) * 0.5;
         double cz = (bb.minZ + bb.maxZ) * 0.5;
         double radius = Math.max(bb.getXsize(), bb.getZsize()) * 0.5 + WRAP_RADIUS_PAD;
-        // Meet the lower wrap ring (mid-hitbox minus spacing).
-        double waistY = bb.minY + bb.getYsize() * (0.50 - WRAP_RING_HALF_SPACING);
+        float mid = Mth.clamp(wrapHeight, MIN_WRAP_HEIGHT, MAX_WRAP_HEIGHT);
+        // Meet the lower wrap ring (band center minus spacing).
+        double waistY = bb.minY + bb.getYsize() * (mid - WRAP_RING_HALF_SPACING);
         Vec3 center = new Vec3(cx, waistY, cz);
         Vec3 flat = new Vec3(fromOwner.x - cx, 0, fromOwner.z - cz);
         if (flat.lengthSqr() < 1.0e-6) {
@@ -175,26 +217,35 @@ public final class BlackwhipChainAnchors {
     }
 
     /**
-     * Dense nearly-flat mid-hitbox coil for client ribbon rendering. Starts at the waist entry
-     * so it joins the rope tip cleanly, then loops around the torso at ~50% height.
+     * Dense nearly-flat coil for client ribbon rendering. Starts at the wrap entry so it joins
+     * the rope tip cleanly, then loops around the body at the latch height band.
      */
     public static Vec3[] buildRenderCoil(LivingEntity target, Vec3 fromOwner, int samples, float turns) {
-        return buildRenderCoil(target, fromOwner, samples, turns, 1.0f);
+        return buildRenderCoil(target, fromOwner, samples, turns, 1.0f, DEFAULT_WRAP_HEIGHT);
     }
 
     public static Vec3[] buildRenderCoil(LivingEntity target, Vec3 fromOwner, int samples, float turns,
                                          float partialTick) {
+        return buildRenderCoil(target, fromOwner, samples, turns, partialTick, DEFAULT_WRAP_HEIGHT);
+    }
+
+    public static Vec3[] buildRenderCoil(LivingEntity target, Vec3 fromOwner, int samples, float turns,
+                                         float partialTick, float wrapHeight) {
         AABB bb = interpolatedAabb(target, partialTick);
         float yaw = Mth.rotLerp(partialTick, target.yBodyRotO, target.yBodyRot);
         double cx = (bb.minX + bb.maxX) * 0.5;
         double cz = (bb.minZ + bb.maxZ) * 0.5;
         double radius = Math.max(bb.getXsize(), bb.getZsize()) * 0.5 + WRAP_RADIUS_PAD;
-        Vec3 entry = resolveWaistEntry(bb, fromOwner, yaw);
-        // Two rings spaced around mid-hitbox (lower → upper over the coil turns).
-        double midY = bb.minY + bb.getYsize() * 0.50;
+        float mid = Mth.clamp(wrapHeight, MIN_WRAP_HEIGHT, MAX_WRAP_HEIGHT);
+        Vec3 entry = resolveWaistEntry(bb, fromOwner, yaw, mid);
+        // Two rings spaced around the latch height (lower → upper over the coil turns).
         double halfGap = bb.getYsize() * WRAP_RING_HALF_SPACING;
-        double yLow = midY - halfGap;
-        double yHigh = midY + halfGap;
+        double midY = bb.minY + bb.getYsize() * mid;
+        double yLow = Math.max(bb.minY + bb.getYsize() * 0.05, midY - halfGap);
+        double yHigh = Math.min(bb.maxY - bb.getYsize() * 0.05, midY + halfGap);
+        if (yHigh < yLow) {
+            yHigh = yLow;
+        }
 
         Vec3 flat = new Vec3(fromOwner.x - cx, 0, fromOwner.z - cz);
         if (flat.lengthSqr() < 1.0e-6) {

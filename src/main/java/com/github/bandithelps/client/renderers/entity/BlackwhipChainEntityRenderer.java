@@ -70,10 +70,9 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         long gameTime = entity.level() != null ? entity.level().getGameTime() : entity.tickCount;
         state.time = gameTime + partial;
 
-        int travel = Math.max(1, entity.getTravelTicks());
-        state.extendProgress = Mth.clamp((entity.tickCount + partial) / (float) travel, 0f, 1f);
+        state.extendProgress = entity.getExtendProgress(partial);
 
-        if (!state.active) {
+        if (!state.active || entity.getPhase() == BlackwhipChainEntity.PHASE_RETRACTING) {
             int since = INACTIVE_SINCE.computeIfAbsent(entity.getId(), k -> entity.tickCount);
             float rt = Math.max(1, entity.getRetractTicks());
             state.retractProgress = Mth.clamp((entity.tickCount - since + partial) / rt, 0f, 1f);
@@ -93,7 +92,7 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
 
         // renderOrigin must match the entity PoseStack translation (interpolated entity pos).
         // First-person hand is only a world-space joint lock — using it as renderOrigin shifted
-        // the whole ribbon (including the mid-hitbox wrap) down relative to the target.
+        // the whole ribbon (including the latch-height wrap) down relative to the target.
         double ex = Mth.lerp(partial, entity.xOld, entity.getX());
         double ey = Mth.lerp(partial, entity.yOld, entity.getY());
         double ez = Mth.lerp(partial, entity.zOld, entity.getZ());
@@ -103,6 +102,7 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         // Segment positions only seed mid-rope shape / hitboxes — endpoints are render-authored.
         Entity owner = entity.getOwnerId() >= 0 && entity.level() != null
                 ? entity.level().getEntity(entity.getOwnerId()) : null;
+        state.fadeRoot = isLocalFirstPersonOwner(owner);
         Vec3 wrist = null;
         if (owner != null && state.joints.size() >= 2) {
             wrist = resolveVisualRoot(owner, partial);
@@ -115,10 +115,21 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
 
         state.hasBoneTip = false;
         state.coilAppended = false;
+        state.ropeJointCount = state.joints.size();
+        // Waist coil only after tip latch — during deploy the tip follows segment joints.
         LivingEntity target = entity.getTargetLiving();
-        if (target != null && state.joints.size() >= 2 && state.active && wrist != null) {
-            state.coilAppended = BlackwhipWaistBoneHelper.attachTipAndCoil(
-                    state.joints, target, wrist, entity.getWrapTurns(), state.extendProgress, partial);
+        if (entity.isLatched()
+                && target != null
+                && state.joints.size() >= 2
+                && state.active
+                && wrist != null) {
+            int ropeCount = BlackwhipWaistBoneHelper.attachTipAndCoil(
+                    state.joints, target, wrist, entity.getWrapTurns(), state.extendProgress,
+                    entity.getWrapHeight(), partial);
+            if (ropeCount > 0) {
+                state.ropeJointCount = ropeCount;
+                state.coilAppended = state.joints.size() > ropeCount;
+            }
             var bone = BlackwhipWaistBoneHelper.resolveWaistTipClient(entity.getTargetId(), partial);
             if (bone.isPresent()) {
                 state.hasBoneTip = true;
@@ -129,14 +140,19 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
 
     /** Server IK wrist for others / third-person; first-person hand for local camera owner. */
     private static Vec3 resolveVisualRoot(Entity owner, float partial) {
-        Minecraft mc = Minecraft.getInstance();
-        if (owner instanceof LivingEntity living
-                && mc.player != null
-                && owner.getId() == mc.player.getId()
-                && mc.options.getCameraType().isFirstPerson()) {
+        if (owner instanceof LivingEntity living && isLocalFirstPersonOwner(owner)) {
             return BlackwhipChainAnchors.resolveFirstPersonHand(living, partial);
         }
         return BlackwhipChainAnchors.resolveOwnerWrist(owner, partial);
+    }
+
+    /** True when the camera player owns this whip and is in first person. */
+    private static boolean isLocalFirstPersonOwner(Entity owner) {
+        Minecraft mc = Minecraft.getInstance();
+        return owner != null
+                && mc.player != null
+                && owner.getId() == mc.player.getId()
+                && mc.options.getCameraType().isFirstPerson();
     }
 
     @Override
@@ -173,7 +189,9 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         float spawnFlash = (float) Math.exp(-state.ageTicks * 0.18f);
 
         // Mild shimmer under the slow idle pulse — keep amplitude low so layers stay sharp.
-        RibbonFrame frame = buildFrame(points, state, Math.min(base * 0.55f, 0.035f));
+        // With a wrap coil, damp shimmer further so dense helix samples don't self-intersect.
+        float shimmerCap = state.coilAppended ? 0.018f : 0.035f;
+        RibbonFrame frame = buildFrame(points, state, Math.min(base * 0.55f, shimmerCap));
         if (frame == null) {
             return;
         }
@@ -181,23 +199,19 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         int glow = state.glowColor;
         int outer = state.outerColor;
         int core = state.coreColor;
-        float finalBase = base * 1.1f;
-        float finalAlpha = alphaScale * 2;
-        float finalFlash = spawnFlash;
+        float finalBase = base * 1.12f; // applying thickness with the extra 1.12
+        float finalFlash = spawnFlash ;
 
-        // Base: Full thickness multiplier
-        // Edge softness: Higher == Shorter Distance the glow moves
-
-        // Halo = glow, mid body = outer, dark spine = inner/core.
+        // Small camera-depth bias separates coplanar glow/outer/core and kills ribbon z-fight.
         collector.submitCustomGeometry(poseStack, GLOW_TYPE, (pose, buffer) -> {
             emitLayer(buffer, pose, frame, finalBase * 2.6f, glow,
-                    0.16f * finalAlpha * (1.0f + 0.6f * finalFlash), state, 0.0f, 0.8f, finalFlash);
+                    0.16f * alphaScale * (1.0f + 0.6f * finalFlash), state, 0.0f, 0.88f, finalFlash, 0.0f);
             emitLayer(buffer, pose, frame, finalBase * 1.15f, outer,
-                    0.95f * finalAlpha, state, 1.0f, 1.0f, finalFlash);
+                    0.95f * alphaScale, state, 1.0f, 1.0f, finalFlash, 0.012f);
         });
         collector.submitCustomGeometry(poseStack, CORE_TYPE, (pose, buffer) ->
                 emitLayer(buffer, pose, frame, finalBase * 0.5f, core,
-                        finalAlpha, state, 0.0f, 1.2f, 0.0f));
+                        alphaScale, state, 0.0f, 1.2f, 0.0f, 0.024f));
     }
 
     private static final class RibbonFrame {
@@ -226,8 +240,11 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         float[] tArr = new float[n];
         float[] widthFactor = new float[n];
 
-        // Chord length (not dense coil polyline) — polyline length inflated idle sway and folded layers.
-        Vec3 chord = points.get(n - 1).subtract(points.get(0));
+        // Chord from rope only (exclude wrap helix) — dense coil polyline inflated idle sway / z-fight.
+        int ropeEnd = state.ropeJointCount > 1
+                ? Math.min(state.ropeJointCount, n)
+                : n;
+        Vec3 chord = points.get(ropeEnd - 1).subtract(points.get(0));
         double chordLen = Math.sqrt(chord.lengthSqr());
         Vec3 chordDir = chordLen > 1.0e-6 ? chord.scale(1.0 / chordLen) : new Vec3(0, 0, 1);
         Vec3 side = new Vec3(0, 1, 0).cross(chordDir);
@@ -238,6 +255,11 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
 
         for (int i = 0; i < n; i++) {
             float t = i / (float) (n - 1);
+            // Rope-normalized t for idle sway so the helix doesn't get mid-chord bend amplitude.
+            float ropeT = ropeEnd > 1
+                    ? Mth.clamp(i / (float) (ropeEnd - 1), 0.0f, 1.0f)
+                    : t;
+            boolean onCoil = i >= ropeEnd;
             Vec3 p = points.get(i);
             Vec3 tangent;
             if (i == 0) {
@@ -253,8 +275,9 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
             tangent = tangent.normalize();
 
             // Visual-only: slow breathe/sway on the ribbon; does not move segment hitboxes.
-            Vec3 pulse = computeIdlePulse(side, t, state.time, state.seed, chordLen);
-            Vec3 noise = computeNoise(tangent, t, state.time, shimmer);
+            // Coil samples stay still — sway on a dense helix is the main z-fight source.
+            Vec3 pulse = onCoil ? Vec3.ZERO : computeIdlePulse(side, ropeT, state.time, state.seed, chordLen);
+            Vec3 noise = onCoil ? Vec3.ZERO : computeNoise(tangent, ropeT, state.time, shimmer);
             center[i] = p.add(pulse).add(noise).subtract(origin);
 
             Vec3 nrm = cf.cross(tangent);
@@ -287,7 +310,8 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
 
     private static void emitLayer(VertexConsumer buffer, PoseStack.Pose pose, RibbonFrame f,
                                   float halfWidth, int argb, float alphaMul,
-                                  BlackwhipChainRenderState state, float flow, float edgeSoftness, float tipBoost) {
+                                  BlackwhipChainRenderState state, float flow, float edgeSoftness,
+                                  float tipBoost, float depthBias) {
         int n = f.center.length;
         if (n < 2) {
             return;
@@ -297,17 +321,21 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         int g0 = (argb >> 8) & 0xFF;
         int b0 = argb & 0xFF;
         Vec3 cf = state.camForward;
+        // Pull layer slightly toward the camera so glow/outer/core aren't coplanar.
+        Vec3 towardCam = depthBias > 0.0f ? cf.scale(-depthBias) : Vec3.ZERO;
 
         Vec3[] edgeL = new Vec3[n];
         Vec3[] edgeR = new Vec3[n];
+        Vec3[] mid = new Vec3[n];
         int[][] rgb = new int[n][3];
         float[] centerA = new float[n];
 
         for (int i = 0; i < n; i++) {
             float t = f.t[i];
             float hw = halfWidth * f.widthFactor[i];
-            edgeL[i] = f.center[i].add(f.normal[i].scale(hw));
-            edgeR[i] = f.center[i].add(f.normal[i].scale(-hw));
+            mid[i] = f.center[i].add(towardCam);
+            edgeL[i] = mid[i].add(f.normal[i].scale(hw));
+            edgeR[i] = mid[i].add(f.normal[i].scale(-hw));
 
             float bright = 1.0f;
             float white = 0.0f;
@@ -331,7 +359,10 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
                 a += 0.5f * s * baseA;
             }
 
-            a *= smooth(Mth.clamp(t / 0.06f, 0.0f, 1.0f));
+            // Root fade is first-person only — hides the hard wrist attach under the camera hand.
+            if (state.fadeRoot) {
+                a *= smooth(Mth.clamp(t / 0.06f, 0.0f, 1.0f));
+            }
             a *= smooth(Mth.clamp((1.0f - t) / 0.10f, 0.0f, 1.0f));
 
             rgb[i][0] = mixWhite(clampByte(Math.round(r0 * bright)), white);
@@ -343,10 +374,10 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         float edgeA = Mth.clamp(1.0f - edgeSoftness, 0.0f, 1.0f);
         for (int i = 0; i < n - 1; i++) {
             softQuad(buffer, pose, cf, FULL_BRIGHT,
-                    edgeL[i], f.center[i], edgeL[i + 1], f.center[i + 1],
+                    edgeL[i], mid[i], edgeL[i + 1], mid[i + 1],
                     rgb[i], rgb[i + 1], centerA[i] * edgeA, centerA[i], centerA[i + 1] * edgeA, centerA[i + 1]);
             softQuad(buffer, pose, cf, FULL_BRIGHT,
-                    f.center[i], edgeR[i], f.center[i + 1], edgeR[i + 1],
+                    mid[i], edgeR[i], mid[i + 1], edgeR[i + 1],
                     rgb[i], rgb[i + 1], centerA[i], centerA[i] * edgeA, centerA[i + 1], centerA[i + 1] * edgeA);
         }
     }

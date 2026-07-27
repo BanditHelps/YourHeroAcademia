@@ -60,7 +60,7 @@ public class BlackwhipSegmentEntity extends Entity {
         if (chain == null || !chain.isAlive()) {
             return false;
         }
-        return chain.damageFromSegment(source, damage);
+        return chain.damageFromSegment(source, damage, getIndex());
     }
 
     /**

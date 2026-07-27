@@ -17,8 +17,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Server-side registry for chain-Blackwhip tethers. Parallel to {@link BlackwhipTagStore}; uses a
- * separate body-data key so the ribbon Blackwhip HUD is not affected.
+ * Server-side registry for latched chain-Blackwhip tethers. Parallel to {@link BlackwhipTagStore}; uses a
+ * separate body-data key so the ribbon Blackwhip HUD is not affected. Deploying (unlatched) chains are
+ * not registered here — only successful tip latches call {@link #registerChain}.
  */
 public final class BlackwhipChainTagStore {
 
@@ -45,11 +46,12 @@ public final class BlackwhipChainTagStore {
     }
 
     /**
+     * Registers an already-spawned chain that has just latched onto {@code target}.
+     *
      * @return true if this was a brand-new tag
      */
-    public static boolean addTag(ServerPlayer owner, LivingEntity target, int expireTicks, double maxDistance,
-                                 int maxKeep, int segmentCount, float linkLength, float chainHp,
-                                 float thickness, int travelTicks) {
+    public static boolean registerChain(ServerPlayer owner, LivingEntity target, BlackwhipChainEntity chain,
+                                        int expireTicks, double maxDistance, int maxKeep) {
         Map<Integer, TagEntry> tags = PLAYER_TAGS.computeIfAbsent(owner.getUUID(), k -> new ConcurrentHashMap<>());
         long now = owner.level().getGameTime();
         boolean isNew = !tags.containsKey(target.getId());
@@ -61,8 +63,6 @@ public final class BlackwhipChainTagStore {
             return false;
         }
 
-        BlackwhipChainEntity chain = BlackwhipChainHelper.spawnChain(
-                owner, target, segmentCount, linkLength, chainHp, thickness, travelTicks);
         tags.put(target.getId(), new TagEntry(target.getId(), now, expireTicks, maxDistance, chain.getId()));
 
         if (maxKeep > 0 && tags.size() > maxKeep) {
@@ -112,6 +112,8 @@ public final class BlackwhipChainTagStore {
                 despawnChain(owner, entry.chainEntityId());
             }
         }
+        // Also retract deploying chains that never latched.
+        BlackwhipChainEntity.retractAllOwned(owner.getId());
         updateCount(owner, 0);
     }
 
