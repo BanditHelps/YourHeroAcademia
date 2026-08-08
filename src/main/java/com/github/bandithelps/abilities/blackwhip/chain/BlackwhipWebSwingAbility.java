@@ -97,9 +97,9 @@ public class BlackwhipWebSwingAbility extends Ability {
                     Value.CODEC.optionalFieldOf("turn_assist", new StaticValue(0.058f)).forGetter((ab) -> ab.turnAssist),
                     Value.CODEC.optionalFieldOf("auto_reel_rate", new StaticValue(0.1f)).forGetter((ab) -> ab.autoReelRate),
                     Value.CODEC.optionalFieldOf("max_speed", new StaticValue(3.8f)).forGetter((ab) -> ab.maxSpeed),
-                    Value.CODEC.optionalFieldOf("release_forward", new StaticValue(0.78f)).forGetter((ab) -> ab.releaseForward),
-                    Value.CODEC.optionalFieldOf("release_up", new StaticValue(0.38f)).forGetter((ab) -> ab.releaseUp),
-                    Value.CODEC.optionalFieldOf("release_speed_scale", new StaticValue(0.4f)).forGetter((ab) -> ab.releaseSpeedScale),
+                    Value.CODEC.optionalFieldOf("release_forward", new StaticValue(0.58f)).forGetter((ab) -> ab.releaseForward),
+                    Value.CODEC.optionalFieldOf("release_up", new StaticValue(0.48f)).forGetter((ab) -> ab.releaseUp),
+                    Value.CODEC.optionalFieldOf("release_speed_scale", new StaticValue(0.3f)).forGetter((ab) -> ab.releaseSpeedScale),
                     propertiesCodec(),
                     stateCodec(),
                     energyBarUsagesCodec()).apply(instance, BlackwhipWebSwingAbility::new));
@@ -286,6 +286,10 @@ public class BlackwhipWebSwingAbility extends Ability {
         level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.PLAYERS, 0.55f, 1.55f);
     }
 
+    /**
+     * Release continues the swing as a smooth arc (always both forward and up).
+     * Arc height only gently tilts the launch pitch and power — never a single-axis dump.
+     */
     private static Vec3 computeReleaseFling(ServerPlayer player, SwingSession session) {
         Vec3 center = player.position().add(0, player.getBbHeight() * 0.5, 0);
         Vec3 toAnchor = session.anchor.subtract(center);
@@ -306,56 +310,85 @@ public class BlackwhipWebSwingAbility extends Ability {
             flatLook = flatLook.normalize();
         }
 
-        // Launch along swing tangent (momentum), falling back to look-forward-up off the rope.
+        // Keep the true swing tangent (has both horizontal and vertical) as the arc direction.
         Vec3 tangential = velocity.subtract(radial.scale(velocity.dot(radial)));
         double tSpeed = tangential.length();
-        Vec3 launchDir;
-        if (tSpeed > 0.12) {
-            launchDir = tangential.scale(1.0 / tSpeed);
+        Vec3 arcDir;
+        if (tSpeed > 0.1) {
+            arcDir = tangential.scale(1.0 / tSpeed);
         } else {
-            Vec3 wish = flatLook.add(0.0, 0.28, 0.0);
+            // Idle fallback: forward-up diagonal off the rope.
+            Vec3 wish = flatLook.add(0.0, 0.45, 0.0);
             Vec3 projected = wish.subtract(radial.scale(wish.dot(radial)));
-            launchDir = projected.lengthSqr() > 1.0e-4 ? projected.normalize() : flatLook.add(0.0, 0.22, 0.0).normalize();
+            arcDir = projected.lengthSqr() > 1.0e-4
+                    ? projected.normalize()
+                    : flatLook.add(0.0, 0.4, 0.0).normalize();
         }
 
-        // Flatten launch: prefer horizontal travel with a light upward exit.
-        launchDir = new Vec3(launchDir.x, launchDir.y * 0.55, launchDir.z);
-        launchDir = launchDir.add(flatLook.scale(0.65)).add(0.0, 0.12, 0.0);
-        if (launchDir.y < 0.08) {
-            launchDir = new Vec3(launchDir.x, 0.08, launchDir.z);
-        } else if (launchDir.y > 0.42) {
-            launchDir = new Vec3(launchDir.x, 0.42, launchDir.z);
+        // Face the launch the way the player is swinging/looking.
+        Vec3 flatArc = new Vec3(arcDir.x, 0.0, arcDir.z);
+        if (flatArc.lengthSqr() > 1.0e-4 && flatArc.normalize().dot(flatLook) < 0.0) {
+            arcDir = new Vec3(-arcDir.x, arcDir.y, -arcDir.z);
+            flatArc = new Vec3(arcDir.x, 0.0, arcDir.z);
         }
-        if (launchDir.lengthSqr() > 1.0e-6) {
-            launchDir = launchDir.normalize();
+        if (flatArc.lengthSqr() < 1.0e-4) {
+            flatArc = flatLook;
+        } else {
+            flatArc = flatArc.normalize();
         }
+
+        // 0 = deep under pivot, 1 = near top of arc.
+        double below = Math.max(0.0, session.anchor.y - center.y);
+        double maxBelow = Math.max(session.ropeLength * 0.95, 1.0);
+        double heightAlongArc = 1.0 - Mth.clamp(below / maxBelow, 0.0, 1.0);
+
+        // Soft pitch target for a continuous arc: flatter low, loftier high — always both axes.
+        double targetPitchDeg = Mth.lerp(heightAlongArc, 22.0, 40.0);
+        if (velocity.y < -0.05) {
+            // Descending: keep some loft so release still arcs instead of slamming down.
+            targetPitchDeg = Mth.lerp(0.45, targetPitchDeg, 26.0);
+        } else if (velocity.y > 0.05) {
+            targetPitchDeg += Mth.clamp(velocity.y * 8.0, 0.0, 6.0);
+        }
+        targetPitchDeg = Mth.clamp(targetPitchDeg, 18.0, 44.0);
+
+        double targetPitchRad = Math.toRadians(targetPitchDeg);
+        Vec3 pitchedArc = new Vec3(
+                flatArc.x * Math.cos(targetPitchRad),
+                Math.sin(targetPitchRad),
+                flatArc.z * Math.cos(targetPitchRad));
+        // Blend real swing tangent with the smooth target pitch so momentum still reads.
+        arcDir = arcDir.scale(0.55).add(pitchedArc.scale(0.45)).add(flatLook.scale(0.12));
+        // Nudge upward if the tangent was diving.
+        if (arcDir.y < 0.16) {
+            arcDir = new Vec3(arcDir.x, 0.16 + heightAlongArc * 0.12, arcDir.z);
+        }
+        arcDir = arcDir.normalize();
 
         double speed = Math.max(velocity.length(), tSpeed);
-        double boost = session.releaseForward + speed * session.releaseSpeedScale * 1.65;
-        // Carry swing speed mostly horizontally along the launch dir.
-        double carry = Math.max(speed, 0.7);
-        Vec3 fling = launchDir.scale(carry + boost);
-
-        double up = session.releaseUp * 0.7 + speed * session.releaseSpeedScale * 0.4;
-        if (velocity.y > 0.0) {
-            up += Math.min(0.22, velocity.y * 0.35);
-        }
-        // Perfect window: mid arc, moving out — bonus goes mostly forward.
-        double elev = radial.y;
-        boolean inWindow = elev > 0.08 && elev < 0.75 && launchDir.y > 0.02 && speed > 0.35;
-        if (inWindow) {
-            up += PERFECT_RELEASE_BONUS * 0.45;
-            fling = fling.add(flatLook.scale(PERFECT_RELEASE_BONUS * 0.9));
-            fling = fling.add(launchDir.scale(PERFECT_RELEASE_BONUS * 0.35));
+        // Mild power curve: mid-rising releases feel best, edges still get a full arc kick.
+        double rising = Mth.clamp(velocity.y / 0.7, 0.0, 1.0);
+        double sweet = Math.exp(-Math.pow((heightAlongArc - 0.42) / 0.28, 2.0)) * (0.35 + 0.65 * rising);
+        double power = 0.88 + sweet * 0.28;
+        if (velocity.y < -0.08) {
+            power *= 0.82;
         }
 
-        fling = new Vec3(fling.x, Math.max(fling.y * 0.85, up * 0.55) + up * 0.2, fling.z);
-        // Soft floor so release never drops, but stays flatter than before.
-        double minUp = session.releaseUp * 0.45;
-        if (fling.y < minUp) {
-            fling = new Vec3(fling.x, minUp, fling.z);
-        }
-        return fling;
+        double carry = Math.max(speed, 0.65) * power;
+        double boost = (session.releaseForward * 0.7 + session.releaseUp * 0.55
+                + speed * session.releaseSpeedScale) * power;
+        boost += PERFECT_RELEASE_BONUS * sweet * 0.55;
+
+        // Single arc vector — horizontal and vertical stay coupled.
+        Vec3 fling = arcDir.scale(carry + boost);
+        // Tiny look assist so steering still matters, without flattening the arc.
+        fling = fling.add(flatLook.scale(session.releaseForward * 0.18 * power));
+
+        // Keep Y in a gentle band so every release still arcs.
+        double minY = session.releaseUp * (0.4 + heightAlongArc * 0.25);
+        double maxY = session.releaseUp * (1.35 + heightAlongArc * 0.55) + speed * 0.2;
+        double y = Mth.clamp(fling.y, minY, maxY);
+        return new Vec3(fling.x, y, fling.z);
     }
 
     private static void applyFling(ServerPlayer player, Vec3 fling) {
