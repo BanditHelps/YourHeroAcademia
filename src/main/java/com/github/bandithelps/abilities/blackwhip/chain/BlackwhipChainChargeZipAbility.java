@@ -122,6 +122,7 @@ public class BlackwhipChainChargeZipAbility extends Ability {
             return;
         }
         BlackwhipChainSwingAbility.forceStop(player);
+        BlackwhipWebSwingAbility.forceStop(player);
         BlackwhipChainZipAbility.forceStop(player);
         clearSession(player, level);
 

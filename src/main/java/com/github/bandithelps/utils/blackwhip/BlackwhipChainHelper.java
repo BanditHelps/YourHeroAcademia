@@ -118,11 +118,62 @@ public final class BlackwhipChainHelper {
         return chain;
     }
 
+    /**
+     * Spawns a chain pinned to a world point that may be in open air (no solid support required).
+     * Used by PS5-style web swing virtual pivots.
+     */
+    public static BlackwhipChainEntity spawnVirtualAnchoredChain(LivingEntity owner, Vec3 anchor,
+                                                                int purpose, int segmentCount, float linkLength,
+                                                                float chainHp, float thickness, double maxDistance,
+                                                                int maxKeep, int lifetimeTicks) {
+        if (!(owner.level() instanceof ServerLevel level) || anchor == null) {
+            return null;
+        }
+        int keep = Math.max(1, maxKeep);
+        int active = countTowardKeep(owner.getId(), purpose);
+        if (active >= keep) {
+            return null;
+        }
+
+        float link = Math.max(0.25f, linkLength);
+        Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        double ropeDist = Math.max(0.5, wrist.distanceTo(anchor));
+        int wrapJoints = BlackwhipChainAnchors.MIN_WRAP_JOINTS;
+        int desired = BlackwhipChainAnchors.desiredSegmentCount(ropeDist, link, wrapJoints);
+        int seed = Mth.clamp(segmentCount > 0 ? segmentCount : desired,
+                BlackwhipChainEntity.MIN_SEGMENTS, BlackwhipChainEntity.MAX_SEGMENTS);
+        int segments = Mth.clamp(desired, BlackwhipChainEntity.MIN_SEGMENTS, seed);
+
+        BlackwhipChainEntity chain = new BlackwhipChainEntity(ModEntities.BLACKWHIP_CHAIN.get(), level);
+        chain.setOwnerId(owner.getId());
+        chain.setTargetId(-1);
+        chain.setPurpose(purpose);
+        chain.setMinSegmentSeed(seed);
+        chain.setSegmentCount(segments);
+        chain.setLinkLength(link);
+        chain.setMaxHp(Math.max(1.0f, chainHp));
+        chain.setHp(Math.max(1.0f, chainHp));
+        chain.setThickness(thickness);
+        chain.setTravelTicks(1);
+        chain.setRetractTicks(5);
+        chain.setWrapTurns(0.0f);
+        chain.setLatchParams(0, maxDistance, keep);
+        chain.setMaxRange((float) Math.max(1.0, maxDistance > 0 ? maxDistance : ropeDist));
+        chain.setLifetimeTicks(lifetimeTicks);
+        applyOwnerColors(chain, owner);
+        chain.setSeed(owner.getRandom().nextInt());
+        chain.setPos(wrist.x, wrist.y, wrist.z);
+        level.addFreshEntity(chain);
+        chain.latchVirtual(anchor);
+        return chain;
+    }
+
     private static int countTowardKeep(int ownerId, int purpose) {
         if (purpose == BlackwhipChainEntity.PURPOSE_TAG) {
             return BlackwhipChainEntity.countOwnedActive(ownerId);
         }
         return BlackwhipChainEntity.countOwnedActiveByPurpose(ownerId, BlackwhipChainEntity.PURPOSE_SWING)
+                + BlackwhipChainEntity.countOwnedActiveByPurpose(ownerId, BlackwhipChainEntity.PURPOSE_WEB_SWING)
                 + BlackwhipChainEntity.countOwnedActiveByPurpose(ownerId, BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE)
                 + BlackwhipChainEntity.countOwnedActiveByPurpose(ownerId, BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
     }

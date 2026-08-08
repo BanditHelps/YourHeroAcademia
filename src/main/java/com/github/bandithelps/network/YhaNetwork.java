@@ -8,7 +8,7 @@ public final class YhaNetwork {
     }
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar("2");
+        PayloadRegistrar registrar = event.registrar("4");
         registrar.playToClient(AttackDamageSyncPayload.TYPE, AttackDamageSyncPayload.STREAM_CODEC, AttackDamageSyncPayload::handle);
         registrar.playToClient(OpenBodyDebugScreenPayload.TYPE, OpenBodyDebugScreenPayload.STREAM_CODEC, OpenBodyDebugScreenPayload::handle);
         registrar.playToClient(StaminaSyncPayload.TYPE, StaminaSyncPayload.STREAM_CODEC, StaminaSyncPayload::handle);
@@ -32,6 +32,8 @@ public final class YhaNetwork {
         registrar.playToClient(GeneCombinationBrowserDataPayload.TYPE, GeneCombinationBrowserDataPayload.STREAM_CODEC, GeneCombinationBrowserDataPayload::handle);
         registrar.playToClient(BlackwhipSwingPayload.TYPE, BlackwhipSwingPayload.STREAM_CODEC, BlackwhipSwingPayload::handle);
         registrar.playToClient(BlackwhipChainSwingPayload.TYPE, BlackwhipChainSwingPayload.STREAM_CODEC, BlackwhipChainSwingPayload::handle);
+        registrar.playToClient(BlackwhipWebSwingPayload.TYPE, BlackwhipWebSwingPayload.STREAM_CODEC, BlackwhipWebSwingPayload::handle);
+        registrar.playToServer(BlackwhipWebSwingVelocityPayload.TYPE, BlackwhipWebSwingVelocityPayload.STREAM_CODEC, BlackwhipWebSwingVelocityPayload::handle);
         registrar.playToClient(BlackwhipStruggleStatusPayload.TYPE, BlackwhipStruggleStatusPayload.STREAM_CODEC, BlackwhipStruggleStatusPayload::handle);
         registrar.playToServer(BlackwhipStruggleTapPayload.TYPE, BlackwhipStruggleTapPayload.STREAM_CODEC, BlackwhipStruggleTapPayload::handle);
     }

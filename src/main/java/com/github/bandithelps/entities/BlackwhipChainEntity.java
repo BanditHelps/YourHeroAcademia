@@ -67,6 +67,8 @@ public class BlackwhipChainEntity extends Entity {
     public static final int PURPOSE_ZIP_SIMPLE = 2;
     /** Multi-anchor charge zip tendril. */
     public static final int PURPOSE_ZIP_CHARGE = 3;
+    /** PS5-style web swing (may use a virtual air pivot). */
+    public static final int PURPOSE_WEB_SWING = 4;
 
     private static final int LATCH_BLEND_TICKS = 5;
     /** Client wrap coil ease after latch (tip settle then helix grow). */
@@ -148,6 +150,8 @@ public class BlackwhipChainEntity extends Entity {
 
     /** Block supporting an anchored tip; broken/air tears the rope. */
     private BlockPos supportPos = BlockPos.ZERO;
+    /** When true, support air/empty does not tear the rope (virtual air pivots). */
+    private boolean virtualAnchor;
     /** Auto-retract countdown for short-lived anchors (simple zip). 0 = no lifetime. */
     private int lifetimeTicks;
 
@@ -315,10 +319,23 @@ public class BlackwhipChainEntity extends Entity {
      * {@link com.github.bandithelps.utils.blackwhip.BlackwhipChainHelper#spawnAnchoredChain}.
      */
     public void latchBlock(Vec3 point, BlockPos support) {
+        latchAnchor(point, support, false);
+    }
+
+    /**
+     * Pins the tip to a world point that does not require a solid support block (air pivot).
+     * Break rules still enforce max distance / lifetime / deactivate.
+     */
+    public void latchVirtual(Vec3 point) {
+        latchAnchor(point, BlockPos.containing(point == null ? this.position() : point), true);
+    }
+
+    private void latchAnchor(Vec3 point, BlockPos support, boolean virtual) {
         Vec3 tip = point == null ? this.position() : point;
         this.tipPos = tip;
         this.tipVelocity = Vec3.ZERO;
         this.tipReady = true;
+        this.virtualAnchor = virtual;
         this.supportPos = support == null ? BlockPos.containing(tip) : support.immutable();
         setAnchorPoint(tip);
         setTargetId(-1);
@@ -332,6 +349,10 @@ public class BlackwhipChainEntity extends Entity {
         if (owner != null && this.level() instanceof ServerLevel level) {
             level.playSound(null, owner.blockPosition(), SoundEvents.LEAD_TIED, SoundSource.PLAYERS, 0.65f, 1.15f);
         }
+    }
+
+    public boolean isVirtualAnchor() {
+        return virtualAnchor;
     }
 
     public void setLifetimeTicks(int ticks) {
@@ -388,10 +409,13 @@ public class BlackwhipChainEntity extends Entity {
                 return;
             }
         }
-        BlockState support = this.level().getBlockState(supportPos);
-        if (support.isAir() || support.getCollisionShape(this.level(), supportPos).isEmpty()) {
-            deactivate();
-            return;
+        // Virtual air pivots skip support-block tear; real surface latches still tear if support vanishes.
+        if (!virtualAnchor) {
+            BlockState support = this.level().getBlockState(supportPos);
+            if (support.isAir() || support.getCollisionShape(this.level(), supportPos).isEmpty()) {
+                deactivate();
+                return;
+            }
         }
         if (owner != null && latchMaxDistance > 0.0) {
             Vec3 center = owner.position().add(0, owner.getBbHeight() * 0.5, 0);

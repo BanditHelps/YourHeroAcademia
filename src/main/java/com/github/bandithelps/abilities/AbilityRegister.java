@@ -28,6 +28,7 @@ import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainDetachAbil
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainSwingAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainTagAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainZipAbility;
+import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipWebSwingAbility;
 import com.github.bandithelps.abilities.decay.DecayFistAbility;
 import com.github.bandithelps.abilities.decay.DecayInstabilityAbility;
 import com.github.bandithelps.abilities.decay.EnvironmentDecayAbility;
@@ -79,6 +80,7 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainTagAbility.Serializer> BLACKWHIP_CHAIN_TAG;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainDetachAbility.Serializer> BLACKWHIP_CHAIN_DETACH;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainSwingAbility.Serializer> BLACKWHIP_CHAIN_SWING;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipWebSwingAbility.Serializer> BLACKWHIP_WEB_SWING;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainZipAbility.Serializer> BLACKWHIP_CHAIN_ZIP;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainChargeZipAbility.Serializer> BLACKWHIP_CHAIN_CHARGE_ZIP;
 
@@ -118,6 +120,7 @@ public class AbilityRegister {
         BLACKWHIP_CHAIN_TAG = ABILITIES.register("blackwhip_chain_tag", BlackwhipChainTagAbility.Serializer::new);
         BLACKWHIP_CHAIN_DETACH = ABILITIES.register("blackwhip_chain_detach", BlackwhipChainDetachAbility.Serializer::new);
         BLACKWHIP_CHAIN_SWING = ABILITIES.register("blackwhip_chain_swing", BlackwhipChainSwingAbility.Serializer::new);
+        BLACKWHIP_WEB_SWING = ABILITIES.register("blackwhip_web_swing", BlackwhipWebSwingAbility.Serializer::new);
         BLACKWHIP_CHAIN_ZIP = ABILITIES.register("blackwhip_chain_zip", BlackwhipChainZipAbility.Serializer::new);
         BLACKWHIP_CHAIN_CHARGE_ZIP = ABILITIES.register("blackwhip_chain_charge_zip", BlackwhipChainChargeZipAbility.Serializer::new);
     }

@@ -161,6 +161,67 @@
       }
     },
 
+    "blackwhip_web_swing": {
+      "type": "yha:blackwhip_web_swing",
+      "range": {
+        "type": "palladium:molang_float",
+        "molang": "32 + yha.quirk_factor() * 3"
+      },
+      "min_pivot_dist": 14,
+      "max_pivot_dist": {
+        "type": "palladium:molang_float",
+        "molang": "28 + yha.quirk_factor() * 2"
+      },
+      "elev_bias": 0.4,
+      "start_slack": 0.85,
+      "takeoff_boost": {
+        "type": "palladium:molang_float",
+        "molang": "0.72 + yha.quirk_factor() * 0.06"
+      },
+      "pump_accel": 0.078,
+      "turn_assist": 0.052,
+      "auto_reel_rate": 0.1,
+      "max_speed": 3.5,
+      "release_forward": {
+        "type": "palladium:molang_float",
+        "molang": "0.55 + yha.quirk_factor() * 0.06"
+      },
+      "release_up": {
+        "type": "palladium:molang_float",
+        "molang": "0.62 + yha.quirk_factor() * 0.06"
+      },
+      "release_speed_scale": 0.32,
+      "properties": {
+        "title": "Web Swing",
+        "description": "Swing without aiming at a block. Whips prefer nearby surfaces, or latch to an air pivot so you always swing. Steer with WASD and the camera, Shift brakes, Jump hops. Release to fling up and forward — re-tap mid-air to chain swings.",
+        "icon": "minecraft:cobweb",
+        "list_index": 5,
+        "hidden_in_gui": false,
+        "gui_position": [-5, -2],
+        "stamina_interval": 20,
+        "stamina_interval_cost": 3
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "held"
+        },
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "blackwhip_chain_swing"
+            }
+          ]
+        }
+      }
+    },
+
     "blackwhip_chain_zip": {
       "type": "yha:blackwhip_chain_zip",
       "range": {

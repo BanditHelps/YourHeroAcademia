@@ -1,6 +1,7 @@
 package com.github.bandithelps.utils.blackwhip;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipWebSwingAbility;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -28,6 +29,8 @@ public final class BlackwhipServerEvents {
                 chain.serverPostTick();
             }
         }
+
+        BlackwhipWebSwingAbility.tickReleaseEchoes(event.getServer());
 
         if (event.getServer().getTickCount() % 10 != 0) {
             return;

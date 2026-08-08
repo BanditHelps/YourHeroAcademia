@@ -107,10 +107,13 @@ public class BlackwhipChainSwingAbility extends Ability {
         DataContext context = DataContext.forEntity(entity);
         stopSwing(player, level, false);
 
+        BlackwhipWebSwingAbility.forceStop(player);
         BlackwhipChainZipAbility.forceStop(player);
         BlackwhipChainChargeZipAbility.forceStop(player);
         BlackwhipChainEntity.retractOwnedByPurpose(player.getId(),
-                BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE, BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
+                BlackwhipChainEntity.PURPOSE_WEB_SWING,
+                BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,
+                BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
 
         double range = this.range.getAsFloat(context);
         Vec3 eye = player.getEyePosition();
