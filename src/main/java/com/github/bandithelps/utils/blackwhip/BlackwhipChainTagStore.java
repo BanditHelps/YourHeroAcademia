@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,8 +32,73 @@ public final class BlackwhipChainTagStore {
 
     private static final Map<UUID, Map<Integer, TagEntry>> PLAYER_TAGS = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> LAST_COUNT = new ConcurrentHashMap<>();
+    /** Owners with Lead toggled on — new latches lock at latch distance. */
+    private static final Set<UUID> LEAD_ACTIVE = ConcurrentHashMap.newKeySet();
 
     private BlackwhipChainTagStore() {
+    }
+
+    public static boolean isLeadActive(ServerPlayer owner) {
+        return LEAD_ACTIVE.contains(owner.getUUID());
+    }
+
+    /**
+     * Enables or disables Lead for {@code owner}. On enable, locks every current TAG chain at its
+     * current owner↔target distance. On disable, unlocks all of those chains.
+     */
+    public static void setLeadActive(ServerPlayer owner, boolean active) {
+        if (active) {
+            LEAD_ACTIVE.add(owner.getUUID());
+            lockAllLeashes(owner);
+        } else {
+            LEAD_ACTIVE.remove(owner.getUUID());
+            unlockAllLeashes(owner);
+        }
+    }
+
+    public static void lockAllLeashes(ServerPlayer owner) {
+        if (!(owner.level() instanceof ServerLevel level)) {
+            return;
+        }
+        for (TagEntry entry : getTagEntries(owner)) {
+            if (level.getEntity(entry.chainEntityId()) instanceof BlackwhipChainEntity chain
+                    && level.getEntity(entry.targetId()) instanceof LivingEntity target
+                    && target.isAlive()) {
+                chain.lockLeashToCurrentDistance(owner, target);
+            }
+        }
+    }
+
+    public static void unlockAllLeashes(ServerPlayer owner) {
+        if (!(owner.level() instanceof ServerLevel level)) {
+            return;
+        }
+        for (TagEntry entry : getTagEntries(owner)) {
+            if (level.getEntity(entry.chainEntityId()) instanceof BlackwhipChainEntity chain) {
+                chain.unlockLeashLength();
+            }
+        }
+    }
+
+    public static List<TagEntry> getTagEntries(ServerPlayer owner) {
+        Map<Integer, TagEntry> tags = PLAYER_TAGS.get(owner.getUUID());
+        if (tags == null || tags.isEmpty()) {
+            return List.of();
+        }
+        return new ArrayList<>(tags.values());
+    }
+
+    public static BlackwhipChainEntity getChainForTarget(ServerPlayer owner, int targetId) {
+        Map<Integer, TagEntry> tags = PLAYER_TAGS.get(owner.getUUID());
+        if (tags == null || !(owner.level() instanceof ServerLevel level)) {
+            return null;
+        }
+        TagEntry entry = tags.get(targetId);
+        if (entry == null) {
+            return null;
+        }
+        Entity chain = level.getEntity(entry.chainEntityId());
+        return chain instanceof BlackwhipChainEntity c ? c : null;
     }
 
     public static boolean isTagged(ServerPlayer owner, int targetId) {
@@ -67,6 +133,9 @@ public final class BlackwhipChainTagStore {
 
         if (maxKeep > 0 && tags.size() > maxKeep) {
             trimOldest(owner, tags, maxKeep);
+        }
+        if (isLeadActive(owner)) {
+            chain.lockLeashToCurrentDistance(owner, target);
         }
         updateCount(owner, tags.size());
         return true;
@@ -115,6 +184,11 @@ public final class BlackwhipChainTagStore {
         // Also retract deploying chains that never latched.
         BlackwhipChainEntity.retractAllOwned(owner.getId());
         updateCount(owner, 0);
+    }
+
+    /** Clears Lead state when the owner leaves / tags are fully wiped externally. */
+    public static void clearLeadActive(ServerPlayer owner) {
+        LEAD_ACTIVE.remove(owner.getUUID());
     }
 
     public static List<LivingEntity> getTaggedEntities(ServerPlayer owner) {

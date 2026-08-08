@@ -155,6 +155,12 @@ public class BlackwhipChainEntity extends Entity {
     /** Auto-retract countdown for short-lived anchors (simple zip). 0 = no lifetime. */
     private int lifetimeTicks;
 
+    /**
+     * When {@code > 0}, IK grow/shrink is frozen and Lead soft-spring uses this owner↔target distance.
+     * {@code <= 0} means unlocked (normal resize).
+     */
+    private double lockedLeashLength;
+
     public BlackwhipChainEntity(EntityType<? extends BlackwhipChainEntity> type, Level level) {
         super(type, level);
         this.noPhysics = true;
@@ -827,6 +833,9 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     private void maybeResizeToTip(Entity owner) {
+        if (isLengthLocked()) {
+            return;
+        }
         if (resizeCooldown > 0) {
             resizeCooldown--;
             return;
@@ -856,6 +865,9 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     private void maybeResize(Entity owner, LivingEntity target) {
+        if (isLengthLocked()) {
+            return;
+        }
         if (resizeCooldown > 0) {
             resizeCooldown--;
             return;
@@ -1299,6 +1311,38 @@ public class BlackwhipChainEntity extends Entity {
 
     public void setPurpose(int purpose) {
         this.getEntityData().set(DATA_PURPOSE, Mth.clamp(purpose, PURPOSE_TAG, PURPOSE_ZIP_CHARGE));
+    }
+
+    /** Whether Lead (or another length lock) has frozen IK grow/shrink. */
+    public boolean isLengthLocked() {
+        return this.lockedLeashLength > 0.0;
+    }
+
+    public double getLockedLeashLength() {
+        return this.lockedLeashLength;
+    }
+
+    public void setLockedLeashLength(double length) {
+        this.lockedLeashLength = length;
+    }
+
+    /**
+     * Locks leash length to the current owner↔target distance (including slack) and freezes resize.
+     *
+     * @return the locked length, or {@code 0} if lock could not be applied
+     */
+    public double lockLeashToCurrentDistance(Entity owner, LivingEntity target) {
+        if (owner == null || target == null) {
+            return 0.0;
+        }
+        double dist = Math.max(0.5, owner.distanceTo(target));
+        this.lockedLeashLength = dist;
+        return dist;
+    }
+
+    /** Clears the Lead length lock and allows IK grow/shrink again. */
+    public void unlockLeashLength() {
+        this.lockedLeashLength = 0.0;
     }
 
     public void setAnchorPoint(Vec3 point) {
