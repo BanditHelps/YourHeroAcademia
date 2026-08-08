@@ -16,6 +16,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
@@ -55,8 +58,14 @@ public class BlackwhipWebSwingAbility extends Ability {
     private static final float BASE_CHAIN_HP = 24.0f;
     private static final float MAX_DISTANCE = 52.0f;
     private static final int RELEASE_ECHO_TICKS = 3;
+    private static final int TIMEOUT_ECHO_TICKS = 1;
     private static final int MAX_KEEP = 2;
     private static final double MAX_SYNC_SPEED = 6.0;
+    /** Horizontal scale applied to residual velocity when the whip times out. */
+    private static final double TIMEOUT_HORIZONTAL_SCALE = 0.12;
+    /** Vertical scale / clamp for timeout residual. */
+    private static final double TIMEOUT_VERTICAL_SCALE = 0.08;
+    private static final double TIMEOUT_MAX_UP = 0.05;
 
     private static final Map<UUID, SwingSession> SESSIONS = new ConcurrentHashMap<>();
     private static final Map<UUID, ReleaseEcho> RELEASE_ECHOES = new ConcurrentHashMap<>();
@@ -84,7 +93,20 @@ public class BlackwhipWebSwingAbility extends Ability {
     private record ReleaseEcho(Vec3 velocity, int ticksLeft) {
     }
 
-    // RecordCodecBuilder.group supports at most 16 fields (13 Values + properties/state/energy).
+    /**
+     * Nested so the top-level ability codec stays within RecordCodecBuilder's 16-field limit
+     * while still accepting flat JSON keys (release_* + max_ground_height).
+     */
+    private record SwingTuning(Value releaseForward, Value releaseUp, Value releaseSpeedScale, Value maxGroundHeight) {
+        static final MapCodec<SwingTuning> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+                instance.group(
+                        Value.CODEC.optionalFieldOf("release_forward", new StaticValue(0.58f)).forGetter(SwingTuning::releaseForward),
+                        Value.CODEC.optionalFieldOf("release_up", new StaticValue(0.48f)).forGetter(SwingTuning::releaseUp),
+                        Value.CODEC.optionalFieldOf("release_speed_scale", new StaticValue(0.3f)).forGetter(SwingTuning::releaseSpeedScale),
+                        Value.CODEC.optionalFieldOf("max_ground_height", new StaticValue(12.0f)).forGetter(SwingTuning::maxGroundHeight)
+                ).apply(instance, SwingTuning::new));
+    }
+
     public static final MapCodec<BlackwhipWebSwingAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("range", new StaticValue(32.0f)).forGetter((ab) -> ab.range),
@@ -97,12 +119,19 @@ public class BlackwhipWebSwingAbility extends Ability {
                     Value.CODEC.optionalFieldOf("turn_assist", new StaticValue(0.058f)).forGetter((ab) -> ab.turnAssist),
                     Value.CODEC.optionalFieldOf("auto_reel_rate", new StaticValue(0.1f)).forGetter((ab) -> ab.autoReelRate),
                     Value.CODEC.optionalFieldOf("max_speed", new StaticValue(3.8f)).forGetter((ab) -> ab.maxSpeed),
-                    Value.CODEC.optionalFieldOf("release_forward", new StaticValue(0.58f)).forGetter((ab) -> ab.releaseForward),
-                    Value.CODEC.optionalFieldOf("release_up", new StaticValue(0.48f)).forGetter((ab) -> ab.releaseUp),
-                    Value.CODEC.optionalFieldOf("release_speed_scale", new StaticValue(0.3f)).forGetter((ab) -> ab.releaseSpeedScale),
+                    SwingTuning.CODEC.forGetter((ab) -> new SwingTuning(
+                            ab.releaseForward, ab.releaseUp, ab.releaseSpeedScale, ab.maxGroundHeight)),
                     propertiesCodec(),
                     stateCodec(),
-                    energyBarUsagesCodec()).apply(instance, BlackwhipWebSwingAbility::new));
+                    energyBarUsagesCodec()
+            ).apply(instance, (range, minPivotDist, maxPivotDist, elevBias, startSlack, takeoffBoost,
+                               pumpAccel, turnAssist, autoReelRate, maxSpeed, tuning,
+                               properties, state, energyBarUsages) ->
+                    new BlackwhipWebSwingAbility(
+                            range, minPivotDist, maxPivotDist, elevBias, startSlack, takeoffBoost,
+                            pumpAccel, turnAssist, autoReelRate, maxSpeed,
+                            tuning.releaseForward(), tuning.releaseUp(), tuning.releaseSpeedScale(),
+                            tuning.maxGroundHeight(), properties, state, energyBarUsages)));
 
     public final Value range;
     public final Value minPivotDist;
@@ -117,12 +146,13 @@ public class BlackwhipWebSwingAbility extends Ability {
     public final Value releaseForward;
     public final Value releaseUp;
     public final Value releaseSpeedScale;
+    public final Value maxGroundHeight;
 
     public BlackwhipWebSwingAbility(
             Value range, Value minPivotDist, Value maxPivotDist, Value elevBias,
             Value startSlack, Value takeoffBoost, Value pumpAccel, Value turnAssist,
             Value autoReelRate, Value maxSpeed, Value releaseForward, Value releaseUp,
-            Value releaseSpeedScale,
+            Value releaseSpeedScale, Value maxGroundHeight,
             AbilityProperties properties, AbilityStateManager conditions,
             List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
@@ -139,6 +169,7 @@ public class BlackwhipWebSwingAbility extends Ability {
         this.releaseForward = releaseForward;
         this.releaseUp = releaseUp;
         this.releaseSpeedScale = releaseSpeedScale;
+        this.maxGroundHeight = maxGroundHeight;
     }
 
     @Override
@@ -157,6 +188,12 @@ public class BlackwhipWebSwingAbility extends Ability {
                 BlackwhipChainEntity.PURPOSE_WEB_SWING,
                 BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,
                 BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
+
+        float maxHeight = Math.max(0.5f, this.maxGroundHeight.getAsFloat(context));
+        if (!isWithinGroundHeight(player, level, maxHeight)) {
+            level.playSound(null, player.blockPosition(), SoundEvents.SNOWBALL_THROW, SoundSource.PLAYERS, 0.45f, 0.55f);
+            return;
+        }
 
         double range = this.range.getAsFloat(context);
         BlackwhipWebSwingPivots.Pivot pivot = BlackwhipWebSwingPivots.resolve(
@@ -240,6 +277,28 @@ public class BlackwhipWebSwingAbility extends Ability {
         level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.PLAYERS, 0.5f, 1.45f);
     }
 
+    /**
+     * True when the player is on the ground or standing no more than {@code maxHeight} blocks
+     * above solid terrain (downward collider clip from the feet).
+     */
+    private static boolean isWithinGroundHeight(ServerPlayer player, ServerLevel level, float maxHeight) {
+        if (player.onGround()) {
+            return true;
+        }
+        Vec3 feet = player.position();
+        BlockHitResult hit = level.clip(new ClipContext(
+                feet,
+                feet.subtract(0.0, maxHeight, 0.0),
+                ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE,
+                player));
+        if (hit.getType() == HitResult.Type.MISS) {
+            return false;
+        }
+        double heightAbove = feet.y - hit.getLocation().y;
+        return heightAbove <= maxHeight + 1.0e-3;
+    }
+
     @Override
     public boolean tick(LivingEntity entity, AbilityInstance<?> abilityInstance, boolean enabled) {
         if (enabled && entity instanceof ServerPlayer player && player.level() instanceof ServerLevel level) {
@@ -274,18 +333,24 @@ public class BlackwhipWebSwingAbility extends Ability {
         if (!(entity instanceof ServerPlayer player)) {
             return;
         }
-        releaseSwing(player);
+        releaseSwing(player, false);
     }
 
     /**
-     * Client reached the top of the pendulum arc — snap the whip and fling as if released.
+     * Client-driven whip snap. Apex keeps the full release fling; timeout is nearly inert.
      * Safe if the session is already gone (e.g. player already let go).
      */
-    public static void breakAtMaxArc(ServerPlayer player) {
-        releaseSwing(player);
+    public static void breakSwing(ServerPlayer player, boolean timedOut) {
+        releaseSwing(player, timedOut);
     }
 
-    private static void releaseSwing(ServerPlayer player) {
+    /** @deprecated use {@link #breakSwing(ServerPlayer, boolean)} */
+    @Deprecated
+    public static void breakAtMaxArc(ServerPlayer player) {
+        breakSwing(player, false);
+    }
+
+    private static void releaseSwing(ServerPlayer player, boolean timedOut) {
         if (!(player.level() instanceof ServerLevel level)) {
             return;
         }
@@ -294,11 +359,31 @@ public class BlackwhipWebSwingAbility extends Ability {
             PacketDistributor.sendToPlayer(player, BlackwhipWebSwingPayload.stop());
             return;
         }
-        Vec3 fling = computeReleaseFling(player, session);
+        Vec3 fling = timedOut
+                ? computeTimeoutResidual(player, session)
+                : computeReleaseFling(player, session);
         applyFling(player, fling);
-        RELEASE_ECHOES.put(player.getUUID(), new ReleaseEcho(fling, RELEASE_ECHO_TICKS));
+        RELEASE_ECHOES.put(player.getUUID(), new ReleaseEcho(
+                fling, timedOut ? TIMEOUT_ECHO_TICKS : RELEASE_ECHO_TICKS));
         stopSwingStatic(player, level, true);
-        level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.PLAYERS, 0.55f, 1.55f);
+        level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.PLAYERS,
+                timedOut ? 0.4f : 0.55f, timedOut ? 0.85f : 1.55f);
+    }
+
+    /** Negligible leftover motion when the player holds past the hard swing timeout. */
+    private static Vec3 computeTimeoutResidual(ServerPlayer player, SwingSession session) {
+        Vec3 velocity = session.clientVelocity;
+        if (velocity.lengthSqr() < 0.04) {
+            velocity = player.getDeltaMovement();
+        }
+        double y = Math.min(velocity.y * TIMEOUT_VERTICAL_SCALE, TIMEOUT_MAX_UP);
+        if (y > 0.0) {
+            y = Math.min(y, TIMEOUT_MAX_UP);
+        }
+        return new Vec3(
+                velocity.x * TIMEOUT_HORIZONTAL_SCALE,
+                y,
+                velocity.z * TIMEOUT_HORIZONTAL_SCALE);
     }
 
     /**
@@ -477,7 +562,7 @@ public class BlackwhipWebSwingAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipWebSwingAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("PS5-style web swing. Always attaches (surface preferred, virtual air pivot fallback). Hold to swing with WASD/camera steering; Shift brakes; release flings up and forward with momentum.")
+            builder.setDescription("PS5-style web swing. Always attaches (surface preferred, virtual air pivot fallback) when within max ground height. Hold to swing with WASD/camera steering; Shift brakes; release flings up and forward with momentum. Holding past the timeout snaps with negligible launch.")
                     .add("range", TYPE_VALUE, "Cone / virtual pivot reach.")
                     .add("min_pivot_dist", TYPE_VALUE, "Minimum virtual pivot distance.")
                     .add("max_pivot_dist", TYPE_VALUE, "Maximum virtual pivot distance.")
@@ -491,11 +576,12 @@ public class BlackwhipWebSwingAbility extends Ability {
                     .add("release_forward", TYPE_VALUE, "Base forward kick on release.")
                     .add("release_up", TYPE_VALUE, "Base upward kick on release.")
                     .add("release_speed_scale", TYPE_VALUE, "Extra release kick scaled by swing speed.")
+                    .add("max_ground_height", TYPE_VALUE, "Max blocks above solid ground allowed to start a swing.")
                     .addExampleObject(new BlackwhipWebSwingAbility(
                             new StaticValue(32.0f), new StaticValue(14.0f), new StaticValue(28.0f), new StaticValue(0.4f),
                             new StaticValue(0.85f), new StaticValue(0.72f), new StaticValue(0.078f), new StaticValue(0.052f),
                             new StaticValue(0.1f), new StaticValue(3.5f), new StaticValue(0.55f), new StaticValue(0.62f),
-                            new StaticValue(0.32f),
+                            new StaticValue(0.32f), new StaticValue(12.0f),
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
     }

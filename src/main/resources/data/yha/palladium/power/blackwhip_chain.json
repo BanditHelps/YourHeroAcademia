@@ -165,18 +165,18 @@
       "type": "yha:blackwhip_web_swing",
       "range": {
         "type": "palladium:molang_float",
-        "molang": "32 + yha.quirk_factor() * 3"
+        "molang": "32"
       },
       "min_pivot_dist": 14,
       "max_pivot_dist": {
         "type": "palladium:molang_float",
-        "molang": "28 + yha.quirk_factor() * 2"
+        "molang": "28"
       },
       "elev_bias": 0.28,
       "start_slack": 0.85,
       "takeoff_boost": {
         "type": "palladium:molang_float",
-        "molang": "0.48 + yha.quirk_factor() * 0.04"
+        "molang": "0.48"
       },
       "pump_accel": 0.09,
       "turn_assist": 0.058,
@@ -184,16 +184,17 @@
       "max_speed": 3.8,
       "release_forward": {
         "type": "palladium:molang_float",
-        "molang": "0.58 + yha.quirk_factor() * 0.06"
+        "molang": "0.38"
       },
       "release_up": {
         "type": "palladium:molang_float",
-        "molang": "0.48 + yha.quirk_factor() * 0.05"
+        "molang": "0.48"
       },
       "release_speed_scale": 0.3,
+      "max_ground_height": 12,
       "properties": {
         "title": "Web Swing",
-        "description": "Swing without aiming at a block. Whips prefer nearby surfaces, or latch to an air pivot so you always swing. Steer with WASD and the camera, Shift brakes, Jump hops. The whip snaps at the top of the arc and flings you forward — or release early yourself. Re-tap mid-air to chain swings.",
+        "description": "Swing without aiming at a block. Whips prefer nearby surfaces, or latch to an air pivot when close to the ground. Steer with WASD and the camera, Shift brakes, Jump hops. Release near the top of the arc to fling forward — holding too long snaps the whip with almost no launch.",
         "icon": "minecraft:cobweb",
         "list_index": 5,
         "hidden_in_gui": false,
@@ -204,7 +205,8 @@
       "state": {
         "enabling": {
           "type": "palladium:key_bind",
-          "behaviour": "held"
+          "behaviour": "held",
+          "cooldown": 20
         },
         "unlocking": {
           "type": "palladium:buyable",

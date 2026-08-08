@@ -1,5 +1,6 @@
 package com.github.bandithelps.client.renderers.entity;
 
+import com.github.bandithelps.client.blackwhip.BlackwhipChainClientAnchors;
 import com.github.bandithelps.client.blackwhip.BlackwhipWaistBoneHelper;
 import com.github.bandithelps.client.renderers.entity.state.BlackwhipChainRenderState;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
@@ -153,12 +154,12 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         }
     }
 
-    /** Server IK wrist for others / third-person; first-person hand for local camera owner. */
+    /**
+     * Animated main-hand attach via Palladium {@code ModelUtil} (same as energy-beam / webswing).
+     * Falls back to approximate wrist math for non-player owners.
+     */
     private static Vec3 resolveVisualRoot(Entity owner, float partial) {
-        if (owner instanceof LivingEntity living && isLocalFirstPersonOwner(owner)) {
-            return BlackwhipChainAnchors.resolveFirstPersonHand(living, partial);
-        }
-        return BlackwhipChainAnchors.resolveOwnerWrist(owner, partial);
+        return BlackwhipChainClientAnchors.resolveVisualRoot(owner, partial);
     }
 
     /** True when the camera player owns this whip and is in first person. */

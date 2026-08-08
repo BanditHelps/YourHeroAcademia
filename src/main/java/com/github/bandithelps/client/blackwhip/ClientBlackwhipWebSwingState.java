@@ -21,6 +21,12 @@ public final class ClientBlackwhipWebSwingState {
     private static final double MAX_ARC_THRESHOLD = 0.68;
     private static final double HIGH_ARC_THRESHOLD = 0.62;
 
+    public enum BreakReason {
+        NONE,
+        APEX,
+        TIMEOUT
+    }
+
     private static volatile boolean active = false;
     private static volatile double anchorX;
     private static volatile double anchorY;
@@ -81,11 +87,11 @@ public final class ClientBlackwhipWebSwingState {
     }
 
     /**
-     * Tracks swing progress and returns true once when the player crests the far side of the arc.
+     * Tracks swing progress and returns a break reason once when the whip should snap.
      */
-    public static boolean updateAndShouldBreak(LocalPlayer player, Vec3 velocity) {
+    public static BreakReason updateAndShouldBreak(LocalPlayer player, Vec3 velocity) {
         if (!active || breakRequested || player == null || velocity == null) {
-            return false;
+            return BreakReason.NONE;
         }
         swingTicks++;
 
@@ -99,27 +105,27 @@ public final class ClientBlackwhipWebSwingState {
             sawBottom = true;
         }
 
-        boolean atApex = false;
+        BreakReason reason = BreakReason.NONE;
         if (swingTicks >= MAX_SWING_TICKS) {
-            atApex = true;
+            reason = BreakReason.TIMEOUT;
         } else if (swingTicks >= ARC_GRACE_TICKS && sawBottom && !player.onGround()) {
             if (heightAlongArc >= MAX_ARC_THRESHOLD) {
                 // Classic crest: was rising, now stalling / tipping over.
                 if (prevVy > 0.06 && velocity.y <= 0.04) {
-                    atApex = true;
+                    reason = BreakReason.APEX;
                 } else if (heightAlongArc >= HIGH_ARC_THRESHOLD && velocity.y < 0.15) {
                     // Already very high and no longer climbing hard.
-                    atApex = true;
+                    reason = BreakReason.APEX;
                 }
             }
         }
 
         prevVy = velocity.y;
-        if (atApex) {
+        if (reason != BreakReason.NONE) {
             breakRequested = true;
-            return true;
+            return reason;
         }
-        return false;
+        return BreakReason.NONE;
     }
 
     public static boolean isActive() {

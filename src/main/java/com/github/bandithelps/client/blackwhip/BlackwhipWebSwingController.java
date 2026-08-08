@@ -152,9 +152,13 @@ public final class BlackwhipWebSwingController {
         // Sync real client momentum for server-side release fling.
         ClientPacketDistributor.sendToServer(new BlackwhipWebSwingVelocityPayload(velocity.x, velocity.y, velocity.z));
 
-        // Crest of the arc: snap the whip so holding through the return swing can't desync motion.
-        if (ClientBlackwhipWebSwingState.updateAndShouldBreak(player, velocity)) {
-            ClientPacketDistributor.sendToServer(BlackwhipWebSwingBreakPayload.INSTANCE);
+        // Crest / timeout: snap the whip so holding through the return swing can't desync motion.
+        ClientBlackwhipWebSwingState.BreakReason breakReason =
+                ClientBlackwhipWebSwingState.updateAndShouldBreak(player, velocity);
+        if (breakReason != ClientBlackwhipWebSwingState.BreakReason.NONE) {
+            ClientPacketDistributor.sendToServer(breakReason == ClientBlackwhipWebSwingState.BreakReason.TIMEOUT
+                    ? BlackwhipWebSwingBreakPayload.timeout()
+                    : BlackwhipWebSwingBreakPayload.apex());
             ClientBlackwhipWebSwingState.clear();
         }
     }
