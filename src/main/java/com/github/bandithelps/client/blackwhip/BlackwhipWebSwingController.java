@@ -1,6 +1,7 @@
 package com.github.bandithelps.client.blackwhip;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.network.BlackwhipWebSwingBreakPayload;
 import com.github.bandithelps.network.BlackwhipWebSwingVelocityPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -150,6 +151,12 @@ public final class BlackwhipWebSwingController {
         }
         // Sync real client momentum for server-side release fling.
         ClientPacketDistributor.sendToServer(new BlackwhipWebSwingVelocityPayload(velocity.x, velocity.y, velocity.z));
+
+        // Crest of the arc: snap the whip so holding through the return swing can't desync motion.
+        if (ClientBlackwhipWebSwingState.updateAndShouldBreak(player, velocity)) {
+            ClientPacketDistributor.sendToServer(BlackwhipWebSwingBreakPayload.INSTANCE);
+            ClientBlackwhipWebSwingState.clear();
+        }
     }
 
     private static Vec3 applyGroundLaunch(LocalPlayer player, Vec3 velocity, Vec3 radial,

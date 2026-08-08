@@ -1,12 +1,26 @@
 package com.github.bandithelps.client.blackwhip;
 
 import com.github.bandithelps.network.BlackwhipWebSwingPayload;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
 /**
  * Client snapshot for the local player's PS5-style web swing.
  */
 public final class ClientBlackwhipWebSwingState {
+    /** Ignore apex checks for a few ticks so ground takeoff / attach don't instantly snap. */
+    private static final int ARC_GRACE_TICKS = 10;
+    /** Hard cap so a stalled / weird swing can't be held indefinitely. */
+    private static final int MAX_SWING_TICKS = 50;
+    /** Must dip this low (0 = bottom, 1 = top) before max-arc break can trigger. */
+    private static final double BOTTOM_ARC_THRESHOLD = 0.42;
+    /** Relative dip from the highest point seen counts as entering the swing. */
+    private static final double DIP_FOR_SWING = 0.22;
+    /** Crest band where the whip can snap. */
+    private static final double MAX_ARC_THRESHOLD = 0.68;
+    private static final double HIGH_ARC_THRESHOLD = 0.62;
+
     private static volatile boolean active = false;
     private static volatile double anchorX;
     private static volatile double anchorY;
@@ -21,6 +35,11 @@ public final class ClientBlackwhipWebSwingState {
     private static volatile double maxSpeed = 3.2;
     private static volatile double brakeDamp = 0.88;
     private static volatile float lastYaw;
+    private static int swingTicks;
+    private static boolean sawBottom;
+    private static double maxHeightSeen;
+    private static double prevVy;
+    private static boolean breakRequested;
 
     private ClientBlackwhipWebSwingState() {
     }
@@ -28,6 +47,7 @@ public final class ClientBlackwhipWebSwingState {
     public static void apply(BlackwhipWebSwingPayload payload) {
         active = payload.active();
         if (!payload.active()) {
+            resetArcTracker();
             return;
         }
         anchorX = payload.anchorX();
@@ -44,10 +64,62 @@ public final class ClientBlackwhipWebSwingState {
         float brake = payload.brakeDamp();
         brakeDamp = brake <= 0.0f ? 0.88 : Math.max(0.5f, Math.min(0.99f, brake));
         lastYaw = Float.NaN;
+        resetArcTracker();
     }
 
     public static void clear() {
         active = false;
+        resetArcTracker();
+    }
+
+    private static void resetArcTracker() {
+        swingTicks = 0;
+        sawBottom = false;
+        maxHeightSeen = 0.0;
+        prevVy = 0.0;
+        breakRequested = false;
+    }
+
+    /**
+     * Tracks swing progress and returns true once when the player crests the far side of the arc.
+     */
+    public static boolean updateAndShouldBreak(LocalPlayer player, Vec3 velocity) {
+        if (!active || breakRequested || player == null || velocity == null) {
+            return false;
+        }
+        swingTicks++;
+
+        Vec3 center = player.position().add(0.0, player.getBbHeight() * 0.5, 0.0);
+        double below = Math.max(0.0, anchorY - center.y);
+        double maxBelow = Math.max(ropeLength * 0.95, 1.0);
+        double heightAlongArc = 1.0 - Mth.clamp(below / maxBelow, 0.0, 1.0);
+        maxHeightSeen = Math.max(maxHeightSeen, heightAlongArc);
+
+        if (heightAlongArc < BOTTOM_ARC_THRESHOLD || maxHeightSeen - heightAlongArc >= DIP_FOR_SWING) {
+            sawBottom = true;
+        }
+
+        boolean atApex = false;
+        if (swingTicks >= MAX_SWING_TICKS) {
+            atApex = true;
+        } else if (swingTicks >= ARC_GRACE_TICKS && sawBottom && !player.onGround()) {
+            if (heightAlongArc >= MAX_ARC_THRESHOLD) {
+                // Classic crest: was rising, now stalling / tipping over.
+                if (prevVy > 0.06 && velocity.y <= 0.04) {
+                    atApex = true;
+                } else if (heightAlongArc >= HIGH_ARC_THRESHOLD && velocity.y < 0.15) {
+                    // Already very high and no longer climbing hard.
+                    atApex = true;
+                }
+            }
+        }
+
+        prevVy = velocity.y;
+        if (atApex) {
+            breakRequested = true;
+            return true;
+        }
+        return false;
     }
 
     public static boolean isActive() {

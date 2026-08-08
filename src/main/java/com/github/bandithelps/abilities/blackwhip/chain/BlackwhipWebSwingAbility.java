@@ -271,7 +271,22 @@ public class BlackwhipWebSwingAbility extends Ability {
 
     @Override
     public void lastTick(LivingEntity entity, AbilityInstance<?> abilityInstance) {
-        if (!(entity instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) {
+        if (!(entity instanceof ServerPlayer player)) {
+            return;
+        }
+        releaseSwing(player);
+    }
+
+    /**
+     * Client reached the top of the pendulum arc — snap the whip and fling as if released.
+     * Safe if the session is already gone (e.g. player already let go).
+     */
+    public static void breakAtMaxArc(ServerPlayer player) {
+        releaseSwing(player);
+    }
+
+    private static void releaseSwing(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)) {
             return;
         }
         SwingSession session = SESSIONS.get(player.getUUID());
@@ -282,7 +297,7 @@ public class BlackwhipWebSwingAbility extends Ability {
         Vec3 fling = computeReleaseFling(player, session);
         applyFling(player, fling);
         RELEASE_ECHOES.put(player.getUUID(), new ReleaseEcho(fling, RELEASE_ECHO_TICKS));
-        stopSwing(player, level, true);
+        stopSwingStatic(player, level, true);
         level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.PLAYERS, 0.55f, 1.55f);
     }
 
@@ -426,6 +441,10 @@ public class BlackwhipWebSwingAbility extends Ability {
     }
 
     private void stopSwing(ServerPlayer player, ServerLevel level, boolean playBreak) {
+        stopSwingStatic(player, level, playBreak);
+    }
+
+    private static void stopSwingStatic(ServerPlayer player, ServerLevel level, boolean playBreak) {
         SwingSession session = SESSIONS.remove(player.getUUID());
         if (session != null && level.getEntity(session.chainId) instanceof BlackwhipChainEntity chain) {
             chain.deactivate();
@@ -444,13 +463,7 @@ public class BlackwhipWebSwingAbility extends Ability {
             return;
         }
         RELEASE_ECHOES.remove(player.getUUID());
-        SwingSession session = SESSIONS.remove(player.getUUID());
-        if (session != null && level.getEntity(session.chainId) instanceof BlackwhipChainEntity chain) {
-            chain.deactivate();
-        } else {
-            BlackwhipChainEntity.retractOwnedByPurpose(player.getId(), BlackwhipChainEntity.PURPOSE_WEB_SWING);
-        }
-        PacketDistributor.sendToPlayer(player, BlackwhipWebSwingPayload.stop());
+        stopSwingStatic(player, level, false);
     }
 
     @Override

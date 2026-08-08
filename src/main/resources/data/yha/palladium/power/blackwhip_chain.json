@@ -193,7 +193,7 @@
       "release_speed_scale": 0.3,
       "properties": {
         "title": "Web Swing",
-        "description": "Swing without aiming at a block. Whips prefer nearby surfaces, or latch to an air pivot so you always swing. Steer with WASD and the camera, Shift brakes, Jump hops. Release flings you along a smooth arc — higher in the swing adds a bit more loft, mid-arc rising feels strongest. Re-tap mid-air to chain swings.",
+        "description": "Swing without aiming at a block. Whips prefer nearby surfaces, or latch to an air pivot so you always swing. Steer with WASD and the camera, Shift brakes, Jump hops. The whip snaps at the top of the arc and flings you forward — or release early yourself. Re-tap mid-air to chain swings.",
         "icon": "minecraft:cobweb",
         "list_index": 5,
         "hidden_in_gui": false,
