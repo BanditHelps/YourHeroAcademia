@@ -12,22 +12,30 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Resolves web-swing pivots using Palladium 26.1 {@code SwingingFlightType.Controller#findNewAnchor}
- * logic: place an ideal forward-up point from swing level + radius, fan raycasts for a real block
- * near that ideal, and fall back to the ideal as a virtual air pivot when nothing solid is hit.
+ * logic (widened for side cliffs): place an ideal forward-up point, fan raycasts for a real block
+ * ahead/above/to-the-side, and fall back to the ideal as a virtual air pivot when nothing hits.
  */
 public final class BlackwhipWebSwingPivots {
 
     /**
-     * Unit-direction samples matching Palladium's elevation fan (~45° / 55° / 65° / 75°).
-     * Pair index {@code i} uses {@link #UP_COMP}[i] as Y and {@link #HORIZ_COMP}[i] as XZ scale.
+     * Elevation fan: Palladium's steep samples plus flatter ones for cliff/mountain faces
+     * (~30° / 40° / 45° / 55° / 65° / 75°). Index {@code i} pairs {@link #UP_COMP} with
+     * {@link #HORIZ_COMP}.
      */
-    private static final double[] UP_COMP = {0.707d, 0.819d, 0.906d, 0.966d};
-    private static final double[] HORIZ_COMP = {0.707d, 0.574d, 0.423d, 0.259d};
-    /** Yaw offsets in 20° steps: 0°, ±20°, ±40° (Palladium order). */
-    private static final int[] YAW_UNITS = {0, -1, 1, -2, 2};
+    private static final double[] UP_COMP = {0.500d, 0.643d, 0.707d, 0.819d, 0.906d, 0.966d};
+    private static final double[] HORIZ_COMP = {0.866d, 0.766d, 0.707d, 0.574d, 0.423d, 0.259d};
+    /** Yaw offsets in 20° steps out to ±80° so side terrain (mountain on the right) is in fan. */
+    private static final int[] YAW_UNITS = {0, -1, 1, -2, 2, -3, 3, -4, 4};
     private static final double YAW_STEP_DEG = 20.0d;
-    /** Vertical weight when scoring block hits vs the ideal pivot (Palladium uses 5×). */
-    private static final double VERT_SCORE_WEIGHT = 5.0d;
+    /**
+     * Vertical weight vs the ideal pivot. Palladium uses 5× (strongly prefers overhead matches);
+     * keep this milder so side cliffs below the ideal still win over air.
+     */
+    private static final double VERT_SCORE_WEIGHT = 1.6d;
+    /** Mild penalty for hits that sit far off the look/travel heading (still allow ~side grabs). */
+    private static final double SIDE_SCORE_WEIGHT = 0.35d;
+    /** Reject hits behind the player (dot of flat eye→hit with forward). */
+    private static final double MIN_FORWARD_DOT = -0.05d;
     private static final double MIN_COS_ELEV = 0.65d;
     private static final double MAX_COS_ELEV = 0.98d;
     private static final double GROUND_CLEARANCE = 2.5d;
@@ -110,14 +118,15 @@ public final class BlackwhipWebSwingPivots {
     }
 
     /**
-     * Fan of rays at Palladium elevations/yaws; pick the block hit closest to {@code ideal}
-     * using score = horizDist + 5 * |dy|.
+     * Fan of rays at elevations/yaws (wider than Palladium for side cliffs); pick the best block
+     * hit near {@code ideal} with a mild forward preference.
      */
     private static Pivot findBestBlockNearIdeal(ServerLevel level, Player player, Vec3 eye,
                                                Vec3 forward, double radius, Vec3 ideal,
                                                double swingLevel) {
         Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
-        double minHitY = swingLevel + radius * 0.5;
+        // Allow mid-height cliff faces; Palladium's radius*0.5 was rejecting most side terrain.
+        double minHitY = swingLevel + Math.max(2.5d, radius * 0.22d);
 
         Vec3 bestPoint = null;
         BlockPos bestSupport = null;
@@ -148,11 +157,24 @@ public final class BlackwhipWebSwingPivots {
                     continue;
                 }
 
+                Vec3 flatTo = horizontal(loc.subtract(eye));
+                double flatLen = flatTo.length();
+                if (flatLen < 1.5d) {
+                    // Too close horizontally — underfoot / directly overhead noise.
+                    continue;
+                }
+                double forwardDot = flatTo.scale(1.0d / flatLen).dot(forward);
+                if (forwardDot < MIN_FORWARD_DOT) {
+                    continue;
+                }
+
                 double dx = loc.x - ideal.x;
                 double dz = loc.z - ideal.z;
                 double horizDist = Math.sqrt(dx * dx + dz * dz);
                 double vertDist = Math.abs(loc.y - ideal.y);
-                double score = horizDist + vertDist * VERT_SCORE_WEIGHT;
+                // Side hits: mild heading penalty instead of Palladium's hard overhead bias.
+                double sidePenalty = (1.0d - Mth.clamp(forwardDot, 0.0d, 1.0d)) * radius * SIDE_SCORE_WEIGHT;
+                double score = horizDist + vertDist * VERT_SCORE_WEIGHT + sidePenalty;
                 if (score < bestScore) {
                     bestScore = score;
                     // Face-nudge so the chain tip sits on the surface (YHA latch convention).
