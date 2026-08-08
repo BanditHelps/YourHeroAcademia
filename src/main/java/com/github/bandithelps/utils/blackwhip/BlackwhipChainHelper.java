@@ -119,6 +119,58 @@ public final class BlackwhipChainHelper {
     }
 
     /**
+     * Spawns a chain already latched onto a living entity for short zip reels (no TagStore tether).
+     *
+     * @param lifetimeTicks unused by latched phase itself; caller should deactivate when done
+     * @return the chain, or {@code null} if the owner is at the active-chain cap
+     */
+    public static BlackwhipChainEntity spawnEntityLatchedChain(LivingEntity owner, LivingEntity target,
+                                                              int purpose, int segmentCount, float linkLength,
+                                                              float chainHp, float thickness, double maxDistance,
+                                                              int maxKeep) {
+        if (!(owner.level() instanceof ServerLevel level) || target == null || !target.isAlive()) {
+            return null;
+        }
+        int keep = Math.max(1, maxKeep);
+        int active = countTowardKeep(owner.getId(), purpose);
+        if (active >= keep) {
+            return null;
+        }
+
+        float link = Math.max(0.25f, linkLength);
+        Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        Vec3 tip = target.getBoundingBox().getCenter();
+        double ropeDist = Math.max(0.5, wrist.distanceTo(tip));
+        int wrapJoints = BlackwhipChainAnchors.MIN_WRAP_JOINTS;
+        int desired = BlackwhipChainAnchors.desiredSegmentCount(ropeDist, link, wrapJoints);
+        int seed = Mth.clamp(segmentCount > 0 ? segmentCount : desired,
+                BlackwhipChainEntity.MIN_SEGMENTS, BlackwhipChainEntity.MAX_SEGMENTS);
+        int segments = Mth.clamp(desired, BlackwhipChainEntity.MIN_SEGMENTS, seed);
+
+        BlackwhipChainEntity chain = new BlackwhipChainEntity(ModEntities.BLACKWHIP_CHAIN.get(), level);
+        chain.setOwnerId(owner.getId());
+        chain.setTargetId(-1);
+        chain.setPurpose(purpose);
+        chain.setMinSegmentSeed(seed);
+        chain.setSegmentCount(segments);
+        chain.setLinkLength(link);
+        chain.setMaxHp(Math.max(1.0f, chainHp));
+        chain.setHp(Math.max(1.0f, chainHp));
+        chain.setThickness(thickness);
+        chain.setTravelTicks(1);
+        chain.setRetractTicks(5);
+        chain.setWrapTurns(1.5f);
+        chain.setLatchParams(0, maxDistance, keep);
+        chain.setMaxRange((float) Math.max(1.0, maxDistance > 0 ? maxDistance : ropeDist));
+        applyOwnerColors(chain, owner);
+        chain.setSeed(owner.getRandom().nextInt());
+        chain.setPos(wrist.x, wrist.y, wrist.z);
+        level.addFreshEntity(chain);
+        chain.latchEntityVisual(target);
+        return chain;
+    }
+
+    /**
      * Spawns a chain pinned to a world point that may be in open air (no solid support required).
      * Used by PS5-style web swing virtual pivots.
      */

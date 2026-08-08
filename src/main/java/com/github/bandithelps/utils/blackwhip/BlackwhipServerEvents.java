@@ -1,6 +1,7 @@
 package com.github.bandithelps.utils.blackwhip;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainZipAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipWebSwingAbility;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,6 +32,7 @@ public final class BlackwhipServerEvents {
         }
 
         BlackwhipWebSwingAbility.tickReleaseEchoes(event.getServer());
+        BlackwhipChainZipAbility.tickSessions(event.getServer());
 
         if (event.getServer().getTickCount() % 10 != 0) {
             return;

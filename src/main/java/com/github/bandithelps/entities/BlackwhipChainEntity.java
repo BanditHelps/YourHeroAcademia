@@ -330,6 +330,37 @@ public class BlackwhipChainEntity extends Entity {
         latchAnchor(point, BlockPos.containing(point == null ? this.position() : point), true);
     }
 
+    /**
+     * Instant living-entity latch for short Whip Zip reels. Follows the target via
+     * {@link #PHASE_LATCHED} IK but does <strong>not</strong> register a
+     * {@link BlackwhipChainTagStore} grab tether.
+     */
+    public void latchEntityVisual(LivingEntity target) {
+        if (target == null || !target.isAlive()) {
+            return;
+        }
+        AABB hitBb = target.getBoundingBox();
+        Vec3 contact = hitBb.getCenter();
+        this.tipPos = contact;
+        this.tipVelocity = Vec3.ZERO;
+        this.tipReady = true;
+        this.virtualAnchor = false;
+        this.supportPos = target.blockPosition();
+        setTargetId(target.getId());
+        setPhase(PHASE_LATCHED);
+        setLatchTick(this.tickCount);
+        setWrapHeight(BlackwhipChainAnchors.computeWrapHeight(target, contact));
+        this.latchBlendFrom = contact;
+        this.latchBlendRemaining = LATCH_BLEND_TICKS;
+        this.getEntityData().set(DATA_ACTIVE, true);
+        this.retractCountdown = -1;
+
+        Entity owner = getOwner();
+        if (owner != null && this.level() instanceof ServerLevel level) {
+            level.playSound(null, owner.blockPosition(), SoundEvents.LEAD_TIED, SoundSource.PLAYERS, 0.65f, 1.25f);
+        }
+    }
+
     private void latchAnchor(Vec3 point, BlockPos support, boolean virtual) {
         Vec3 tip = point == null ? this.position() : point;
         this.tipPos = tip;

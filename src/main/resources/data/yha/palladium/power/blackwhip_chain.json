@@ -230,15 +230,16 @@
         "type": "palladium:molang_float",
         "molang": "32 + yha.quirk_factor() * 2"
       },
-      "simple_pull_power": {
-        "type": "palladium:molang_float",
-        "molang": "2.85 + yha.quirk_factor() * 0.08"
-      },
-      "qf_pull_bonus": 0.05,
+      "simple_pull_power": 2.2,
+      "qf_pull_bonus": 0.04,
       "simple_visual_ticks": 10,
+      "damage": {
+        "type": "palladium:molang_float",
+        "molang": "4 + yha.quirk_factor() * 0.5"
+      },
       "properties": {
         "title": "Whip Zip",
-        "description": "Shoot a chain at a surface and zip toward it with a quick burst of speed. Hold Shift and use Charge Zip for a rubber-band launch.",
+        "description": "Zip toward the block or enemy you're looking at. Surfaces give a quick directional burst. On a living target, hold to reel in (speeds up as you go) until you release or slam into them for damage and knockback. Hold Shift and use Charge Zip for a rubber-band launch.",
         "icon": "minecraft:tripwire_hook",
         "list_index": 6,
         "hidden_in_gui": false,
@@ -248,7 +249,7 @@
       "state": {
         "enabling": {
           "type": "palladium:key_bind",
-          "behaviour": "activation"
+          "behaviour": "held"
         },
         "unlocking": {
           "type": "palladium:buyable",
