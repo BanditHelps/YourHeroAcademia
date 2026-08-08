@@ -40,8 +40,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Web Swing: always-on camera pivot (surface preferred, virtual fallback), client pendulum while
- * held, momentum release fling on let-go. Separate from look-raycast {@link BlackwhipChainSwingAbility}.
+ * Web Swing: Palladium-style forward-up fan attach (real block preferred, ideal air pivot fallback),
+ * client pendulum while held, momentum release fling on let-go. Separate from look-raycast
+ * {@link BlackwhipChainSwingAbility}.
  */
 public class BlackwhipWebSwingAbility extends Ability {
 
@@ -562,11 +563,11 @@ public class BlackwhipWebSwingAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipWebSwingAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("PS5-style web swing. Always attaches (surface preferred, virtual air pivot fallback) when within max ground height. Hold to swing with WASD/camera steering; Shift brakes; release flings up and forward with momentum. Holding past the timeout snaps with negligible launch.")
-                    .add("range", TYPE_VALUE, "Cone / virtual pivot reach.")
-                    .add("min_pivot_dist", TYPE_VALUE, "Minimum virtual pivot distance.")
-                    .add("max_pivot_dist", TYPE_VALUE, "Maximum virtual pivot distance.")
-                    .add("elev_bias", TYPE_VALUE, "Upward bias when placing virtual pivots.")
+            builder.setDescription("PS5-style web swing. Always attaches when within max ground height: Palladium-style elevation/yaw fan prefers a real block near the ideal pivot, else latches a virtual air point. Hold to swing with WASD/camera steering; Shift brakes; release flings up and forward with momentum. Holding past the timeout snaps with negligible launch.")
+                    .add("range", TYPE_VALUE, "Ray / virtual pivot reach.")
+                    .add("min_pivot_dist", TYPE_VALUE, "Minimum ideal pivot distance.")
+                    .add("max_pivot_dist", TYPE_VALUE, "Maximum ideal pivot distance.")
+                    .add("elev_bias", TYPE_VALUE, "Extra steepness when placing the ideal pivot.")
                     .add("start_slack", TYPE_VALUE, "Extra initial rope length so the first frames drop into the arc.")
                     .add("takeoff_boost", TYPE_VALUE, "Upward hop when attaching from the ground.")
                     .add("pump_accel", TYPE_VALUE, "Tangential accel from movement keys.")

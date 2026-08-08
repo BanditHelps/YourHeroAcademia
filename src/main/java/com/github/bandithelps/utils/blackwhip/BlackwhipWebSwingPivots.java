@@ -5,21 +5,32 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Resolves PS5-style web-swing pivots: prefer a real surface ahead-and-above, otherwise place a
- * virtual air point on a forward-up diagonal (never straight overhead).
+ * Resolves web-swing pivots using Palladium 26.1 {@code SwingingFlightType.Controller#findNewAnchor}
+ * logic: place an ideal forward-up point from swing level + radius, fan raycasts for a real block
+ * near that ideal, and fall back to the ideal as a virtual air pivot when nothing solid is hit.
  */
 public final class BlackwhipWebSwingPivots {
 
-    /** Preferred elevation above the horizon for virtual pivots (degrees). */
-    private static final double TARGET_ELEV_DEG = 32.0;
-    /** Clamp look pitch contribution so aim cannot go straight up. */
-    private static final double MAX_AIM_PITCH_DEG = 48.0;
-    private static final double MIN_AIM_PITCH_DEG = 22.0;
+    /**
+     * Unit-direction samples matching Palladium's elevation fan (~45° / 55° / 65° / 75°).
+     * Pair index {@code i} uses {@link #UP_COMP}[i] as Y and {@link #HORIZ_COMP}[i] as XZ scale.
+     */
+    private static final double[] UP_COMP = {0.707d, 0.819d, 0.906d, 0.966d};
+    private static final double[] HORIZ_COMP = {0.707d, 0.574d, 0.423d, 0.259d};
+    /** Yaw offsets in 20° steps: 0°, ±20°, ±40° (Palladium order). */
+    private static final int[] YAW_UNITS = {0, -1, 1, -2, 2};
+    private static final double YAW_STEP_DEG = 20.0d;
+    /** Vertical weight when scoring block hits vs the ideal pivot (Palladium uses 5×). */
+    private static final double VERT_SCORE_WEIGHT = 5.0d;
+    private static final double MIN_COS_ELEV = 0.65d;
+    private static final double MAX_COS_ELEV = 0.98d;
+    private static final double GROUND_CLEARANCE = 2.5d;
 
     public record Pivot(Vec3 point, BlockPos support, boolean virtual) {
     }
@@ -28,138 +39,146 @@ public final class BlackwhipWebSwingPivots {
     }
 
     /**
-     * @param range      max ray / virtual reach
-     * @param minDist    minimum virtual pivot distance
-     * @param maxDist    maximum virtual pivot distance (clamped by range)
-     * @param elevBias   extra elevation blend (0–1) toward steeper forward-up aim
+     * @param range    max ray / virtual reach
+     * @param minDist  minimum ideal pivot distance
+     * @param maxDist  maximum ideal pivot distance (clamped by range)
+     * @param elevBias extra elevation toward steeper ideal aim (0–1); mirrors Palladium's
+     *                 near-ground steepening slightly when already low
      */
     public static Pivot resolve(ServerLevel level, Player player, double range,
                                 double minDist, double maxDist, double elevBias) {
         Vec3 eye = player.getEyePosition();
-        Vec3 look = player.getLookAngle();
-        if (look.lengthSqr() < 1.0e-6) {
-            look = new Vec3(0.0, 0.0, 1.0);
-        } else {
-            look = look.normalize();
+        Vec3 forward = horizontal(player.getLookAngle());
+        if (forward.lengthSqr() < 1.0e-4) {
+            forward = horizontal(player.getDeltaMovement());
         }
-
-        Pivot surface = findBestSurface(level, player, eye, look, range);
-        if (surface != null) {
-            return surface;
+        if (forward.lengthSqr() < 1.0e-4) {
+            // No usable heading — still allow a virtual pivot ahead of body yaw.
+            float yawRad = player.getYRot() * ((float) Math.PI / 180.0f);
+            forward = new Vec3(-Mth.sin(yawRad), 0.0, Mth.cos(yawRad));
         }
-        return virtualPivot(player, eye, look, range, minDist, maxDist, elevBias);
-    }
+        forward = forward.normalize();
 
-    private static Pivot findBestSurface(ServerLevel level, Player player, Vec3 eye, Vec3 look, double range) {
-        Vec3 flatLook = flatNormalize(look);
-        Vec3 up = new Vec3(0.0, 1.0, 0.0);
-        Vec3 right = flatLook.cross(up).normalize();
-
-        // Prefer forward-up samples; avoid near-vertical rays.
-        Vec3[] dirs = new Vec3[]{
-                aimAtPitch(flatLook, 28.0),
-                aimAtPitch(flatLook, 34.0),
-                aimAtPitch(flatLook, 24.0),
-                normalizeSafe(aimAtPitch(flatLook, 32.0).add(right.scale(0.22))),
-                normalizeSafe(aimAtPitch(flatLook, 32.0).add(right.scale(-0.22))),
-                normalizeSafe(aimAtPitch(flatLook, 38.0).add(right.scale(0.18))),
-                normalizeSafe(aimAtPitch(flatLook, 38.0).add(right.scale(-0.18))),
-                // Mild look blend only if the player is already aiming ahead.
-                look.y < 0.75 ? look : aimAtPitch(flatLook, 34.0)
-        };
-
-        double bodyY = player.getY() + player.getBbHeight() * 0.55;
-        Pivot best = null;
-        double bestScore = Double.NEGATIVE_INFINITY;
-
-        for (Vec3 dir : dirs) {
-            BlockHitResult hit = level.clip(new ClipContext(
-                    eye, eye.add(dir.scale(range)),
-                    ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
-            if (hit.getType() != HitResult.Type.BLOCK) {
-                continue;
-            }
-            Vec3 point = BlackwhipChainAnchors.surfaceAttachPoint(hit);
-            Vec3 toPoint = point.subtract(eye);
-            double forward = flatNormalize(toPoint).dot(flatLook);
-            // Reject underfoot, behind, or nearly straight overhead attachments.
-            if (forward < 0.35) {
-                continue;
-            }
-            if (point.y < player.getY() + 1.0) {
-                continue;
-            }
-            double horizDist = Math.sqrt(toPoint.x * toPoint.x + toPoint.z * toPoint.z);
-            if (horizDist < 3.5) {
-                continue;
-            }
-
-            double dist = eye.distanceTo(point);
-            double elevDeg = Math.toDegrees(Math.atan2(toPoint.y, Math.max(0.1, horizDist)));
-            double elevScore = 1.0 - Math.abs(elevDeg - TARGET_ELEV_DEG) / 45.0;
-            double heightBonus = Mth.clamp((point.y - bodyY) / 10.0, 0.0, 1.2);
-            double midRangeBonus = 1.0 - Math.abs(dist / range - 0.55);
-            double score = forward * 2.4 + elevScore * 1.8 + heightBonus + midRangeBonus;
-            if (score > bestScore) {
-                bestScore = score;
-                best = new Pivot(point, hit.getBlockPos(), false);
-            }
-        }
-        return best;
-    }
-
-    private static Pivot virtualPivot(Player player, Vec3 eye, Vec3 look, double range,
-                                      double minDist, double maxDist, double elevBias) {
+        // Blend travel heading so reattach continues the line of motion (YHA addition).
         Vec3 vel = player.getDeltaMovement();
         Vec3 flatVel = new Vec3(vel.x, 0.0, vel.z);
         double horizSpeed = flatVel.length();
-
-        Vec3 flatLook = flatNormalize(look);
-        // Blend travel heading so reattach continues the line of motion.
         if (horizSpeed > 0.08) {
-            Vec3 travel = flatVel.normalize();
-            flatLook = normalizeSafe(flatLook.scale(0.7).add(travel.scale(0.3)));
+            forward = normalizeSafe(forward.scale(0.7).add(flatVel.normalize().scale(0.3)));
         }
 
-        // Target a flatter forward-up diagonal; elevBias steepens slightly but stays shallow.
-        double pitch = Mth.clamp(TARGET_ELEV_DEG + elevBias * 8.0, MIN_AIM_PITCH_DEG, MAX_AIM_PITCH_DEG);
-        // If the player is looking down, still shoot ahead-up so ground takeoffs work.
-        if (look.y < -0.1) {
-            pitch = Math.max(pitch, 28.0);
-        }
-        Vec3 aim = aimAtPitch(flatLook, pitch);
+        double radius = Mth.lerp(Mth.clamp(horizSpeed / 1.8, 0.0, 1.0), minDist, Math.min(maxDist, range));
+        radius = Mth.clamp(radius, minDist, Math.min(maxDist, range));
 
-        double pivotDist = Mth.lerp(Mth.clamp(horizSpeed / 1.8, 0.0, 1.0), minDist, Math.min(maxDist, range));
-        pivotDist = Mth.clamp(pivotDist, minDist, Math.min(maxDist, range));
-
-        Vec3 pivot = eye.add(aim.scale(pivotDist));
-        // Keep a useful forward reach; do not collapse into an overhead point.
-        double minHoriz = Math.max(8.0, pivotDist * 0.7);
-        Vec3 flatOff = new Vec3(pivot.x - eye.x, 0.0, pivot.z - eye.z);
-        double horiz = flatOff.length();
-        if (horiz < minHoriz) {
-            Vec3 push = flatLook.scale(minHoriz);
-            pivot = new Vec3(eye.x + push.x, pivot.y, eye.z + push.z);
+        // First attach uses player Y as Palladium's swingLevel.
+        double swingLevel = player.getY();
+        Vec3 ideal = computeIdealPivot(level, player, eye, forward, radius, swingLevel, elevBias, range);
+        if (ideal.y <= player.getY() + 1.0) {
+            // Degenerate ideal — keep a usable forward-up virtual so deploy never no-ops.
+            return new Pivot(ideal, BlockPos.containing(ideal), true);
         }
-        double minPivotY = player.getY() + player.getBbHeight() + 1.25;
-        double maxPivotY = eye.y + pivotDist * Math.sin(Math.toRadians(MAX_AIM_PITCH_DEG));
-        pivot = new Vec3(pivot.x, Mth.clamp(pivot.y, minPivotY, maxPivotY), pivot.z);
-        return new Pivot(pivot, BlockPos.containing(pivot), true);
+
+        Pivot block = findBestBlockNearIdeal(level, player, eye, forward, radius, ideal, swingLevel);
+        if (block != null) {
+            return block;
+        }
+        return new Pivot(ideal, BlockPos.containing(ideal), true);
     }
 
-    private static Vec3 aimAtPitch(Vec3 flatForward, double pitchDeg) {
-        double rad = Math.toRadians(pitchDeg);
-        double c = Math.cos(rad);
-        double s = Math.sin(rad);
-        return normalizeSafe(new Vec3(flatForward.x * c, s, flatForward.z * c));
+    /**
+     * Palladium ideal air pivot: elevates with radius, steepens near the ground
+     * ({@code cosElev} clamped to 0.65–0.98), then clamps Y by reach.
+     */
+    private static Vec3 computeIdealPivot(ServerLevel level, Player player, Vec3 eye, Vec3 forward,
+                                          double radius, double swingLevel, double elevBias, double range) {
+        int gx = Mth.floor(player.getX());
+        int gz = Mth.floor(player.getZ());
+        double groundY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, gx, gz);
+        double heightAboveGround = swingLevel - groundY - GROUND_CLEARANCE;
+        double t = 1.0 - heightAboveGround / Math.max(1.0e-3, radius);
+        double cosElev = Mth.clamp(Math.max(MIN_COS_ELEV, t), MIN_COS_ELEV, MAX_COS_ELEV);
+        // elevBias steepens slightly within Palladium's clamp band.
+        cosElev = Mth.clamp(cosElev + Mth.clamp(elevBias, 0.0, 1.0) * 0.06, MIN_COS_ELEV, MAX_COS_ELEV);
+        double sinElev = Math.sqrt(Math.max(0.0, 1.0 - cosElev * cosElev));
+
+        double idealY = swingLevel + player.getEyeHeight() + radius * cosElev;
+        Vec3 ideal = new Vec3(
+                eye.x + forward.x * radius * sinElev,
+                idealY,
+                eye.z + forward.z * radius * sinElev);
+        return clampReachHeight(eye, ideal, range);
     }
 
-    private static Vec3 flatNormalize(Vec3 v) {
-        Vec3 flat = new Vec3(v.x, 0.0, v.z);
-        if (flat.lengthSqr() < 1.0e-6) {
-            return new Vec3(0.0, 0.0, 1.0);
+    /**
+     * Fan of rays at Palladium elevations/yaws; pick the block hit closest to {@code ideal}
+     * using score = horizDist + 5 * |dy|.
+     */
+    private static Pivot findBestBlockNearIdeal(ServerLevel level, Player player, Vec3 eye,
+                                               Vec3 forward, double radius, Vec3 ideal,
+                                               double swingLevel) {
+        Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
+        double minHitY = swingLevel + radius * 0.5;
+
+        Vec3 bestPoint = null;
+        BlockPos bestSupport = null;
+        double bestScore = Double.POSITIVE_INFINITY;
+
+        for (int i = 0; i < UP_COMP.length; i++) {
+            double up = UP_COMP[i];
+            double horiz = HORIZ_COMP[i];
+            for (int yawUnit : YAW_UNITS) {
+                double yawRad = Math.toRadians(yawUnit * YAW_STEP_DEG);
+                Vec3 dirHoriz = forward.scale(Math.cos(yawRad)).add(right.scale(Math.sin(yawRad)));
+                Vec3 dir = normalizeSafe(dirHoriz.scale(horiz).add(0.0, up, 0.0));
+
+                Vec3 target = clampReachHeight(eye, eye.add(dir.scale(radius)), radius);
+                if (target.y <= minHitY) {
+                    continue;
+                }
+
+                BlockHitResult hit = level.clip(new ClipContext(
+                        eye, target,
+                        ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+                if (hit.getType() != HitResult.Type.BLOCK) {
+                    continue;
+                }
+
+                Vec3 loc = hit.getLocation();
+                if (loc.y <= minHitY) {
+                    continue;
+                }
+
+                double dx = loc.x - ideal.x;
+                double dz = loc.z - ideal.z;
+                double horizDist = Math.sqrt(dx * dx + dz * dz);
+                double vertDist = Math.abs(loc.y - ideal.y);
+                double score = horizDist + vertDist * VERT_SCORE_WEIGHT;
+                if (score < bestScore) {
+                    bestScore = score;
+                    // Face-nudge so the chain tip sits on the surface (YHA latch convention).
+                    bestPoint = BlackwhipChainAnchors.surfaceAttachPoint(hit);
+                    bestSupport = hit.getBlockPos();
+                }
+            }
         }
-        return flat.normalize();
+
+        if (bestPoint == null || bestSupport == null) {
+            return null;
+        }
+        return new Pivot(bestPoint, bestSupport, false);
+    }
+
+    /** Soft max-height clamp analogous to Palladium's absolute max, using eye + reach. */
+    private static Vec3 clampReachHeight(Vec3 eye, Vec3 point, double range) {
+        double maxY = eye.y + range;
+        if (point.y <= maxY) {
+            return point;
+        }
+        return new Vec3(point.x, maxY, point.z);
+    }
+
+    private static Vec3 horizontal(Vec3 v) {
+        return new Vec3(v.x, 0.0, v.z);
     }
 
     private static Vec3 normalizeSafe(Vec3 v) {

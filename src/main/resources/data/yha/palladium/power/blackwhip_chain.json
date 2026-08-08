@@ -194,7 +194,7 @@
       "max_ground_height": 12,
       "properties": {
         "title": "Web Swing",
-        "description": "Swing without aiming at a block. Whips prefer nearby surfaces, or latch to an air pivot when close to the ground. Steer with WASD and the camera, Shift brakes, Jump hops. Release near the top of the arc to fling forward — holding too long snaps the whip with almost no launch.",
+        "description": "Swing without aiming at a block. Whips fan-search for a solid latch ahead and above (Palladium-style), or fall back to an air pivot near the ground. Steer with WASD and the camera, Shift brakes, Jump hops. Release near the top of the arc to fling forward — holding too long snaps the whip with almost no launch.",
         "icon": "minecraft:cobweb",
         "list_index": 5,
         "hidden_in_gui": false,
@@ -240,7 +240,7 @@
         "title": "Whip Zip",
         "description": "Shoot a chain at a surface and zip toward it with a quick burst of speed. Hold Shift and use Charge Zip for a rubber-band launch.",
         "icon": "minecraft:tripwire_hook",
-        "list_index": 3,
+        "list_index": 6,
         "hidden_in_gui": false,
         "gui_position": [1, -1],
         "activation_stamina": 12
