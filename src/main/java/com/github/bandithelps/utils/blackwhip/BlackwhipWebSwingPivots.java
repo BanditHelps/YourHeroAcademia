@@ -16,10 +16,10 @@ import net.minecraft.world.phys.Vec3;
 public final class BlackwhipWebSwingPivots {
 
     /** Preferred elevation above the horizon for virtual pivots (degrees). */
-    private static final double TARGET_ELEV_DEG = 42.0;
+    private static final double TARGET_ELEV_DEG = 32.0;
     /** Clamp look pitch contribution so aim cannot go straight up. */
-    private static final double MAX_AIM_PITCH_DEG = 58.0;
-    private static final double MIN_AIM_PITCH_DEG = 28.0;
+    private static final double MAX_AIM_PITCH_DEG = 48.0;
+    private static final double MIN_AIM_PITCH_DEG = 22.0;
 
     public record Pivot(Vec3 point, BlockPos support, boolean virtual) {
     }
@@ -57,15 +57,15 @@ public final class BlackwhipWebSwingPivots {
 
         // Prefer forward-up samples; avoid near-vertical rays.
         Vec3[] dirs = new Vec3[]{
-                aimAtPitch(flatLook, 38.0),
-                aimAtPitch(flatLook, 48.0),
-                aimAtPitch(flatLook, 32.0),
-                normalizeSafe(aimAtPitch(flatLook, 40.0).add(right.scale(0.22))),
-                normalizeSafe(aimAtPitch(flatLook, 40.0).add(right.scale(-0.22))),
-                normalizeSafe(aimAtPitch(flatLook, 50.0).add(right.scale(0.18))),
-                normalizeSafe(aimAtPitch(flatLook, 50.0).add(right.scale(-0.18))),
+                aimAtPitch(flatLook, 28.0),
+                aimAtPitch(flatLook, 34.0),
+                aimAtPitch(flatLook, 24.0),
+                normalizeSafe(aimAtPitch(flatLook, 32.0).add(right.scale(0.22))),
+                normalizeSafe(aimAtPitch(flatLook, 32.0).add(right.scale(-0.22))),
+                normalizeSafe(aimAtPitch(flatLook, 38.0).add(right.scale(0.18))),
+                normalizeSafe(aimAtPitch(flatLook, 38.0).add(right.scale(-0.18))),
                 // Mild look blend only if the player is already aiming ahead.
-                look.y < 0.85 ? look : aimAtPitch(flatLook, 45.0)
+                look.y < 0.75 ? look : aimAtPitch(flatLook, 34.0)
         };
 
         double bodyY = player.getY() + player.getBbHeight() * 0.55;
@@ -121,11 +121,11 @@ public final class BlackwhipWebSwingPivots {
             flatLook = normalizeSafe(flatLook.scale(0.7).add(travel.scale(0.3)));
         }
 
-        // Target a forward-up diagonal; elevBias steepens slightly but never to vertical.
-        double pitch = Mth.clamp(TARGET_ELEV_DEG + elevBias * 12.0, MIN_AIM_PITCH_DEG, MAX_AIM_PITCH_DEG);
+        // Target a flatter forward-up diagonal; elevBias steepens slightly but stays shallow.
+        double pitch = Mth.clamp(TARGET_ELEV_DEG + elevBias * 8.0, MIN_AIM_PITCH_DEG, MAX_AIM_PITCH_DEG);
         // If the player is looking down, still shoot ahead-up so ground takeoffs work.
         if (look.y < -0.1) {
-            pitch = Math.max(pitch, 36.0);
+            pitch = Math.max(pitch, 28.0);
         }
         Vec3 aim = aimAtPitch(flatLook, pitch);
 
@@ -134,14 +134,14 @@ public final class BlackwhipWebSwingPivots {
 
         Vec3 pivot = eye.add(aim.scale(pivotDist));
         // Keep a useful forward reach; do not collapse into an overhead point.
-        double minHoriz = Math.max(6.0, pivotDist * 0.55);
+        double minHoriz = Math.max(8.0, pivotDist * 0.7);
         Vec3 flatOff = new Vec3(pivot.x - eye.x, 0.0, pivot.z - eye.z);
         double horiz = flatOff.length();
         if (horiz < minHoriz) {
             Vec3 push = flatLook.scale(minHoriz);
             pivot = new Vec3(eye.x + push.x, pivot.y, eye.z + push.z);
         }
-        double minPivotY = player.getY() + player.getBbHeight() + 2.0;
+        double minPivotY = player.getY() + player.getBbHeight() + 1.25;
         double maxPivotY = eye.y + pivotDist * Math.sin(Math.toRadians(MAX_AIM_PITCH_DEG));
         pivot = new Vec3(pivot.x, Mth.clamp(pivot.y, minPivotY, maxPivotY), pivot.z);
         return new Pivot(pivot, BlockPos.containing(pivot), true);

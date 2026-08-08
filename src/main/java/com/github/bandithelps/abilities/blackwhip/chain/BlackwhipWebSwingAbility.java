@@ -48,7 +48,7 @@ public class BlackwhipWebSwingAbility extends Ability {
     private static final float BRAKE_DAMP = 0.88f;
     private static final float QF_PUMP_BONUS = 0.012f;
     private static final float QF_SPEED_BONUS = 0.14f;
-    private static final float PERFECT_RELEASE_BONUS = 0.35f;
+    private static final float PERFECT_RELEASE_BONUS = 0.28f;
     private static final float THICKNESS = 0.85f;
     private static final int SEGMENT_COUNT = 10;
     private static final float LINK_LENGTH = 0.9f;
@@ -90,16 +90,16 @@ public class BlackwhipWebSwingAbility extends Ability {
                     Value.CODEC.optionalFieldOf("range", new StaticValue(32.0f)).forGetter((ab) -> ab.range),
                     Value.CODEC.optionalFieldOf("min_pivot_dist", new StaticValue(14.0f)).forGetter((ab) -> ab.minPivotDist),
                     Value.CODEC.optionalFieldOf("max_pivot_dist", new StaticValue(28.0f)).forGetter((ab) -> ab.maxPivotDist),
-                    Value.CODEC.optionalFieldOf("elev_bias", new StaticValue(0.35f)).forGetter((ab) -> ab.elevBias),
+                    Value.CODEC.optionalFieldOf("elev_bias", new StaticValue(0.28f)).forGetter((ab) -> ab.elevBias),
                     Value.CODEC.optionalFieldOf("start_slack", new StaticValue(0.85f)).forGetter((ab) -> ab.startSlack),
-                    Value.CODEC.optionalFieldOf("takeoff_boost", new StaticValue(0.72f)).forGetter((ab) -> ab.takeoffBoost),
-                    Value.CODEC.optionalFieldOf("pump_accel", new StaticValue(0.078f)).forGetter((ab) -> ab.pumpAccel),
-                    Value.CODEC.optionalFieldOf("turn_assist", new StaticValue(0.052f)).forGetter((ab) -> ab.turnAssist),
+                    Value.CODEC.optionalFieldOf("takeoff_boost", new StaticValue(0.48f)).forGetter((ab) -> ab.takeoffBoost),
+                    Value.CODEC.optionalFieldOf("pump_accel", new StaticValue(0.09f)).forGetter((ab) -> ab.pumpAccel),
+                    Value.CODEC.optionalFieldOf("turn_assist", new StaticValue(0.058f)).forGetter((ab) -> ab.turnAssist),
                     Value.CODEC.optionalFieldOf("auto_reel_rate", new StaticValue(0.1f)).forGetter((ab) -> ab.autoReelRate),
-                    Value.CODEC.optionalFieldOf("max_speed", new StaticValue(3.5f)).forGetter((ab) -> ab.maxSpeed),
-                    Value.CODEC.optionalFieldOf("release_forward", new StaticValue(0.55f)).forGetter((ab) -> ab.releaseForward),
-                    Value.CODEC.optionalFieldOf("release_up", new StaticValue(0.62f)).forGetter((ab) -> ab.releaseUp),
-                    Value.CODEC.optionalFieldOf("release_speed_scale", new StaticValue(0.32f)).forGetter((ab) -> ab.releaseSpeedScale),
+                    Value.CODEC.optionalFieldOf("max_speed", new StaticValue(3.8f)).forGetter((ab) -> ab.maxSpeed),
+                    Value.CODEC.optionalFieldOf("release_forward", new StaticValue(0.78f)).forGetter((ab) -> ab.releaseForward),
+                    Value.CODEC.optionalFieldOf("release_up", new StaticValue(0.38f)).forGetter((ab) -> ab.releaseUp),
+                    Value.CODEC.optionalFieldOf("release_speed_scale", new StaticValue(0.4f)).forGetter((ab) -> ab.releaseSpeedScale),
                     propertiesCodec(),
                     stateCodec(),
                     energyBarUsagesCodec()).apply(instance, BlackwhipWebSwingAbility::new));
@@ -205,9 +205,10 @@ public class BlackwhipWebSwingAbility extends Ability {
                 flat = new Vec3(0.0, 0.0, 1.0);
             }
             Vec3 toPivot = pivot.point().subtract(center);
-            Vec3 launch = flat.scale(0.55).add(0.0, Math.max(0.55, hop), 0.0);
+            Vec3 launch = flat.scale(0.85).add(0.0, Math.max(0.38, hop * 0.7), 0.0);
             if (toPivot.lengthSqr() > 1.0e-4) {
-                launch = launch.add(toPivot.normalize().scale(0.35));
+                Vec3 toward = toPivot.normalize();
+                launch = launch.add(toward.x * 0.28, toward.y * 0.18, toward.z * 0.28);
             }
             player.setDeltaMovement(launch);
             player.hurtMarked = true;
@@ -312,43 +313,47 @@ public class BlackwhipWebSwingAbility extends Ability {
         if (tSpeed > 0.12) {
             launchDir = tangential.scale(1.0 / tSpeed);
         } else {
-            Vec3 wish = flatLook.add(0.0, 0.55, 0.0);
+            Vec3 wish = flatLook.add(0.0, 0.28, 0.0);
             Vec3 projected = wish.subtract(radial.scale(wish.dot(radial)));
-            launchDir = projected.lengthSqr() > 1.0e-4 ? projected.normalize() : flatLook.add(0.0, 0.4, 0.0).normalize();
+            launchDir = projected.lengthSqr() > 1.0e-4 ? projected.normalize() : flatLook.add(0.0, 0.22, 0.0).normalize();
         }
 
-        // If the tangent is aiming downward, flip/bias it into a forward-up exit.
-        if (launchDir.y < 0.12) {
-            launchDir = new Vec3(launchDir.x, Math.max(0.28, -launchDir.y * 0.35 + 0.28), launchDir.z);
-            // Keep it aligned with look when possible so you fling where you're swinging/facing.
-            launchDir = launchDir.add(flatLook.scale(0.45)).add(0.0, 0.2, 0.0);
-            if (launchDir.lengthSqr() > 1.0e-6) {
-                launchDir = launchDir.normalize();
-            }
+        // Flatten launch: prefer horizontal travel with a light upward exit.
+        launchDir = new Vec3(launchDir.x, launchDir.y * 0.55, launchDir.z);
+        launchDir = launchDir.add(flatLook.scale(0.65)).add(0.0, 0.12, 0.0);
+        if (launchDir.y < 0.08) {
+            launchDir = new Vec3(launchDir.x, 0.08, launchDir.z);
+        } else if (launchDir.y > 0.42) {
+            launchDir = new Vec3(launchDir.x, 0.42, launchDir.z);
+        }
+        if (launchDir.lengthSqr() > 1.0e-6) {
+            launchDir = launchDir.normalize();
         }
 
         double speed = Math.max(velocity.length(), tSpeed);
-        double boost = session.releaseForward + speed * session.releaseSpeedScale * 1.35;
-        // Carry most of the swing speed along the launch dir, then add the release kick.
-        double carry = Math.max(speed, 0.55);
+        double boost = session.releaseForward + speed * session.releaseSpeedScale * 1.65;
+        // Carry swing speed mostly horizontally along the launch dir.
+        double carry = Math.max(speed, 0.7);
         Vec3 fling = launchDir.scale(carry + boost);
 
-        double up = session.releaseUp + speed * session.releaseSpeedScale * 0.85;
+        double up = session.releaseUp * 0.7 + speed * session.releaseSpeedScale * 0.4;
         if (velocity.y > 0.0) {
-            up += Math.min(0.45, velocity.y * 0.65);
+            up += Math.min(0.22, velocity.y * 0.35);
         }
-        // Perfect window: mid arc, moving up / out.
+        // Perfect window: mid arc, moving out — bonus goes mostly forward.
         double elev = radial.y;
-        boolean inWindow = elev > 0.12 && elev < 0.82 && launchDir.y > 0.05 && speed > 0.35;
+        boolean inWindow = elev > 0.08 && elev < 0.75 && launchDir.y > 0.02 && speed > 0.35;
         if (inWindow) {
-            up += PERFECT_RELEASE_BONUS;
-            fling = fling.add(launchDir.scale(PERFECT_RELEASE_BONUS * 0.65));
+            up += PERFECT_RELEASE_BONUS * 0.45;
+            fling = fling.add(flatLook.scale(PERFECT_RELEASE_BONUS * 0.9));
+            fling = fling.add(launchDir.scale(PERFECT_RELEASE_BONUS * 0.35));
         }
 
-        fling = new Vec3(fling.x, Math.max(fling.y, up * 0.85) + up * 0.35, fling.z);
-        // Never release into a downward pop — that was the "drop" feel.
-        if (fling.y < session.releaseUp * 0.75) {
-            fling = new Vec3(fling.x, session.releaseUp * 0.75, fling.z);
+        fling = new Vec3(fling.x, Math.max(fling.y * 0.85, up * 0.55) + up * 0.2, fling.z);
+        // Soft floor so release never drops, but stays flatter than before.
+        double minUp = session.releaseUp * 0.45;
+        if (fling.y < minUp) {
+            fling = new Vec3(fling.x, minUp, fling.z);
         }
         return fling;
     }

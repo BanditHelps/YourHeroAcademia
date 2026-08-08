@@ -27,9 +27,9 @@ public final class BlackwhipWebSwingController {
     private static final double BOTTOM_ENERGY = 0.018;
     private static final double JUMP_HOP = 0.16;
     private static final double BRAKE_LENGTHEN = 0.28;
-    private static final double GROUND_LIFT = 0.28;
-    private static final double GROUND_FORWARD = 0.22;
-    private static final double PIVOT_PULL = 0.10;
+    private static final double GROUND_LIFT = 0.20;
+    private static final double GROUND_FORWARD = 0.34;
+    private static final double PIVOT_PULL = 0.08;
 
     private BlackwhipWebSwingController() {
     }
@@ -165,19 +165,19 @@ public final class BlackwhipWebSwingController {
             flatFwd = flatFwd.normalize();
         }
 
-        // Swing-out direction: perpendicular to rope in the look plane, biased upward.
-        Vec3 wish = flatFwd.add(0.0, 0.65, 0.0).add(radial.scale(0.25));
+        // Swing-out direction: mostly forward, light upward bias.
+        Vec3 wish = flatFwd.add(0.0, 0.35, 0.0).add(radial.scale(0.15));
         Vec3 tangent = projectOffRadial(wish, radial);
         if (tangent.lengthSqr() < 1.0e-4) {
-            tangent = new Vec3(flatFwd.x, 0.55, flatFwd.z);
+            tangent = new Vec3(flatFwd.x, 0.28, flatFwd.z);
         }
         tangent = tangent.normalize();
 
-        double lift = Math.max(GROUND_LIFT, radial.y * 0.35 + 0.18);
+        double lift = Math.max(GROUND_LIFT, radial.y * 0.22 + 0.12);
         velocity = new Vec3(
-                velocity.x + tangent.x * GROUND_FORWARD + flatFwd.x * 0.08,
+                velocity.x + tangent.x * GROUND_FORWARD + flatFwd.x * 0.16,
                 Math.max(velocity.y, lift),
-                velocity.z + tangent.z * GROUND_FORWARD + flatFwd.z * 0.08);
+                velocity.z + tangent.z * GROUND_FORWARD + flatFwd.z * 0.16);
 
         // Slight pull toward a forward-up pivot to leave the ground.
         if (anchor.y > center.y + 1.0) {
