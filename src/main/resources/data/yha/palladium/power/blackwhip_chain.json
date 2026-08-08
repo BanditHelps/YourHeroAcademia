@@ -194,7 +194,7 @@
       "max_ground_height": 12,
       "properties": {
         "title": "Web Swing",
-        "description": "Swing without aiming at a block. Whips fan-search for a solid latch ahead and above (Palladium-style), or fall back to an air pivot near the ground. Steer with WASD and the camera, Shift brakes, Jump hops. Release near the top of the arc to fling forward — holding too long snaps the whip with almost no launch.",
+        "description": "Swing without aiming at a block when solid terrain is nearby below or beside you. Whips fan-search for a solid latch ahead and above (Palladium-style), or fall back to an air pivot. Steer with WASD and the camera, Shift brakes, Jump hops. Release near the top of the arc to fling forward — holding too long snaps the whip with almost no launch.",
         "icon": "minecraft:cobweb",
         "list_index": 5,
         "hidden_in_gui": false,
@@ -228,11 +228,11 @@
       "type": "yha:blackwhip_chain_zip",
       "range": {
         "type": "palladium:molang_float",
-        "molang": "22 + yha.quirk_factor() * 2"
+        "molang": "32 + yha.quirk_factor() * 2"
       },
       "simple_pull_power": {
         "type": "palladium:molang_float",
-        "molang": "1.85 + yha.quirk_factor() * 0.08"
+        "molang": "2.85 + yha.quirk_factor() * 0.08"
       },
       "qf_pull_bonus": 0.05,
       "simple_visual_ticks": 10,

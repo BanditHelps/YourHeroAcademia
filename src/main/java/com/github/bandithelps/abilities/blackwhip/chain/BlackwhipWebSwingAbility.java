@@ -190,8 +190,8 @@ public class BlackwhipWebSwingAbility extends Ability {
                 BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,
                 BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
 
-        float maxHeight = Math.max(0.5f, this.maxGroundHeight.getAsFloat(context));
-        if (!isWithinGroundHeight(player, level, maxHeight)) {
+        float maxProximity = Math.max(0.5f, this.maxGroundHeight.getAsFloat(context));
+        if (!isNearSwingSupport(player, level, maxProximity)) {
             level.playSound(null, player.blockPosition(), SoundEvents.SNOWBALL_THROW, SoundSource.PLAYERS, 0.45f, 0.55f);
             return;
         }
@@ -279,25 +279,43 @@ public class BlackwhipWebSwingAbility extends Ability {
     }
 
     /**
-     * True when the player is on the ground or standing no more than {@code maxHeight} blocks
-     * above solid terrain (downward collider clip from the feet).
+     * True when the player is on the ground, or solid terrain is within {@code maxDist} blocks
+     * either below the feet or beside the body (cardinals + diagonals). Lets you start a swing
+     * next to a cliff/building even when open air is below.
      */
-    private static boolean isWithinGroundHeight(ServerPlayer player, ServerLevel level, float maxHeight) {
+    private static boolean isNearSwingSupport(ServerPlayer player, ServerLevel level, float maxDist) {
         if (player.onGround()) {
             return true;
         }
         Vec3 feet = player.position();
+        if (hasSolidWithin(level, player, feet, feet.subtract(0.0, maxDist, 0.0), maxDist)) {
+            return true;
+        }
+
+        Vec3 mid = feet.add(0.0, player.getBbHeight() * 0.55, 0.0);
+        // Horizontal probes — enough coverage for walls/mountain sides without a dense sphere.
+        double inv = 0.70710678118;
+        double[][] horiz = {
+                {1.0, 0.0}, {-1.0, 0.0}, {0.0, 1.0}, {0.0, -1.0},
+                {inv, inv}, {inv, -inv}, {-inv, inv}, {-inv, -inv}
+        };
+        for (double[] d : horiz) {
+            Vec3 end = mid.add(d[0] * maxDist, 0.0, d[1] * maxDist);
+            if (hasSolidWithin(level, player, mid, end, maxDist)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasSolidWithin(ServerLevel level, ServerPlayer player,
+                                          Vec3 from, Vec3 to, float maxDist) {
         BlockHitResult hit = level.clip(new ClipContext(
-                feet,
-                feet.subtract(0.0, maxHeight, 0.0),
-                ClipContext.Block.COLLIDER,
-                ClipContext.Fluid.NONE,
-                player));
-        if (hit.getType() == HitResult.Type.MISS) {
+                from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+        if (hit.getType() != HitResult.Type.BLOCK) {
             return false;
         }
-        double heightAbove = feet.y - hit.getLocation().y;
-        return heightAbove <= maxHeight + 1.0e-3;
+        return from.distanceTo(hit.getLocation()) <= maxDist + 1.0e-3;
     }
 
     @Override
@@ -563,7 +581,7 @@ public class BlackwhipWebSwingAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipWebSwingAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("PS5-style web swing. Always attaches when within max ground height: Palladium-style elevation/yaw fan prefers a real block near the ideal pivot, else latches a virtual air point. Hold to swing with WASD/camera steering; Shift brakes; release flings up and forward with momentum. Holding past the timeout snaps with negligible launch.")
+            builder.setDescription("PS5-style web swing. Starts when solid terrain is nearby below or beside you (max_ground_height). Palladium-style elevation/yaw fan prefers a real block near the ideal pivot, else latches a virtual air point. Hold to swing with WASD/camera steering; Shift brakes; release flings up and forward with momentum. Holding past the timeout snaps with negligible launch.")
                     .add("range", TYPE_VALUE, "Ray / virtual pivot reach.")
                     .add("min_pivot_dist", TYPE_VALUE, "Minimum ideal pivot distance.")
                     .add("max_pivot_dist", TYPE_VALUE, "Maximum ideal pivot distance.")
@@ -577,7 +595,7 @@ public class BlackwhipWebSwingAbility extends Ability {
                     .add("release_forward", TYPE_VALUE, "Base forward kick on release.")
                     .add("release_up", TYPE_VALUE, "Base upward kick on release.")
                     .add("release_speed_scale", TYPE_VALUE, "Extra release kick scaled by swing speed.")
-                    .add("max_ground_height", TYPE_VALUE, "Max blocks above solid ground allowed to start a swing.")
+                    .add("max_ground_height", TYPE_VALUE, "Max blocks to solid support below or beside the player required to start a swing.")
                     .addExampleObject(new BlackwhipWebSwingAbility(
                             new StaticValue(32.0f), new StaticValue(14.0f), new StaticValue(28.0f), new StaticValue(0.4f),
                             new StaticValue(0.85f), new StaticValue(0.72f), new StaticValue(0.078f), new StaticValue(0.052f),
