@@ -239,7 +239,7 @@
       },
       "properties": {
         "title": "Whip Zip",
-        "description": "Zip toward the block or enemy you're looking at. Surfaces give a quick directional burst. On a living target, hold to reel in (speeds up as you go) until you release or slam into them for damage and knockback. Hold Shift and use Charge Zip for a rubber-band launch.",
+        "description": "Zip toward the block or enemy you're looking at. Surfaces give a quick directional burst. On a living target, hold to reel in (speeds up as you go) until you release or slam into them for damage and knockback. If they're already tagged, the existing whip yanks you both together for the kick without spawning a new tether. Hold Shift and use Charge Zip for a rubber-band launch.",
         "icon": "minecraft:tripwire_hook",
         "list_index": 6,
         "hidden_in_gui": false,

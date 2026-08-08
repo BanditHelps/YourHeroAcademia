@@ -4,6 +4,7 @@ import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainHelper;
+import com.github.bandithelps.utils.blackwhip.BlackwhipChainTagStore;
 import com.github.bandithelps.utils.blackwhip.BlackwhipTargeting;
 import com.github.bandithelps.utils.quirk.QuirkFactorUtil;
 import com.mojang.serialization.MapCodec;
@@ -47,6 +48,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Whip Zip: look-targeted directional burst toward a block, or a held reel into a living entity
  * (speeds up while held, ends on release or contact) with damage + knockback.
  * <p>
+ * If the target is already chain-tagged, no new whip is spawned — player and mob are pulled
+ * together along the existing tether for the slam, and the tag is left intact.
+ * <p>
  * Block-burst echoes and entity reels are driven from {@link #tickSessions}. Entity reels also end
  * from {@link #lastTick} when the held key is released.
  */
@@ -67,10 +71,15 @@ public class BlackwhipChainZipAbility extends Ability {
     private static final float REEL_SPEED_START = 0.7f;
     /** Peak pull speed after ramping (still braked near contact). */
     private static final float REEL_SPEED_PEAK = 1.85f;
+    /** Extra closing-rate multiplier when yanking an already-tagged mob. */
+    private static final float TAGGED_CLOSE_MULT = 1.45f;
     /** Stop and settle once within this distance of the target. */
-    private static final float CONTACT_DIST = 2.0f;
+    private static final float CONTACT_DIST = 1.25f;
+    /** Tagged tugs settle even closer so the kick connects. */
+    private static final float TAGGED_CONTACT_DIST = 0.95f;
     /** Begin braking inside this range so you don't fly through. */
     private static final float BRAKE_DIST = 4.0f;
+    private static final float TAGGED_BRAKE_DIST = 2.5f;
     private static final float SWEEP_RADIUS = 0.75f;
     /** Residual speed left after a successful slam (kills orbit/overshoot). */
     private static final float HIT_STOP_SCALE = 0.08f;
@@ -104,6 +113,10 @@ public class BlackwhipChainZipAbility extends Ability {
         int targetId = -1;
         float damage;
         float reelSpeedPeak;
+        /**
+         * True when reeling an already-tagged mob: no new chain, mutual pull, never tear the tag.
+         */
+        boolean reuseTag;
         final Set<Integer> damagedIds = new HashSet<>();
     }
 
@@ -201,11 +214,16 @@ public class BlackwhipChainZipAbility extends Ability {
 
     private void startEntityReel(ServerPlayer player, ServerLevel level, DataContext context,
                                  LivingEntity target, double range, float power) {
-        BlackwhipChainEntity chain = BlackwhipChainHelper.spawnEntityLatchedChain(
-                player, target, BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,
-                SEGMENT_COUNT, LINK_LENGTH, CHAIN_HP, THICKNESS, range * 1.35, MAX_KEEP);
-        if (chain == null) {
-            return;
+        boolean alreadyTagged = BlackwhipChainTagStore.isTagged(player, target.getId());
+        int chainId = -1;
+        if (!alreadyTagged) {
+            BlackwhipChainEntity chain = BlackwhipChainHelper.spawnEntityLatchedChain(
+                    player, target, BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,
+                    SEGMENT_COUNT, LINK_LENGTH, CHAIN_HP, THICKNESS, range * 1.35, MAX_KEEP);
+            if (chain == null) {
+                return;
+            }
+            chainId = chain.getId();
         }
 
         float dmg = Math.max(0.0f, this.damage.getAsFloat(context));
@@ -213,24 +231,29 @@ public class BlackwhipChainZipAbility extends Ability {
 
         ZipSession session = new ZipSession();
         session.mode = ZipMode.ENTITY_REEL;
-        session.chainId = chain.getId();
+        session.chainId = chainId;
         session.targetId = target.getId();
         session.reelAge = 0;
         session.reelTicksLeft = MAX_REEL_TICKS;
         session.damage = dmg;
         session.reelSpeedPeak = reelPeak;
+        session.reuseTag = alreadyTagged;
         SESSIONS.put(player.getUUID(), session);
 
         // Point-blank: settle immediately instead of launching past.
         // Otherwise motion is driven only by tickSessions (avoids a double-pull on the start tick).
-        if (isInContact(player, target)) {
+        if (isInContact(player, target, alreadyTagged)) {
             tryDamageTarget(player, level, session, target, true);
             settleOnTarget(player);
             finishSession(player, level, session, true);
             SESSIONS.remove(player.getUUID());
         }
-        level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.PLAYERS, 0.55f, 1.45f);
-        level.playSound(null, player.blockPosition(), SoundEvents.LEAD_TIED, SoundSource.PLAYERS, 0.7f, 1.4f);
+        if (alreadyTagged) {
+            level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.PLAYERS, 0.65f, 1.55f);
+        } else {
+            level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.PLAYERS, 0.55f, 1.45f);
+            level.playSound(null, player.blockPosition(), SoundEvents.LEAD_TIED, SoundSource.PLAYERS, 0.7f, 1.4f);
+        }
     }
 
     @Override
@@ -284,7 +307,7 @@ public class BlackwhipChainZipAbility extends Ability {
             }
 
             // Contact first — never apply another pull tick once you're already in range.
-            if (isInContact(player, target) || willOvershoot(player, target, session)) {
+            if (isInContact(player, target, session.reuseTag) || willOvershoot(player, target, session)) {
                 tryDamageTarget(player, level, session, target, true);
                 settleOnTarget(player);
                 finishSession(player, level, session, true);
@@ -296,7 +319,7 @@ public class BlackwhipChainZipAbility extends Ability {
             tryDamageTarget(player, level, session, target, false);
             applySweepDamage(player, level, session);
 
-            if (isInContact(player, target)) {
+            if (isInContact(player, target, session.reuseTag)) {
                 tryDamageTarget(player, level, session, target, true);
                 settleOnTarget(player);
                 finishSession(player, level, session, true);
@@ -354,21 +377,45 @@ public class BlackwhipChainZipAbility extends Ability {
         float eased = ramp * ramp; // slow start, then pick up speed
         double cruising = Mth.lerp(eased, REEL_SPEED_START, session.reelSpeedPeak);
 
-        // Approach brake: slow inside BRAKE_DIST; never travel more than ~55% of remaining distance.
-        double approach = dist > BRAKE_DIST ? 1.0 : Mth.clamp(dist / BRAKE_DIST, 0.22, 1.0);
-        double speed = Math.min(cruising * approach, dist * 0.55);
+        float brakeDist = session.reuseTag ? TAGGED_BRAKE_DIST : BRAKE_DIST;
+        double maxStep = session.reuseTag ? dist * 0.78 : dist * 0.55;
+        // Approach brake: slow inside brake range; tagged tugs keep more of their step.
+        double approachMin = session.reuseTag ? 0.40 : 0.22;
+        double approach = dist > brakeDist ? 1.0 : Mth.clamp(dist / brakeDist, approachMin, 1.0);
+        double speed = Math.min(cruising * approach, maxStep);
+        if (session.reuseTag) {
+            speed *= TAGGED_CLOSE_MULT;
+        }
 
-        // Full 3D pull at `speed` along eye→target — no separate vertical cap (that made
-        // overhead slams crawl while horizontal reels felt fine).
-        Vec3 desired = dir.scale(speed);
         // Cancel one tick of vanilla gravity so upward / downward reels keep the same rate.
-        desired = desired.add(0.0, 0.08, 0.0);
-        applyVelocity(player, desired);
+        Vec3 gravityCancel = new Vec3(0.0, 0.08, 0.0);
+
+        if (session.reuseTag) {
+            // Existing tether: yank both ends together harder so they meet in the middle faster.
+            double half = speed * 0.5;
+            applyVelocity(player, dir.scale(half).add(gravityCancel));
+            Vec3 mobVel = dir.scale(-half);
+            if (!target.onGround()) {
+                mobVel = mobVel.add(gravityCancel);
+            }
+            target.setDeltaMovement(mobVel);
+            target.hurtMarked = true;
+            target.setOnGround(false);
+            return;
+        }
+
+        // Untagged: player flies the full path toward the mob on a new zip whip.
+        applyVelocity(player, dir.scale(speed).add(gravityCancel));
     }
 
     private static boolean isInContact(ServerPlayer player, LivingEntity target) {
-        return player.distanceTo(target) <= CONTACT_DIST
-                || player.getBoundingBox().inflate(0.35).intersects(target.getBoundingBox());
+        return isInContact(player, target, false);
+    }
+
+    private static boolean isInContact(ServerPlayer player, LivingEntity target, boolean taggedTug) {
+        float contact = taggedTug ? TAGGED_CONTACT_DIST : CONTACT_DIST;
+        return player.distanceTo(target) <= contact
+                || player.getBoundingBox().inflate(taggedTug ? 0.2 : 0.35).intersects(target.getBoundingBox());
     }
 
     /** True when this tick's pull would carry the player past / through the target. */
@@ -378,7 +425,11 @@ public class BlackwhipChainZipAbility extends Ability {
         double dist = center.distanceTo(goal);
         float ramp = Mth.clamp(session.reelAge / (float) REEL_RAMP_TICKS, 0.0f, 1.0f);
         double cruising = Mth.lerp(ramp * ramp, REEL_SPEED_START, session.reelSpeedPeak);
-        return dist <= CONTACT_DIST + cruising * 0.85;
+        if (session.reuseTag) {
+            cruising *= TAGGED_CLOSE_MULT;
+        }
+        float contact = session.reuseTag ? TAGGED_CONTACT_DIST : CONTACT_DIST;
+        return dist <= contact + cruising * 0.85;
     }
 
     /** Kill leftover reel momentum so a slam doesn't become a fly-by orbit. */
@@ -396,9 +447,7 @@ public class BlackwhipChainZipAbility extends Ability {
         if (session.damage <= 0.0f || session.damagedIds.contains(target.getId())) {
             return;
         }
-        boolean touching = forceContact
-                || player.distanceTo(target) <= CONTACT_DIST
-                || player.getBoundingBox().inflate(0.35).intersects(target.getBoundingBox());
+        boolean touching = forceContact || isInContact(player, target, session.reuseTag);
         if (!touching) {
             return;
         }
@@ -472,14 +521,18 @@ public class BlackwhipChainZipAbility extends Ability {
     }
 
     private static void finishSession(ServerPlayer player, ServerLevel level, ZipSession session, boolean hitLanded) {
-        if (session.chainId >= 0 && level.getEntity(session.chainId) instanceof BlackwhipChainEntity chain) {
-            chain.deactivate();
-        } else {
-            BlackwhipChainEntity.retractOwnedByPurpose(player.getId(), BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE);
+        // Tagged tug reuses the grab tether — never deactivate/retract it here.
+        if (!session.reuseTag) {
+            if (session.chainId >= 0 && level.getEntity(session.chainId) instanceof BlackwhipChainEntity chain) {
+                chain.deactivate();
+            } else {
+                BlackwhipChainEntity.retractOwnedByPurpose(player.getId(), BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE);
+            }
         }
         if (hitLanded) {
-            level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE,
-                    SoundSource.PLAYERS, 0.55f, 1.35f);
+            level.playSound(null, player.blockPosition(),
+                    session.reuseTag ? SoundEvents.PLAYER_ATTACK_KNOCKBACK : SoundEvents.FISHING_BOBBER_RETRIEVE,
+                    SoundSource.PLAYERS, 0.55f, session.reuseTag ? 1.05f : 1.35f);
         }
     }
 
@@ -516,7 +569,7 @@ public class BlackwhipChainZipAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainZipAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("Look-targeted whip zip. Bursts toward a surface, or hold to reel into a living entity (accelerates while held) until release or contact for damage + knockback. Pull power uses a single quirk-factor bonus (do not also scale simple_pull_power by QF in molang).")
+            builder.setDescription("Look-targeted whip zip. Bursts toward a surface, or hold to reel into a living entity (accelerates while held) until release or contact for damage + knockback. Already-tagged targets reuse the tether: both are yanked together and the tag stays. Pull power uses a single quirk-factor bonus (do not also scale simple_pull_power by QF in molang).")
                     .add("range", TYPE_VALUE, "Raycast reach for the zip target.")
                     .add("simple_pull_power", TYPE_VALUE, "Base launch velocity toward a block (no QF inside this value).")
                     .add("qf_pull_bonus", TYPE_VALUE, "Extra launch multiplier per quirk factor: power * (1 + qf * bonus).")
