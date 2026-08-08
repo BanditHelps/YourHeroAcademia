@@ -2,6 +2,7 @@ package com.github.bandithelps.abilities.blackwhip.chain;
 
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
+import com.github.bandithelps.network.BlackwhipChainZipAnimPayload;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainHelper;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainTagStore;
@@ -32,6 +33,7 @@ import net.threetag.palladium.power.ability.AbilityInstance;
 import net.threetag.palladium.power.ability.AbilityProperties;
 import net.threetag.palladium.power.ability.AbilitySerializer;
 import net.threetag.palladium.power.ability.AbilityStateManager;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.threetag.palladium.power.energybar.EnergyBarUsage;
 
 import java.util.Collections;
@@ -247,6 +249,8 @@ public class BlackwhipChainZipAbility extends Ability {
             settleOnTarget(player);
             finishSession(player, level, session, true);
             SESSIONS.remove(player.getUUID());
+        } else {
+            sendAnim(player, BlackwhipChainZipAnimPayload.reel());
         }
         if (alreadyTagged) {
             level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.PLAYERS, 0.65f, 1.55f);
@@ -529,11 +533,22 @@ public class BlackwhipChainZipAbility extends Ability {
                 BlackwhipChainEntity.retractOwnedByPurpose(player.getId(), BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE);
             }
         }
+        if (session.mode == ZipMode.ENTITY_REEL) {
+            if (hitLanded) {
+                sendAnim(player, BlackwhipChainZipAnimPayload.punch());
+            } else {
+                sendAnim(player, BlackwhipChainZipAnimPayload.none());
+            }
+        }
         if (hitLanded) {
             level.playSound(null, player.blockPosition(),
                     session.reuseTag ? SoundEvents.PLAYER_ATTACK_KNOCKBACK : SoundEvents.FISHING_BOBBER_RETRIEVE,
                     SoundSource.PLAYERS, 0.55f, session.reuseTag ? 1.05f : 1.35f);
         }
+    }
+
+    private static void sendAnim(ServerPlayer player, BlackwhipChainZipAnimPayload payload) {
+        PacketDistributor.sendToPlayer(player, payload);
     }
 
     private void clearSession(ServerPlayer player, ServerLevel level) {
