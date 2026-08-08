@@ -184,7 +184,7 @@
       "max_speed": 3.8,
       "release_forward": {
         "type": "palladium:molang_float",
-        "molang": "0.38"
+        "molang": "0.58"
       },
       "release_up": {
         "type": "palladium:molang_float",
