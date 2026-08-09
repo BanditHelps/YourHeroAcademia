@@ -5,11 +5,7 @@ import com.github.bandithelps.abilities.blockdisplayanims.BDBodyPartEmitterAbili
 import com.github.bandithelps.abilities.blockdisplayanims.BDDomeAbility;
 import com.github.bandithelps.abilities.blockdisplayanims.BDShockwaveAbility;
 import com.github.bandithelps.abilities.blockdisplayanims.BDTrailAbility;
-import com.github.bandithelps.abilities.bodydata.DisplayBodyBarAbility;
-import com.github.bandithelps.abilities.bodydata.BodyPartValueTickAbility;
-import com.github.bandithelps.abilities.bodydata.DamageBodyPartAbility;
-import com.github.bandithelps.abilities.bodydata.HealBodyPartAbility;
-import com.github.bandithelps.abilities.bodydata.SetBodyStringAbility;
+import com.github.bandithelps.abilities.bodydata.*;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipAoeTagAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipAuraAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipBlockGrabAbility;
@@ -49,24 +45,36 @@ import net.threetag.palladium.registry.PalladiumRegistryKeys;
 public class AbilityRegister {
 
     public static final DeferredRegister<AbilitySerializer<?>> ABILITIES;
-    public static final DeferredHolder<AbilitySerializer<?>, DashAbility.Serializer> DASH;
+
+    /*=========================
+     |    BODY DATA           |
+     =========================*/
     public static final DeferredHolder<AbilitySerializer<?>, DamageBodyPartAbility.Serializer> DAMAGE_BODY_PART;
     public static final DeferredHolder<AbilitySerializer<?>, HealBodyPartAbility.Serializer> HEAL_BODY_PART;
     public static final DeferredHolder<AbilitySerializer<?>, BodyPartValueTickAbility.Serializer> CHANGE_BODY_VALUE;
     public static final DeferredHolder<AbilitySerializer<?>, DisplayBodyBarAbility.Serializer> DISPLAY_BODY_BAR;
-    public static final DeferredHolder<AbilitySerializer<?>, BDShockwaveAbility.Serializer> BD_SHOCKWAVE;
-    public static final DeferredHolder<AbilitySerializer<?>, BDDomeAbility.Serializer> BD_DOME;
-    public static final DeferredHolder<AbilitySerializer<?>, BDBodyPartEmitterAbility.Serializer> BD_BODY_PART_EMITTER;
-    public static final DeferredHolder<AbilitySerializer<?>, BDTrailAbility.Serializer> BD_TRAIL;
+    public static final DeferredHolder<AbilitySerializer<?>, SetBodyStringAbility.Serializer> SET_BODY_STRING;
+    public static final DeferredHolder<AbilitySerializer<?>, SetBodyFloatAbility.Serializer> SET_BODY_FLOAT;
+
+    /*=========================
+     |    Common              |
+     =========================*/
+    public static final DeferredHolder<AbilitySerializer<?>, DashAbility.Serializer> DASH;
     public static final DeferredHolder<AbilitySerializer<?>, PotionGeneratorAbility.Serializer> POTION_GEN;
     public static final DeferredHolder<AbilitySerializer<?>, SprayAttackAbility.Serializer> SPRAY_ATTACK;
     public static final DeferredHolder<AbilitySerializer<?>, PlaySoundAbility.Serializer> PLAY_SOUND;
-    public static final DeferredHolder<AbilitySerializer<?>, SmokeCanisterChargeAbility.Serializer> SMOKE_CANISTER_CHARGE;
-    public static final DeferredHolder<AbilitySerializer<?>, SetBodyStringAbility.Serializer> SET_BODY_STRING;
+
+    /*=========================
+     |    Decay               |
+     =========================*/
     public static final DeferredHolder<AbilitySerializer<?>, DecayFistAbility.Serializer> DECAY_FIST;
     public static final DeferredHolder<AbilitySerializer<?>, EnvironmentDecayAbility.Serializer> ENVIRONMENT_DECAY;
     public static final DeferredHolder<AbilitySerializer<?>, RotAbility.Serializer> ROT_WAVE;
     public static final DeferredHolder<AbilitySerializer<?>, DecayInstabilityAbility.Serializer> DECAY_INSTABILITY;
+
+    /*=========================
+     |    Blackwhip           |
+     =========================*/
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipTagAbility.Serializer> BLACKWHIP_TAG;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipAoeTagAbility.Serializer> BLACKWHIP_AOE_TAG;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipDetachAbility.Serializer> BLACKWHIP_DETACH;
@@ -90,6 +98,19 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainZipAbility.Serializer> BLACKWHIP_CHAIN_ZIP;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainChargeZipAbility.Serializer> BLACKWHIP_CHAIN_CHARGE_ZIP;
 
+    /*=========================
+     |    Smokescreen         |
+     =========================*/
+    public static final DeferredHolder<AbilitySerializer<?>, SmokeCanisterChargeAbility.Serializer> SMOKE_CANISTER_CHARGE;
+
+    /*=========================
+     |    Block Displays      |
+     =========================*/
+    public static final DeferredHolder<AbilitySerializer<?>, BDShockwaveAbility.Serializer> BD_SHOCKWAVE;
+    public static final DeferredHolder<AbilitySerializer<?>, BDDomeAbility.Serializer> BD_DOME;
+    public static final DeferredHolder<AbilitySerializer<?>, BDBodyPartEmitterAbility.Serializer> BD_BODY_PART_EMITTER;
+    public static final DeferredHolder<AbilitySerializer<?>, BDTrailAbility.Serializer> BD_TRAIL;
+
     static {
         ABILITIES = DeferredRegister.create(PalladiumRegistryKeys.ABILITY_SERIALIZER, YourHeroAcademia.MODID);
         DASH = ABILITIES.register("dash", DashAbility.Serializer::new);
@@ -106,6 +127,7 @@ public class AbilityRegister {
         PLAY_SOUND = ABILITIES.register("play_sound", PlaySoundAbility.Serializer::new);
         SMOKE_CANISTER_CHARGE = ABILITIES.register("smoke_canister_charge", SmokeCanisterChargeAbility.Serializer::new);
         SET_BODY_STRING = ABILITIES.register("set_body_string", SetBodyStringAbility.Serializer::new);
+        SET_BODY_FLOAT = ABILITIES.register("set_body_float", SetBodyFloatAbility.Serializer::new);
         DECAY_FIST = ABILITIES.register("decay_fist", DecayFistAbility.Serializer::new);
         ENVIRONMENT_DECAY = ABILITIES.register("environment_decay", EnvironmentDecayAbility.Serializer::new);
         ROT_WAVE = ABILITIES.register("rot_wave", RotAbility.Serializer::new);

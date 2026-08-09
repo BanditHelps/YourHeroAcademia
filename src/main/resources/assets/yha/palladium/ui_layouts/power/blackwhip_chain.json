@@ -12,25 +12,11 @@
       "widgets": [
         {
           "type": "palladium:text_box",
-          "text": "Blackwhip (Chain)",
+          "text": "Blackwhip",
           "properties": {
             "alignment": "top_center",
             "width": 86,
             "height": 20
-          }
-        },
-        {
-          "type": "yha:body_display_bar",
-          "id": "blackwhip_chain_connected_count",
-          "show_icon": true,
-          "show_label": true,
-          "description": "How many chain tendrils are currently latched onto targets.",
-          "properties": {
-            "alignment": "top_center",
-            "x": 3,
-            "y": 36,
-            "width": 72,
-            "height": 8
           }
         }
       ]
@@ -44,7 +30,7 @@
           "power": "yha:blackwhip_chain",
           "background": {
             "type": "palladium:repeating_texture",
-            "texture": "minecraft:textures/block/cyan_concrete.png"
+            "texture": "minecraft:textures/block/sculk.png"
           },
           "properties": {
             "alignment": "center",

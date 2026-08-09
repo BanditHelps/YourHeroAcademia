@@ -95,10 +95,34 @@ neoForge {
     // Default run configurations.
     // These can be tweaked, removed, or duplicated as needed.
     runs {
-        client {
+//        client {
+//            client()
+//
+//            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
+//            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+//        }
+
+        client1 {
             client()
 
-            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
+            ideName = "Minecraft Client Dev"
+
+            gameDirectory = project.file('run/client1')
+            programArgument '--username'
+            programArgument 'Dev'
+
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        client2 {
+            client()
+
+            ideName = "Minecraft Client Bandit"
+
+            gameDirectory = project.file('run/client2')
+            programArgument '--username'
+            programArgument 'B4nditHelps'
+
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
@@ -167,7 +191,7 @@ dependencies {
 
     // Development Palladium Version
 //    implementation files('libs/palladium-5.0.0+26.1.2.jar')
-    implementation "maven.modrinth:palladium-previews:782e327+26.1.2"
+    implementation "maven.modrinth:palladium-previews:$palladium_version"
 
 
     // Player Animation Library

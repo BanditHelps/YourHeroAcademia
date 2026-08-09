@@ -1,5 +1,5 @@
 {
-  "name": "Blackwhip (Chain)",
+  "name": "Blackwhip",
   "parent": "yha:quirk",
   "icon": "minecraft:chain",
   "gui_display_type": "tree",
@@ -7,8 +7,8 @@
     "quirk_info": {
       "type": "palladium:dummy",
       "properties": {
-        "title": "Blackwhip (Chain)",
-        "description": "Manifest tendrils as a physical IK chain. Grab foes, swing from surfaces, and zip through the air with rubber-band launches.",
+        "title": "Blackwhip",
+        "description": "Manifest energy tendrils from any part of your body and command them at will!",
         "icon": "minecraft:chain",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -16,39 +16,395 @@
       }
     },
 
-    "register_tether_bar": {
-      "type": "yha:display_body_bar",
-      "properties": {
-        "hidden_in_bar": true,
-        "hidden_in_gui": true
-      },
-      "id": "blackwhip_chain_connected_count",
-      "label": "Chain Tethers",
+    "bw_max_tethers_default": {
+      "type": "yha:set_body_float",
       "part": "chest",
-      "key": "blackwhip_chain_connected_count",
-      "min": 0,
-      "max": 8,
-      "left_color": "#0c1f1a",
-      "right_color": "#25be9c",
-      "bar_type": "bar",
+      "key": "bw_max_tethers",
+      "value": 1,
+      "properties": {
+        "title": "Default Max Tethers (1)",
+        "description": "Blackwhip always has 1 tether to use",
+        "icon": "minecraft:chain",
+        "hidden_in_gui": true,
+        "hidden_in_bar": true,
+        "gui_position": [0, 0]
+      },
       "state": {
         "enabling": {
-          "type": "yha:body_float",
-          "part": "chest",
-          "key": "blackwhip_chain_connected_count",
-          "operator": ">=",
-          "target": -1
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:blackwhip_chain#bw_max_tethers_1"
+            }
+          ]
+        }
+      }
+    },
+    "bw_tether_health_default": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "bw_chain_hp",
+      "value": 1.0,
+      "properties": {
+        "title": "Default Tether Health (1)",
+        "description": "How much damage a tether can take before snapping.",
+        "icon": "minecraft:chain",
+        "hidden_in_gui": true,
+        "hidden_in_bar": true,
+        "gui_position": [0, 0]
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:blackwhip_chain#bw_tether_health_1"
+            }
+          ]
         }
       }
     },
 
-    "blackwhip_chain_tag": {
+    "bw_max_tethers_1": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "bw_max_tethers",
+      "value": 2,
+      "properties": {
+        "title": "Max Tethers - I",
+        "description": "You can cast out and control an additional tether.",
+        "icon": "minecraft:chain",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [0, 1]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          }
+        },
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:blackwhip_chain#bw_max_tethers_2"
+            }
+          ]
+        }
+      }
+    },
+    "bw_max_tethers_2": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "bw_max_tethers",
+      "value": 3,
+      "properties": {
+        "title": "Max Tethers - II",
+        "description": "Gain an additional tether.",
+        "icon": "minecraft:chain",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [0, 1.75]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "bw_max_tethers_1"
+          }
+        },
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:blackwhip_chain#bw_max_tethers_3"
+            }
+          ]
+        }
+      }
+    },
+    "bw_max_tethers_3": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "bw_max_tethers",
+      "value": 4,
+      "properties": {
+        "title": "Max Tethers - III",
+        "description": "Gain control of yet another tether.",
+        "icon": "minecraft:chain",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [0, 2.5]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "bw_max_tethers_2"
+          }
+        },
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:blackwhip_chain#bw_max_tethers_4"
+            }
+          ]
+        }
+      }
+    },
+    "bw_max_tethers_4": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "bw_max_tethers",
+      "value": 5,
+      "properties": {
+        "title": "Max Tethers - IV",
+        "description": "Final maximum tethers upgrade. (Increase Quirk Factor to obtain more!)",
+        "icon": "minecraft:chain",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [0, 3.25]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 5
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "bw_max_tethers_3"
+          }
+        }
+      }
+    },
+
+    "bw_tether_health_1": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "bw_chain_hp",
+      "value": 5.0,
+      "properties": {
+        "title": "Max Health - I",
+        "description": "Upgrades tether health to 5 hearts",
+        "icon": "minecraft:chain",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [-1, 1]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          }
+        },
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:blackwhip_chain#bw_tether_health_2"
+            }
+          ]
+        }
+      }
+    },
+    "bw_tether_health_2": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "bw_chain_hp",
+      "value": 10.0,
+      "properties": {
+        "title": "Max Health - II",
+        "description": "Upgrades tether health to 10 hearts",
+        "icon": "minecraft:chain",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [-1, 1.75]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "bw_tether_health_1"
+          }
+        },
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:blackwhip_chain#bw_tether_health_3"
+            }
+          ]
+        }
+      }
+    },
+    "bw_tether_health_3": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "bw_chain_hp",
+      "value": 15.0,
+      "properties": {
+        "title": "Max Health - III",
+        "description": "Upgrades tether health to 15 hearts",
+        "icon": "minecraft:chain",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [-1, 2.5]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 8
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "bw_tether_health_2"
+          }
+        },
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:blackwhip_chain#bw_tether_health_4"
+            }
+          ]
+        }
+      }
+    },
+    "bw_tether_health_4": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "bw_chain_hp",
+      "value": 20.0,
+      "properties": {
+        "title": "Max Health - IV",
+        "description": "Upgrades tether health to 20 hearts! (Upgrade QF for more)",
+        "icon": "minecraft:chain",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [-1, 3.25]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 12
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "bw_tether_health_3"
+          }
+        }
+      }
+    },
+
+    "bw_tree_tag_9": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tether",
+        "description": "Shoot an energy tendril towards any opponent or entity. If they are hit, they become ensnared in your whip, allowing you to perform multiple actions.",
+        "icon": "minecraft:lead",
+        "hidden_in_bar": true,
+        "hidden_in_gui": false,
+        "gui_position": [-2, 1]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "quirk_info"
+        }
+      }
+    },
+    "bw_tree_tag_12": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tether Range - I",
+        "description": "Extends the range that your tether can reach by 3 blocks.",
+        "icon": "minecraft:lead",
+        "list_index": 0,
+        "hidden_in_bar": true,
+        "hidden_in_gui": false,
+        "gui_position": [-2, 1.75]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "bw_tree_tag_9"
+          }
+        }
+      }
+    },
+    "bw_tree_tag_15": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tether Range - II",
+        "description": "Extends the range that your tether can reach by an additional 3 blocks.",
+        "icon": "minecraft:lead",
+        "list_index": 0,
+        "hidden_in_bar": true,
+        "hidden_in_gui": false,
+        "gui_position": [-2, 2.5]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "bw_tree_tag_12"
+          }
+        }
+      }
+    },
+
+    "bw_tag_9": {
       "type": "yha:blackwhip_chain_tag",
       "range": {
         "type": "palladium:molang_float",
-        "molang": "12 + yha.quirk_factor() * 2"
+        "molang": "9 + yha.quirk_factor() * 3"
       },
-      "base_max_tethers": 2,
       "max_distance": {
         "type": "palladium:molang_float",
         "molang": "28 + yha.quirk_factor() * 4"
@@ -56,21 +412,13 @@
       "ttl_ticks": 0,
       "segment_count": 4,
       "link_length": 0.85,
-      "chain_hp": {
-        "type": "palladium:molang_float",
-        "molang": "18 + yha.quirk_factor() * 2"
-      },
       "thickness": 1.0,
       "travel_ticks": 12,
       "properties": {
-        "title": "Chain Grab",
-        "description": "Shoot a physical tendril tip along your look. It only latches if the tip hits a living entity — dodgeable, and the tip can be struck or knocked off course. Max tethers = 2 + Quirk Factor.",
+        "title": "Tether",
         "icon": "minecraft:lead",
         "list_index": 0,
-        "hidden_in_gui": false,
-        "gui_position": [-1, -1],
-        "stamina_interval": 20,
-        "stamina_interval_cost": 6
+        "hidden_in_gui": true
       },
       "state": {
         "enabling": {
@@ -78,8 +426,134 @@
           "behaviour": "held"
         },
         "unlocking": {
-          "type": "palladium:ability_unlocked",
-          "ability": "quirk_info"
+          "type": "palladium:and",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "bw_tree_tag_9"
+            },
+            {
+              "type": "palladium:not",
+              "conditions": [
+                {
+                  "type": "palladium:ability_unlocked",
+                  "ability": "bw_tree_tag_12"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "bw_tag_12": {
+      "type": "yha:blackwhip_chain_tag",
+      "range": {
+        "type": "palladium:molang_float",
+        "molang": "12 + yha.quirk_factor() * 3"
+      },
+      "max_distance": {
+        "type": "palladium:molang_float",
+        "molang": "28 + yha.quirk_factor() * 4"
+      },
+      "ttl_ticks": 0,
+      "segment_count": 4,
+      "link_length": 0.85,
+      "thickness": 1.0,
+      "travel_ticks": 12,
+      "properties": {
+        "title": "Tether Range - I",
+        "icon": "minecraft:lead",
+        "list_index": 0,
+        "hidden_in_gui": true
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "held"
+        },
+        "unlocking": {
+          "type": "palladium:and",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "bw_tree_tag_12"
+            },
+            {
+              "type": "palladium:not",
+              "conditions": [
+                {
+                  "type": "palladium:ability_unlocked",
+                  "ability": "bw_tree_tag_15"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "bw_tag_15": {
+      "type": "yha:blackwhip_chain_tag",
+      "range": {
+        "type": "palladium:molang_float",
+        "molang": "15 + yha.quirk_factor() * 3"
+      },
+      "max_distance": {
+        "type": "palladium:molang_float",
+        "molang": "28 + yha.quirk_factor() * 4"
+      },
+      "ttl_ticks": 0,
+      "segment_count": 4,
+      "link_length": 0.85,
+      "thickness": 1.0,
+      "travel_ticks": 12,
+      "properties": {
+        "title": "Tether Range - II",
+        "icon": "minecraft:lead",
+        "list_index": 0,
+        "hidden_in_gui": true
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "held"
+        },
+        "unlocking": {
+          "type": "palladium:and",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "bw_tree_tag_15"
+            }
+          ]
+        }
+      }
+    },
+
+    "bw_restrict": {
+      "type": "yha:blackwhip_chain_restrict",
+      "strength": {
+        "type": "palladium:molang_float",
+        "molang": "1.0 + yha.quirk_factor() * 0.1"
+      },
+      "properties": {
+        "title": "Lead",
+        "description": "Toggle to lock tether length at the current slack. Weaker targets are softly reeled in if they stray; bigger or stronger ones can drag you along the lead.",
+        "icon": "minecraft:lead",
+        "list_index": 3,
+        "hidden_in_gui": false,
+        "gui_position": [-2, -1]
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "toggle"
+        },
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          }
         }
       }
     },
@@ -103,7 +577,7 @@
         },
         "unlocking": {
           "type": "palladium:ability_unlocked",
-          "ability": "blackwhip_chain_tag"
+          "ability": "bw_tag"
         }
       }
     },
@@ -145,7 +619,7 @@
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_tag"
+              "ability": "bw_tag"
             }
           ]
         }
@@ -172,47 +646,14 @@
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_tag"
+              "ability": "bw_tag"
             }
           ]
         }
       }
     },
 
-    "blackwhip_chain_restrict": {
-      "type": "yha:blackwhip_chain_restrict",
-      "strength": {
-        "type": "palladium:molang_float",
-        "molang": "1.0 + yha.quirk_factor() * 0.1"
-      },
-      "properties": {
-        "title": "Lead",
-        "description": "Toggle to lock tether length at the current slack. Weaker targets are softly reeled in if they stray; bigger or stronger ones can drag you along the lead.",
-        "icon": "minecraft:lead",
-        "list_index": 3,
-        "hidden_in_gui": false,
-        "gui_position": [-2, -1]
-      },
-      "state": {
-        "enabling": {
-          "type": "palladium:key_bind",
-          "behaviour": "toggle"
-        },
-        "unlocking": {
-          "type": "palladium:buyable",
-          "cost": {
-            "type": "yha:upgrade_point",
-            "points": 1
-          },
-          "conditions": [
-            {
-              "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_tag"
-            }
-          ]
-        }
-      }
-    },
+
 
     "blackwhip_chain_puppet_single": {
       "type": "yha:blackwhip_chain_move_tagged",
@@ -346,13 +787,7 @@
           "cost": {
             "type": "yha:upgrade_point",
             "points": 2
-          },
-          "conditions": [
-            {
-              "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_tag"
-            }
-          ]
+          }
         }
       }
     },
@@ -456,7 +891,7 @@
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_tag"
+              "ability": "bw_tag"
             }
           ]
         }
