@@ -8,10 +8,12 @@ import com.github.bandithelps.entities.BlackwhipSegmentEntity;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
@@ -20,6 +22,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
@@ -39,9 +42,13 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
     private static final int FULL_BRIGHT = 0xF000F0;
 
     private static final Map<Integer, Integer> INACTIVE_SINCE = new HashMap<>();
+    private static final float TIP_ITEM_SCALE = 0.55f;
+
+    private final ItemModelResolver itemModelResolver;
 
     public BlackwhipChainEntityRenderer(EntityRendererProvider.Context context) {
         super(context);
+        this.itemModelResolver = context.getItemModelResolver();
         this.shadowRadius = 0.0f;
     }
 
@@ -72,6 +79,13 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         state.time = gameTime + partial;
 
         state.extendProgress = entity.getExtendProgress(partial);
+        state.tipItem = entity.getHeldTipItem();
+        if (!state.tipItem.isEmpty()) {
+            this.itemModelResolver.updateForNonLiving(
+                    state.tipItemModel, state.tipItem, ItemDisplayContext.GROUND, entity);
+        } else {
+            state.tipItemModel.clear();
+        }
 
         if (!state.active || entity.getPhase() == BlackwhipChainEntity.PHASE_RETRACTING) {
             int since = INACTIVE_SINCE.computeIfAbsent(entity.getId(), k -> entity.tickCount);
@@ -237,6 +251,40 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         collector.submitCustomGeometry(poseStack, CORE_TYPE, (pose, buffer) ->
                 emitLayer(buffer, pose, frame, finalBase * 0.5f, core,
                         alphaScale, state, 0.0f, 1.2f, 0.0f, 0.024f));
+
+        submitTipItem(state, points, poseStack, collector);
+    }
+
+    /** Draws cargo stuck to the visible tip while the whip reels in. */
+    private static void submitTipItem(BlackwhipChainRenderState state, List<Vec3> points,
+                                      PoseStack poseStack, SubmitNodeCollector collector) {
+        if (state.tipItem.isEmpty() || state.tipItemModel.isEmpty() || points.size() < 2) {
+            return;
+        }
+        // Fade out as it reaches the wrist so the hand "takes" it.
+        float fade = smooth(1.0f - state.retractProgress);
+        if (fade < 0.08f) {
+            return;
+        }
+        Vec3 tip = points.getLast();
+        Vec3 prev = points.get(points.size() - 2);
+        Vec3 dir = tip.subtract(prev);
+        if (dir.lengthSqr() < 1.0e-6) {
+            dir = state.camForward;
+        } else {
+            dir = dir.normalize();
+        }
+        Vec3 local = tip.subtract(state.renderOrigin);
+
+        poseStack.pushPose();
+        poseStack.translate(local.x, local.y, local.z);
+        // Sit slightly ahead of the tip so the ribbon doesn't swallow the model.
+        poseStack.translate(dir.x * 0.08, dir.y * 0.08, dir.z * 0.08);
+        float scale = TIP_ITEM_SCALE * (0.85f + 0.15f * fade);
+        poseStack.scale(scale, scale, scale);
+        poseStack.mulPose(Axis.YP.rotation(state.ageTicks * 0.35f));
+        state.tipItemModel.submit(poseStack, collector, state.lightCoords, OverlayTexture.NO_OVERLAY, 0);
+        poseStack.popPose();
     }
 
     private static final class RibbonFrame {

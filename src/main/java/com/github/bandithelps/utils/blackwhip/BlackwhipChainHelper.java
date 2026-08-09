@@ -28,11 +28,28 @@ public final class BlackwhipChainHelper {
                                                         int segmentCount, float linkLength, float chainHp,
                                                         float thickness, int travelTicks,
                                                         int ttlTicks, double maxDistance, int maxKeep) {
+        return spawnFlyingChain(owner, direction, maxRange, segmentCount, linkLength, chainHp, thickness,
+                travelTicks, ttlTicks, maxDistance, maxKeep, BlackwhipChainEntity.PURPOSE_TAG);
+    }
+
+    /**
+     * Spawns a deploying tip with the given purpose. Tag tips respect living-tether {@code maxKeep};
+     * disarm tips allow at most one active disarm chain and do not count against grab tethers.
+     */
+    public static BlackwhipChainEntity spawnFlyingChain(LivingEntity owner, Vec3 direction, double maxRange,
+                                                        int segmentCount, float linkLength, float chainHp,
+                                                        float thickness, int travelTicks,
+                                                        int ttlTicks, double maxDistance, int maxKeep,
+                                                        int purpose) {
         if (!(owner.level() instanceof ServerLevel level)) {
             return null;
         }
         int keep = Math.max(1, maxKeep);
-        if (BlackwhipChainEntity.countOwnedActive(owner.getId()) >= keep) {
+        if (purpose == BlackwhipChainEntity.PURPOSE_DISARM) {
+            if (BlackwhipChainEntity.countOwnedActiveByPurpose(owner.getId(), BlackwhipChainEntity.PURPOSE_DISARM) >= 1) {
+                return null;
+            }
+        } else if (BlackwhipChainEntity.countOwnedActive(owner.getId()) >= keep) {
             return null;
         }
 
@@ -46,7 +63,7 @@ public final class BlackwhipChainHelper {
         BlackwhipChainEntity chain = new BlackwhipChainEntity(ModEntities.BLACKWHIP_CHAIN.get(), level);
         chain.setOwnerId(owner.getId());
         chain.setTargetId(-1);
-        chain.setPurpose(BlackwhipChainEntity.PURPOSE_TAG);
+        chain.setPurpose(purpose);
         chain.setMinSegmentSeed(seed);
         chain.setSegmentCount(segments);
         chain.setLinkLength(link);
@@ -55,7 +72,7 @@ public final class BlackwhipChainHelper {
         chain.setThickness(thickness);
         chain.setTravelTicks(travelTicks);
         chain.setRetractTicks(6);
-        chain.setWrapTurns(2.0f);
+        chain.setWrapTurns(purpose == BlackwhipChainEntity.PURPOSE_DISARM ? 0.0f : 2.0f);
         chain.setLatchParams(ttlTicks, maxDistance, keep);
         applyOwnerColors(chain, owner);
         chain.setSeed(owner.getRandom().nextInt());

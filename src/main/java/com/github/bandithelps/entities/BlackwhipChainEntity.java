@@ -1,12 +1,16 @@
 package com.github.bandithelps.entities;
 
+import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
+import com.github.bandithelps.utils.blackwhip.BlackwhipChainDisarmLogic;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainTagStore;
 import com.github.bandithelps.utils.blackwhip.BlackwhipTargeting;
+import com.github.bandithelps.utils.player.PlayerUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -17,9 +21,11 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -30,6 +36,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.threetag.palladium.power.ability.AbilityInstance;
+import net.threetag.palladium.power.ability.AbilityUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,6 +78,10 @@ public class BlackwhipChainEntity extends Entity {
     public static final int PURPOSE_ZIP_CHARGE = 3;
     /** PS5-style web swing (may use a virtual air pivot). */
     public static final int PURPOSE_WEB_SWING = 4;
+    /** One-shot tip that tries to rip a held item; does not latch. */
+    public static final int PURPOSE_DISARM = 5;
+
+    private static final int PURPOSE_MAX = PURPOSE_DISARM;
 
     private static final int LATCH_BLEND_TICKS = 5;
     /** Client wrap coil ease after latch (tip settle then helix grow). */
@@ -130,6 +142,12 @@ public class BlackwhipChainEntity extends Entity {
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_ANCHOR_Z =
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.FLOAT);
+    /** Item riding the tip during retract (ground grab / disarm). Delivered when retract finishes. */
+    private static final EntityDataAccessor<ItemStack> DATA_HELD_TIP_ITEM =
+            SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.ITEM_STACK);
+
+    /** Slightly longer retract so tip cargo is readable. */
+    private static final int ITEM_CARRY_RETRACT_TICKS = 12;
 
     private final int[] segmentIds = new int[MAX_SEGMENTS];
     private final Vec3[] joints = new Vec3[MAX_SEGMENTS];
@@ -176,14 +194,15 @@ public class BlackwhipChainEntity extends Entity {
         return ACTIVE_SERVER;
     }
 
-    /** Active deploying or latched chains owned by {@code ownerId}. */
+    /** Active deploying or latched grab tethers owned by {@code ownerId} (excludes swing/zip/disarm). */
     public static int countOwnedActive(int ownerId) {
         if (ownerId < 0) {
             return 0;
         }
         int count = 0;
         for (BlackwhipChainEntity chain : ACTIVE_SERVER) {
-            if (chain.isAlive() && chain.isActive() && chain.getOwnerId() == ownerId) {
+            if (chain.isAlive() && chain.isActive() && chain.getOwnerId() == ownerId
+                    && chain.getPurpose() == PURPOSE_TAG) {
                 count++;
             }
         }
@@ -286,6 +305,7 @@ public class BlackwhipChainEntity extends Entity {
         builder.define(DATA_ANCHOR_X, 0.0f);
         builder.define(DATA_ANCHOR_Y, 0.0f);
         builder.define(DATA_ANCHOR_Z, 0.0f);
+        builder.define(DATA_HELD_TIP_ITEM, ItemStack.EMPTY);
     }
 
     /**
@@ -616,7 +636,7 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     private boolean isDeployHitCandidate(Entity owner, Entity e) {
-        if (e == null || e == this || !e.isAlive() || !e.isPickable()) {
+        if (e == null || e == this || !e.isAlive()) {
             return false;
         }
         if (e.getId() == getOwnerId()) {
@@ -625,12 +645,29 @@ public class BlackwhipChainEntity extends Entity {
         if (e instanceof BlackwhipSegmentEntity || e instanceof BlackwhipChainEntity) {
             return false;
         }
+        int purpose = getPurpose();
+        // ItemEntity is often not pickable; allow grab tips with the item-pull upgrade.
+        if (purpose == PURPOSE_TAG && e instanceof ItemEntity item
+                && !item.getItem().isEmpty()
+                && owner instanceof ServerPlayer player
+                && hasItemPullUpgrade(player)) {
+            return true;
+        }
+        if (!e.isPickable()) {
+            return false;
+        }
         LivingEntity living = BlackwhipTargeting.asLivingTarget(e);
         if (living != null) {
             if (living.getId() == getOwnerId()) {
                 return false;
             }
+            if (purpose == PURPOSE_DISARM) {
+                return BlackwhipChainDisarmLogic.selectDisarmHand(living) != null;
+            }
             return !(owner instanceof ServerPlayer player && BlackwhipChainTagStore.isTagged(player, living.getId()));
+        }
+        if (purpose == PURPOSE_DISARM) {
+            return false;
         }
         if (e instanceof Projectile projectile) {
             Entity projOwner = projectile.getOwner();
@@ -640,12 +677,95 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     private void applyDeployEntityHit(Entity hit) {
+        if (getPurpose() == PURPOSE_DISARM) {
+            applyDisarmHit(hit);
+            return;
+        }
         LivingEntity living = BlackwhipTargeting.asLivingTarget(hit);
         if (living != null) {
             latch(living);
-        } else {
-            grabProjectile(hit);
+            return;
         }
+        if (hit instanceof ItemEntity item && getPurpose() == PURPOSE_TAG) {
+            grabItemEntity(item);
+            return;
+        }
+        grabProjectile(hit);
+    }
+
+    private void applyDisarmHit(Entity hit) {
+        LivingEntity living = BlackwhipTargeting.asLivingTarget(hit);
+        tipPos = hit.position().add(0.0, hit.getBbHeight() * 0.5, 0.0);
+        if (living != null && getOwner() instanceof ServerPlayer owner) {
+            ItemStack stolen = BlackwhipChainDisarmLogic.tryDisarm(owner, living);
+            boolean ripped = !stolen.isEmpty();
+            if (ripped) {
+                attachTipCargo(stolen);
+            }
+            if (this.level() instanceof ServerLevel level) {
+                level.playSound(null, owner.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE,
+                        SoundSource.PLAYERS, ripped ? 0.75f : 0.45f, ripped ? 1.15f : 0.7f);
+            }
+        }
+        deactivate();
+    }
+
+    private void grabItemEntity(ItemEntity item) {
+        tipPos = item.position().add(0.0, item.getBbHeight() * 0.5, 0.0);
+        Entity ownerEntity = getOwner();
+        if (ownerEntity instanceof ServerPlayer && !item.getItem().isEmpty()) {
+            ItemStack stack = item.getItem().copy();
+            item.discard();
+            attachTipCargo(stack);
+            if (this.level() instanceof ServerLevel level) {
+                level.playSound(null, ownerEntity.blockPosition(), SoundEvents.ITEM_PICKUP,
+                        SoundSource.PLAYERS, 0.55f, 1.2f);
+            }
+        }
+        deactivate();
+    }
+
+    /** Pins cargo to the tip for the retract animation; delivered in {@link #forceDiscard()}. */
+    private void attachTipCargo(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return;
+        }
+        setHeldTipItem(stack);
+        setRetractTicks(Math.max(getRetractTicks(), ITEM_CARRY_RETRACT_TICKS));
+        // Snap tip joint so the cargo starts at the grab point.
+        int tipIndex = getSegmentCount() - 1;
+        if (tipIndex >= 0 && tipIndex < joints.length) {
+            joints[tipIndex] = tipPos;
+        }
+    }
+
+    private void deliverHeldTipItem() {
+        ItemStack stack = getHeldTipItem();
+        if (stack.isEmpty()) {
+            return;
+        }
+        setHeldTipItem(ItemStack.EMPTY);
+        Entity owner = getOwner();
+        if (owner instanceof ServerPlayer player && player.isAlive()) {
+            PlayerUtils.giveItem(player, stack);
+            if (this.level() instanceof ServerLevel level) {
+                level.playSound(null, player.blockPosition(), SoundEvents.ITEM_PICKUP,
+                        SoundSource.PLAYERS, 0.4f, 1.35f);
+            }
+            return;
+        }
+        if (this.level() instanceof ServerLevel level) {
+            Vec3 dropAt = tipPos;
+            level.addFreshEntity(new ItemEntity(level, dropAt.x, dropAt.y, dropAt.z, stack));
+        }
+    }
+
+    private static boolean hasItemPullUpgrade(ServerPlayer player) {
+        AbilityInstance<?> instance = AbilityUtil.getInstance(
+                player,
+                Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "blackwhip_chain"),
+                "blackwhip_chain_item_pull");
+        return instance != null && instance.isUnlocked();
     }
 
     /**
@@ -790,6 +910,7 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     private void forceDiscard() {
+        deliverHeldTipItem();
         discardSegments();
         this.discard();
     }
@@ -1299,6 +1420,14 @@ public class BlackwhipChainEntity extends Entity {
         this.getEntityData().set(DATA_RETRACT_TICKS, Math.max(1, ticks));
     }
 
+    public void setHeldTipItem(ItemStack stack) {
+        this.getEntityData().set(DATA_HELD_TIP_ITEM, stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack.copy());
+    }
+
+    public ItemStack getHeldTipItem() {
+        return this.getEntityData().get(DATA_HELD_TIP_ITEM);
+    }
+
     public void setSeed(int seed) {
         this.getEntityData().set(DATA_SEED, seed);
     }
@@ -1325,7 +1454,7 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     public void setPurpose(int purpose) {
-        this.getEntityData().set(DATA_PURPOSE, Mth.clamp(purpose, PURPOSE_TAG, PURPOSE_ZIP_CHARGE));
+        this.getEntityData().set(DATA_PURPOSE, Mth.clamp(purpose, PURPOSE_TAG, PURPOSE_MAX));
     }
 
     /** Whether Lead (or another length lock) has frozen IK grow/shrink. */

@@ -108,6 +108,77 @@
       }
     },
 
+    "blackwhip_chain_disarm": {
+      "type": "yha:blackwhip_chain_disarm",
+      "range": {
+        "type": "palladium:molang_float",
+        "molang": "12 + yha.quirk_factor() * 1.5"
+      },
+      "segment_count": 8,
+      "link_length": 0.85,
+      "chain_hp": {
+        "type": "palladium:molang_float",
+        "molang": "16 + yha.quirk_factor() * 1.5"
+      },
+      "thickness": 0.9,
+      "travel_ticks": 10,
+      "properties": {
+        "title": "Disarm",
+        "description": "Shoot a tip that tries to rip a held item into your inventory. Shields are targeted first (offhand or while blocking). Strength vs Strength is a chance roll — blocking raises their defense.",
+        "icon": "minecraft:iron_sword",
+        "list_index": 9,
+        "hidden_in_gui": false,
+        "gui_position": [-1, 0],
+        "activation_stamina": 10
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "activation"
+        },
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "blackwhip_chain_tag"
+            }
+          ]
+        }
+      }
+    },
+
+    "blackwhip_chain_item_pull": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Item Pull",
+        "description": "Upgrade Chain Grab so its tip can snatch items off the ground into your inventory.",
+        "icon": "minecraft:hopper",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [0, -1]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "blackwhip_chain_tag"
+            }
+          ]
+        }
+      }
+    },
+
     "blackwhip_chain_restrict": {
       "type": "yha:blackwhip_chain_restrict",
       "strength": {

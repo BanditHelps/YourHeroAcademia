@@ -54,6 +54,8 @@
   "ability.yha.blackwhip_block_grab": "Block Grab",
   "ability.yha.blackwhip_chain_tag": "Chain Grab",
   "ability.yha.blackwhip_chain_detach": "Detach",
+  "ability.yha.blackwhip_chain_disarm": "Disarm",
+  "ability.yha.blackwhip_chain_item_pull": "Item Pull",
   "ability.yha.blackwhip_chain_swing": "Whip Swing",
   "ability.yha.blackwhip_web_swing": "Web Swing",
   "ability.yha.blackwhip_chain_zip": "Whip Zip",

@@ -25,6 +25,7 @@ import com.github.bandithelps.abilities.blackwhip.BlackwhipYankAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipZipAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainChargeZipAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainDetachAbility;
+import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainDisarmAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainMoveTaggedAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainRestrictAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainSwingAbility;
@@ -80,6 +81,7 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipLashAbility.Serializer> BLACKWHIP_LASH;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipYankAbility.Serializer> BLACKWHIP_YANK;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainTagAbility.Serializer> BLACKWHIP_CHAIN_TAG;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainDisarmAbility.Serializer> BLACKWHIP_CHAIN_DISARM;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainDetachAbility.Serializer> BLACKWHIP_CHAIN_DETACH;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainRestrictAbility.Serializer> BLACKWHIP_CHAIN_RESTRICT;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainMoveTaggedAbility.Serializer> BLACKWHIP_CHAIN_MOVE_TAGGED;
@@ -122,6 +124,7 @@ public class AbilityRegister {
         BLACKWHIP_LASH = ABILITIES.register("blackwhip_lash", BlackwhipLashAbility.Serializer::new);
         BLACKWHIP_YANK = ABILITIES.register("blackwhip_yank", BlackwhipYankAbility.Serializer::new);
         BLACKWHIP_CHAIN_TAG = ABILITIES.register("blackwhip_chain_tag", BlackwhipChainTagAbility.Serializer::new);
+        BLACKWHIP_CHAIN_DISARM = ABILITIES.register("blackwhip_chain_disarm", BlackwhipChainDisarmAbility.Serializer::new);
         BLACKWHIP_CHAIN_DETACH = ABILITIES.register("blackwhip_chain_detach", BlackwhipChainDetachAbility.Serializer::new);
         BLACKWHIP_CHAIN_RESTRICT = ABILITIES.register("blackwhip_chain_restrict", BlackwhipChainRestrictAbility.Serializer::new);
         BLACKWHIP_CHAIN_MOVE_TAGGED = ABILITIES.register("blackwhip_chain_move_tagged", BlackwhipChainMoveTaggedAbility.Serializer::new);

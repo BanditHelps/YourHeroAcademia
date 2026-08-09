@@ -1,6 +1,8 @@
 package com.github.bandithelps.client.renderers.entity.state;
 
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -44,4 +46,8 @@ public class BlackwhipChainRenderState extends EntityRenderState {
      * and other viewers keep full opacity at the root so the chain reads solid.
      */
     public boolean fadeRoot = false;
+
+    /** Cargo riding the tip during retract (ground grab / disarm). */
+    public ItemStack tipItem = ItemStack.EMPTY;
+    public final ItemStackRenderState tipItemModel = new ItemStackRenderState();
 }
