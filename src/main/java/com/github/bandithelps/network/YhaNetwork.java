@@ -38,5 +38,8 @@ public final class YhaNetwork {
         registrar.playToClient(BlackwhipChainZipAnimPayload.TYPE, BlackwhipChainZipAnimPayload.STREAM_CODEC, BlackwhipChainZipAnimPayload::handle);
         registrar.playToClient(BlackwhipStruggleStatusPayload.TYPE, BlackwhipStruggleStatusPayload.STREAM_CODEC, BlackwhipStruggleStatusPayload::handle);
         registrar.playToServer(BlackwhipStruggleTapPayload.TYPE, BlackwhipStruggleTapPayload.STREAM_CODEC, BlackwhipStruggleTapPayload::handle);
+        registrar.playToClient(BlackwhipChainLeadPayload.TYPE, BlackwhipChainLeadPayload.STREAM_CODEC, BlackwhipChainLeadPayload::handle);
+        registrar.playToClient(BlackwhipChainReelSessionPayload.TYPE, BlackwhipChainReelSessionPayload.STREAM_CODEC, BlackwhipChainReelSessionPayload::handle);
+        registrar.playToServer(BlackwhipChainReelScrollPayload.TYPE, BlackwhipChainReelScrollPayload.STREAM_CODEC, BlackwhipChainReelScrollPayload::handle);
     }
 }

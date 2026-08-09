@@ -2,6 +2,7 @@ package com.github.bandithelps.abilities.blackwhip.chain;
 
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
+import com.github.bandithelps.network.BlackwhipChainLeadPayload;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainTagStore;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -9,6 +10,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 import net.threetag.palladium.logic.context.DataContext;
 import net.threetag.palladium.logic.value.StaticValue;
@@ -48,6 +50,7 @@ public class BlackwhipChainRestrictAbility extends Ability {
     public void firstTick(LivingEntity entity, AbilityInstance<?> abilityInstance) {
         if (entity instanceof ServerPlayer player) {
             BlackwhipChainTagStore.setLeadActive(player, true);
+            PacketDistributor.sendToPlayer(player, new BlackwhipChainLeadPayload(true));
         }
     }
 
@@ -55,6 +58,7 @@ public class BlackwhipChainRestrictAbility extends Ability {
     public void lastTick(LivingEntity entity, AbilityInstance<?> abilityInstance) {
         if (entity instanceof ServerPlayer player) {
             BlackwhipChainTagStore.setLeadActive(player, false);
+            PacketDistributor.sendToPlayer(player, new BlackwhipChainLeadPayload(false));
         }
     }
 
@@ -65,6 +69,9 @@ public class BlackwhipChainRestrictAbility extends Ability {
             double strength = Math.max(0.0, this.strength.getAsFloat(context));
 
             for (LivingEntity target : BlackwhipChainTagStore.getTaggedEntities(player)) {
+                if (BlackwhipChainTagStore.isPuppeted(player, target.getId())) {
+                    continue;
+                }
                 BlackwhipChainEntity chain = BlackwhipChainTagStore.getChainForTarget(player, target.getId());
                 if (chain == null || !chain.isLengthLocked()) {
                     continue;

@@ -67,6 +67,7 @@
   "condition.yha.body_string": "Body String",
 
   "attribute.yha.quirk_factor": "Quirk Factor",
+  "attribute.yha.strength": "Strength",
 
   "death.attack.exhaustion": "%1$s overexerted themselves and paid the price.",
   "death.attack.decay": "%1$s rotted away.",

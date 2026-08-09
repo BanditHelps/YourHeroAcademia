@@ -3,6 +3,7 @@ package com.github.bandithelps;
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.attributes.QuirkAttributes;
 import com.github.bandithelps.attributes.IntelligenceAttributes;
+import com.github.bandithelps.attributes.StrengthAttributes;
 import com.github.bandithelps.blocks.*;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.dna.DNAAttachments;
@@ -145,6 +146,7 @@ public final class YourHeroAcademia {
 
         QuirkAttributes.ATTRIBUTES.register(modEventBus);
         IntelligenceAttributes.ATTRIBUTES.register(modEventBus);
+        StrengthAttributes.ATTRIBUTES.register(modEventBus);
         StaminaAttachments.ATTACHMENTS.register(modEventBus);
         BodyAttachments.ATTACHMENTS.register(modEventBus);
         DNAAttachments.ATTACHMENTS.register(modEventBus);

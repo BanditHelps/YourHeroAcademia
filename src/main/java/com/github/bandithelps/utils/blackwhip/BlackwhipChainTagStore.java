@@ -11,6 +11,7 @@ import net.minecraft.world.entity.LivingEntity;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +35,16 @@ public final class BlackwhipChainTagStore {
     private static final Map<UUID, Integer> LAST_COUNT = new ConcurrentHashMap<>();
     /** Owners with Lead toggled on — new latches lock at latch distance. */
     private static final Set<UUID> LEAD_ACTIVE = ConcurrentHashMap.newKeySet();
+    /** Target entity ids currently being puppeted this tick (Lead spring skips these). */
+    private static final Map<UUID, Set<Integer>> PUPPETED_TARGETS = new ConcurrentHashMap<>();
+    /** Active Reel hold sessions (scroll extend/retract). */
+    private static final Map<UUID, ReelSession> REEL_SESSIONS = new ConcurrentHashMap<>();
+
+    /**
+     * @param lockedTargetId entity id locked for single-target Puppet for the whole hold; {@code -1} for all-mode
+     */
+    public record ReelSession(String mode, double step, double minLength, int lockedTargetId) {
+    }
 
     private BlackwhipChainTagStore() {
     }
@@ -99,6 +110,102 @@ public final class BlackwhipChainTagStore {
         }
         Entity chain = level.getEntity(entry.chainEntityId());
         return chain instanceof BlackwhipChainEntity c ? c : null;
+    }
+
+    public static TagEntry getTagEntry(ServerPlayer owner, int targetId) {
+        Map<Integer, TagEntry> tags = PLAYER_TAGS.get(owner.getUUID());
+        return tags == null ? null : tags.get(targetId);
+    }
+
+    /**
+     * Resolves an initial single-target pick (looked-at tagged, else nearest). Used once on Puppet press.
+     */
+    public static List<LivingEntity> resolveTargets(ServerPlayer owner, String mode) {
+        List<LivingEntity> tagged = getTaggedEntities(owner);
+        if (!"single".equalsIgnoreCase(mode) || tagged.isEmpty()) {
+            return tagged;
+        }
+        LivingEntity looked = BlackwhipTargeting.raycastLiving(owner, 24.0);
+        if (looked != null && isTagged(owner, looked.getId())) {
+            return List.of(looked);
+        }
+        LivingEntity nearest = null;
+        double best = Double.MAX_VALUE;
+        for (LivingEntity t : tagged) {
+            double d = owner.distanceToSqr(t);
+            if (d < best) {
+                best = d;
+                nearest = t;
+            }
+        }
+        return nearest == null ? List.of() : List.of(nearest);
+    }
+
+    /**
+     * Targets for an active Puppet hold. Single-mode keeps the entity locked at press until release;
+     * all-mode returns every tagged entity.
+     */
+    public static List<LivingEntity> resolveSessionTargets(ServerPlayer owner) {
+        ReelSession session = REEL_SESSIONS.get(owner.getUUID());
+        if (session == null) {
+            return List.of();
+        }
+        if (session.lockedTargetId() < 0) {
+            return getTaggedEntities(owner);
+        }
+        if (!(owner.level() instanceof ServerLevel level)) {
+            return List.of();
+        }
+        if (!isTagged(owner, session.lockedTargetId())) {
+            return List.of();
+        }
+        Entity e = level.getEntity(session.lockedTargetId());
+        if (e instanceof LivingEntity living && living.isAlive()) {
+            return List.of(living);
+        }
+        return List.of();
+    }
+
+    public static void markPuppeted(ServerPlayer owner, Iterable<LivingEntity> targets) {
+        Set<Integer> ids = new HashSet<>();
+        for (LivingEntity target : targets) {
+            ids.add(target.getId());
+        }
+        if (ids.isEmpty()) {
+            PUPPETED_TARGETS.remove(owner.getUUID());
+        } else {
+            PUPPETED_TARGETS.put(owner.getUUID(), ids);
+        }
+    }
+
+    public static void clearPuppeted(ServerPlayer owner) {
+        PUPPETED_TARGETS.remove(owner.getUUID());
+    }
+
+    public static boolean isPuppeted(ServerPlayer owner, int targetId) {
+        Set<Integer> ids = PUPPETED_TARGETS.get(owner.getUUID());
+        return ids != null && ids.contains(targetId);
+    }
+
+    public static void startReelSession(ServerPlayer owner, String mode, double step, double minLength,
+                                        int lockedTargetId) {
+        REEL_SESSIONS.put(owner.getUUID(), new ReelSession(
+                mode == null ? "all" : mode,
+                Math.max(0.05, step),
+                Math.max(0.25, minLength),
+                lockedTargetId));
+    }
+
+    public static void stopReelSession(ServerPlayer owner) {
+        REEL_SESSIONS.remove(owner.getUUID());
+    }
+
+    public static ReelSession getReelSession(ServerPlayer owner) {
+        return REEL_SESSIONS.get(owner.getUUID());
+    }
+
+    public static boolean hasReelSession(ServerPlayer owner) {
+        return REEL_SESSIONS.containsKey(owner.getUUID());
     }
 
     public static boolean isTagged(ServerPlayer owner, int targetId) {

@@ -2,6 +2,7 @@ package com.github.bandithelps.gui.ui.components;
 
 import com.github.bandithelps.attributes.IntelligenceAttributes;
 import com.github.bandithelps.attributes.QuirkAttributes;
+import com.github.bandithelps.attributes.StrengthAttributes;
 import com.github.bandithelps.client.attributes.ClientAttributeState;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -139,6 +140,7 @@ public class PlayerAttributeValueUiComponent extends RenderableUiWidget {
         return switch (attributeId) {
             case "quirk_factor" -> QuirkAttributes.QUIRK_FACTOR;
             case "intelligence" -> IntelligenceAttributes.INTELLIGENCE;
+            case "strength" -> StrengthAttributes.STRENGTH;
             case "attack_damage" -> Attributes.ATTACK_DAMAGE;
             case "attack_speed" -> Attributes.ATTACK_SPEED;
             case "movement_speed" -> Attributes.MOVEMENT_SPEED;

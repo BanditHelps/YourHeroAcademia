@@ -833,9 +833,6 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     private void maybeResizeToTip(Entity owner) {
-        if (isLengthLocked()) {
-            return;
-        }
         if (resizeCooldown > 0) {
             resizeCooldown--;
             return;
@@ -844,30 +841,16 @@ public class BlackwhipChainEntity extends Entity {
         int wrapJoints = BlackwhipChainAnchors.MIN_WRAP_JOINTS;
         this.getEntityData().set(DATA_WRAP_JOINTS, wrapJoints);
 
-        int n = getSegmentCount();
-        int ropeEnd = Math.max(2, n - wrapJoints);
-        double ropeDist = Math.max(0.01, wrist.distanceTo(tipPos));
-        float nominal = getLinkLength();
-        float minLink = BlackwhipChainAnchors.minLinkLength(nominal);
-        float maxLink = BlackwhipChainAnchors.maxLinkLength(nominal);
-        float avgLink = (float) (ropeDist / Math.max(1, ropeEnd - 1));
-
-        if (avgLink > maxLink && n < MAX_SEGMENTS) {
-            growRopeJoint(wrapJoints);
-            resizeCooldown = 2;
-        } else if (avgLink < minLink && n > Math.max(MIN_SEGMENTS, minSegmentSeed)) {
-            int ropeJoints = n - wrapJoints;
-            if (ropeJoints > 2) {
-                shrinkRopeJoint(wrapJoints);
-                resizeCooldown = 2;
-            }
+        // Lead lock: size the rope to the locked leash length (Reel extend/retract updates segments).
+        double ropeDist = isLengthLocked()
+                ? Math.max(0.01, lockedLeashLength)
+                : Math.max(0.01, wrist.distanceTo(tipPos));
+        if (resizeTowardDistance(wrapJoints, ropeDist, isLengthLocked() ? 8 : 1)) {
+            resizeCooldown = isLengthLocked() ? 0 : 2;
         }
     }
 
     private void maybeResize(Entity owner, LivingEntity target) {
-        if (isLengthLocked()) {
-            return;
-        }
         if (resizeCooldown > 0) {
             resizeCooldown--;
             return;
@@ -877,24 +860,50 @@ public class BlackwhipChainEntity extends Entity {
         int wrapJoints = BlackwhipChainAnchors.wrapJointCount(target);
         this.getEntityData().set(DATA_WRAP_JOINTS, wrapJoints);
 
-        int n = getSegmentCount();
-        int ropeEnd = Math.max(2, n - wrapJoints);
-        double ropeDist = Math.max(0.01, wrist.distanceTo(entry));
+        // Lead lock: size the rope to the locked leash length so walking away does not grow
+        // segments, while Reel add/remove joints as the locked length changes.
+        double ropeDist = isLengthLocked()
+                ? Math.max(0.01, lockedLeashLength)
+                : Math.max(0.01, wrist.distanceTo(entry));
+        if (resizeTowardDistance(wrapJoints, ropeDist, isLengthLocked() ? 8 : 1)) {
+            resizeCooldown = isLengthLocked() ? 0 : 3;
+        }
+    }
+
+    /**
+     * Grows or shrinks rope joints until average link length fits {@code ropeDist}, up to
+     * {@code maxSteps} joint changes this call.
+     *
+     * @return true if at least one joint was added or removed
+     */
+    private boolean resizeTowardDistance(int wrapJoints, double ropeDist, int maxSteps) {
         float nominal = getLinkLength();
         float minLink = BlackwhipChainAnchors.minLinkLength(nominal);
         float maxLink = BlackwhipChainAnchors.maxLinkLength(nominal);
-        float avgLink = (float) (ropeDist / Math.max(1, ropeEnd - 1));
+        boolean changed = false;
+        int steps = Math.max(1, maxSteps);
 
-        if (avgLink > maxLink && n < MAX_SEGMENTS) {
-            growRopeJoint(wrapJoints);
-            resizeCooldown = 3;
-        } else if (avgLink < minLink && n > Math.max(MIN_SEGMENTS, minSegmentSeed)) {
-            int ropeJoints = n - wrapJoints;
-            if (ropeJoints > 2) {
-                shrinkRopeJoint(wrapJoints);
-                resizeCooldown = 3;
+        for (int step = 0; step < steps; step++) {
+            int n = getSegmentCount();
+            int ropeEnd = Math.max(2, n - wrapJoints);
+            float avgLink = (float) (ropeDist / Math.max(1, ropeEnd - 1));
+
+            if (avgLink > maxLink && n < MAX_SEGMENTS) {
+                growRopeJoint(wrapJoints);
+                changed = true;
+            } else if (avgLink < minLink && n > Math.max(MIN_SEGMENTS, minSegmentSeed)) {
+                int ropeJoints = n - wrapJoints;
+                if (ropeJoints > 2) {
+                    shrinkRopeJoint(wrapJoints);
+                    changed = true;
+                } else {
+                    break;
+                }
+            } else {
+                break;
             }
         }
+        return changed;
     }
 
     private void growRopeJoint(int wrapJoints) {
