@@ -3,13 +3,13 @@ package com.github.bandithelps.abilities.blackwhip.chain;
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import com.github.bandithelps.network.BlackwhipChainLeadPayload;
+import com.github.bandithelps.utils.blackwhip.BlackwhipChainLeadPhysics;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainTagStore;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 import net.threetag.palladium.logic.context.DataContext;
@@ -27,7 +27,8 @@ import java.util.List;
 
 /**
  * "Lead": toggle that locks latched chain tether length at the current owner↔target distance
- * (including slack) and soft-springs tagged entities back when they stray past that length.
+ * (including slack). Past that length, soft-springs the weaker side — oversized / stronger
+ * targets can drag the owner along the lead.
  */
 public class BlackwhipChainRestrictAbility extends Ability {
 
@@ -66,7 +67,7 @@ public class BlackwhipChainRestrictAbility extends Ability {
     public boolean tick(LivingEntity entity, AbilityInstance<?> abilityInstance, boolean enabled) {
         if (enabled && entity instanceof ServerPlayer player) {
             DataContext context = DataContext.forEntity(entity);
-            double strength = Math.max(0.0, this.strength.getAsFloat(context));
+            double springStrength = Math.max(0.0, this.strength.getAsFloat(context));
 
             for (LivingEntity target : BlackwhipChainTagStore.getTaggedEntities(player)) {
                 if (BlackwhipChainTagStore.isPuppeted(player, target.getId())) {
@@ -76,17 +77,9 @@ public class BlackwhipChainRestrictAbility extends Ability {
                 if (chain == null || !chain.isLengthLocked()) {
                     continue;
                 }
-                double leash = chain.getLockedLeashLength();
-                Vec3 toOwner = player.position().subtract(target.position());
-                double dist = toOwner.length();
-                if (dist > leash && dist > 1.0e-3) {
-                    Vec3 dir = toOwner.scale(1.0 / dist);
-                    double over = dist - leash;
-                    Vec3 pull = dir.scale(Math.min(over * 0.2 * strength, 1.2));
-                    target.setDeltaMovement(target.getDeltaMovement().scale(0.6).add(pull));
-                    target.hurtMarked = true;
-                    target.fallDistance = 0;
-                }
+                BlackwhipChainLeadPhysics.applyTautContest(
+                        player, target, chain.getLockedLeashLength(), springStrength,
+                        BlackwhipChainLeadPhysics.DEFAULT_REFERENCE_VOLUME);
             }
         }
         return super.tick(entity, abilityInstance, enabled);
@@ -103,8 +96,8 @@ public class BlackwhipChainRestrictAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainRestrictAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("Toggle that locks latched chain tether length at the current slack and softly reels tagged entities back past that length.")
-                    .add("strength", TYPE_VALUE, "How strongly the lead pulls entities back when past the locked length.")
+            builder.setDescription("Toggle that locks tether length. Soft-reels weaker tagged entities; stronger/heavier ones can drag the owner.")
+                    .add("strength", TYPE_VALUE, "How strongly the lead reels entities when the owner wins the contest.")
                     .addExampleObject(new BlackwhipChainRestrictAbility(new StaticValue(1.0f),
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }

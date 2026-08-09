@@ -1,9 +1,9 @@
 package com.github.bandithelps.abilities.blackwhip.chain;
 
 import com.github.bandithelps.abilities.AbilityRegister;
-import com.github.bandithelps.attributes.StrengthAttributes;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import com.github.bandithelps.network.BlackwhipChainReelSessionPayload;
+import com.github.bandithelps.utils.blackwhip.BlackwhipChainLeadPhysics;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainTagStore;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -34,17 +34,11 @@ import java.util.List;
 /**
  * Chain Puppet: while held, drags tagged chain targets to a hold point in front of the crosshair.
  * Larger hitboxes are harder to move; {@code yha:strength} offsets that mass scale.
- * With Lead on, mouse scroll extends/retracts locked tether length for the same target set.
+ * With Lead on, mouse scroll extends/retracts locked tether length; overloaded targets can drag you.
  */
 public class BlackwhipChainMoveTaggedAbility extends Ability {
 
-    private static final double DEFAULT_REFERENCE_VOLUME = 0.6 * 0.6 * 1.8;
     private static final double MIN_MASS_SCALE = 0.04;
-    /**
-     * Large hitboxes are punished harder than linear volume (Warden ~3.6× player volume → ~13× load).
-     * Strength 1 should barely drag a Warden; Strength ≈ load is needed for full speed.
-     */
-    private static final double MASS_LOAD_EXPONENT = 2.0;
     /** Strain above this applies Slowness / movement drag (0 = effortless, 1 = immovable). */
     private static final double SLOWNESS_STRAIN_THRESHOLD = 0.08;
     private static final int SLOWNESS_DURATION_TICKS = 10;
@@ -58,7 +52,8 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
                     Value.CODEC.optionalFieldOf("pull_strength", new StaticValue(0.5f)).forGetter((ab) -> ab.pullStrength),
                     Value.CODEC.optionalFieldOf("max_step", new StaticValue(1.4f)).forGetter((ab) -> ab.maxStep),
                     Codec.STRING.optionalFieldOf("mode", "all").forGetter((ab) -> ab.mode),
-                    Codec.DOUBLE.optionalFieldOf("reference_volume", DEFAULT_REFERENCE_VOLUME).forGetter((ab) -> ab.referenceVolume),
+                    Codec.DOUBLE.optionalFieldOf("reference_volume", BlackwhipChainLeadPhysics.DEFAULT_REFERENCE_VOLUME)
+                            .forGetter((ab) -> ab.referenceVolume),
                     Codec.DOUBLE.optionalFieldOf("reel_step", 0.5).forGetter((ab) -> ab.reelStep),
                     Codec.DOUBLE.optionalFieldOf("reel_min_length", 0.5).forGetter((ab) -> ab.reelMinLength),
                     propertiesCodec(),
@@ -118,7 +113,7 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
             double holdDistance = this.holdDistance.getAsFloat(context);
             double pull = Math.max(0.0, this.pullStrength.getAsFloat(context));
             double maxStep = Math.max(0.0, this.maxStep.getAsFloat(context));
-            double strength = readStrength(player);
+            double strength = BlackwhipChainLeadPhysics.readStrength(player);
 
             Vec3 eye = player.getEyePosition();
             Vec3 look = player.getLookAngle();
@@ -127,22 +122,28 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
 
             double load = 0.0;
             for (LivingEntity target : targets) {
-                load += loadContribution(target, this.referenceVolume);
+                load += BlackwhipChainLeadPhysics.loadContribution(target, this.referenceVolume);
             }
             applyPuppetStrain(player, strength, load);
 
             for (LivingEntity target : targets) {
-                double massScale = massScale(target, strength, this.referenceVolume);
+                BlackwhipChainEntity chain = BlackwhipChainTagStore.getChainForTarget(player, target.getId());
+                double massScale = BlackwhipChainLeadPhysics.massScale(target, strength, this.referenceVolume);
+
+                // Overloaded locked leads: heavy / stronger targets tow the owner along the tether.
+                if (chain != null && chain.isLengthLocked()) {
+                    BlackwhipChainLeadPhysics.applyPuppetDrag(
+                            player, target, chain.getLockedLeashLength(), strength, this.referenceVolume);
+                }
+
                 if (massScale < MIN_MASS_SCALE) {
                     continue;
                 }
                 double scaledPull = pull * massScale;
                 double scaledStep = maxStep * massScale;
 
-                // With Lead locked, scroll owns range: hold at the locked leash length (not the
-                // JSON hold_distance cap, which was blocking extend past ~5 blocks).
+                // With Lead locked, scroll owns range: hold at the locked leash length.
                 double effectiveHold = holdDistance;
-                BlackwhipChainEntity chain = BlackwhipChainTagStore.getChainForTarget(player, target.getId());
                 if (chain != null && chain.isLengthLocked()) {
                     effectiveHold = Math.max(0.5, chain.getLockedLeashLength());
                 }
@@ -185,14 +186,6 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
         double moveFactor = Mth.lerp(strain, 1.0, MIN_PLAYER_MOVE_FACTOR);
         Vec3 mv = player.getDeltaMovement();
         player.setDeltaMovement(mv.x * moveFactor, mv.y, mv.z * moveFactor);
-    }
-
-    private static double readStrength(ServerPlayer player) {
-        var instance = player.getAttribute(StrengthAttributes.STRENGTH);
-        if (instance == null) {
-            return StrengthAttributes.STRENGTH_DEFAULT;
-        }
-        return Math.max(0.0, instance.getValue());
     }
 
     /**
@@ -238,23 +231,6 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
         }
     }
 
-    /** Volume ratio vs a player-sized reference (floor so tiny mobs aren't free). */
-    static double relativeMass(LivingEntity target, double referenceVolume) {
-        var box = target.getBoundingBox();
-        double volume = Math.max(1.0e-4, box.getXsize() * box.getYsize() * box.getZsize());
-        return Math.max(volume / Math.max(1.0e-4, referenceVolume), 0.25);
-    }
-
-    /** Non-linear load used for strain + move scale (large volumes dominate). */
-    static double loadContribution(LivingEntity target, double referenceVolume) {
-        double relative = relativeMass(target, referenceVolume);
-        return Math.pow(relative, MASS_LOAD_EXPONENT);
-    }
-
-    static double massScale(LivingEntity target, double strength, double referenceVolume) {
-        return Mth.clamp(strength / loadContribution(target, referenceVolume), 0.0, 1.0);
-    }
-
     @Override
     public AbilitySerializer<?> getSerializer() {
         return AbilityRegister.BLACKWHIP_CHAIN_MOVE_TAGGED.get();
@@ -266,7 +242,7 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainMoveTaggedAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("While held, drags chain-tagged entities to a hold point. With Lead on, scroll extends/retracts tether length. Larger hitboxes need higher yha:strength.")
+            builder.setDescription("While held, drags chain-tagged entities to a hold point. With Lead on, scroll extends/retracts tether length. Larger/stronger targets can drag the owner.")
                     .add("hold_distance", TYPE_VALUE, "How far in front of the eyes the hold point sits.")
                     .add("pull_strength", TYPE_VALUE, "Base fraction of the gap closed each tick.")
                     .add("max_step", TYPE_VALUE, "Base maximum movement per tick.")
@@ -276,7 +252,7 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
                     .add("reel_min_length", TYPE_FLOAT, "Shortest locked leash length allowed when scrolling.")
                     .addExampleObject(new BlackwhipChainMoveTaggedAbility(
                             new StaticValue(5.0f), new StaticValue(0.5f), new StaticValue(1.4f), "all",
-                            DEFAULT_REFERENCE_VOLUME, 0.5, 0.5,
+                            BlackwhipChainLeadPhysics.DEFAULT_REFERENCE_VOLUME, 0.5, 0.5,
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
     }

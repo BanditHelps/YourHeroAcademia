@@ -116,7 +116,7 @@
       },
       "properties": {
         "title": "Lead",
-        "description": "Toggle to lock tether length at the current slack. Tagged targets are softly reeled if they stray past that length, like a dog lead.",
+        "description": "Toggle to lock tether length at the current slack. Weaker targets are softly reeled in if they stray; bigger or stronger ones can drag you along the lead.",
         "icon": "minecraft:lead",
         "list_index": 3,
         "hidden_in_gui": false,
@@ -159,7 +159,7 @@
       "reel_min_length": 0.5,
       "properties": {
         "title": "Puppet (Single)",
-        "description": "Hold to drag the looked-at (or nearest) tagged target to a point in front of your crosshair. With Lead on, scroll up to lengthen the tether and scroll down to shorten it. Bigger hitboxes need more Strength — oversized loads slow you down.",
+        "description": "Hold to drag the looked-at (or nearest) tagged target to a point in front of your crosshair. With Lead on, scroll up to lengthen the tether and scroll down to shorten it. Bigger hitboxes need more Strength — oversized loads slow you down, and can drag you if they overpower you.",
         "icon": "minecraft:string",
         "list_index": 7,
         "hidden_in_gui": false,
