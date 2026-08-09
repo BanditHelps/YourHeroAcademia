@@ -6,6 +6,7 @@ import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.entity.PartEntity;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -19,6 +20,23 @@ public final class BlackwhipTargeting {
     private BlackwhipTargeting() {
     }
 
+    /**
+     * Resolves a living combat target from a hit entity. Multipart bosses (Ender Dragon, etc.) expose
+     * pickable {@link PartEntity} hitboxes whose parent is the actual {@link LivingEntity}.
+     */
+    public static LivingEntity asLivingTarget(Entity entity) {
+        if (entity instanceof LivingEntity living) {
+            return living.isAlive() ? living : null;
+        }
+        if (entity instanceof PartEntity<?> part) {
+            Entity parent = part.getParent();
+            if (parent instanceof LivingEntity living && living.isAlive()) {
+                return living;
+            }
+        }
+        return null;
+    }
+
     /** Returns the first living entity under the owner's crosshair within {@code range}, or null. */
     public static LivingEntity raycastLiving(LivingEntity owner, double range) {
         Vec3 eye = owner.getEyePosition();
@@ -27,13 +45,13 @@ public final class BlackwhipTargeting {
         AABB box = owner.getBoundingBox().expandTowards(look.scale(range)).inflate(1.0);
         EntityHitResult hit = ProjectileUtil.getEntityHitResult(
                 owner, eye, end, box,
-                e -> e instanceof LivingEntity && e != owner && e.isAlive() && e.isPickable(),
+                e -> {
+                    LivingEntity living = asLivingTarget(e);
+                    return living != null && living != owner && e.isPickable();
+                },
                 range * range
         );
-        if (hit != null && hit.getEntity() instanceof LivingEntity living) {
-            return living;
-        }
-        return null;
+        return hit != null ? asLivingTarget(hit.getEntity()) : null;
     }
 
     /**
@@ -50,10 +68,13 @@ public final class BlackwhipTargeting {
 
         List<LivingEntity> results = new ArrayList<>();
         for (Entity e : owner.level().getEntities(owner, search)) {
-            if (!(e instanceof LivingEntity living) || !living.isAlive() || living == owner) {
+            LivingEntity living = asLivingTarget(e);
+            if (living == null || living == owner || results.contains(living)) {
                 continue;
             }
-            Vec3 toTarget = living.getBoundingBox().getCenter().subtract(eye);
+            // Prefer the struck part's box when present so huge multipart AABBs don't fake cone hits.
+            AABB targetBox = e instanceof PartEntity<?> ? e.getBoundingBox() : living.getBoundingBox();
+            Vec3 toTarget = targetBox.getCenter().subtract(eye);
             double dist = toTarget.length();
             if (dist > range || dist < 1.0e-4) {
                 continue;

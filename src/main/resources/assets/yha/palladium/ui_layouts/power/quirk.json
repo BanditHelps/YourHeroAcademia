@@ -61,7 +61,19 @@
           "properties": {
             "alignment": "top_left",
             "x": 18,
-            "y": 43,
+            "y": 40,
+            "width": 24,
+            "height": 12
+          }
+        },
+        {
+          "type": "yha:player_attribute_value",
+          "attribute": "strength",
+          "decimals": 1,
+          "properties": {
+            "alignment": "top_left",
+            "x": 18,
+            "y": 50,
             "width": 24,
             "height": 12
           }

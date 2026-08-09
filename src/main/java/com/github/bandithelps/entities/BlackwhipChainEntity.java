@@ -2,6 +2,7 @@ package com.github.bandithelps.entities;
 
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainTagStore;
+import com.github.bandithelps.utils.blackwhip.BlackwhipTargeting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -624,7 +625,11 @@ public class BlackwhipChainEntity extends Entity {
         if (e instanceof BlackwhipSegmentEntity || e instanceof BlackwhipChainEntity) {
             return false;
         }
-        if (e instanceof LivingEntity living) {
+        LivingEntity living = BlackwhipTargeting.asLivingTarget(e);
+        if (living != null) {
+            if (living.getId() == getOwnerId()) {
+                return false;
+            }
             return !(owner instanceof ServerPlayer player && BlackwhipChainTagStore.isTagged(player, living.getId()));
         }
         if (e instanceof Projectile projectile) {
@@ -635,7 +640,8 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     private void applyDeployEntityHit(Entity hit) {
-        if (hit instanceof LivingEntity living) {
+        LivingEntity living = BlackwhipTargeting.asLivingTarget(hit);
+        if (living != null) {
             latch(living);
         } else {
             grabProjectile(hit);

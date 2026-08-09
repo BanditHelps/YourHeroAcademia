@@ -327,7 +327,10 @@ public final class BlackwhipChainTagStore {
             Entity target = level.getEntity(entry.targetId());
             boolean dead = !(target instanceof LivingEntity living) || !living.isAlive();
             boolean expired = entry.expireTicks() > 0 && (now - entry.createdTick()) > entry.expireTicks();
-            boolean tooFar = entry.maxDistance() > 0 && target != null && target.distanceTo(owner) > entry.maxDistance();
+            // Use closest AABB distance so huge multipart bosses (dragon) don't break while
+            // you're still touching a limb far from the entity center.
+            boolean tooFar = entry.maxDistance() > 0 && target != null
+                    && Math.sqrt(target.getBoundingBox().distanceToSqr(owner.position())) > entry.maxDistance();
             Entity chain = level.getEntity(entry.chainEntityId());
             boolean missingChain = !(chain instanceof BlackwhipChainEntity);
             if (dead || expired || tooFar || missingChain) {

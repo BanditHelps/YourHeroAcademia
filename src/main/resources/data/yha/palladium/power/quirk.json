@@ -38,13 +38,21 @@
             "molang": "yha.strength_current() * 0.25"
           },
           "operation": "add_value"
+        },
+        {
+          "attribute": "yha:strength",
+          "amount": {
+            "type": "palladium:molang_float",
+            "molang": "yha.strength_current()"
+          },
+          "operation": "add_value"
         }
       ],
       "properties": {
-        "title": "Strength Upgrade (+0.25)",
+        "title": "Strength Upgrade",
         "description": {
-          "locked": "Adds +0.25 to Attack Damage",
-          "unlocked": "+0.25 Attack Damage"
+          "locked": "Adds Attack Damage and yha:strength (Lead/Puppet contests)",
+          "unlocked": "+0.25 Attack Damage and +1 Strength per point"
         },
         "icon": "yha:textures/icons/physical/strength_upgrade_1.png",
         "hidden_in_gui": false,
