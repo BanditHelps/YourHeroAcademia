@@ -32,9 +32,12 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Chain Puppet: while held, drags tagged chain targets to a hold point in front of the crosshair.
- * Larger hitboxes are harder to move; {@code yha:strength} offsets that mass scale.
- * With Lead on, mouse scroll extends/retracts locked tether length; overloaded targets can drag you.
+ * Chain Puppet — telekinesis via Blackwhip tethers.
+ * <p>
+ * While held, tagged targets are dragged toward a hold point along the player's look vector.
+ * {@code mode} picks who moves ({@code single} vs {@code all}). Mouse aim steers the hold point;
+ * with Lock active, scroll extends/retracts locked tether length. Heavier hitboxes resist movement
+ * (scaled by {@code yha:strength}); overloaded locked leads can drag the owner instead.
  */
 public class BlackwhipChainMoveTaggedAbility extends Ability {
 
@@ -49,49 +52,70 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
     public static final MapCodec<BlackwhipChainMoveTaggedAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("hold_distance", new StaticValue(5.0f)).forGetter((ab) -> ab.holdDistance),
-                    Value.CODEC.optionalFieldOf("pull_strength", new StaticValue(0.5f)).forGetter((ab) -> ab.pullStrength),
-                    Value.CODEC.optionalFieldOf("max_step", new StaticValue(1.4f)).forGetter((ab) -> ab.maxStep),
+                    Value.CODEC.optionalFieldOf("pull_factor", new StaticValue(0.5f)).forGetter((ab) -> ab.pullFactor),
+                    Value.CODEC.optionalFieldOf("move_step", new StaticValue(1.4f)).forGetter((ab) -> ab.moveStep),
                     Codec.STRING.optionalFieldOf("mode", "all").forGetter((ab) -> ab.mode),
                     Codec.DOUBLE.optionalFieldOf("reference_volume", BlackwhipChainLeadPhysics.DEFAULT_REFERENCE_VOLUME)
                             .forGetter((ab) -> ab.referenceVolume),
                     Codec.DOUBLE.optionalFieldOf("reel_step", 0.5).forGetter((ab) -> ab.reelStep),
-                    Codec.DOUBLE.optionalFieldOf("reel_min_length", 0.5).forGetter((ab) -> ab.reelMinLength),
+                    Value.CODEC.optionalFieldOf("reel_min_length", new StaticValue(0.5f)).forGetter((ab) -> ab.reelMinLength),
+                    Value.CODEC.optionalFieldOf("reel_max_length", new StaticValue(28.0f)).forGetter((ab) -> ab.reelMaxLength),
                     propertiesCodec(),
                     stateCodec(),
                     energyBarUsagesCodec()).apply(instance, BlackwhipChainMoveTaggedAbility::new));
 
+    /**
+     * Default hold point distance along look (blocks from eyes).
+     * Not a reel limit — with Lead locked, scroll owns range via {@link #reelMinLength}/{@link #reelMaxLength}.
+     */
     public final Value holdDistance;
-    public final Value pullStrength;
-    public final Value maxStep;
+    /** How strongly each tick applies {@link #moveStep} (roughly 0–1; 1 snaps fully). */
+    public final Value pullFactor;
+    /**
+     * Base blocks a player-sized target travels toward the hold point each tick.
+     * Scaled down for heavier targets via mass / strength.
+     */
+    public final Value moveStep;
+    /** {@code all} = every tethered target; {@code single} = looked-at / nearest only. */
     public final String mode;
+    /** Hitbox volume treated as "player-sized" when computing mass scale. */
     public final double referenceVolume;
+    /** Blocks of tether length changed per scroll notch while Lead is on. */
     public final double reelStep;
-    public final double reelMinLength;
+    /** Shortest locked leash length scroll may retract to. */
+    public final Value reelMinLength;
+    /** Farthest locked leash length scroll may extend to (also capped by the tag's break distance). */
+    public final Value reelMaxLength;
 
-    public BlackwhipChainMoveTaggedAbility(Value holdDistance, Value pullStrength, Value maxStep, String mode,
-                                           double referenceVolume, double reelStep, double reelMinLength,
-                                           AbilityProperties properties, AbilityStateManager conditions,
-                                           List<EnergyBarUsage> energyBarUsages) {
+    public BlackwhipChainMoveTaggedAbility(Value holdDistance, Value pullFactor, Value moveStep, String mode,
+                                           double referenceVolume, double reelStep, Value reelMinLength,
+                                           Value reelMaxLength, AbilityProperties properties,
+                                           AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.holdDistance = holdDistance;
-        this.pullStrength = pullStrength;
-        this.maxStep = maxStep;
+        this.pullFactor = pullFactor;
+        this.moveStep = moveStep;
         this.mode = mode;
         this.referenceVolume = Math.max(0.01, referenceVolume);
         this.reelStep = Math.max(0.05, reelStep);
-        this.reelMinLength = Math.max(0.25, reelMinLength);
+        this.reelMinLength = reelMinLength;
+        this.reelMaxLength = reelMaxLength;
     }
 
     @Override
     public void firstTick(LivingEntity entity, AbilityInstance<?> abilityInstance) {
         if (entity instanceof ServerPlayer player) {
+            DataContext context = DataContext.forEntity(entity);
+            double minLength = Math.max(0.25, this.reelMinLength.getAsFloat(context));
+            double maxLength = Math.max(minLength, this.reelMaxLength.getAsFloat(context));
+
             int lockedTargetId = -1;
             if ("single".equalsIgnoreCase(this.mode)) {
                 List<LivingEntity> pick = BlackwhipChainTagStore.resolveTargets(player, "single");
                 lockedTargetId = pick.isEmpty() ? -1 : pick.getFirst().getId();
             }
             BlackwhipChainTagStore.startReelSession(
-                    player, this.mode, this.reelStep, this.reelMinLength, lockedTargetId);
+                    player, this.mode, this.reelStep, minLength, maxLength, lockedTargetId);
             PacketDistributor.sendToPlayer(player, BlackwhipChainReelSessionPayload.start(this.mode));
         }
     }
@@ -111,8 +135,8 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
         if (enabled && entity instanceof ServerPlayer player) {
             DataContext context = DataContext.forEntity(entity);
             double holdDistance = this.holdDistance.getAsFloat(context);
-            double pull = Math.max(0.0, this.pullStrength.getAsFloat(context));
-            double maxStep = Math.max(0.0, this.maxStep.getAsFloat(context));
+            double pullFactor = Math.max(0.0, this.pullFactor.getAsFloat(context));
+            double moveStep = Math.max(0.0, this.moveStep.getAsFloat(context));
             double strength = BlackwhipChainLeadPhysics.readStrength(player);
 
             Vec3 eye = player.getEyePosition();
@@ -127,42 +151,52 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
             applyPuppetStrain(player, strength, load);
 
             for (LivingEntity target : targets) {
-                BlackwhipChainEntity chain = BlackwhipChainTagStore.getChainForTarget(player, target.getId());
-                double massScale = BlackwhipChainLeadPhysics.massScale(target, strength, this.referenceVolume);
-
-                // Overloaded locked leads: heavy / stronger targets tow the owner along the tether.
-                if (chain != null && chain.isLengthLocked()) {
-                    BlackwhipChainLeadPhysics.applyPuppetDrag(
-                            player, target, chain.getLockedLeashLength(), strength, this.referenceVolume);
-                }
-
-                if (massScale < MIN_MASS_SCALE) {
-                    continue;
-                }
-                double scaledPull = pull * massScale;
-                double scaledStep = maxStep * massScale;
-
-                // With Lead locked, scroll owns range: hold at the locked leash length.
-                double effectiveHold = holdDistance;
-                if (chain != null && chain.isLengthLocked()) {
-                    effectiveHold = Math.max(0.5, chain.getLockedLeashLength());
-                }
-                Vec3 hold = eye.add(look.scale(effectiveHold));
-
-                Vec3 to = hold.subtract(target.getBoundingBox().getCenter());
-                double dist = to.length();
-                Vec3 velocity = dist < 1.0e-3
-                        ? Vec3.ZERO
-                        : to.scale(Math.min(dist, scaledStep) / dist).scale(scaledPull);
-                target.setDeltaMovement(velocity);
-                target.hurtMarked = true;
-                target.fallDistance = 0;
-                if (target instanceof Mob mob) {
-                    mob.getNavigation().stop();
-                }
+                puppetTarget(player, target, eye, look, holdDistance, pullFactor, moveStep, strength);
             }
         }
         return super.tick(entity, abilityInstance, enabled);
+    }
+
+    /**
+     * Drags one tagged entity toward the look-based hold point, applying mass scale and
+     * Lead-lock override (scroll-owned tether length).
+     */
+    private void puppetTarget(ServerPlayer player, LivingEntity target, Vec3 eye, Vec3 look,
+                              double holdDistance, double pullFactor, double moveStep, double strength) {
+        BlackwhipChainEntity chain = BlackwhipChainTagStore.getChainForTarget(player, target.getId());
+        double massScale = BlackwhipChainLeadPhysics.massScale(target, strength, this.referenceVolume);
+
+        // Overloaded locked leads: heavy / stronger targets tow the owner along the tether.
+        if (chain != null && chain.isLengthLocked()) {
+            BlackwhipChainLeadPhysics.applyPuppetDrag(
+                    player, target, chain.getLockedLeashLength(), strength, this.referenceVolume);
+        }
+
+        if (massScale < MIN_MASS_SCALE) {
+            return;
+        }
+
+        // Lead lock: scroll owns range — hold on the locked leash instead of hold_distance.
+        double effectiveHold = holdDistance;
+        if (chain != null && chain.isLengthLocked()) {
+            effectiveHold = Math.max(0.5, chain.getLockedLeashLength());
+        }
+        Vec3 holdPoint = eye.add(look.scale(effectiveHold));
+
+        double step = moveStep * massScale;
+        double pull = pullFactor * massScale;
+        Vec3 toHold = holdPoint.subtract(target.getBoundingBox().getCenter());
+        double dist = toHold.length();
+        Vec3 velocity = dist < 1.0e-3
+                ? Vec3.ZERO
+                : toHold.scale(Math.min(dist, step) / dist).scale(pull);
+
+        target.setDeltaMovement(velocity);
+        target.hurtMarked = true;
+        target.fallDistance = 0;
+        if (target instanceof Mob mob) {
+            mob.getNavigation().stop();
+        }
     }
 
     /**
@@ -211,16 +245,17 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
                 continue;
             }
             BlackwhipChainTagStore.TagEntry entry = BlackwhipChainTagStore.getTagEntry(player, target.getId());
-            double maxLen = entry != null && entry.maxDistance() > 0
-                    ? entry.maxDistance()
-                    : Math.max(chain.getLockedLeashLength(), 28.0);
+            // Puppet reel cap, further limited by the tag's break distance when set.
+            double maxLen = session.maxLength();
+            if (entry != null && entry.maxDistance() > 0) {
+                maxLen = Math.min(maxLen, entry.maxDistance());
+            }
             double newLen = Mth.clamp(chain.getLockedLeashLength() + delta, session.minLength(), maxLen);
             chain.setLockedLeashLength(newLen);
 
-            // Snap the hold target along look to the new leash length so extend/retract isn't
-            // waiting on the next puppet tick (and isn't capped by hold_distance).
-            Vec3 hold = eye.add(look.scale(Math.max(0.5, newLen)));
-            Vec3 toHold = hold.subtract(target.getBoundingBox().getCenter());
+            // Snap along look to the new leash length so reel feels immediate (not capped by hold_distance).
+            Vec3 holdPoint = eye.add(look.scale(Math.max(0.5, newLen)));
+            Vec3 toHold = holdPoint.subtract(target.getBoundingBox().getCenter());
             double dist = toHold.length();
             if (dist > 1.0e-3) {
                 Vec3 push = toHold.scale(Math.min(dist, Math.abs(delta) + 0.35) / dist);
@@ -242,17 +277,30 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainMoveTaggedAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("While held, drags chain-tagged entities to a hold point. With Lead on, scroll extends/retracts tether length. Larger/stronger targets can drag the owner.")
-                    .add("hold_distance", TYPE_VALUE, "How far in front of the eyes the hold point sits.")
-                    .add("pull_strength", TYPE_VALUE, "Base fraction of the gap closed each tick.")
-                    .add("max_step", TYPE_VALUE, "Base maximum movement per tick.")
-                    .add("mode", TYPE_STRING, "'all' moves every tethered entity; 'single' moves only the looked-at/nearest one.")
-                    .add("reference_volume", TYPE_FLOAT, "Hitbox volume treated as 'player-sized' for mass scaling.")
-                    .add("reel_step", TYPE_FLOAT, "Blocks changed per scroll notch while Lead is on.")
-                    .add("reel_min_length", TYPE_FLOAT, "Shortest locked leash length allowed when scrolling.")
+            builder.setDescription(
+                            "Telekinesis for chain-tagged entities: hold to drag them to a look-based hold point. "
+                                    + "Mode selects single vs all targets. With lock on, scroll reels tether length. "
+                                    + "Larger/stronger targets resist and can drag the owner.")
+                    .add("hold_distance", TYPE_VALUE,
+                            "Default hold point distance along look (ignored while Lead lock owns range). Not the scroll max.")
+                    .add("pull_factor", TYPE_VALUE,
+                            "How hard each tick applies move_step toward the hold point (0 = none, 1 = full step).")
+                    .add("move_step", TYPE_VALUE,
+                            "Base blocks a player-sized target moves toward the hold point each tick; heavier targets scale this down.")
+                    .add("mode", TYPE_STRING,
+                            "'all' moves every tethered entity; 'single' moves only the looked-at/nearest one.")
+                    .add("reference_volume", TYPE_FLOAT,
+                            "Hitbox volume treated as player-sized for mass scaling.")
+                    .add("reel_step", TYPE_FLOAT,
+                            "Blocks of tether length changed per scroll notch while Lead is on.")
+                    .add("reel_min_length", TYPE_VALUE,
+                            "Shortest locked leash length allowed when scrolling in.")
+                    .add("reel_max_length", TYPE_VALUE,
+                            "Farthest locked leash length allowed when scrolling out (also capped by the tag's max_distance).")
                     .addExampleObject(new BlackwhipChainMoveTaggedAbility(
                             new StaticValue(5.0f), new StaticValue(0.5f), new StaticValue(1.4f), "all",
-                            BlackwhipChainLeadPhysics.DEFAULT_REFERENCE_VOLUME, 0.5, 0.5,
+                            BlackwhipChainLeadPhysics.DEFAULT_REFERENCE_VOLUME, 0.5,
+                            new StaticValue(0.5f), new StaticValue(28.0f),
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
     }

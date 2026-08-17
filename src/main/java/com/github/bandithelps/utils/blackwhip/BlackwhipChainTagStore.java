@@ -42,8 +42,9 @@ public final class BlackwhipChainTagStore {
 
     /**
      * @param lockedTargetId entity id locked for single-target Puppet for the whole hold; {@code -1} for all-mode
+     * @param maxLength      farthest locked leash length scroll may extend to (still capped by tag break distance)
      */
-    public record ReelSession(String mode, double step, double minLength, int lockedTargetId) {
+    public record ReelSession(String mode, double step, double minLength, double maxLength, int lockedTargetId) {
     }
 
     private BlackwhipChainTagStore() {
@@ -188,11 +189,14 @@ public final class BlackwhipChainTagStore {
     }
 
     public static void startReelSession(ServerPlayer owner, String mode, double step, double minLength,
-                                        int lockedTargetId) {
+                                        double maxLength, int lockedTargetId) {
+        double min = Math.max(0.25, minLength);
+        double max = Math.max(min, maxLength);
         REEL_SESSIONS.put(owner.getUUID(), new ReelSession(
                 mode == null ? "all" : mode,
                 Math.max(0.05, step),
-                Math.max(0.25, minLength),
+                min,
+                max,
                 lockedTargetId));
     }
 
