@@ -63,7 +63,7 @@ public class BlackwhipChainEntity extends Entity {
     public static final int PHASE_DEPLOYING = 0;
     /** Tip latched to a living target. */
     public static final int PHASE_LATCHED = 1;
-    /** Retracting to the wrist before discard. */
+    /** Dissolving in place before discard (no wrist retract). */
     public static final int PHASE_RETRACTING = 2;
     /** Tip pinned to a fixed world / block anchor (swing, zip). */
     public static final int PHASE_ANCHORED = 3;
@@ -142,15 +142,20 @@ public class BlackwhipChainEntity extends Entity {
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_ANCHOR_Z =
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.FLOAT);
-    /** Item riding the tip during retract (ground grab / disarm). Delivered when retract finishes. */
+    /** Item stuck at the frozen tip during dissolve (ground grab / disarm). Delivered when dissolve finishes. */
     private static final EntityDataAccessor<ItemStack> DATA_HELD_TIP_ITEM =
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.ITEM_STACK);
 
-    /** Slightly longer retract so tip cargo is readable. */
+    /** Slightly longer dissolve so tip cargo is readable. */
     private static final int ITEM_CARRY_RETRACT_TICKS = 12;
+    private static final int DEFAULT_DISSOLVE_TICKS = 10;
 
     private final int[] segmentIds = new int[MAX_SEGMENTS];
     private final Vec3[] joints = new Vec3[MAX_SEGMENTS];
+    private final Vec3[] dissolveOrigin = new Vec3[MAX_SEGMENTS];
+    private final Vec3[] dissolveScatter = new Vec3[MAX_SEGMENTS];
+    private boolean dissolveCaptured;
+    private int dissolveAge;
     private int retractCountdown = -1;
     private boolean segmentsSpawned;
     private int resizeCooldown;
@@ -291,7 +296,7 @@ public class BlackwhipChainEntity extends Entity {
         builder.define(DATA_GLOW_COLOR, DEFAULT_GLOW);
         builder.define(DATA_THICKNESS, 1.0f);
         builder.define(DATA_TRAVEL_TICKS, 12);
-        builder.define(DATA_RETRACT_TICKS, 6);
+        builder.define(DATA_RETRACT_TICKS, DEFAULT_DISSOLVE_TICKS);
         builder.define(DATA_ACTIVE, true);
         builder.define(DATA_HURT_TICK, 0);
         builder.define(DATA_SEED, 0);
@@ -332,6 +337,8 @@ public class BlackwhipChainEntity extends Entity {
         this.latchBlendRemaining = 0;
         this.getEntityData().set(DATA_ACTIVE, true);
         this.retractCountdown = -1;
+        this.dissolveCaptured = false;
+        this.dissolveAge = 0;
     }
 
     public void setLatchParams(int ttlTicks, double maxDistance, int maxKeep) {
@@ -381,6 +388,8 @@ public class BlackwhipChainEntity extends Entity {
         this.latchBlendRemaining = LATCH_BLEND_TICKS;
         this.getEntityData().set(DATA_ACTIVE, true);
         this.retractCountdown = -1;
+        this.dissolveCaptured = false;
+        this.dissolveAge = 0;
 
         Entity owner = getOwner();
         if (owner != null && this.level() instanceof ServerLevel level) {
@@ -402,6 +411,8 @@ public class BlackwhipChainEntity extends Entity {
         this.latchBlendRemaining = 0;
         this.getEntityData().set(DATA_ACTIVE, true);
         this.retractCountdown = -1;
+        this.dissolveCaptured = false;
+        this.dissolveAge = 0;
 
         Entity owner = getOwner();
         if (owner != null && this.level() instanceof ServerLevel level) {
@@ -511,7 +522,7 @@ public class BlackwhipChainEntity extends Entity {
                         moveSegments(owner);
                     }
                 } else if (!isActive()) {
-                    updateRetractJoints(owner);
+                    updateDissolveJoints();
                     moveSegments(owner);
                 }
                 return;
@@ -536,7 +547,7 @@ public class BlackwhipChainEntity extends Entity {
             updateLatchedJoints(owner, target);
             moveSegments(owner);
         } else if (!isActive()) {
-            updateRetractJoints(owner);
+            updateDissolveJoints();
             moveSegments(owner);
         }
     }
@@ -725,7 +736,7 @@ public class BlackwhipChainEntity extends Entity {
         deactivate();
     }
 
-    /** Pins cargo to the tip for the retract animation; delivered in {@link #forceDiscard()}. */
+    /** Pins cargo at the freeze tip for the dissolve; delivered in {@link #forceDiscard()}. */
     private void attachTipCargo(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return;
@@ -899,7 +910,31 @@ public class BlackwhipChainEntity extends Entity {
         this.getEntityData().set(DATA_ACTIVE, false);
         setPhase(PHASE_RETRACTING);
         this.retractCountdown = Math.max(1, getRetractTicks());
-        // Keep latch tick so retract can still read a finished wrap progress if needed.
+        captureDissolvePose();
+    }
+
+    private void captureDissolvePose() {
+        if (this.dissolveCaptured) {
+            return;
+        }
+        this.dissolveCaptured = true;
+        this.dissolveAge = 0;
+        int n = getSegmentCount();
+        int seed = getSeed();
+        for (int i = 0; i < n; i++) {
+            Vec3 origin = joints[i] == null || joints[i].equals(Vec3.ZERO) ? this.position() : joints[i];
+            dissolveOrigin[i] = origin;
+            float hx = hash01(seed, i, 1) - 0.5f;
+            float hy = hash01(seed, i, 2) - 0.25f;
+            float hz = hash01(seed, i, 3) - 0.5f;
+            dissolveScatter[i] = new Vec3(hx * 0.65, 0.08 + hy * 0.35, hz * 0.65);
+        }
+    }
+
+    private static float hash01(int seed, int index, int salt) {
+        int h = seed * 374761393 + index * 668265263 + salt * 1274126177;
+        h = (h ^ (h >> 13)) * 1274126177;
+        return ((h >>> 1) & 0x7fffffff) / (float) Integer.MAX_VALUE;
     }
 
     private void notifyStoreBreak() {
@@ -1245,19 +1280,21 @@ public class BlackwhipChainEntity extends Entity {
         }
     }
 
-    private void updateRetractJoints(Entity owner) {
-        int n = getSegmentCount();
-        Vec3 root = BlackwhipChainAnchors.resolveOwnerWrist(owner);
-        float rt = Math.max(1, getRetractTicks());
-        float progress = 1.0f - Mth.clamp(this.retractCountdown / rt, 0.0f, 1.0f);
-        for (int i = 0; i < n; i++) {
-            double t = i / (double) Math.max(1, n - 1);
-            double pull = Math.min(1.0, progress + t * 0.35);
-            joints[i] = joints[i].lerp(root, pull);
+    private void updateDissolveJoints() {
+        if (!this.dissolveCaptured) {
+            captureDissolvePose();
         }
-        joints[0] = root;
-        BlackwhipChainAnchors.collideJointChain(this.level(), this, joints, n);
-        joints[0] = root;
+        int n = getSegmentCount();
+        float rt = Math.max(1, getRetractTicks());
+        float progress = Mth.clamp(this.dissolveAge / rt, 0.0f, 1.0f);
+        float eased = progress * progress;
+        for (int i = 0; i < n; i++) {
+            Vec3 origin = dissolveOrigin[i] != null ? dissolveOrigin[i] : joints[i];
+            Vec3 scatter = dissolveScatter[i] != null ? dissolveScatter[i] : Vec3.ZERO;
+            double sag = 0.40 * eased * progress;
+            joints[i] = origin.add(scatter.scale(eased)).add(0, -sag, 0);
+        }
+        this.dissolveAge++;
     }
 
     private static void solveFabrik(Vec3[] joints, int n, Vec3 root, Vec3 tip, float link, int iterations) {

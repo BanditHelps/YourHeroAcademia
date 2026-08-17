@@ -2,6 +2,7 @@ package com.github.bandithelps;
 
 import com.github.bandithelps.gui.ui.components.YhaUiComponentSerializers;
 import com.github.bandithelps.gui.ui.layouts.YhaUiLayoutSerializers;
+import com.github.bandithelps.particles.BlackwhipDissolveParticle;
 import com.github.bandithelps.particles.ModParticles;
 import com.github.bandithelps.particles.SmokescreenParticle;
 import net.minecraft.client.Minecraft;
@@ -44,5 +45,6 @@ public class YourHeroAcademiaClient {
     @SubscribeEvent
     static void registerParticleProviders(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.SMOKESCREEN.get(), SmokescreenParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.BLACKWHIP_DISSOLVE.get(), BlackwhipDissolveParticle.Provider::new);
     }
 }

@@ -71,7 +71,7 @@ public final class BlackwhipChainHelper {
         chain.setHp(chainHp);
         chain.setThickness(thickness);
         chain.setTravelTicks(travelTicks);
-        chain.setRetractTicks(6);
+        chain.setRetractTicks(10);
         chain.setWrapTurns(purpose == BlackwhipChainEntity.PURPOSE_DISARM ? 0.0f : 2.0f);
         chain.setLatchParams(ttlTicks, maxDistance, keep);
         applyOwnerColors(chain, owner);
@@ -122,7 +122,7 @@ public final class BlackwhipChainHelper {
         chain.setHp(Math.max(1.0f, chainHp));
         chain.setThickness(thickness);
         chain.setTravelTicks(1);
-        chain.setRetractTicks(5);
+        chain.setRetractTicks(10);
         chain.setWrapTurns(0.0f);
         chain.setLatchParams(0, maxDistance, keep);
         chain.setMaxRange((float) Math.max(1.0, maxDistance > 0 ? maxDistance : ropeDist));
@@ -175,7 +175,7 @@ public final class BlackwhipChainHelper {
         chain.setHp(Math.max(1.0f, chainHp));
         chain.setThickness(thickness);
         chain.setTravelTicks(1);
-        chain.setRetractTicks(5);
+        chain.setRetractTicks(10);
         chain.setWrapTurns(1.5f);
         chain.setLatchParams(0, maxDistance, keep);
         chain.setMaxRange((float) Math.max(1.0, maxDistance > 0 ? maxDistance : ropeDist));
@@ -224,7 +224,7 @@ public final class BlackwhipChainHelper {
         chain.setHp(Math.max(1.0f, chainHp));
         chain.setThickness(thickness);
         chain.setTravelTicks(1);
-        chain.setRetractTicks(5);
+        chain.setRetractTicks(10);
         chain.setWrapTurns(0.0f);
         chain.setLatchParams(0, maxDistance, keep);
         chain.setMaxRange((float) Math.max(1.0, maxDistance > 0 ? maxDistance : ropeDist));

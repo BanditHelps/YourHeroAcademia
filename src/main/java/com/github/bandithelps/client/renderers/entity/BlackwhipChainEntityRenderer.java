@@ -5,11 +5,13 @@ import com.github.bandithelps.client.blackwhip.BlackwhipWaistBoneHelper;
 import com.github.bandithelps.client.renderers.entity.state.BlackwhipChainRenderState;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import com.github.bandithelps.entities.BlackwhipSegmentEntity;
+import com.github.bandithelps.particles.BlackwhipDissolveParticle;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -42,7 +44,12 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
     private static final int FULL_BRIGHT = 0xF000F0;
 
     private static final Map<Integer, Integer> INACTIVE_SINCE = new HashMap<>();
+    private static final Map<Integer, DissolveSnap> LAST_VISUAL = new HashMap<>();
+    private static final Map<Integer, DissolveSnap> DISSOLVE_SNAPS = new HashMap<>();
     private static final float TIP_ITEM_SCALE = 0.55f;
+
+    private record DissolveSnap(List<Vec3> joints, int ropeJointCount, boolean coilAppended) {
+    }
 
     private final ItemModelResolver itemModelResolver;
 
@@ -87,12 +94,15 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
             state.tipItemModel.clear();
         }
 
-        if (!state.active || entity.getPhase() == BlackwhipChainEntity.PHASE_RETRACTING) {
+        boolean dissolving = !state.active || entity.getPhase() == BlackwhipChainEntity.PHASE_RETRACTING;
+        state.dissolving = dissolving;
+        if (dissolving) {
             int since = INACTIVE_SINCE.computeIfAbsent(entity.getId(), k -> entity.tickCount);
             float rt = Math.max(1, entity.getRetractTicks());
             state.retractProgress = Mth.clamp((entity.tickCount - since + partial) / rt, 0f, 1f);
         } else {
             INACTIVE_SINCE.remove(entity.getId());
+            DISSOLVE_SNAPS.remove(entity.getId());
             state.retractProgress = 0f;
         }
 
@@ -113,11 +123,68 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         double ez = Mth.lerp(partial, entity.zOld, entity.getZ());
         state.renderOrigin = new Vec3(ex, ey, ez);
 
-        // Glue both ends every frame (classic Blackwhip attach pattern): live wrist + live tip.
-        // Segment positions only seed mid-rope shape / hitboxes — endpoints are render-authored.
         Entity owner = entity.getOwnerId() >= 0 && entity.level() != null
                 ? entity.level().getEntity(entity.getOwnerId()) : null;
-        state.fadeRoot = isLocalFirstPersonOwner(owner);
+        state.hasBoneTip = false;
+
+        if (dissolving) {
+            applyDissolveSnapshot(entity, state, owner, partial);
+            return;
+        }
+
+        buildVisualPose(entity, state, owner, partial, false);
+        rememberVisualPose(entity.getId(), state);
+    }
+
+    private static void rememberVisualPose(int entityId, BlackwhipChainRenderState state) {
+        if (state.joints.size() < 2) {
+            LAST_VISUAL.remove(entityId);
+            return;
+        }
+        LAST_VISUAL.put(entityId, new DissolveSnap(
+                List.copyOf(state.joints), state.ropeJointCount, state.coilAppended));
+    }
+
+    /**
+     * Freeze the last on-screen ribbon. Do not rebuild from raw segments — those are not wrist-glued
+     * or coil-pinned, so using them teleports the whip before it dissolves.
+     */
+    private static void applyDissolveSnapshot(BlackwhipChainEntity entity, BlackwhipChainRenderState state,
+                                             Entity owner, float partial) {
+        state.fadeRoot = false;
+        DissolveSnap snap = DISSOLVE_SNAPS.get(entity.getId());
+        if (snap == null) {
+            DissolveSnap last = LAST_VISUAL.remove(entity.getId());
+            if (last != null && last.joints.size() >= 2) {
+                snap = last;
+            } else {
+                buildVisualPose(entity, state, owner, partial, true);
+                if (state.joints.size() >= 2) {
+                    snap = new DissolveSnap(List.copyOf(state.joints), state.ropeJointCount, state.coilAppended);
+                }
+            }
+            if (snap != null) {
+                DISSOLVE_SNAPS.put(entity.getId(), snap);
+            }
+        }
+        if (snap == null) {
+            state.ropeJointCount = state.joints.size();
+            state.coilAppended = false;
+            return;
+        }
+        state.joints.clear();
+        state.joints.addAll(driftDissolveJoints(snap.joints, state));
+        state.ropeJointCount = snap.ropeJointCount;
+        state.coilAppended = snap.coilAppended;
+    }
+
+    /**
+     * Wrist + tip authorship used while the chain is alive. {@code dissolvingFallback} is only for
+     * the rare case we never rendered an active pose (uses leftover target/anchor data).
+     */
+    private static void buildVisualPose(BlackwhipChainEntity entity, BlackwhipChainRenderState state,
+                                        Entity owner, float partial, boolean dissolvingFallback) {
+        state.fadeRoot = !dissolvingFallback && isLocalFirstPersonOwner(owner);
         Vec3 wrist = null;
         if (owner != null && state.joints.size() >= 2) {
             wrist = resolveVisualRoot(owner, partial);
@@ -128,12 +195,11 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
             }
         }
 
-        state.hasBoneTip = false;
         state.coilAppended = false;
         state.ropeJointCount = state.joints.size();
 
-        // Block-anchored ropes: pin tip to synched world anchor (no living wrap coil).
-        if (entity.isAnchored() && state.joints.size() >= 2 && wrist != null) {
+        boolean pinAnchor = dissolvingFallback ? isAnchorDissolveFallback(entity) : entity.isAnchored();
+        if (pinAnchor && state.joints.size() >= 2 && wrist != null) {
             Vec3 tip = entity.getAnchorPoint();
             state.joints.set(state.joints.size() - 1, tip);
             BlackwhipChainAnchors.redistributeJoints(state.joints, wrist, tip);
@@ -141,20 +207,17 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
             return;
         }
 
-        // Waist coil only after tip latch — during deploy the tip follows segment joints.
         LivingEntity target = entity.getTargetLiving();
-        if (entity.isLatched()
-                && target != null
-                && state.joints.size() >= 2
-                && state.active
-                && wrist != null) {
-            // Grabbed local player in FP: park the wrap under the eyeline so it doesn't fill the lens.
-            // Third-person / other viewers still use the real latch height from the tip hit.
+        boolean wrap = dissolvingFallback
+                ? target != null && target.isAlive() && entity.getWrapTurns() > 0.0f
+                : entity.isLatched() && target != null && state.active;
+        if (wrap && target != null && state.joints.size() >= 2 && wrist != null) {
             float wrapHeight = isLocalFirstPersonTarget(target)
                     ? BlackwhipChainAnchors.firstPersonTargetWrapHeight(target)
                     : entity.getWrapHeight();
             int ropeCount = BlackwhipWaistBoneHelper.attachTipAndCoil(
-                    state.joints, target, wrist, entity.getWrapTurns(), state.extendProgress,
+                    state.joints, target, wrist, entity.getWrapTurns(),
+                    dissolvingFallback ? 1.0f : state.extendProgress,
                     wrapHeight, partial);
             if (ropeCount > 0) {
                 state.ropeJointCount = ropeCount;
@@ -166,6 +229,42 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
                 state.boneTip = bone.get();
             }
         }
+    }
+
+    private static boolean isAnchorDissolveFallback(BlackwhipChainEntity entity) {
+        if (entity.getTargetId() >= 0) {
+            return false;
+        }
+        int purpose = entity.getPurpose();
+        return purpose == BlackwhipChainEntity.PURPOSE_SWING
+                || purpose == BlackwhipChainEntity.PURPOSE_WEB_SWING
+                || purpose == BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE
+                || purpose == BlackwhipChainEntity.PURPOSE_ZIP_CHARGE;
+    }
+
+    private static List<Vec3> driftDissolveJoints(List<Vec3> frozen, BlackwhipChainRenderState state) {
+        float p = state.retractProgress;
+        float eased = p * p;
+        List<Vec3> out = new ArrayList<>(frozen.size());
+        for (int i = 0; i < frozen.size(); i++) {
+            float hx = hash01(state.seed, i, 1) - 0.5f;
+            float hy = hash01(state.seed, i, 2) - 0.3f;
+            float hz = hash01(state.seed, i, 3) - 0.5f;
+            double sag = 0.42 * eased * p;
+            out.add(frozen.get(i).add(hx * 0.55 * eased, -sag + hy * 0.18 * eased, hz * 0.55 * eased));
+        }
+        return out;
+    }
+
+    static float fragmentAlive(int seed, int index, float progress) {
+        float threshold = 0.16f + hash01(seed, index, 7) * 0.72f;
+        return smooth(Mth.clamp((threshold - progress) / 0.14f, 0.0f, 1.0f));
+    }
+
+    private static float hash01(int seed, int index, int salt) {
+        int h = seed * 374761393 + index * 668265263 + salt * 1274126177;
+        h = (h ^ (h >> 13)) * 1274126177;
+        return ((h >>> 1) & 0x7fffffff) / (float) Integer.MAX_VALUE;
     }
 
     /**
@@ -204,14 +303,6 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         state.camForward = new Vec3(camLook.x(), camLook.y(), camLook.z()).normalize();
 
         List<Vec3> points = new ArrayList<>(state.joints);
-        // Active path already encodes extend (rope tip + coil blend). Only truncate while retracting.
-        if (!state.active) {
-            float visible = Mth.clamp(1.0f - state.retractProgress, 0.05f, 1.0f);
-            int keep = Math.max(2, Math.round((points.size() - 1) * visible) + 1);
-            if (keep < points.size()) {
-                points = new ArrayList<>(points.subList(0, keep));
-            }
-        }
 
         float base = Math.max(0.025f, state.thickness * 0.07f);
         // Pulse thicker briefly after taking damage.
@@ -224,12 +315,17 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         }
         base *= (1.0f + hurtPulse);
 
-        float alphaScale = state.active ? 1.0f : smooth(1.0f - state.retractProgress);
+        float alphaScale = state.dissolving
+                ? smooth(1.0f - state.retractProgress * 0.55f)
+                : 1.0f;
         float spawnFlash = (float) Math.exp(-state.ageTicks * 0.18f);
 
         // Mild shimmer under the slow idle pulse — keep amplitude low so layers stay sharp.
         // With a wrap coil, damp shimmer further so dense helix samples don't self-intersect.
         float shimmerCap = state.coilAppended ? 0.018f : 0.035f;
+        if (state.dissolving) {
+            shimmerCap = Math.max(shimmerCap, 0.04f) * (1.0f + 3.2f * state.retractProgress);
+        }
         RibbonFrame frame = buildFrame(points, state, Math.min(base * 0.55f, shimmerCap));
         if (frame == null) {
             return;
@@ -253,15 +349,48 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
                         alphaScale, state, 0.0f, 1.2f, 0.0f, 0.024f));
 
         submitTipItem(state, points, poseStack, collector);
+        spawnDissolveParticles(state, points);
     }
 
-    /** Draws cargo stuck to the visible tip while the whip reels in. */
+    private static void spawnDissolveParticles(BlackwhipChainRenderState state, List<Vec3> points) {
+        if (!state.dissolving || points.isEmpty() || state.retractProgress >= 0.97f) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.level instanceof ClientLevel level)) {
+            return;
+        }
+        var random = level.getRandom();
+        int n = points.size();
+        float remaining = 1.0f - state.retractProgress;
+        int bursts = state.retractProgress < 0.08f
+                ? Math.max(4, n / 2)
+                : Math.max(1, Math.round(n * 0.18f * remaining));
+        for (int k = 0; k < bursts; k++) {
+            int i = random.nextInt(n);
+            if (fragmentAlive(state.seed, i, state.retractProgress) < 0.08f) {
+                continue;
+            }
+            Vec3 p = points.get(i);
+            double jx = (random.nextDouble() - 0.5) * 0.12;
+            double jy = (random.nextDouble() - 0.5) * 0.12;
+            double jz = (random.nextDouble() - 0.5) * 0.12;
+            Vec3 vel = new Vec3(
+                    (random.nextDouble() - 0.5) * 0.07,
+                    0.015 + random.nextDouble() * 0.05,
+                    (random.nextDouble() - 0.5) * 0.07);
+            int color = random.nextBoolean() ? state.glowColor : state.coreColor;
+            BlackwhipDissolveParticle.spawn(level, p.add(jx, jy, jz), vel, color);
+        }
+    }
+
+    /** Draws cargo stuck to the freeze tip while the whip dissolves. */
     private static void submitTipItem(BlackwhipChainRenderState state, List<Vec3> points,
                                       PoseStack poseStack, SubmitNodeCollector collector) {
         if (state.tipItem.isEmpty() || state.tipItemModel.isEmpty() || points.size() < 2) {
             return;
         }
-        // Fade out as it reaches the wrist so the hand "takes" it.
+        // Fade out in place so the item does not ride back to the wrist.
         float fade = smooth(1.0f - state.retractProgress);
         if (fade < 0.08f) {
             return;
@@ -359,7 +488,11 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
             }
             normal[i] = nrm.normalize();
             tArr[i] = t;
-            widthFactor[i] = 0.30f + 0.70f * (float) Math.pow(1.0 - t, 0.8);
+            float width = 0.30f + 0.70f * (float) Math.pow(1.0 - t, 0.8);
+            if (state.dissolving) {
+                width *= 1.0f - 0.65f * state.retractProgress;
+            }
+            widthFactor[i] = width;
         }
         return new RibbonFrame(center, normal, tArr, widthFactor);
     }
@@ -436,7 +569,11 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
             if (state.fadeRoot) {
                 a *= smooth(Mth.clamp(t / 0.06f, 0.0f, 1.0f));
             }
-            a *= smooth(Mth.clamp((1.0f - t) / 0.10f, 0.0f, 1.0f));
+            if (!state.dissolving) {
+                a *= smooth(Mth.clamp((1.0f - t) / 0.10f, 0.0f, 1.0f));
+            } else {
+                a *= fragmentAlive(state.seed, i, state.retractProgress);
+            }
 
             rgb[i][0] = mixWhite(clampByte(Math.round(r0 * bright)), white);
             rgb[i][1] = mixWhite(clampByte(Math.round(g0 * bright)), white);
@@ -446,6 +583,9 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
 
         float edgeA = Mth.clamp(1.0f - edgeSoftness, 0.0f, 1.0f);
         for (int i = 0; i < n - 1; i++) {
+            if (state.dissolving && centerA[i] < 0.04f && centerA[i + 1] < 0.04f) {
+                continue;
+            }
             softQuad(buffer, pose, cf, FULL_BRIGHT,
                     edgeL[i], mid[i], edgeL[i + 1], mid[i + 1],
                     rgb[i], rgb[i + 1], centerA[i] * edgeA, centerA[i], centerA[i + 1] * edgeA, centerA[i + 1]);

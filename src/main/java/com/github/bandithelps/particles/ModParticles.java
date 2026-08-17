@@ -14,6 +14,8 @@ public final class ModParticles {
 
     public static final Supplier<SimpleParticleType> SMOKESCREEN =
             PARTICLE_TYPES.register("smokescreen", () -> new SimpleParticleType(false));
+    public static final Supplier<SimpleParticleType> BLACKWHIP_DISSOLVE =
+            PARTICLE_TYPES.register("blackwhip_dissolve", () -> new SimpleParticleType(false));
 
     private ModParticles() {
     }

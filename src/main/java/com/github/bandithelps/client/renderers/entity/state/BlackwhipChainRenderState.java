@@ -21,6 +21,7 @@ public class BlackwhipChainRenderState extends EntityRenderState {
     public int glowColor = 0xB325BE9C;
     public float thickness = 1.0f;
     public boolean active = true;
+    public boolean dissolving = false;
     public float retractProgress = 0.0f;
     public float extendProgress = 1.0f;
     public float ageTicks = 0.0f;
@@ -47,7 +48,7 @@ public class BlackwhipChainRenderState extends EntityRenderState {
      */
     public boolean fadeRoot = false;
 
-    /** Cargo riding the tip during retract (ground grab / disarm). */
+    /** Cargo stuck at the freeze tip during dissolve (ground grab / disarm). */
     public ItemStack tipItem = ItemStack.EMPTY;
     public final ItemStackRenderState tipItemModel = new ItemStackRenderState();
 }
