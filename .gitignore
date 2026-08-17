@@ -25,3 +25,8 @@ run-data
 
 repo
 /.vscode/launch.json
+/.tmp_pal_decomp
+/.tmp_palladium_cp
+/.tmp_palladium_decomp
+/.tmp_palladium_extract
+/.tmp_palladium_javap

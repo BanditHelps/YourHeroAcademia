@@ -18,6 +18,7 @@ import com.github.bandithelps.client.renderers.entity.SmokeCanisterProjectileRen
 import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
 import com.github.bandithelps.conditions.cost.CostRegister;
+import com.github.bandithelps.values.ValueRegister;
 import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
@@ -142,6 +143,7 @@ public final class YourHeroAcademia {
         AbilityRegister.ABILITIES.register(modEventBus);
         ConditionRegister.CONDITIONS.register(modEventBus);
         CostRegister.COST_SERIALIZERS.register(modEventBus);
+        ValueRegister.VALUES.register(modEventBus);
 
         YhaDialogActions.ACTIONS.register(modEventBus);
 
@@ -204,6 +206,7 @@ public final class YourHeroAcademia {
         GeneCommand.register(event.getBuilder(), event.getBuildContext());
         BlackwhipCommand.register(event.getBuilder(), event.getBuildContext());
         LoadoutCommand.register(event.getBuilder(), event.getBuildContext());
+        TreeEditorCommand.register(event.getBuilder(), event.getBuildContext());
     }
 
     @SubscribeEvent

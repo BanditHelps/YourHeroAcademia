@@ -11,6 +11,7 @@ public final class YhaNetwork {
         PayloadRegistrar registrar = event.registrar("5");
         registrar.playToClient(AttackDamageSyncPayload.TYPE, AttackDamageSyncPayload.STREAM_CODEC, AttackDamageSyncPayload::handle);
         registrar.playToClient(OpenBodyDebugScreenPayload.TYPE, OpenBodyDebugScreenPayload.STREAM_CODEC, OpenBodyDebugScreenPayload::handle);
+        registrar.playToClient(OpenTreeEditorScreenPayload.TYPE, OpenTreeEditorScreenPayload.STREAM_CODEC, OpenTreeEditorScreenPayload::handle);
         registrar.playToClient(StaminaSyncPayload.TYPE, StaminaSyncPayload.STREAM_CODEC, StaminaSyncPayload::handle);
         registrar.playToClient(StaminaDebugOverlayPayload.TYPE, StaminaDebugOverlayPayload.STREAM_CODEC, StaminaDebugOverlayPayload::handle);
         registrar.playToClient(BodySyncPayload.TYPE, BodySyncPayload.STREAM_CODEC, BodySyncPayload::handle);

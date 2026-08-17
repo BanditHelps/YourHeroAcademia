@@ -399,11 +399,34 @@
       }
     },
 
-    "bw_tag_9": {
+    "bw_tag": {
       "type": "yha:blackwhip_chain_tag",
       "range": {
-        "type": "palladium:molang_float",
-        "molang": "9 + yha.quirk_factor() * 3"
+        "type": "yha:upgrade_switch",
+        "cases": [
+          {
+            "ability": "bw_tree_tag_9",
+            "value": {
+              "type": "palladium:molang_float",
+              "molang": "9 + yha.quirk_factor() * 3"
+            }
+          },
+          {
+            "ability": "bw_tree_tag_12",
+            "value": {
+              "type": "palladium:molang_float",
+              "molang": "12 + yha.quirk_factor() * 3"
+            }
+          },
+          {
+            "ability": "bw_tree_tag_15",
+            "value": {
+              "type": "palladium:molang_float",
+              "molang": "15 + yha.quirk_factor() * 3"
+            }
+          }
+        ],
+        "fallback": 9
       },
       "max_distance": {
         "type": "palladium:molang_float",
@@ -426,105 +449,8 @@
           "behaviour": "held"
         },
         "unlocking": {
-          "type": "palladium:and",
-          "conditions": [
-            {
-              "type": "palladium:ability_unlocked",
-              "ability": "bw_tree_tag_9"
-            },
-            {
-              "type": "palladium:not",
-              "conditions": [
-                {
-                  "type": "palladium:ability_unlocked",
-                  "ability": "bw_tree_tag_12"
-                }
-              ]
-            }
-          ]
-        }
-      }
-    },
-    "bw_tag_12": {
-      "type": "yha:blackwhip_chain_tag",
-      "range": {
-        "type": "palladium:molang_float",
-        "molang": "12 + yha.quirk_factor() * 3"
-      },
-      "max_distance": {
-        "type": "palladium:molang_float",
-        "molang": "28 + yha.quirk_factor() * 4"
-      },
-      "ttl_ticks": 0,
-      "segment_count": 4,
-      "link_length": 0.85,
-      "thickness": 1.0,
-      "travel_ticks": 12,
-      "properties": {
-        "title": "Tether Range - I",
-        "icon": "minecraft:lead",
-        "list_index": 0,
-        "hidden_in_gui": true
-      },
-      "state": {
-        "enabling": {
-          "type": "palladium:key_bind",
-          "behaviour": "held"
-        },
-        "unlocking": {
-          "type": "palladium:and",
-          "conditions": [
-            {
-              "type": "palladium:ability_unlocked",
-              "ability": "bw_tree_tag_12"
-            },
-            {
-              "type": "palladium:not",
-              "conditions": [
-                {
-                  "type": "palladium:ability_unlocked",
-                  "ability": "bw_tree_tag_15"
-                }
-              ]
-            }
-          ]
-        }
-      }
-    },
-    "bw_tag_15": {
-      "type": "yha:blackwhip_chain_tag",
-      "range": {
-        "type": "palladium:molang_float",
-        "molang": "15 + yha.quirk_factor() * 3"
-      },
-      "max_distance": {
-        "type": "palladium:molang_float",
-        "molang": "28 + yha.quirk_factor() * 4"
-      },
-      "ttl_ticks": 0,
-      "segment_count": 4,
-      "link_length": 0.85,
-      "thickness": 1.0,
-      "travel_ticks": 12,
-      "properties": {
-        "title": "Tether Range - II",
-        "icon": "minecraft:lead",
-        "list_index": 0,
-        "hidden_in_gui": true
-      },
-      "state": {
-        "enabling": {
-          "type": "palladium:key_bind",
-          "behaviour": "held"
-        },
-        "unlocking": {
-          "type": "palladium:and",
-          "conditions": [
-            {
-              "type": "palladium:ability_unlocked",
-              "ability": "bw_tree_tag_15"
-            }
-          ]
+          "type": "palladium:ability_unlocked",
+          "ability": "bw_tree_tag_9"
         }
       }
     },

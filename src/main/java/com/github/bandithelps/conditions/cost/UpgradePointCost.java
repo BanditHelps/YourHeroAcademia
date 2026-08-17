@@ -33,6 +33,10 @@ public class UpgradePointCost extends Cost {
         this.points = points;
     }
 
+    public int getPoints() {
+        return this.points;
+    }
+
     @Override
     public boolean hasEnoughCurrency(LivingEntity livingEntity) {
         if (livingEntity instanceof Player player) {
