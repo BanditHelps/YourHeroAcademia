@@ -1,7 +1,9 @@
 package com.github.bandithelps.gui.screens;
 
+import com.github.bandithelps.gui.tree.TreeEditorCostSchema;
 import com.github.bandithelps.gui.tree.TreeEditorDraft;
 import com.github.bandithelps.gui.tree.TreeEditorExporter;
+import com.github.bandithelps.gui.tree.TreeEditorLayoutBackground;
 import com.github.bandithelps.gui.tree.TreeEditorNode;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -9,8 +11,12 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.level.block.Block;
 import net.threetag.palladium.client.renderer.icon.IconRenderer;
 import net.threetag.palladium.logic.context.DataContext;
 import org.jetbrains.annotations.Nullable;
@@ -21,14 +27,40 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TreeEditorScreen extends Screen {
-    private static final int TOP_BAR = 28;
     private static final int GRID_SIZE = 50;
     private static final int NODE_HIT = 13;
-    private static final Identifier FRAME_SPRITE = Identifier.fromNamespaceAndPath("palladium", "powers/ability_frame_unlocked");
+    private static final int LEFT_WIDTH = 100;
+    private static final int LEFT_PADDING = 7;
+    private static final int LEFT_FOOTER = 28;
+    private static final int MIN_TREE_WIDTH = 250;
+    private static final int MIN_TREE_HEIGHT = 200;
+    private static final int CHIP_HEIGHT = 28;
+    private static final int CHIP_GAP = 2;
+    private static final int LINE_CYAN = 0xFF00FFFF;
+    private static final int LINE_OUTLINE = 0xFF000000;
+    private static final int TEXT_LIGHT = 0xFFFFFFFF;
+    private static final Identifier FRAME_UNLOCKED = Identifier.fromNamespaceAndPath("palladium", "powers/ability_frame_unlocked");
+    private static final Identifier FRAME_LOCKED = Identifier.fromNamespaceAndPath("palladium", "powers/ability_frame_locked");
+    private static final Identifier VIGNETTE = Identifier.fromNamespaceAndPath("palladium", "powers/vignette");
 
     private final TreeEditorDraft draft;
+    private List<TreeEditorCostSchema> costSchemas = List.of();
+    @Nullable
+    private TextureAtlasSprite treeBackgroundSprite;
+    private int leftX;
+    private int leftY;
+    private int treeX;
+    private int treeY;
+    private int treeW;
+    private int treeH;
+    private int leftH;
+    private int chipX;
+    private int chipY;
     private int panX;
     private int panY;
+    private boolean viewReady;
+    private boolean showGrid;
+    private boolean showGridNumbers;
     private boolean panning;
     @Nullable
     private TreeEditorNode dragging;
@@ -43,45 +75,58 @@ public class TreeEditorScreen extends Screen {
     public TreeEditorScreen(TreeEditorDraft draft) {
         super(Component.literal("Power Tree Editor"));
         this.draft = draft;
-        this.panX = -this.width / 2;
-        this.panY = -this.height / 2;
     }
 
     @Override
     protected void init() {
         super.init();
-        if (this.panX == 0 && this.panY == 0) {
-            this.panX = Math.max(0, 400 - this.width / 2);
-            this.panY = Math.max(0, 300 - this.height / 2);
+        this.layoutChrome();
+        if (this.minecraft != null) {
+            if (this.costSchemas.isEmpty()) {
+                this.costSchemas = TreeEditorCostSchema.load(this.minecraft);
+            }
+            if (this.draft.getBackgroundTexture().equals(TreeEditorLayoutBackground.FALLBACK)) {
+                this.draft.setBackgroundTexture(TreeEditorLayoutBackground.resolve(this.minecraft, this.draft.getPowerId()));
+            }
+            this.applyBackground(this.draft.getBackgroundTexture());
         }
-        this.addRenderableWidget(Button.builder(Component.literal("Export"), button -> this.exportDraft())
-                .bounds(this.width - 148, 4, 68, 20)
-                .build());
-        this.addRenderableWidget(Button.builder(Component.literal("Close"), button -> this.onClose())
-                .bounds(this.width - 74, 4, 64, 20)
-                .build());
+        if (!this.viewReady) {
+            this.panX = 0;
+            this.panY = 0;
+            this.viewReady = true;
+        }
+        this.addChipButtons();
     }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.fill(0, 0, this.width, this.height, 0xFF101820);
-        graphics.fill(0, 0, this.width, TOP_BAR, 0xFF1B2734);
-        graphics.text(this.font, "Tree Editor: " + this.draft.getPowerName() + " (" + this.draft.getPowerId() + ")",
-                8, 8, 0xFFE6F2FF, false);
+        this.layoutChrome();
+        graphics.fill(0, 0, this.width, this.height, 0xC0101010);
 
-        graphics.enableScissor(0, TOP_BAR, this.width, this.height);
-        this.drawGrid(graphics);
+        this.drawModalPanel(graphics, this.leftX, this.leftY, LEFT_WIDTH, this.leftH);
+        this.drawLeftPanel(graphics);
+
+        this.drawTreeBackground(graphics);
+
+        graphics.enableScissor(this.treeX, this.treeY, this.treeX + this.treeW, this.treeY + this.treeH);
+        if (this.showGrid) {
+            this.drawGrid(graphics);
+        }
         this.drawConnections(graphics);
+        TreeEditorNode hovered = this.nodeAt(mouseX, mouseY);
         for (TreeEditorNode node : this.draft.getNodes()) {
-            this.drawNode(graphics, node, this.isHoveringNode(node, mouseX, mouseY));
+            this.drawNode(graphics, node);
         }
         graphics.disableScissor();
 
-        graphics.fill(0, this.height - 18, this.width, this.height, 0xCC111A26);
-        String footer = this.parentLinkSource != null
-                ? "Parent mode: click a node to parent '" + this.parentLinkSource.getKey() + "'. Esc cancels."
-                : this.status;
-        graphics.text(this.font, footer, 8, this.height - 14, 0xFF9FC9EE, false);
+        this.blitSprite(graphics, VIGNETTE, this.treeX, this.treeY, this.treeW, this.treeH);
+
+        if (hovered != null || this.selected != null || this.parentLinkSource != null) {
+            TreeEditorNode labeled = hovered != null ? hovered : (this.parentLinkSource != null ? this.parentLinkSource : this.selected);
+            this.drawTitleBox(graphics, labeled);
+        }
+
+        this.drawChip(graphics, this.treeX, this.chipY, this.treeW, CHIP_HEIGHT);
 
         if (this.contextMenu != null) {
             this.contextMenu.draw(graphics, this.font);
@@ -103,7 +148,12 @@ public class TreeEditorScreen extends Screen {
             }
             this.contextMenu = null;
         }
-        if (mouseY < TOP_BAR) {
+        if (!this.isInTree(mouseX, mouseY)) {
+            if (this.parentLinkSource != null) {
+                this.parentLinkSource = null;
+                this.status = "Parent mode cancelled.";
+                return true;
+            }
             return false;
         }
 
@@ -150,8 +200,8 @@ public class TreeEditorScreen extends Screen {
             return true;
         }
         if (this.panning && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            this.panX = Math.max(0, this.panX - (int) dragX);
-            this.panY = Math.max(0, this.panY - (int) dragY);
+            this.panX -= (int) dragX;
+            this.panY -= (int) dragY;
             return true;
         }
         return super.mouseDragged(event, dragX, dragY);
@@ -240,15 +290,67 @@ public class TreeEditorScreen extends Screen {
         }
     }
 
-    private void drawGrid(GuiGraphicsExtractor graphics) {
-        int startX = -((this.panX % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
-        int startY = TOP_BAR - ((this.panY % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
-        for (int x = startX; x < this.width; x += GRID_SIZE) {
-            graphics.fill(x, TOP_BAR, x + 1, this.height, 0x22FFFFFF);
+    private void layoutChrome() {
+        int margin = 8;
+        int chipSpace = CHIP_GAP + CHIP_HEIGHT;
+        this.treeW = Math.max(MIN_TREE_WIDTH, this.width - margin * 2 - LEFT_WIDTH);
+        this.treeH = Math.max(MIN_TREE_HEIGHT, this.height - margin * 2 - chipSpace);
+        this.treeW = Math.min(this.treeW, Math.max(MIN_TREE_WIDTH, this.width - margin * 2 - LEFT_WIDTH));
+        this.treeH = Math.min(this.treeH, Math.max(MIN_TREE_HEIGHT, this.height - margin * 2 - chipSpace));
+        int totalW = LEFT_WIDTH + this.treeW;
+        int totalH = this.treeH + chipSpace;
+        int originX = Math.max(margin, (this.width - totalW) / 2);
+        int originY = Math.max(margin, (this.height - totalH) / 2);
+        this.leftX = originX;
+        this.leftY = originY;
+        this.leftH = this.treeH;
+        this.treeX = originX + LEFT_WIDTH;
+        this.treeY = originY;
+        this.chipX = this.treeX;
+        this.chipY = this.treeY + this.treeH + CHIP_GAP;
+    }
+
+    private void drawModalPanel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
+        graphics.fill(x, y, x + width, y + height, 0xFF2B2B2B);
+        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0xFFC6C6C6);
+        graphics.fill(x + 1, y + 1, x + width - 1, y + 2, 0xFFFFFFFF);
+        graphics.fill(x + 1, y + 1, x + 2, y + height - 1, 0xFFFFFFFF);
+        graphics.fill(x + 4, y + 4, x + width - 4, y + height - LEFT_FOOTER, 0xFF000000);
+    }
+
+    private void drawChip(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
+        graphics.fill(x, y, x + width, y + height, 0xFF2B2B2B);
+        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0xFFC6C6C6);
+        graphics.fill(x + 1, y + 1, x + width - 1, y + 2, 0xFFFFFFFF);
+        graphics.fill(x + 1, y + 1, x + 2, y + height - 1, 0xFFFFFFFF);
+    }
+
+    private void drawLeftPanel(GuiGraphicsExtractor graphics) {
+        int textX = this.leftX + LEFT_PADDING;
+        int textY = this.leftY + LEFT_PADDING;
+        int textW = LEFT_WIDTH - LEFT_PADDING * 2;
+        graphics.centeredText(this.font, this.draft.getPowerName(), this.leftX + LEFT_WIDTH / 2, textY, TEXT_LIGHT);
+        textY += 16;
+        textY = this.drawWrapped(graphics, this.draft.getPowerId().toString(), textX, textY, textW, TEXT_LIGHT) + 6;
+
+        if (this.selected != null) {
+            textY = this.drawWrapped(graphics, this.selected.getTitle(), textX, textY, textW, TEXT_LIGHT) + 2;
+            textY = this.drawWrapped(graphics, this.selected.getKey(), textX, textY, textW, TEXT_LIGHT) + 2;
+            textY = this.drawWrapped(graphics, this.selected.getCost().summary(this.costSchemas), textX, textY, textW, TEXT_LIGHT) + 6;
         }
-        for (int y = startY; y < this.height; y += GRID_SIZE) {
-            graphics.fill(0, y, this.width, y + 1, 0x22FFFFFF);
+
+        String help = this.parentLinkSource != null
+                ? "Parent mode: click a node to parent '" + this.parentLinkSource.getKey() + "'. Esc cancels."
+                : this.status;
+        this.drawWrapped(graphics, help, textX, textY, textW, TEXT_LIGHT);
+    }
+
+    private int drawWrapped(GuiGraphicsExtractor graphics, String text, int x, int y, int maxWidth, int color) {
+        for (FormattedCharSequence line : this.font.split(Component.literal(text), maxWidth)) {
+            graphics.text(this.font, line, x, y, color, false);
+            y += 10;
         }
+        return y;
     }
 
     private void drawConnections(GuiGraphicsExtractor graphics) {
@@ -263,53 +365,94 @@ public class TreeEditorScreen extends Screen {
             int busX = startX + (endX - startX) / 2;
             int minY = startY;
             int maxY = startY;
+            List<Integer> childXs = new ArrayList<>();
             List<Integer> childYs = new ArrayList<>();
             for (TreeEditorNode child : children) {
+                int childX = this.nodeScreenX(child);
                 int childY = this.nodeScreenY(child);
+                childXs.add(childX);
                 childYs.add(childY);
                 minY = Math.min(minY, childY);
                 maxY = Math.max(maxY, childY);
             }
-            int color = 0xFF55CCCC;
-            graphics.fill(busX - 1, minY - 1, busX, maxY, color);
-            graphics.fill(startX - 1, startY - 1, busX, startY, color);
-            for (int index = 0; index < children.size(); index++) {
-                TreeEditorNode child = children.get(index);
-                int childX = this.nodeScreenX(child);
-                int childY = childYs.get(index);
-                graphics.fill(busX - 1, childY - 1, childX, childY, color);
-            }
+            this.drawBus(graphics, startX, startY, busX, childXs, childYs, minY, maxY, LINE_OUTLINE, true);
+            this.drawBus(graphics, startX, startY, busX, childXs, childYs, minY, maxY, LINE_CYAN, false);
         }
     }
 
-    private void drawNode(GuiGraphicsExtractor graphics, TreeEditorNode node, boolean hovered) {
+    private void drawBus(
+            GuiGraphicsExtractor graphics,
+            int startX,
+            int startY,
+            int busX,
+            List<Integer> childXs,
+            List<Integer> childYs,
+            int minY,
+            int maxY,
+            int color,
+            boolean outline
+    ) {
+        this.drawVLine(graphics, busX, minY, maxY, color, outline);
+        this.drawHLine(graphics, startX, busX, startY, color, outline);
+        for (int index = 0; index < childXs.size(); index++) {
+            this.drawHLine(graphics, busX, childXs.get(index), childYs.get(index), color, outline);
+        }
+    }
+
+    private void drawHLine(GuiGraphicsExtractor graphics, int x1, int x2, int y, int color, boolean outline) {
+        int min = Math.min(x1, x2);
+        int max = Math.max(x1, x2);
+        if (outline) {
+            graphics.fill(min - 2, y - 2, max + 1, y + 1, color);
+        } else {
+            graphics.fill(min - 1, y - 1, max, y, color);
+        }
+    }
+
+    private void drawVLine(GuiGraphicsExtractor graphics, int x, int y1, int y2, int color, boolean outline) {
+        int min = Math.min(y1, y2);
+        int max = Math.max(y1, y2);
+        if (outline) {
+            graphics.fill(x - 2, min - 2, x + 1, max + 1, color);
+        } else {
+            graphics.fill(x - 1, min - 1, x, max, color);
+        }
+    }
+
+    private void drawNode(GuiGraphicsExtractor graphics, TreeEditorNode node) {
         int x = this.nodeScreenX(node);
         int y = this.nodeScreenY(node);
-        boolean selectedNode = node == this.selected || node == this.parentLinkSource;
-        int frame = selectedNode ? 0xFF79B8FF : (hovered ? 0xFF9FC9EE : 0xFF3A4A5A);
-        if (node.isCreated()) {
-            frame = selectedNode ? 0xFF7CFF9A : 0xFF3D8A55;
-        }
-        graphics.fill(x - NODE_HIT, y - NODE_HIT, x + NODE_HIT, y + NODE_HIT, 0xFF111A26);
-        graphics.fill(x - NODE_HIT, y - NODE_HIT, x + NODE_HIT, y - NODE_HIT + 1, frame);
-        graphics.fill(x - NODE_HIT, y + NODE_HIT - 1, x + NODE_HIT, y + NODE_HIT, frame);
-        graphics.fill(x - NODE_HIT, y - NODE_HIT, x - NODE_HIT + 1, y + NODE_HIT, frame);
-        graphics.fill(x + NODE_HIT - 1, y - NODE_HIT, x + NODE_HIT, y + NODE_HIT, frame);
-        try {
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, FRAME_SPRITE, x - NODE_HIT, y - NODE_HIT, 26, 26);
-        } catch (RuntimeException ignored) {
-            // Sprite may be missing in some resource reload states; the fill frame is enough.
-        }
+        Identifier frame = node.isCreated() ? FRAME_LOCKED : FRAME_UNLOCKED;
+        this.blitSprite(graphics, frame, x - NODE_HIT, y - NODE_HIT, 26, 26);
         if (node.getIcon() != null && this.minecraft != null && this.minecraft.player != null) {
             IconRenderer.drawIcon(node.getIcon(), this.minecraft, graphics, DataContext.forEntity(this.minecraft.player), x - 8, y - 8);
         }
-        if (hovered || selectedNode) {
-            graphics.text(this.font, node.getTitle() + " [" + node.getKey() + "]", x + 16, y - 4, 0xFFFFFFFF, true);
+    }
+
+    private void drawTitleBox(GuiGraphicsExtractor graphics, TreeEditorNode node) {
+        int x = this.nodeScreenX(node);
+        int y = this.nodeScreenY(node);
+        String label = node.getTitle() + " [" + node.getKey() + "]";
+        int textWidth = this.font.width(label);
+        int boxWidth = Math.min(200, Math.max(40, textWidth + 12));
+        int boxX = x + NODE_HIT + 2;
+        int boxY = y - NODE_HIT;
+        if (boxX + boxWidth > this.treeX + this.treeW) {
+            boxX = x - NODE_HIT - 2 - boxWidth;
         }
+        graphics.fill(boxX, boxY, boxX + boxWidth, boxY + 26, 0xF0101010);
+        graphics.fill(boxX, boxY, boxX + boxWidth, boxY + 1, 0xFFFFFFFF);
+        graphics.fill(boxX, boxY + 25, boxX + boxWidth, boxY + 26, 0xFF555555);
+        graphics.fill(boxX, boxY, boxX + 1, boxY + 26, 0xFFFFFFFF);
+        graphics.fill(boxX + boxWidth - 1, boxY, boxX + boxWidth, boxY + 26, 0xFF555555);
+        graphics.text(this.font, label, boxX + 6, boxY + 9, TEXT_LIGHT, false);
     }
 
     @Nullable
     private TreeEditorNode nodeAt(int mouseX, int mouseY) {
+        if (!this.isInTree(mouseX, mouseY)) {
+            return null;
+        }
         TreeEditorNode hit = null;
         for (TreeEditorNode node : this.draft.getNodes()) {
             if (this.isHoveringNode(node, mouseX, mouseY)) {
@@ -325,20 +468,161 @@ public class TreeEditorScreen extends Screen {
         return mouseX >= x - NODE_HIT && mouseX <= x + NODE_HIT && mouseY >= y - NODE_HIT && mouseY <= y + NODE_HIT;
     }
 
+    private boolean isInTree(int mouseX, int mouseY) {
+        return mouseX >= this.treeX && mouseX < this.treeX + this.treeW
+                && mouseY >= this.treeY && mouseY < this.treeY + this.treeH;
+    }
+
     private int nodeScreenX(TreeEditorNode node) {
-        return Math.round(node.getGridX() * GRID_SIZE + (GRID_SIZE / 2.0F)) - this.panX;
+        return this.originX() + Math.round(node.getGridX() * GRID_SIZE) - this.panX;
     }
 
     private int nodeScreenY(TreeEditorNode node) {
-        return TOP_BAR + Math.round(node.getGridY() * GRID_SIZE + (GRID_SIZE / 2.0F)) - this.panY;
+        return this.originY() + Math.round(node.getGridY() * GRID_SIZE) - this.panY;
     }
 
     private float screenToGridX(int mouseX) {
-        return (mouseX + this.panX - (GRID_SIZE / 2.0F)) / GRID_SIZE;
+        return (mouseX - this.originX() + this.panX) / (float) GRID_SIZE;
     }
 
     private float screenToGridY(int mouseY) {
-        return (mouseY - TOP_BAR + this.panY - (GRID_SIZE / 2.0F)) / GRID_SIZE;
+        return (mouseY - this.originY() + this.panY) / (float) GRID_SIZE;
+    }
+
+    private int originX() {
+        return this.treeX + this.treeW / 2;
+    }
+
+    private int originY() {
+        return this.treeY + this.treeH / 2;
+    }
+
+    public List<TreeEditorCostSchema> costSchemas() {
+        return this.costSchemas;
+    }
+
+    private void addChipButtons() {
+        int y = this.chipY + 4;
+        int gap = 3;
+        int pad = 4;
+        int available = Math.max(0, this.treeW - pad * 2);
+        int[] widths = {76, 58, 58, 60, 56};
+        int needed = widths[0] + widths[1] + widths[2] + widths[3] + widths[4] + gap * 4;
+        if (needed > available) {
+            int shrink = needed - available;
+            for (int i = 0; i < widths.length && shrink > 0; i++) {
+                int reduce = Math.min(shrink, widths[i] - 42);
+                widths[i] -= reduce;
+                shrink -= reduce;
+            }
+        }
+        int leftX = this.treeX + pad;
+        int closeX = this.treeX + this.treeW - pad - widths[4];
+        int exportX = closeX - gap - widths[3];
+        this.addRenderableWidget(Button.builder(Component.literal("Background"), button -> this.openBackgroundPicker())
+                .bounds(leftX, y, widths[0], 20)
+                .build());
+        this.addRenderableWidget(Button.builder(Component.literal(this.gridLabel()), button -> {
+                    this.showGrid = !this.showGrid;
+                    button.setMessage(Component.literal(this.gridLabel()));
+                })
+                .bounds(leftX + widths[0] + gap, y, widths[1], 20)
+                .build());
+        this.addRenderableWidget(Button.builder(Component.literal(this.numbersLabel()), button -> {
+                    this.showGridNumbers = !this.showGridNumbers;
+                    button.setMessage(Component.literal(this.numbersLabel()));
+                })
+                .bounds(leftX + widths[0] + gap + widths[1] + gap, y, widths[2], 20)
+                .build());
+        this.addRenderableWidget(Button.builder(Component.literal("Export"), button -> this.exportDraft())
+                .bounds(exportX, y, widths[3], 20)
+                .build());
+        this.addRenderableWidget(Button.builder(Component.literal("Close"), button -> this.onClose())
+                .bounds(closeX, y, widths[4], 20)
+                .build());
+    }
+
+    private String gridLabel() {
+        return this.showGrid ? "Grid: On" : "Grid: Off";
+    }
+
+    private String numbersLabel() {
+        return this.showGridNumbers ? "Nums: On" : "Nums: Off";
+    }
+
+    public void applyBackground(Identifier textureOrBlock) {
+        Identifier blockId = TreeEditorPickerScreen.blockIdFromTexture(textureOrBlock);
+        this.draft.setBackgroundTexture(TreeEditorPickerScreen.blockTexture(blockId));
+        this.treeBackgroundSprite = this.resolveBlockSprite(blockId);
+    }
+
+    private void openBackgroundPicker() {
+        if (this.minecraft == null) {
+            return;
+        }
+        this.minecraft.setScreen(new TreeEditorPickerScreen(this, "Select Background Block", TreeEditorPickerScreen.Mode.BLOCKS, this::applyBackground));
+    }
+
+    private void drawTreeBackground(GuiGraphicsExtractor graphics) {
+        if (this.treeBackgroundSprite == null) {
+            graphics.fill(this.treeX, this.treeY, this.treeX + this.treeW, this.treeY + this.treeH, 0xFF2A6F7A);
+            return;
+        }
+        graphics.enableScissor(this.treeX, this.treeY, this.treeX + this.treeW, this.treeY + this.treeH);
+        for (int x = 0; x < this.treeW; x += 16) {
+            for (int y = 0; y < this.treeH; y += 16) {
+                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, this.treeBackgroundSprite, this.treeX + x, this.treeY + y, 16, 16);
+            }
+        }
+        graphics.disableScissor();
+    }
+
+    @Nullable
+    private TextureAtlasSprite resolveBlockSprite(Identifier blockId) {
+        if (this.minecraft == null) {
+            return null;
+        }
+        Block block = BuiltInRegistries.BLOCK.get(blockId).map(holder -> holder.value()).orElse(null);
+        if (block == null) {
+            return null;
+        }
+        return this.minecraft.getModelManager()
+                .getBlockStateModelSet()
+                .getParticleMaterial(block.defaultBlockState())
+                .sprite();
+    }
+
+    private void drawGrid(GuiGraphicsExtractor graphics) {
+        int originX = this.originX() - this.panX;
+        int originY = this.originY() - this.panY;
+        int firstCol = (int) Math.floor((this.treeX - originX) / (double) GRID_SIZE) - 1;
+        int lastCol = (int) Math.ceil((this.treeX + this.treeW - originX) / (double) GRID_SIZE) + 1;
+        int firstRow = (int) Math.floor((this.treeY - originY) / (double) GRID_SIZE) - 1;
+        int lastRow = (int) Math.ceil((this.treeY + this.treeH - originY) / (double) GRID_SIZE) + 1;
+        for (int col = firstCol; col <= lastCol; col++) {
+            int x = originX + col * GRID_SIZE;
+            int color = col == 0 ? 0x88FFFFFF : 0x33FFFFFF;
+            graphics.fill(x, this.treeY, x + 1, this.treeY + this.treeH, color);
+            if (this.showGridNumbers) {
+                graphics.text(this.font, Integer.toString(col), x + 2, this.treeY + 2, TEXT_LIGHT, false);
+            }
+        }
+        for (int row = firstRow; row <= lastRow; row++) {
+            int y = originY + row * GRID_SIZE;
+            int color = row == 0 ? 0x88FFFFFF : 0x33FFFFFF;
+            graphics.fill(this.treeX, y, this.treeX + this.treeW, y + 1, color);
+            if (this.showGridNumbers) {
+                graphics.text(this.font, Integer.toString(row), this.treeX + 2, y + 2, TEXT_LIGHT, false);
+            }
+        }
+    }
+
+    private void blitSprite(GuiGraphicsExtractor graphics, Identifier sprite, int x, int y, int width, int height) {
+        try {
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, width, height);
+        } catch (RuntimeException ignored) {
+            // Sprite may be missing during resource reload.
+        }
     }
 
     private static final class ContextMenu {
@@ -353,7 +637,7 @@ public class TreeEditorScreen extends Screen {
         }
 
         static ContextMenu forEmpty(TreeEditorScreen screen, int mouseX, int mouseY) {
-            return new ContextMenu(mouseX, mouseY, List.of(
+            return clamped(screen, mouseX, mouseY, List.of(
                     new Item("Add dummy node", () -> screen.addNodeAt(mouseX, mouseY))
             ));
         }
@@ -366,26 +650,34 @@ public class TreeEditorScreen extends Screen {
             if (node.isCreated()) {
                 items.add(new Item("Delete", () -> screen.deleteNode(node)));
             }
-            return new ContextMenu(mouseX, mouseY, items);
+            return clamped(screen, mouseX, mouseY, items);
+        }
+
+        private static ContextMenu clamped(TreeEditorScreen screen, int mouseX, int mouseY, List<Item> items) {
+            int width = 120;
+            int height = 8 + items.size() * 16;
+            int x = Math.min(mouseX, screen.width - width - 2);
+            int y = Math.min(mouseY, screen.height - height - 2);
+            return new ContextMenu(Math.max(2, x), Math.max(2, y), items);
         }
 
         void draw(GuiGraphicsExtractor graphics, net.minecraft.client.gui.Font font) {
             int width = 120;
-            int height = 4 + this.items.size() * 16;
-            graphics.fill(this.x, this.y, this.x + width, this.y + height, 0xF0111A26);
-            graphics.fill(this.x, this.y, this.x + width, this.y + 1, 0xFF79B8FF);
-            graphics.fill(this.x, this.y + height - 1, this.x + width, this.y + height, 0xFF79B8FF);
-            graphics.fill(this.x, this.y, this.x + 1, this.y + height, 0xFF79B8FF);
-            graphics.fill(this.x + width - 1, this.y, this.x + width, this.y + height, 0xFF79B8FF);
+            int height = 8 + this.items.size() * 16;
+            graphics.fill(this.x, this.y, this.x + width, this.y + height, 0xF0101010);
+            graphics.fill(this.x, this.y, this.x + width, this.y + 1, 0xFFFFFFFF);
+            graphics.fill(this.x, this.y + height - 1, this.x + width, this.y + height, 0xFF555555);
+            graphics.fill(this.x, this.y, this.x + 1, this.y + height, 0xFFFFFFFF);
+            graphics.fill(this.x + width - 1, this.y, this.x + width, this.y + height, 0xFF555555);
             for (int index = 0; index < this.items.size(); index++) {
-                graphics.text(font, this.items.get(index).label, this.x + 6, this.y + 4 + index * 16, 0xFFE6F2FF, false);
+                graphics.text(font, this.items.get(index).label, this.x + 6, this.y + 6 + index * 16, TEXT_LIGHT, false);
             }
         }
 
         boolean click(int mouseX, int mouseY) {
             int width = 120;
             for (int index = 0; index < this.items.size(); index++) {
-                int itemY = this.y + 2 + index * 16;
+                int itemY = this.y + 4 + index * 16;
                 if (mouseX >= this.x && mouseX <= this.x + width && mouseY >= itemY && mouseY <= itemY + 16) {
                     this.items.get(index).action.run();
                     return true;

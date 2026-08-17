@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 public final class TreeEditorExporter {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -22,6 +23,7 @@ public final class TreeEditorExporter {
     public static String toJson(TreeEditorDraft draft) {
         JsonObject root = new JsonObject();
         root.addProperty("power", draft.getPowerId().toString());
+        root.addProperty("background", draft.getBackgroundTexture().toString());
 
         JsonObject updated = new JsonObject();
         JsonObject parentChanges = new JsonObject();
@@ -32,9 +34,17 @@ public final class TreeEditorExporter {
                 newNodes.add(node.getKey(), dummyJson(node));
                 continue;
             }
-            if (node.positionChanged()) {
+            if (node.positionChanged() || node.metadataChanged()) {
                 JsonObject update = new JsonObject();
-                update.add("gui_position", positionArray(node.getGridX(), node.getGridY()));
+                if (node.positionChanged()) {
+                    update.add("gui_position", positionArray(node.getGridX(), node.getGridY()));
+                }
+                if (node.metadataChanged()) {
+                    update.addProperty("title", node.getTitle());
+                    update.addProperty("description", node.getDescription());
+                    update.addProperty("icon", node.getIconId());
+                    update.add("cost", node.getCost().toJson(List.of()));
+                }
                 updated.add(node.getOriginalKey(), update);
             }
             if (node.parentChanged()) {
@@ -67,27 +77,33 @@ public final class TreeEditorExporter {
 
         JsonObject properties = new JsonObject();
         properties.addProperty("title", node.getTitle());
-        properties.addProperty("icon", "minecraft:paper");
+        if (!node.getDescription().isBlank()) {
+            properties.addProperty("description", node.getDescription());
+        }
+        properties.addProperty("icon", node.getIconId());
         properties.addProperty("hidden_in_bar", true);
         properties.addProperty("hidden_in_gui", false);
         properties.add("gui_position", positionArray(node.getGridX(), node.getGridY()));
         ability.add("properties", properties);
 
-        JsonObject unlocking = new JsonObject();
-        unlocking.addProperty("type", "palladium:buyable");
-        JsonObject cost = new JsonObject();
-        cost.addProperty("type", "yha:upgrade_point");
-        cost.addProperty("points", node.getCostPoints());
-        unlocking.add("cost", cost);
-        if (node.getParentKey() != null && !node.getParentKey().isBlank()) {
-            JsonObject requires = new JsonObject();
-            requires.addProperty("type", "palladium:ability_unlocked");
-            requires.addProperty("ability", node.getParentKey());
-            unlocking.add("requires", requires);
+        JsonObject cost = node.getCost().toJson(List.of());
+        boolean hasParent = node.getParentKey() != null && !node.getParentKey().isBlank();
+        if (cost != null || hasParent) {
+            JsonObject unlocking = new JsonObject();
+            unlocking.addProperty("type", "palladium:buyable");
+            if (cost != null) {
+                unlocking.add("cost", cost);
+            }
+            if (hasParent) {
+                JsonObject requires = new JsonObject();
+                requires.addProperty("type", "palladium:ability_unlocked");
+                requires.addProperty("ability", node.getParentKey());
+                unlocking.add("requires", requires);
+            }
+            JsonObject state = new JsonObject();
+            state.add("unlocking", unlocking);
+            ability.add("state", state);
         }
-        JsonObject state = new JsonObject();
-        state.add("unlocking", unlocking);
-        ability.add("state", state);
         return ability;
     }
 

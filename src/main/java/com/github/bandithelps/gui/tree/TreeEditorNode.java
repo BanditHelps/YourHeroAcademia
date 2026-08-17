@@ -9,8 +9,12 @@ public final class TreeEditorNode {
     private String key;
     private final String originalKey;
     private String title;
+    private final String originalTitle;
+    private String description;
+    private final String originalDescription;
     @Nullable
-    private final Icon icon;
+    private Icon icon;
+    private final String originalIconId;
     private float gridX;
     private float gridY;
     private final float originalGridX;
@@ -19,35 +23,40 @@ public final class TreeEditorNode {
     private String parentKey;
     @Nullable
     private final String originalParentKey;
-    private int costPoints;
+    private TreeEditorCostDraft cost;
     private final boolean created;
 
     public TreeEditorNode(
             String key,
             String title,
+            String description,
             @Nullable Icon icon,
             float gridX,
             float gridY,
             @Nullable String parentKey,
-            int costPoints,
+            TreeEditorCostDraft cost,
             boolean created
     ) {
         this.key = key;
         this.originalKey = key;
         this.title = title;
+        this.originalTitle = title;
+        this.description = description == null ? "" : description;
+        this.originalDescription = this.description;
         this.icon = icon;
+        this.originalIconId = this.getIconId();
         this.gridX = gridX;
         this.gridY = gridY;
         this.originalGridX = gridX;
         this.originalGridY = gridY;
         this.parentKey = parentKey;
         this.originalParentKey = parentKey;
-        this.costPoints = Math.max(1, costPoints);
+        this.cost = cost == null ? TreeEditorCostDraft.none() : cost;
         this.created = created;
     }
 
     public static TreeEditorNode created(String key, String title, float gridX, float gridY) {
-        return new TreeEditorNode(key, title, null, gridX, gridY, null, 1, true);
+        return new TreeEditorNode(key, title, "", parseIcon("minecraft:paper"), gridX, gridY, null, TreeEditorCostDraft.none(), true);
     }
 
     public String getKey() {
@@ -70,9 +79,33 @@ public final class TreeEditorNode {
         this.title = title;
     }
 
+    public String getDescription() {
+        return this.description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description == null ? "" : description;
+    }
+
     @Nullable
     public Icon getIcon() {
         return this.icon;
+    }
+
+    public void setIcon(@Nullable Icon icon) {
+        this.icon = icon;
+    }
+
+    public void setIconId(String iconId) {
+        this.icon = parseIcon(iconId);
+    }
+
+    public String getIconId() {
+        if (this.icon == null) {
+            return "minecraft:paper";
+        }
+        String simple = Icon.toSimpleString(this.icon);
+        return simple == null || simple.isBlank() ? "minecraft:paper" : simple;
     }
 
     public float getGridX() {
@@ -110,12 +143,12 @@ public final class TreeEditorNode {
         return this.originalParentKey;
     }
 
-    public int getCostPoints() {
-        return this.costPoints;
+    public TreeEditorCostDraft getCost() {
+        return this.cost;
     }
 
-    public void setCostPoints(int costPoints) {
-        this.costPoints = Math.max(1, costPoints);
+    public void setCost(TreeEditorCostDraft cost) {
+        this.cost = cost == null ? TreeEditorCostDraft.none() : cost;
     }
 
     public boolean isCreated() {
@@ -129,5 +162,23 @@ public final class TreeEditorNode {
 
     public boolean parentChanged() {
         return !Objects.equals(this.parentKey, this.originalParentKey);
+    }
+
+    public boolean metadataChanged() {
+        return !Objects.equals(this.title, this.originalTitle)
+                || !Objects.equals(this.description, this.originalDescription)
+                || !Objects.equals(this.getIconId(), this.originalIconId);
+    }
+
+    @Nullable
+    public static Icon parseIcon(String iconId) {
+        if (iconId == null || iconId.isBlank()) {
+            return null;
+        }
+        try {
+            return Icon.parse(iconId);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
     }
 }

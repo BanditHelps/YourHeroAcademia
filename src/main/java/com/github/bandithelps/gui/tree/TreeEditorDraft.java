@@ -1,13 +1,11 @@
 package com.github.bandithelps.gui.tree;
 
-import com.github.bandithelps.conditions.cost.UpgradePointCost;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec2;
 import net.threetag.palladium.icon.Icon;
 import net.threetag.palladium.power.Power;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityReference;
-import net.threetag.palladium.power.ability.unlocking.BuyableUnlockingHandler;
 import net.threetag.palladium.power.ability.unlocking.UnlockingHandler;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,6 +18,7 @@ public final class TreeEditorDraft {
 
     private final Identifier powerId;
     private final String powerName;
+    private Identifier backgroundTexture = TreeEditorLayoutBackground.FALLBACK;
     private final List<TreeEditorNode> nodes = new ArrayList<>();
 
     public TreeEditorDraft(Identifier powerId, String powerName) {
@@ -38,17 +37,17 @@ public final class TreeEditorDraft {
             float gridX = position == null ? 0.0F : position.x;
             float gridY = position == null ? 0.0F : position.y;
             String parentKey = firstParentKey(ability);
-            int costPoints = readCostPoints(ability);
             Icon icon = ability.getProperties().getIcon();
             String title = ability.getDisplayName().getString();
             draft.nodes.add(new TreeEditorNode(
                     entry.getKey(),
                     title,
+                    readDescription(ability),
                     icon,
                     gridX,
                     gridY,
                     parentKey,
-                    costPoints,
+                    TreeEditorCostDraft.fromUnlocking(ability.getStateManager().getUnlockingHandler()),
                     false
             ));
         }
@@ -61,6 +60,14 @@ public final class TreeEditorDraft {
 
     public String getPowerName() {
         return this.powerName;
+    }
+
+    public Identifier getBackgroundTexture() {
+        return this.backgroundTexture;
+    }
+
+    public void setBackgroundTexture(Identifier backgroundTexture) {
+        this.backgroundTexture = backgroundTexture == null ? TreeEditorLayoutBackground.FALLBACK : backgroundTexture;
     }
 
     public List<TreeEditorNode> getNodes() {
@@ -150,6 +157,10 @@ public final class TreeEditorDraft {
         return Math.round(value / GRID_SNAP) * GRID_SNAP;
     }
 
+    public static String keyFromTitle(String title) {
+        return sanitizeKey(title);
+    }
+
     private boolean wouldCycle(TreeEditorNode child, TreeEditorNode parent) {
         TreeEditorNode current = parent;
         int guard = 0;
@@ -195,11 +206,21 @@ public final class TreeEditorDraft {
         return parents.getFirst().abilityKey();
     }
 
-    private static int readCostPoints(Ability ability) {
-        UnlockingHandler handler = ability.getStateManager().getUnlockingHandler();
-        if (handler instanceof BuyableUnlockingHandler buyable && buyable.cost instanceof UpgradePointCost upgradeCost) {
-            return upgradeCost.getPoints();
+    private static String readDescription(Ability ability) {
+        try {
+            Object description = ability.getProperties().getDescription();
+            if (description == null) {
+                return "";
+            }
+            try {
+                Object text = description.getClass().getMethod("getString").invoke(description);
+                return text == null ? "" : text.toString();
+            } catch (ReflectiveOperationException ignored) {
+                String value = description.toString();
+                return value.contains("@") ? "" : value;
+            }
+        } catch (RuntimeException ignored) {
+            return "";
         }
-        return 1;
     }
 }
