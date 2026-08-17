@@ -7,6 +7,12 @@
     "AbilityInstanceMixin",
     "ServerCommonPacketListenerImplMixin"
   ],
+  "client": [
+    "AbilityBarMixin",
+    "AbilityBarAbilityListMixin",
+    "AbilityListComponentMixin",
+    "PalladiumKeyMappingsMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   },

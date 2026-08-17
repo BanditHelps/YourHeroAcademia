@@ -61,6 +61,42 @@
         }
       }
     },
+    "mode_dash_a": {
+      "type": "yha:dash",
+      "strength": 0.8,
+      "block_vertical": true,
+      "properties": {
+        "title": "Mode Dash A",
+        "icon": "minecraft:feather",
+        "hidden_in_bar": false,
+        "list_index": 2
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "activation",
+          "cooldown": 20
+        }
+      }
+    },
+    "mode_dash_b": {
+      "type": "yha:dash",
+      "strength": 1.6,
+      "block_vertical": true,
+      "properties": {
+        "title": "Mode Dash B",
+        "icon": "minecraft:firework_rocket",
+        "hidden_in_bar": false,
+        "list_index": 2
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "activation",
+          "cooldown": 20
+        }
+      }
+    },
     "ability_3": {
       "type": "yha:damage_body_part",
       "damage": 10.0,

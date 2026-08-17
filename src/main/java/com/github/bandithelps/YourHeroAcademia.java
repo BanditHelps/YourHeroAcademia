@@ -7,6 +7,7 @@ import com.github.bandithelps.attributes.StrengthAttributes;
 import com.github.bandithelps.blocks.*;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.dna.DNAAttachments;
+import com.github.bandithelps.capabilities.loadout.AbilityLoadoutAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.client.renderers.entity.BlackwhipChainEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.BlackwhipEntityRenderer;
@@ -150,6 +151,7 @@ public final class YourHeroAcademia {
         StaminaAttachments.ATTACHMENTS.register(modEventBus);
         BodyAttachments.ATTACHMENTS.register(modEventBus);
         DNAAttachments.ATTACHMENTS.register(modEventBus);
+        AbilityLoadoutAttachments.ATTACHMENTS.register(modEventBus);
 
         ModEffects.MOD_EFFECTS.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
@@ -201,6 +203,7 @@ public final class YourHeroAcademia {
         BdCommand.register(event.getBuilder(), event.getBuildContext());
         GeneCommand.register(event.getBuilder(), event.getBuildContext());
         BlackwhipCommand.register(event.getBuilder(), event.getBuildContext());
+        LoadoutCommand.register(event.getBuilder(), event.getBuildContext());
     }
 
     @SubscribeEvent
