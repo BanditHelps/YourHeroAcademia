@@ -64,6 +64,7 @@ public class TreeEditorScreen extends Screen {
     private boolean viewReady;
     private boolean showGrid;
     private boolean showGridNumbers;
+    private boolean showNodeHover;
     private boolean panning;
     @Nullable
     private TreeEditorNode dragging;
@@ -76,8 +77,6 @@ public class TreeEditorScreen extends Screen {
     private TreeEditorNode parentLinkSource;
     @Nullable
     private ContextMenu contextMenu;
-    @Nullable
-    private HoverBox hoverBox;
     private String status = "Right-click empty space to add a node. Drag nodes to move. Right-click lines to add vertices. E exports JSON.";
 
     public TreeEditorScreen(TreeEditorDraft draft) {
@@ -121,7 +120,7 @@ public class TreeEditorScreen extends Screen {
             this.drawGrid(graphics);
         }
         this.drawConnections(graphics);
-        TreeEditorNode hovered = this.hoveredNode(mouseX, mouseY);
+        TreeEditorNode hovered = this.nodeAt(mouseX, mouseY);
         VertexPick hoveredVertex = this.hoveredVertex(mouseX, mouseY);
         for (TreeEditorNode node : this.draft.getNodes()) {
             this.drawNode(graphics, node);
@@ -131,11 +130,8 @@ public class TreeEditorScreen extends Screen {
 
         this.blitSprite(graphics, VIGNETTE, this.treeX, this.treeY, this.treeW, this.treeH);
 
-        if (hovered != null || this.selected != null || this.parentLinkSource != null) {
-            TreeEditorNode labeled = hovered != null ? hovered : (this.parentLinkSource != null ? this.parentLinkSource : this.selected);
-            this.hoverBox = this.drawTitleBox(graphics, labeled);
-        } else {
-            this.hoverBox = null;
+        if (this.showNodeHover && hovered != null) {
+            this.drawTitleBox(graphics, hovered);
         }
 
         this.drawChip(graphics, this.treeX, this.chipY, this.treeW, CHIP_HEIGHT);
@@ -204,7 +200,6 @@ public class TreeEditorScreen extends Screen {
             return true;
         }
         if (vertex != null) {
-            this.selected = vertex.child();
             this.draggingWaypointNode = vertex.child();
             this.draggingWaypointIndex = vertex.index();
             return true;
@@ -215,7 +210,6 @@ public class TreeEditorScreen extends Screen {
             return true;
         }
         if (segment != null) {
-            this.selected = segment.child();
             if (doubleClick) {
                 this.insertVertex(segment.child(), segment.segmentIndex(), this.screenToGridX(mouseX), this.screenToGridY(mouseY));
             }
@@ -495,7 +489,7 @@ public class TreeEditorScreen extends Screen {
         }
     }
 
-    private HoverBox drawTitleBox(GuiGraphicsExtractor graphics, TreeEditorNode node) {
+    private void drawTitleBox(GuiGraphicsExtractor graphics, TreeEditorNode node) {
         int x = this.nodeScreenX(node);
         int y = this.nodeScreenY(node);
         String label = node.getTitle() + " [" + node.getKey() + "]";
@@ -529,14 +523,10 @@ public class TreeEditorScreen extends Screen {
             graphics.text(this.font, line, boxX + 6, lineY, 0xFFCCCCCC, false);
             lineY += 10;
         }
-        return new HoverBox(node, boxX, boxY, boxWidth, boxHeight);
     }
 
     @Nullable
     private TreeEditorNode hoveredNode(int mouseX, int mouseY) {
-        if (this.hoverBox != null && this.hoverBox.contains(mouseX, mouseY)) {
-            return this.hoverBox.node();
-        }
         return this.nodeAt(mouseX, mouseY);
     }
 
@@ -726,19 +716,20 @@ public class TreeEditorScreen extends Screen {
         int gap = 3;
         int pad = 4;
         int available = Math.max(0, this.treeW - pad * 2);
-        int[] widths = {76, 58, 58, 60, 56};
-        int needed = widths[0] + widths[1] + widths[2] + widths[3] + widths[4] + gap * 4;
+        int[] widths = {70, 52, 52, 62, 56, 52};
+        int needed = widths[0] + widths[1] + widths[2] + widths[3] + widths[4] + widths[5] + gap * 5;
         if (needed > available) {
             int shrink = needed - available;
             for (int i = 0; i < widths.length && shrink > 0; i++) {
-                int reduce = Math.min(shrink, widths[i] - 42);
+                int reduce = Math.min(shrink, widths[i] - 40);
                 widths[i] -= reduce;
                 shrink -= reduce;
             }
         }
         int leftX = this.treeX + pad;
-        int closeX = this.treeX + this.treeW - pad - widths[4];
-        int exportX = closeX - gap - widths[3];
+        int closeX = this.treeX + this.treeW - pad - widths[5];
+        int exportX = closeX - gap - widths[4];
+        int hoverX = leftX + widths[0] + gap + widths[1] + gap + widths[2] + gap;
         this.addRenderableWidget(Button.builder(Component.literal("Background"), button -> this.openBackgroundPicker())
                 .bounds(leftX, y, widths[0], 20)
                 .build());
@@ -754,11 +745,17 @@ public class TreeEditorScreen extends Screen {
                 })
                 .bounds(leftX + widths[0] + gap + widths[1] + gap, y, widths[2], 20)
                 .build());
+        this.addRenderableWidget(Button.builder(Component.literal(this.hoverLabel()), button -> {
+                    this.showNodeHover = !this.showNodeHover;
+                    button.setMessage(Component.literal(this.hoverLabel()));
+                })
+                .bounds(hoverX, y, widths[3], 20)
+                .build());
         this.addRenderableWidget(Button.builder(Component.literal("Export"), button -> this.exportDraft())
-                .bounds(exportX, y, widths[3], 20)
+                .bounds(exportX, y, widths[4], 20)
                 .build());
         this.addRenderableWidget(Button.builder(Component.literal("Close"), button -> this.onClose())
-                .bounds(closeX, y, widths[4], 20)
+                .bounds(closeX, y, widths[5], 20)
                 .build());
     }
 
@@ -768,6 +765,10 @@ public class TreeEditorScreen extends Screen {
 
     private String numbersLabel() {
         return this.showGridNumbers ? "Nums: On" : "Nums: Off";
+    }
+
+    private String hoverLabel() {
+        return this.showNodeHover ? "Hover: On" : "Hover: Off";
     }
 
     public void applyBackground(Identifier textureOrBlock) {
@@ -921,13 +922,6 @@ public class TreeEditorScreen extends Screen {
         }
 
         private record Item(String label, Runnable action) {
-        }
-    }
-
-    private record HoverBox(TreeEditorNode node, int x, int y, int width, int height) {
-        boolean contains(int mouseX, int mouseY) {
-            return mouseX >= this.x && mouseX < this.x + this.width
-                    && mouseY >= this.y && mouseY < this.y + this.height;
         }
     }
 
