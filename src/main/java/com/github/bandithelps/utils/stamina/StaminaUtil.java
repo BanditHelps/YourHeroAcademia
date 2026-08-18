@@ -3,6 +3,7 @@ package com.github.bandithelps.utils.stamina;
 import com.github.bandithelps.capabilities.stamina.IStaminaData;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaSyncEvents;
+import com.github.bandithelps.utils.blackwhip.BlackwhipReinforceUtil;
 import com.github.bandithelps.values.ModDamageTypes;
 import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
@@ -113,6 +114,10 @@ public class StaminaUtil {
         // Creative players should not use stamina
         if (player.gameMode.getGameModeForPlayer() == GameType.CREATIVE) return;
         if (!player.isAlive()) return;
+
+        if (BlackwhipReinforceUtil.tryConvertStaminaToBodyDamage(player, amount)) {
+            return;
+        }
 
         IStaminaData stamina = StaminaAttachments.get(player);
 

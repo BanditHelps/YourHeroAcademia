@@ -1,6 +1,7 @@
 package com.github.bandithelps.commands;
 
 import com.github.bandithelps.capabilities.body.BodyAttachments;
+import com.github.bandithelps.capabilities.body.BodyDamageHelper;
 import com.github.bandithelps.capabilities.body.BodyDisplayBar;
 import com.github.bandithelps.capabilities.body.BodyDisplayBarType;
 import com.github.bandithelps.capabilities.body.BodyPart;
@@ -300,8 +301,7 @@ public final class BodyCommand {
     }
 
     private static int damagePart(CommandSourceStack source, ServerPlayer player, BodyPart part, float amount) {
-        BodyAttachments.get(player).damagePart(player, part, amount);
-        BodySyncEvents.syncNow(player);
+        BodyDamageHelper.damageAndSync(player, part, amount);
         source.sendSuccess(() -> Component.literal("Damaged " + part.getId() + " by " + amount + " for " + player.getName().getString() + "."), true);
         return 1;
     }

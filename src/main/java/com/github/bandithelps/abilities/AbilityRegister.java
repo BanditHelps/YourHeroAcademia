@@ -19,6 +19,7 @@ import com.github.bandithelps.abilities.blackwhip.BlackwhipRestrictAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipTagAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipYankAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipZipAbility;
+import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipBodyReinforceAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainChargeZipAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainDetachAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainMagnetAbility;
@@ -29,6 +30,7 @@ import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainRestrictAb
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainSwingAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainTagAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainZipAbility;
+import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipLimbReinforceAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipWebSwingAbility;
 import com.github.bandithelps.abilities.decay.DecayFistAbility;
 import com.github.bandithelps.abilities.decay.DecayInstabilityAbility;
@@ -101,6 +103,8 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainChargeZipAbility.Serializer> BLACKWHIP_CHAIN_CHARGE_ZIP;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainMagnetAbility.Serializer> BLACKWHIP_CHAIN_MAGNET;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainBlockTossAbility.Serializer> BLACKWHIP_CHAIN_BLOCK_TOSS;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipLimbReinforceAbility.Serializer> BLACKWHIP_LIMB_REINFORCE;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipBodyReinforceAbility.Serializer> BLACKWHIP_BODY_REINFORCE;
 
     /*=========================
      |    Smokescreen         |
@@ -160,6 +164,8 @@ public class AbilityRegister {
         BLACKWHIP_CHAIN_CHARGE_ZIP = ABILITIES.register("blackwhip_chain_charge_zip", BlackwhipChainChargeZipAbility.Serializer::new);
         BLACKWHIP_CHAIN_MAGNET = ABILITIES.register("blackwhip_chain_magnet", BlackwhipChainMagnetAbility.Serializer::new);
         BLACKWHIP_CHAIN_BLOCK_TOSS = ABILITIES.register("blackwhip_chain_block_toss", BlackwhipChainBlockTossAbility.Serializer::new);
+        BLACKWHIP_LIMB_REINFORCE = ABILITIES.register("blackwhip_limb_reinforce", BlackwhipLimbReinforceAbility.Serializer::new);
+        BLACKWHIP_BODY_REINFORCE = ABILITIES.register("blackwhip_body_reinforce", BlackwhipBodyReinforceAbility.Serializer::new);
     }
 
 }

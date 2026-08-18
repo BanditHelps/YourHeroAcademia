@@ -64,6 +64,8 @@
   "ability.yha.blackwhip_chain_charge_zip": "Charge Zip",
   "ability.yha.blackwhip_chain_charge_zip.title": "Charge Zip",
   "ability.yha.blackwhip_chain_charge_zip.charging": "Charging %s%%",
+  "ability.yha.blackwhip_limb_reinforce": "Limb Reinforce",
+  "ability.yha.blackwhip_body_reinforce": "Body Reinforce",
 
   "entity.yha.blackwhip_chain": "Blackwhip Chain",
   "entity.yha.blackwhip_segment": "Blackwhip Segment",

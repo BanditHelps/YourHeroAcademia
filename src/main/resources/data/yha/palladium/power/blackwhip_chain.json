@@ -555,7 +555,7 @@
       "properties": {
         "title": "Auto Pickup - I",
         "description": "Use your free whips to pull in items around you in a 3 block radius.",
-        "icon": "minecraft:blue_orchid",
+        "icon": "yha:textures/icons/blackwhip/magnet_1.png",
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
@@ -584,7 +584,7 @@
       "properties": {
         "title": "Auto Pickup - II",
         "description": "Extends the range of the auto pickup to 6 blocks",
-        "icon": "minecraft:red_tulip",
+        "icon": "yha:textures/icons/blackwhip/magnet_2.png",
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
@@ -848,7 +848,7 @@
       "properties": {
         "title": "Auto Pickup",
         "description": "Toggle to send unused whips after nearby dropped items and pull them into your inventory. Range grows with quirk factor. Tagged enemies occupy the same whip slots.",
-        "icon": "minecraft:lodestone",
+        "icon": "yha:textures/icons/blackwhip/magnet.png",
         "list_index": 11,
         "hidden_in_gui": true,
         "gui_position": [
@@ -1307,12 +1307,12 @@
         }
       }
     },
-    "bw_arm_reinforce": {
+    "bw_tree_limb_reinforcement": {
       "type": "palladium:dummy",
       "properties": {
-        "title": "Arm Reinforce",
-        "description": "Use blackwhip to reinforce your arm muscles, reducing limb damage and adding small strength boost.",
-        "icon": "minecraft:diamond_sword",
+        "title": "Limb Reinforcement",
+        "description": "Your blackwhip now autonomously acts to protect harmed limbs, reducing their damage taken.",
+        "icon": "minecraft:obsidian",
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
@@ -1325,18 +1325,152 @@
           "type": "palladium:buyable",
           "cost": {
             "type": "yha:upgrade_point",
-            "points": 7
+            "points": 5
           }
         }
       }
     },
+    "bw_arm_reinforce": {
+      "type": "yha:blackwhip_limb_reinforce",
+      "parts": [
+        "left_arm",
+        "right_arm",
+        "left_hand",
+        "right_hand"
+      ],
+      "reduction": 0.5,
+      "properties": {
+        "title": "Arm Reinforce",
+        "description": "When any arm or hand drops to 50% health or below, Blackwhip wraps those limbs and halves further body damage to them.",
+        "icon": "minecraft:diamond_sword",
+        "hidden_in_bar": true,
+        "hidden_in_gui": true
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "bw_tree_limb_reinforcement"
+        },
+        "enabling": {
+          "type": "palladium:or",
+          "conditions": [
+            {
+              "type": "yha:body_health",
+              "part": "left_arm",
+              "check_type": "value",
+              "operator": "<=",
+              "state": "null",
+              "target": 50
+            },
+            {
+              "type": "yha:body_health",
+              "part": "right_arm",
+              "check_type": "value",
+              "operator": "<=",
+              "state": "null",
+              "target": 50
+            },
+            {
+              "type": "yha:body_health",
+              "part": "left_hand",
+              "check_type": "value",
+              "operator": "<=",
+              "state": "null",
+              "target": 50
+            },
+            {
+              "type": "yha:body_health",
+              "part": "right_hand",
+              "check_type": "value",
+              "operator": "<=",
+              "state": "null",
+              "target": 50
+            }
+          ]
+        }
+      }
+    },
+    "bw_leg_reinforce": {
+      "type": "yha:blackwhip_limb_reinforce",
+      "parts": [
+        "left_leg",
+        "right_leg",
+        "left_foot",
+        "right_foot"
+      ],
+      "reduction": 0.5,
+      "properties": {
+        "title": "Leg Reinforce",
+        "description": "When any leg or foot drops to 50% health or below, Blackwhip wraps those limbs and halves further body damage to them.",
+        "icon": "minecraft:iron_boots",
+        "hidden_in_bar": true,
+        "hidden_in_gui": true
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "bw_tree_limb_reinforcement"
+        },
+        "enabling": {
+          "type": "palladium:or",
+          "conditions": [
+            {
+              "type": "yha:body_health",
+              "part": "left_leg",
+              "check_type": "value",
+              "operator": "<=",
+              "state": "null",
+              "target": 50
+            },
+            {
+              "type": "yha:body_health",
+              "part": "right_leg",
+              "check_type": "value",
+              "operator": "<=",
+              "state": "null",
+              "target": 50
+            },
+            {
+              "type": "yha:body_health",
+              "part": "left_foot",
+              "check_type": "value",
+              "operator": "<=",
+              "state": "null",
+              "target": 50
+            },
+            {
+              "type": "yha:body_health",
+              "part": "right_foot",
+              "check_type": "value",
+              "operator": "<=",
+              "state": "null",
+              "target": 50
+            }
+          ]
+        }
+      }
+    },
     "bw_body_reinforce": {
-      "type": "palladium:dummy",
+      "type": "yha:blackwhip_body_reinforce",
+      "stamina_to_damage": 0.5,
+      "parts": [
+        "head",
+        "chest",
+        "left_arm",
+        "right_arm",
+        "left_hand",
+        "right_hand",
+        "left_leg",
+        "right_leg",
+        "left_foot",
+        "right_foot"
+      ],
       "properties": {
         "title": "Body Reinforce",
-        "description": "Wind Blackwhip underneath your skin to reinforce the muscles. Significantly reduces stamina usage at the cost of full body damage.",
+        "description": "Toggle to stop all stamina drain. Stamina that would have been spent is converted into body damage instead.",
         "icon": "minecraft:paper",
-        "hidden_in_bar": true,
+        "list_index": 13,
+        "hidden_in_bar": false,
         "hidden_in_gui": false,
         "gui_position": [
           1.8,
@@ -1344,6 +1478,10 @@
         ]
       },
       "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "toggle"
+        },
         "unlocking": {
           "type": "palladium:buyable",
           "cost": {
@@ -1353,7 +1491,7 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "bw_arm_reinforce"
+              "ability": "bw_tree_limb_reinforcement"
             }
           ]
         }
