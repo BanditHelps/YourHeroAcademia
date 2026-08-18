@@ -122,6 +122,34 @@ public final class BlackwhipChainAnchors {
     }
 
     /**
+     * Upper-back attach (between the shoulder blades), using body yaw so looking around does not
+     * swing the root. Used by chain Block Toss.
+     */
+    public static Vec3 resolveOwnerBack(Entity owner, float partialTick) {
+        if (!(owner instanceof LivingEntity living)) {
+            return owner.getPosition(partialTick).add(0.0, owner.getBbHeight() * 0.55, 0.0);
+        }
+        float yaw = Mth.rotLerp(partialTick, living.yBodyRotO, living.yBodyRot);
+        Vec3 pos = living.getPosition(partialTick);
+        Vec3 back = Vec3.directionFromRotation(0.0f, yaw).normalize().scale(-1.0);
+        double crouch = living.isCrouching() ? -0.18 : 0.0;
+        double backY = Math.max(0.55, Math.min(1.55, living.getBbHeight() * 0.62)) + crouch;
+        return pos.add(0.0, backY, 0.0).add(back.scale(0.32));
+    }
+
+    public static Vec3 resolveOwnerBack(Entity owner) {
+        return resolveOwnerBack(owner, 1.0f);
+    }
+
+    public static Vec3 resolveOwnerAttach(Entity owner, float partialTick, boolean fromBack) {
+        return fromBack ? resolveOwnerBack(owner, partialTick) : resolveOwnerWrist(owner, partialTick);
+    }
+
+    public static Vec3 resolveOwnerAttach(Entity owner, boolean fromBack) {
+        return resolveOwnerAttach(owner, 1.0f, fromBack);
+    }
+
+    /**
      * Client render AABB from interpolated entity pose so wrap/tip track the drawn model,
      * not the tick-old box.
      */

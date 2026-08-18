@@ -187,10 +187,12 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
      */
     private static void buildVisualPose(BlackwhipChainEntity entity, BlackwhipChainRenderState state,
                                         Entity owner, float partial, boolean dissolvingFallback) {
-        state.fadeRoot = !dissolvingFallback && isLocalFirstPersonOwner(owner);
+        state.fadeRoot = !dissolvingFallback
+                && entity.getPurpose() != BlackwhipChainEntity.PURPOSE_BLOCK_TOSS
+                && isLocalFirstPersonOwner(owner);
         Vec3 wrist = null;
         if (owner != null && state.joints.size() >= 2) {
-            wrist = resolveVisualRoot(owner, partial);
+            wrist = resolveVisualRoot(entity, owner, partial);
             Vec3 seg0 = state.joints.getFirst();
             Vec3 offset = wrist.subtract(seg0);
             for (int i = 0; i < state.joints.size(); i++) {
@@ -326,8 +328,9 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
      * Animated main-hand attach via Palladium {@code ModelUtil} (same as energy-beam / webswing).
      * Falls back to approximate wrist math for non-player owners.
      */
-    private static Vec3 resolveVisualRoot(Entity owner, float partial) {
-        return BlackwhipChainClientAnchors.resolveVisualRoot(owner, partial);
+    private static Vec3 resolveVisualRoot(BlackwhipChainEntity entity, Entity owner, float partial) {
+        return BlackwhipChainClientAnchors.resolveVisualRoot(
+                owner, partial, entity.getPurpose() == BlackwhipChainEntity.PURPOSE_BLOCK_TOSS);
     }
 
     /** True when the camera player owns this whip and is in first person. */

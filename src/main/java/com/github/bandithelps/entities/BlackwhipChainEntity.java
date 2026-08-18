@@ -510,7 +510,7 @@ public class BlackwhipChainEntity extends Entity {
 
         // Keep controller near the wrist for tracking/culling; IK runs in serverPostTick.
         if (owner != null) {
-            Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+            Vec3 wrist = ownerAttach(owner);
             this.setPos(wrist.x, wrist.y, wrist.z);
             this.setDeltaMovement(owner.getDeltaMovement());
         }
@@ -639,7 +639,7 @@ public class BlackwhipChainEntity extends Entity {
         if (n < 2) {
             return;
         }
-        Vec3 root = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        Vec3 root = ownerAttach(owner);
         Vec3 tip = getAnchorPoint();
         tipPos = tip;
         int tipJoints = Mth.clamp(getWrapJoints(), BlackwhipChainAnchors.MIN_WRAP_JOINTS,
@@ -663,7 +663,7 @@ public class BlackwhipChainEntity extends Entity {
             return;
         }
 
-        Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        Vec3 wrist = ownerAttach(owner);
         Vec3 prevTip = tipPos;
         Vec3 next = tipPos.add(tipVelocity);
 
@@ -1146,7 +1146,7 @@ public class BlackwhipChainEntity extends Entity {
 
     private void beginReel() {
         Entity owner = getOwner();
-        Vec3 wrist = owner != null ? BlackwhipChainAnchors.resolveOwnerWrist(owner) : this.position();
+        Vec3 wrist = owner != null ? ownerAttach(owner) : this.position();
         this.reelFromTip = tipPos;
         this.tipVelocity = Vec3.ZERO;
         this.getEntityData().set(DATA_ACTIVE, true);
@@ -1159,7 +1159,7 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     private void tickReel(Entity owner) {
-        Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        Vec3 wrist = ownerAttach(owner);
         int total = Math.max(1, getRetractTicks());
         float progress = 1.0f - (Math.max(0, this.retractCountdown) / (float) total);
         float eased = progress * progress * (3.0f - 2.0f * progress);
@@ -1255,7 +1255,7 @@ public class BlackwhipChainEntity extends Entity {
             resizeCooldown--;
             return;
         }
-        Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        Vec3 wrist = ownerAttach(owner);
         int wrapJoints = BlackwhipChainAnchors.MIN_WRAP_JOINTS;
         this.getEntityData().set(DATA_WRAP_JOINTS, wrapJoints);
 
@@ -1273,7 +1273,7 @@ public class BlackwhipChainEntity extends Entity {
             resizeCooldown--;
             return;
         }
-        Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        Vec3 wrist = ownerAttach(owner);
         Vec3 entry = BlackwhipChainAnchors.resolveWaistEntry(target, wrist, getWrapHeight());
         int wrapJoints = BlackwhipChainAnchors.wrapJointCount(target);
         this.getEntityData().set(DATA_WRAP_JOINTS, wrapJoints);
@@ -1409,7 +1409,7 @@ public class BlackwhipChainEntity extends Entity {
         if (n < 2) {
             return;
         }
-        Vec3 root = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        Vec3 root = ownerAttach(owner);
         Vec3 tip = tipPos;
         int tipJoints = Mth.clamp(getWrapJoints(), BlackwhipChainAnchors.MIN_WRAP_JOINTS,
                 Math.min(BlackwhipChainAnchors.MAX_WRAP_JOINTS, Math.max(1, n - 2)));
@@ -1422,7 +1422,7 @@ public class BlackwhipChainEntity extends Entity {
         if (n < 2) {
             return;
         }
-        Vec3 root = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        Vec3 root = ownerAttach(owner);
         Vec3 entry = BlackwhipChainAnchors.resolveWaistEntry(target, root, getWrapHeight());
 
         float blend = 1.0f;
@@ -1445,7 +1445,7 @@ public class BlackwhipChainEntity extends Entity {
         if (n < 2 || target == null) {
             return;
         }
-        Vec3 root = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        Vec3 root = ownerAttach(owner);
         AABB bb = target.getBoundingBox();
         if (bb.getXsize() < 0.25 || bb.getYsize() < 0.25 || bb.getZsize() < 0.25) {
             bb = BlackwhipChainAnchors.cubeAround(target.position(), 1.0);
@@ -1618,6 +1618,14 @@ public class BlackwhipChainEntity extends Entity {
     @Deprecated
     public static Vec3 resolveOwnerAnchor(Entity owner) {
         return BlackwhipChainAnchors.resolveOwnerWrist(owner);
+    }
+
+    private Vec3 ownerAttach(Entity owner) {
+        return BlackwhipChainAnchors.resolveOwnerAttach(owner, getPurpose() == PURPOSE_BLOCK_TOSS);
+    }
+
+    private Vec3 ownerAttach(Entity owner, float partialTick) {
+        return BlackwhipChainAnchors.resolveOwnerAttach(owner, partialTick, getPurpose() == PURPOSE_BLOCK_TOSS);
     }
 
     public static Vec3 resolveWaistLatch(LivingEntity target) {
@@ -1958,7 +1966,7 @@ public class BlackwhipChainEntity extends Entity {
         List<BlackwhipSegmentEntity> segs = collectSegments();
         if (!segs.isEmpty()) {
             BlackwhipSegmentEntity tipSeg = segs.getLast();
-            Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner, partial);
+            Vec3 wrist = ownerAttach(owner, partial);
             double sx = Mth.lerp(partial, tipSeg.xOld, tipSeg.getX());
             double sy = Mth.lerp(partial, tipSeg.yOld, tipSeg.getY());
             double sz = Mth.lerp(partial, tipSeg.zOld, tipSeg.getZ());

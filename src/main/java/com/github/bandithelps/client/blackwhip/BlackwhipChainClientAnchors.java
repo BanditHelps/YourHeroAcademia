@@ -21,10 +21,10 @@ public final class BlackwhipChainClientAnchors {
     private BlackwhipChainClientAnchors() {
     }
 
-    /**
-     * Animated main-hand world position for players; falls back to approximate wrist math otherwise.
-     */
-    public static Vec3 resolveVisualRoot(Entity owner, float partialTick) {
+    public static Vec3 resolveVisualRoot(Entity owner, float partialTick, boolean fromBack) {
+        if (fromBack) {
+            return BlackwhipChainAnchors.resolveOwnerBack(owner, partialTick);
+        }
         if (owner instanceof AbstractClientPlayer player) {
             String part = player.getMainArm() == HumanoidArm.LEFT
                     ? ModelUtil.LEFT_ARM_PART_NAME
