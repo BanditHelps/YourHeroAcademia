@@ -70,6 +70,8 @@ public class TreeEditorScreen extends Screen {
     private TreeEditorNode parentLinkSource;
     @Nullable
     private ContextMenu contextMenu;
+    @Nullable
+    private HoverBox hoverBox;
     private String status = "Right-click empty space to add a node. Drag nodes to move. E exports JSON.";
 
     public TreeEditorScreen(TreeEditorDraft draft) {
@@ -113,7 +115,7 @@ public class TreeEditorScreen extends Screen {
             this.drawGrid(graphics);
         }
         this.drawConnections(graphics);
-        TreeEditorNode hovered = this.nodeAt(mouseX, mouseY);
+        TreeEditorNode hovered = this.hoveredNode(mouseX, mouseY);
         for (TreeEditorNode node : this.draft.getNodes()) {
             this.drawNode(graphics, node);
         }
@@ -123,7 +125,9 @@ public class TreeEditorScreen extends Screen {
 
         if (hovered != null || this.selected != null || this.parentLinkSource != null) {
             TreeEditorNode labeled = hovered != null ? hovered : (this.parentLinkSource != null ? this.parentLinkSource : this.selected);
-            this.drawTitleBox(graphics, labeled);
+            this.hoverBox = this.drawTitleBox(graphics, labeled);
+        } else {
+            this.hoverBox = null;
         }
 
         this.drawChip(graphics, this.treeX, this.chipY, this.treeW, CHIP_HEIGHT);
@@ -152,12 +156,11 @@ public class TreeEditorScreen extends Screen {
             if (this.parentLinkSource != null) {
                 this.parentLinkSource = null;
                 this.status = "Parent mode cancelled.";
-                return true;
             }
-            return false;
+            return true;
         }
 
-        TreeEditorNode hit = this.nodeAt(mouseX, mouseY);
+        TreeEditorNode hit = this.hoveredNode(mouseX, mouseY);
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             this.dragging = null;
             this.panning = false;
@@ -281,10 +284,11 @@ public class TreeEditorScreen extends Screen {
             return;
         }
         try {
-            String json = TreeEditorExporter.toJson(this.draft);
-            GLFW.glfwSetClipboardString(this.minecraft.getWindow().handle(), json);
-            Path file = TreeEditorExporter.writeToGameDir(this.minecraft, this.draft);
-            this.status = "Exported to clipboard and " + file.toAbsolutePath();
+            String json = TreeEditorExporter.toJson(this.draft, this.costSchemas);
+            Path file = TreeEditorExporter.writeToGameDir(this.minecraft, this.draft, json);
+            String path = file.toAbsolutePath().toString();
+            this.status = "Exported to " + path;
+            this.minecraft.setScreen(new TreeEditorExportPopupScreen(this, path));
         } catch (Exception exception) {
             this.status = "Export failed: " + exception.getMessage();
         }
@@ -336,6 +340,9 @@ public class TreeEditorScreen extends Screen {
         if (this.selected != null) {
             textY = this.drawWrapped(graphics, this.selected.getTitle(), textX, textY, textW, TEXT_LIGHT) + 2;
             textY = this.drawWrapped(graphics, this.selected.getKey(), textX, textY, textW, TEXT_LIGHT) + 2;
+            if (!this.selected.getDescription().isBlank()) {
+                textY = this.drawWrapped(graphics, this.selected.getDescription(), textX, textY, textW, 0xFFCCCCCC) + 2;
+            }
             textY = this.drawWrapped(graphics, this.selected.getCost().summary(this.costSchemas), textX, textY, textW, TEXT_LIGHT) + 6;
         }
 
@@ -429,23 +436,49 @@ public class TreeEditorScreen extends Screen {
         }
     }
 
-    private void drawTitleBox(GuiGraphicsExtractor graphics, TreeEditorNode node) {
+    private HoverBox drawTitleBox(GuiGraphicsExtractor graphics, TreeEditorNode node) {
         int x = this.nodeScreenX(node);
         int y = this.nodeScreenY(node);
         String label = node.getTitle() + " [" + node.getKey() + "]";
+        String description = node.getDescription();
+        int maxTextWidth = 188;
+        List<FormattedCharSequence> descLines = description.isBlank()
+                ? List.of()
+                : this.font.split(Component.literal(description), maxTextWidth);
         int textWidth = this.font.width(label);
+        for (FormattedCharSequence line : descLines) {
+            textWidth = Math.max(textWidth, this.font.width(line));
+        }
         int boxWidth = Math.min(200, Math.max(40, textWidth + 12));
+        int boxHeight = 18 + (descLines.isEmpty() ? 8 : 4 + descLines.size() * 10);
         int boxX = x + NODE_HIT + 2;
         int boxY = y - NODE_HIT;
         if (boxX + boxWidth > this.treeX + this.treeW) {
             boxX = x - NODE_HIT - 2 - boxWidth;
         }
-        graphics.fill(boxX, boxY, boxX + boxWidth, boxY + 26, 0xF0101010);
+        if (boxY + boxHeight > this.treeY + this.treeH) {
+            boxY = Math.max(this.treeY, this.treeY + this.treeH - boxHeight);
+        }
+        graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xF0101010);
         graphics.fill(boxX, boxY, boxX + boxWidth, boxY + 1, 0xFFFFFFFF);
-        graphics.fill(boxX, boxY + 25, boxX + boxWidth, boxY + 26, 0xFF555555);
-        graphics.fill(boxX, boxY, boxX + 1, boxY + 26, 0xFFFFFFFF);
-        graphics.fill(boxX + boxWidth - 1, boxY, boxX + boxWidth, boxY + 26, 0xFF555555);
-        graphics.text(this.font, label, boxX + 6, boxY + 9, TEXT_LIGHT, false);
+        graphics.fill(boxX, boxY + boxHeight - 1, boxX + boxWidth, boxY + boxHeight, 0xFF555555);
+        graphics.fill(boxX, boxY, boxX + 1, boxY + boxHeight, 0xFFFFFFFF);
+        graphics.fill(boxX + boxWidth - 1, boxY, boxX + boxWidth, boxY + boxHeight, 0xFF555555);
+        graphics.text(this.font, label, boxX + 6, boxY + 5, TEXT_LIGHT, false);
+        int lineY = boxY + 16;
+        for (FormattedCharSequence line : descLines) {
+            graphics.text(this.font, line, boxX + 6, lineY, 0xFFCCCCCC, false);
+            lineY += 10;
+        }
+        return new HoverBox(node, boxX, boxY, boxWidth, boxHeight);
+    }
+
+    @Nullable
+    private TreeEditorNode hoveredNode(int mouseX, int mouseY) {
+        if (this.hoverBox != null && this.hoverBox.contains(mouseX, mouseY)) {
+            return this.hoverBox.node();
+        }
+        return this.nodeAt(mouseX, mouseY);
     }
 
     @Nullable
@@ -687,6 +720,13 @@ public class TreeEditorScreen extends Screen {
         }
 
         private record Item(String label, Runnable action) {
+        }
+    }
+
+    private record HoverBox(TreeEditorNode node, int x, int y, int width, int height) {
+        boolean contains(int mouseX, int mouseY) {
+            return mouseX >= this.x && mouseX < this.x + this.width
+                    && mouseY >= this.y && mouseY < this.y + this.height;
         }
     }
 }

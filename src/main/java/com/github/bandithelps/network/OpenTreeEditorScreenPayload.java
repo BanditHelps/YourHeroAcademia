@@ -8,13 +8,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public record OpenTreeEditorScreenPayload(String powerId) implements CustomPacketPayload {
+public record OpenTreeEditorScreenPayload(String powerId, String sourceJson) implements CustomPacketPayload {
     public static final Type<OpenTreeEditorScreenPayload> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "open_tree_editor"));
 
     public static final StreamCodec<ByteBuf, OpenTreeEditorScreenPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.STRING_UTF8,
             OpenTreeEditorScreenPayload::powerId,
+            ByteBufCodecs.STRING_UTF8,
+            OpenTreeEditorScreenPayload::sourceJson,
             OpenTreeEditorScreenPayload::new
     );
 
@@ -27,7 +29,8 @@ public record OpenTreeEditorScreenPayload(String powerId) implements CustomPacke
         context.enqueueWork(() -> {
             try {
                 Class<?> openerClass = Class.forName("com.github.bandithelps.client.ClientScreenOpener");
-                openerClass.getMethod("openTreeEditorScreen", String.class).invoke(null, payload.powerId());
+                openerClass.getMethod("openTreeEditorScreen", String.class, String.class)
+                        .invoke(null, payload.powerId(), payload.sourceJson());
             } catch (ClassNotFoundException ignored) {
                 // Dedicated server side does not include client classes.
             } catch (ReflectiveOperationException exception) {

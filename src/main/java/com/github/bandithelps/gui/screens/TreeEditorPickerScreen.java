@@ -85,7 +85,7 @@ public class TreeEditorPickerScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        this.parent.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        this.parent.extractRenderState(graphics, Integer.MIN_VALUE, Integer.MIN_VALUE, partialTick);
         graphics.fill(0, 0, this.width, this.height, 0x88000000);
         int x = this.panelX();
         int y = this.panelY();
@@ -145,13 +145,13 @@ public class TreeEditorPickerScreen extends Screen {
         int visibleRows = this.visibleRows();
         int visibleColumns = this.visibleColumns();
         if (mouseX < gridX || mouseY < gridY || mouseX >= gridX + visibleColumns * SLOT || mouseY >= gridY + visibleRows * SLOT) {
-            return false;
+            return true;
         }
         int col = (mouseX - gridX) / SLOT;
         int row = this.scroll + (mouseY - gridY) / SLOT;
         int index = row * visibleColumns + col;
         if (index < 0 || index >= this.filtered.size()) {
-            return false;
+            return true;
         }
         this.onSelect.accept(this.filtered.get(index).id());
         this.onClose();

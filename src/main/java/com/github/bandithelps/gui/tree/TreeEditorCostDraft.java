@@ -5,10 +5,12 @@ import com.github.bandithelps.conditions.cost.UpgradePointCost;
 import net.threetag.palladium.logic.cost.Cost;
 import net.threetag.palladium.power.ability.unlocking.BuyableUnlockingHandler;
 import net.threetag.palladium.power.ability.unlocking.UnlockingHandler;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public final class TreeEditorCostDraft {
     public static final String DEFAULT_TYPE = TreeEditorCostSchema.NONE_ID;
@@ -22,6 +24,19 @@ public final class TreeEditorCostDraft {
 
     public static TreeEditorCostDraft none() {
         return new TreeEditorCostDraft(DEFAULT_TYPE);
+    }
+
+    public TreeEditorCostDraft copy() {
+        TreeEditorCostDraft copy = new TreeEditorCostDraft(this.typeId);
+        copy.values.putAll(this.values);
+        return copy;
+    }
+
+    public boolean sameAs(@Nullable TreeEditorCostDraft other) {
+        if (other == null) {
+            return false;
+        }
+        return Objects.equals(this.typeId, other.typeId) && this.values.equals(other.values);
     }
 
     public static TreeEditorCostDraft fromUnlocking(UnlockingHandler handler) {

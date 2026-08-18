@@ -1,10 +1,15 @@
 package com.github.bandithelps.gui.tree;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec2;
 import net.threetag.palladium.icon.Icon;
 import net.threetag.palladium.power.Power;
 import net.threetag.palladium.power.ability.Ability;
+import net.threetag.palladium.power.ability.AbilityDescription;
 import net.threetag.palladium.power.ability.AbilityReference;
 import net.threetag.palladium.power.ability.unlocking.UnlockingHandler;
 import org.jetbrains.annotations.Nullable;
@@ -19,6 +24,8 @@ public final class TreeEditorDraft {
     private final Identifier powerId;
     private final String powerName;
     private Identifier backgroundTexture = TreeEditorLayoutBackground.FALLBACK;
+    @Nullable
+    private JsonObject sourceJson;
     private final List<TreeEditorNode> nodes = new ArrayList<>();
 
     public TreeEditorDraft(Identifier powerId, String powerName) {
@@ -26,8 +33,9 @@ public final class TreeEditorDraft {
         this.powerName = powerName;
     }
 
-    public static TreeEditorDraft fromPower(Identifier powerId, Power power) {
+    public static TreeEditorDraft fromPower(Identifier powerId, Power power, @Nullable String sourceJson) {
         TreeEditorDraft draft = new TreeEditorDraft(powerId, power.getName().getString());
+        draft.sourceJson = parseSourceJson(sourceJson);
         for (var entry : power.getAbilities().entrySet()) {
             Ability ability = entry.getValue();
             if (ability.getProperties().isHiddenInGUI()) {
@@ -39,10 +47,12 @@ public final class TreeEditorDraft {
             String parentKey = firstParentKey(ability);
             Icon icon = ability.getProperties().getIcon();
             String title = ability.getDisplayName().getString();
+            DescriptionText description = readDescription(ability);
             draft.nodes.add(new TreeEditorNode(
                     entry.getKey(),
                     title,
-                    readDescription(ability),
+                    description.unlocked(),
+                    description.locked(),
                     icon,
                     gridX,
                     gridY,
@@ -68,6 +78,11 @@ public final class TreeEditorDraft {
 
     public void setBackgroundTexture(Identifier backgroundTexture) {
         this.backgroundTexture = backgroundTexture == null ? TreeEditorLayoutBackground.FALLBACK : backgroundTexture;
+    }
+
+    @Nullable
+    public JsonObject getSourceJson() {
+        return this.sourceJson;
     }
 
     public List<TreeEditorNode> getNodes() {
@@ -105,7 +120,7 @@ public final class TreeEditorDraft {
         if (trimmed.equals(node.getKey())) {
             return true;
         }
-        if (find(trimmed) != null) {
+        if (find(trimmed) != null || hasSourceAbility(trimmed)) {
             return false;
         }
         String oldKey = node.getKey();
@@ -175,14 +190,21 @@ public final class TreeEditorDraft {
 
     private String uniqueKey(String base) {
         String sanitized = sanitizeKey(base);
-        if (find(sanitized) == null) {
+        if (find(sanitized) == null && !hasSourceAbility(sanitized)) {
             return sanitized;
         }
         int index = 2;
-        while (find(sanitized + "_" + index) != null) {
+        while (find(sanitized + "_" + index) != null || hasSourceAbility(sanitized + "_" + index)) {
             index++;
         }
         return sanitized + "_" + index;
+    }
+
+    private boolean hasSourceAbility(String key) {
+        if (this.sourceJson == null || !this.sourceJson.has("abilities") || !this.sourceJson.get("abilities").isJsonObject()) {
+            return false;
+        }
+        return this.sourceJson.getAsJsonObject("abilities").has(key);
     }
 
     private static String sanitizeKey(String key) {
@@ -206,21 +228,47 @@ public final class TreeEditorDraft {
         return parents.getFirst().abilityKey();
     }
 
-    private static String readDescription(Ability ability) {
-        try {
-            Object description = ability.getProperties().getDescription();
-            if (description == null) {
-                return "";
-            }
-            try {
-                Object text = description.getClass().getMethod("getString").invoke(description);
-                return text == null ? "" : text.toString();
-            } catch (ReflectiveOperationException ignored) {
-                String value = description.toString();
-                return value.contains("@") ? "" : value;
-            }
-        } catch (RuntimeException ignored) {
+    private static DescriptionText readDescription(Ability ability) {
+        AbilityDescription description = ability.getProperties().getDescription();
+        if (description == null) {
+            return DescriptionText.EMPTY;
+        }
+        String unlocked = componentText(description.getUnlockedDescription());
+        if (unlocked.isBlank()) {
+            unlocked = componentText(description.get(true));
+        }
+        String locked = description.isSimple() ? "" : componentText(description.getLockedDescription());
+        if (locked.isBlank() && !description.isSimple()) {
+            locked = componentText(description.get(false));
+        }
+        if (unlocked.isBlank() && !locked.isBlank()) {
+            unlocked = locked;
+        }
+        return new DescriptionText(unlocked, locked);
+    }
+
+    private static String componentText(@Nullable Component component) {
+        if (component == null) {
             return "";
         }
+        String text = component.getString();
+        return text == null ? "" : text;
+    }
+
+    @Nullable
+    private static JsonObject parseSourceJson(@Nullable String sourceJson) {
+        if (sourceJson == null || sourceJson.isBlank()) {
+            return null;
+        }
+        try {
+            JsonElement element = JsonParser.parseString(sourceJson);
+            return element.isJsonObject() ? element.getAsJsonObject() : null;
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private record DescriptionText(String unlocked, String locked) {
+        private static final DescriptionText EMPTY = new DescriptionText("", "");
     }
 }

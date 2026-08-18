@@ -12,6 +12,8 @@ public final class TreeEditorNode {
     private final String originalTitle;
     private String description;
     private final String originalDescription;
+    private String lockedDescription;
+    private final String originalLockedDescription;
     @Nullable
     private Icon icon;
     private final String originalIconId;
@@ -24,12 +26,14 @@ public final class TreeEditorNode {
     @Nullable
     private final String originalParentKey;
     private TreeEditorCostDraft cost;
+    private final TreeEditorCostDraft originalCost;
     private final boolean created;
 
     public TreeEditorNode(
             String key,
             String title,
             String description,
+            String lockedDescription,
             @Nullable Icon icon,
             float gridX,
             float gridY,
@@ -43,6 +47,8 @@ public final class TreeEditorNode {
         this.originalTitle = title;
         this.description = description == null ? "" : description;
         this.originalDescription = this.description;
+        this.lockedDescription = lockedDescription == null ? "" : lockedDescription;
+        this.originalLockedDescription = this.lockedDescription;
         this.icon = icon;
         this.originalIconId = this.getIconId();
         this.gridX = gridX;
@@ -52,11 +58,12 @@ public final class TreeEditorNode {
         this.parentKey = parentKey;
         this.originalParentKey = parentKey;
         this.cost = cost == null ? TreeEditorCostDraft.none() : cost;
+        this.originalCost = this.cost.copy();
         this.created = created;
     }
 
     public static TreeEditorNode created(String key, String title, float gridX, float gridY) {
-        return new TreeEditorNode(key, title, "", parseIcon("minecraft:paper"), gridX, gridY, null, TreeEditorCostDraft.none(), true);
+        return new TreeEditorNode(key, title, "", "", parseIcon("minecraft:paper"), gridX, gridY, null, TreeEditorCostDraft.none(), true);
     }
 
     public String getKey() {
@@ -85,6 +92,18 @@ public final class TreeEditorNode {
 
     public void setDescription(String description) {
         this.description = description == null ? "" : description;
+    }
+
+    public String getLockedDescription() {
+        return this.lockedDescription;
+    }
+
+    public void setLockedDescription(String lockedDescription) {
+        this.lockedDescription = lockedDescription == null ? "" : lockedDescription;
+    }
+
+    public boolean hasSplitDescription() {
+        return !this.lockedDescription.isBlank() && !this.lockedDescription.equals(this.description);
     }
 
     @Nullable
@@ -167,7 +186,12 @@ public final class TreeEditorNode {
     public boolean metadataChanged() {
         return !Objects.equals(this.title, this.originalTitle)
                 || !Objects.equals(this.description, this.originalDescription)
+                || !Objects.equals(this.lockedDescription, this.originalLockedDescription)
                 || !Objects.equals(this.getIconId(), this.originalIconId);
+    }
+
+    public boolean costChanged() {
+        return !this.cost.sameAs(this.originalCost);
     }
 
     @Nullable

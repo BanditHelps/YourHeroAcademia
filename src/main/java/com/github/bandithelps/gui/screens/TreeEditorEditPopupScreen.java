@@ -10,6 +10,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -41,6 +42,8 @@ public class TreeEditorEditPopupScreen extends Screen {
     private String titleValue;
     private String keyValue;
     private String descriptionValue;
+    private String lockedDescriptionValue;
+    private final boolean splitDescription;
     private String iconId;
     private boolean keyLocked;
     private final TreeEditorCostDraft cost;
@@ -60,6 +63,8 @@ public class TreeEditorEditPopupScreen extends Screen {
         this.titleValue = node.getTitle();
         this.keyValue = node.getKey();
         this.descriptionValue = node.getDescription();
+        this.lockedDescriptionValue = node.getLockedDescription();
+        this.splitDescription = node.hasSplitDescription();
         this.iconId = node.getIconId();
         this.cost = node.getCost();
         this.cost.setTypeId(this.cost.getTypeId(), this.schemas);
@@ -102,15 +107,22 @@ public class TreeEditorEditPopupScreen extends Screen {
                 .build()), 66, 22, 110, () -> this.iconId);
 
         EditBox descriptionBox = new EditBox(this.font, 0, 0, fieldW, FIELD_H, Component.literal("Description"));
-        descriptionBox.setMaxLength(256);
+        descriptionBox.setMaxLength(1024);
         descriptionBox.setValue(this.descriptionValue);
         descriptionBox.setResponder(value -> this.descriptionValue = value);
-        this.addBody("Description", this.addRenderableWidget(descriptionBox), 94, 0, fieldW, null);
+        this.addBody(this.splitDescription ? "Unlocked Description" : "Description", this.addRenderableWidget(descriptionBox), 94, 0, fieldW, null);
+        if (this.splitDescription) {
+            EditBox lockedBox = new EditBox(this.font, 0, 0, fieldW, FIELD_H, Component.literal("Locked Description"));
+            lockedBox.setMaxLength(1024);
+            lockedBox.setValue(this.lockedDescriptionValue);
+            lockedBox.setResponder(value -> this.lockedDescriptionValue = value);
+            this.addBody("Locked Description", this.addRenderableWidget(lockedBox), 122, 0, fieldW, null);
+        }
 
         this.addBody("Cost", this.addRenderableWidget(Button.builder(Component.literal(this.costTypeLabel()), button -> this.cycleCostType())
                 .bounds(0, 0, fieldW, FIELD_H)
-                .build()), 122, 0, fieldW, null);
-        this.addCostFields(150, fieldW);
+                .build()), this.costRelY(), 0, fieldW, null);
+        this.addCostFields(this.costRelY() + COST_ROW, fieldW);
 
         this.contentHeight = this.bodyBottom() + BODY_PAD;
         this.scroll = Math.max(0, Math.min(this.scroll, this.maxScroll()));
@@ -126,7 +138,7 @@ public class TreeEditorEditPopupScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        this.parent.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        this.parent.extractRenderState(graphics, Integer.MIN_VALUE, Integer.MIN_VALUE, partialTick);
         graphics.fill(0, 0, this.width, this.height, 0x88000000);
         int x = this.panelX;
         int y = this.panelY;
@@ -155,6 +167,12 @@ public class TreeEditorEditPopupScreen extends Screen {
             graphics.text(this.font, this.error, x + 108, y + this.panelH - 18, 0xFFFF5555, false);
         }
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        super.mouseClicked(event, doubleClick);
+        return true;
     }
 
     @Override
@@ -305,6 +323,7 @@ public class TreeEditorEditPopupScreen extends Screen {
         }
         this.node.setTitle(title);
         this.node.setDescription(this.descriptionValue.trim());
+        this.node.setLockedDescription(this.splitDescription ? this.lockedDescriptionValue.trim() : "");
         this.node.setIconId(this.iconId);
         this.node.setCost(this.cost);
         this.onClose();
@@ -328,8 +347,8 @@ public class TreeEditorEditPopupScreen extends Screen {
 
     private void layoutPanel() {
         int lastRelY = this.costFieldCount() == 0
-                ? 122 + FIELD_H
-                : 150 + (this.costFieldCount() - 1) * COST_ROW + FIELD_H;
+                ? this.costRelY() + FIELD_H
+                : this.costRelY() + COST_ROW + (this.costFieldCount() - 1) * COST_ROW + FIELD_H;
         int needed = HEADER + lastRelY + BODY_PAD + FOOTER;
         this.panelH = Math.min(needed, Math.max(HEADER + 80 + FOOTER, this.height - MARGIN * 2));
         this.panelX = Math.max(0, (this.width - Math.min(POPUP_WIDTH, this.width)) / 2);
@@ -365,6 +384,10 @@ public class TreeEditorEditPopupScreen extends Screen {
         int thumbY = trackY + (trackH - thumbH) * this.scroll / max;
         graphics.fill(trackX, trackY, trackX + 3, trackY + trackH, 0xFF3A3A3A);
         graphics.fill(trackX, thumbY, trackX + 3, thumbY + thumbH, 0xFFB0B0B0);
+    }
+
+    private int costRelY() {
+        return this.splitDescription ? 150 : 122;
     }
 
     private int costFieldCount() {

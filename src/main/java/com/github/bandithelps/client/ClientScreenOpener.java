@@ -20,7 +20,7 @@ public final class ClientScreenOpener {
         minecraft.setScreen(new BodyDebugScreen());
     }
 
-    public static void openTreeEditorScreen(String rawPowerId) {
+    public static void openTreeEditorScreen(String rawPowerId, String sourceJson) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
             return;
@@ -39,6 +39,6 @@ public final class ClientScreenOpener {
             minecraft.player.sendSystemMessage(Component.literal("Unknown power: " + powerId));
             return;
         }
-        minecraft.setScreen(new TreeEditorScreen(TreeEditorDraft.fromPower(powerId, holder.value())));
+        minecraft.setScreen(new TreeEditorScreen(TreeEditorDraft.fromPower(powerId, holder.value(), sourceJson)));
     }
 }

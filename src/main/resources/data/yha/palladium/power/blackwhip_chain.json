@@ -12,10 +12,12 @@
         "icon": "minecraft:chain",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
-        "gui_position": [0, 0]
+        "gui_position": [
+          0,
+          0
+        ]
       }
     },
-
     "bw_max_tethers_default": {
       "type": "yha:set_body_float",
       "part": "chest",
@@ -27,7 +29,10 @@
         "icon": "minecraft:chain",
         "hidden_in_gui": true,
         "hidden_in_bar": true,
-        "gui_position": [0, 0]
+        "gui_position": [
+          0,
+          0
+        ]
       },
       "state": {
         "enabling": {
@@ -52,7 +57,10 @@
         "icon": "minecraft:chain",
         "hidden_in_gui": true,
         "hidden_in_bar": true,
-        "gui_position": [0, 0]
+        "gui_position": [
+          0,
+          0
+        ]
       },
       "state": {
         "enabling": {
@@ -66,7 +74,6 @@
         }
       }
     },
-
     "bw_max_tethers_1": {
       "type": "yha:set_body_float",
       "part": "chest",
@@ -78,7 +85,10 @@
         "icon": "minecraft:chain",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
-        "gui_position": [0, 1]
+        "gui_position": [
+          0,
+          1
+        ]
       },
       "state": {
         "unlocking": {
@@ -110,7 +120,10 @@
         "icon": "minecraft:chain",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
-        "gui_position": [0, 1.75]
+        "gui_position": [
+          0,
+          1.75
+        ]
       },
       "state": {
         "unlocking": {
@@ -146,7 +159,10 @@
         "icon": "minecraft:chain",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
-        "gui_position": [0, 2.5]
+        "gui_position": [
+          0,
+          2.5
+        ]
       },
       "state": {
         "unlocking": {
@@ -182,7 +198,10 @@
         "icon": "minecraft:chain",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
-        "gui_position": [0, 3.25]
+        "gui_position": [
+          0,
+          3.25
+        ]
       },
       "state": {
         "unlocking": {
@@ -198,7 +217,6 @@
         }
       }
     },
-
     "bw_tether_health_1": {
       "type": "yha:set_body_float",
       "part": "chest",
@@ -210,7 +228,10 @@
         "icon": "minecraft:chain",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
-        "gui_position": [-1, 1]
+        "gui_position": [
+          -1,
+          1
+        ]
       },
       "state": {
         "unlocking": {
@@ -242,7 +263,10 @@
         "icon": "minecraft:chain",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
-        "gui_position": [-1, 1.75]
+        "gui_position": [
+          -1,
+          1.75
+        ]
       },
       "state": {
         "unlocking": {
@@ -278,7 +302,10 @@
         "icon": "minecraft:chain",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
-        "gui_position": [-1, 2.5]
+        "gui_position": [
+          -1,
+          2.5
+        ]
       },
       "state": {
         "unlocking": {
@@ -314,7 +341,10 @@
         "icon": "minecraft:chain",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
-        "gui_position": [-1, 3.25]
+        "gui_position": [
+          -1,
+          3.25
+        ]
       },
       "state": {
         "unlocking": {
@@ -330,7 +360,6 @@
         }
       }
     },
-
     "bw_tree_tag_9": {
       "type": "palladium:dummy",
       "properties": {
@@ -339,7 +368,10 @@
         "icon": "minecraft:lead",
         "hidden_in_bar": true,
         "hidden_in_gui": false,
-        "gui_position": [-2, 1]
+        "gui_position": [
+          -2,
+          1
+        ]
       },
       "state": {
         "unlocking": {
@@ -357,7 +389,10 @@
         "list_index": 0,
         "hidden_in_bar": true,
         "hidden_in_gui": false,
-        "gui_position": [-2, 1.75]
+        "gui_position": [
+          -2,
+          1.75
+        ]
       },
       "state": {
         "unlocking": {
@@ -382,7 +417,10 @@
         "list_index": 0,
         "hidden_in_bar": true,
         "hidden_in_gui": false,
-        "gui_position": [-2, 2.5]
+        "gui_position": [
+          -2,
+          2.5
+        ]
       },
       "state": {
         "unlocking": {
@@ -398,7 +436,6 @@
         }
       }
     },
-
     "bw_tag": {
       "type": "yha:blackwhip_chain_tag",
       "range": {
@@ -454,7 +491,6 @@
         }
       }
     },
-
     "bw_lock": {
       "type": "yha:blackwhip_chain_restrict",
       "strength": {
@@ -467,7 +503,10 @@
         "icon": "minecraft:lead",
         "list_index": 4,
         "hidden_in_gui": false,
-        "gui_position": [1, 1]
+        "gui_position": [
+          0.75,
+          0.5
+        ]
       },
       "state": {
         "enabling": {
@@ -508,7 +547,10 @@
         "icon": "minecraft:string",
         "list_index": 7,
         "hidden_in_gui": false,
-        "gui_position": [-2, -2],
+        "gui_position": [
+          -2,
+          -2
+        ],
         "stamina_interval": 20,
         "stamina_interval_cost": 8
       },
@@ -553,7 +595,10 @@
         "icon": "minecraft:string",
         "list_index": 8,
         "hidden_in_gui": false,
-        "gui_position": [-3, -2],
+        "gui_position": [
+          -3,
+          -2
+        ],
         "stamina_interval": 20,
         "stamina_interval_cost": 10
       },
@@ -577,7 +622,6 @@
         }
       }
     },
-
     "blackwhip_chain_detach": {
       "type": "yha:blackwhip_chain_detach",
       "range": 20,
@@ -588,7 +632,10 @@
         "icon": "minecraft:shears",
         "list_index": 1,
         "hidden_in_gui": false,
-        "gui_position": [-1, -2]
+        "gui_position": [
+          -1,
+          -2
+        ]
       },
       "state": {
         "enabling": {
@@ -597,7 +644,6 @@
         }
       }
     },
-
     "blackwhip_chain_disarm": {
       "type": "yha:blackwhip_chain_disarm",
       "range": {
@@ -618,7 +664,10 @@
         "icon": "minecraft:iron_sword",
         "list_index": 9,
         "hidden_in_gui": false,
-        "gui_position": [-1, 0],
+        "gui_position": [
+          -1,
+          -0.5
+        ],
         "activation_stamina": 10
       },
       "state": {
@@ -641,7 +690,6 @@
         }
       }
     },
-
     "blackwhip_chain_item_pull": {
       "type": "palladium:dummy",
       "properties": {
@@ -650,7 +698,10 @@
         "icon": "minecraft:hopper",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
-        "gui_position": [0, -1]
+        "gui_position": [
+          0,
+          -1
+        ]
       },
       "state": {
         "unlocking": {
@@ -668,13 +719,6 @@
         }
       }
     },
-
-
-
-
-
-
-
     "blackwhip_chain_swing": {
       "type": "yha:blackwhip_chain_swing",
       "range": {
@@ -703,7 +747,10 @@
         "icon": "minecraft:string",
         "list_index": 2,
         "hidden_in_gui": false,
-        "gui_position": [0, -2],
+        "gui_position": [
+          0,
+          -2
+        ],
         "stamina_interval": 20,
         "stamina_interval_cost": 4
       },
@@ -721,7 +768,6 @@
         }
       }
     },
-
     "blackwhip_web_swing": {
       "type": "yha:blackwhip_web_swing",
       "range": {
@@ -759,7 +805,10 @@
         "icon": "minecraft:cobweb",
         "list_index": 5,
         "hidden_in_gui": false,
-        "gui_position": [-5, -2],
+        "gui_position": [
+          -5,
+          -2
+        ],
         "stamina_interval": 20,
         "stamina_interval_cost": 3
       },
@@ -784,7 +833,6 @@
         }
       }
     },
-
     "blackwhip_chain_zip": {
       "type": "yha:blackwhip_chain_zip",
       "range": {
@@ -804,7 +852,10 @@
         "icon": "minecraft:tripwire_hook",
         "list_index": 6,
         "hidden_in_gui": false,
-        "gui_position": [1, -1],
+        "gui_position": [
+          1,
+          -1
+        ],
         "activation_stamina": 12
       },
       "state": {
@@ -827,7 +878,6 @@
         }
       }
     },
-
     "blackwhip_chain_charge_zip": {
       "type": "yha:blackwhip_chain_charge_zip",
       "range": {
@@ -855,7 +905,10 @@
         "list_index": 10,
         "hidden_in_gui": false,
         "hidden_in_bar": true,
-        "gui_position": [1, -2],
+        "gui_position": [
+          1,
+          -2
+        ],
         "activation_stamina": 16
       },
       "state": {
@@ -883,7 +936,6 @@
         }
       }
     },
-
     "blackwhip_chain_charge_zip_key": {
       "type": "palladium:dummy",
       "properties": {
