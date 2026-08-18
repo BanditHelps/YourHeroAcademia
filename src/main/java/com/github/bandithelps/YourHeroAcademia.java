@@ -14,6 +14,7 @@ import com.github.bandithelps.client.renderers.entity.BlackwhipEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.BlackwhipSegmentEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.PotionGeneratorEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.RgbaDisplayEntityRenderer;
+import com.github.bandithelps.client.renderers.entity.BlackwhipTossedBlockRenderer;
 import com.github.bandithelps.client.renderers.entity.SmokeCanisterProjectileRenderer;
 import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
@@ -219,6 +220,7 @@ public final class YourHeroAcademia {
         event.registerEntityRenderer(ModEntities.POTION_GENERATOR.get(), PotionGeneratorEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.RGBA_DISPLAY.get(), RgbaDisplayEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.SMOKE_CANISTER_PROJECTILE.get(), SmokeCanisterProjectileRenderer::new);
+        event.registerEntityRenderer(ModEntities.BLACKWHIP_TOSSED_BLOCK.get(), BlackwhipTossedBlockRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACKWHIP.get(), BlackwhipEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACKWHIP_CHAIN.get(), BlackwhipChainEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACKWHIP_SEGMENT.get(), BlackwhipSegmentEntityRenderer::new);

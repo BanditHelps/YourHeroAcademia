@@ -6,6 +6,7 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
@@ -87,6 +88,51 @@ public final class BlackwhipWaistBoneHelper {
 
         Vec3[] coil = BlackwhipChainAnchors.buildRenderCoil(
                 target, wrist, BlackwhipChainAnchors.RENDER_COIL_SAMPLES, wrapTurns, partialTick, wrapHeight);
+        int keep = Math.max(2, Math.round((coil.length - 1) * wrapBlend) + 1);
+
+        Vec3 lockedTip = joints.get(joints.size() - 1);
+        for (int i = 0; i < keep; i++) {
+            Vec3 pt = coil[i];
+            if (i == 0 && lockedTip.distanceToSqr(pt) < 0.01) {
+                continue;
+            }
+            joints.add(pt);
+        }
+        return ropeCount;
+    }
+
+    /**
+     * Same as {@link #attachTipAndCoil(List, LivingEntity, Vec3, float, float, float, float)} but
+     * wraps an arbitrary AABB (world blocks / hovering displays).
+     */
+    public static int attachTipAndCoil(List<Vec3> joints, AABB bb, Vec3 wrist,
+                                       float wrapTurns, float wrapProgress, float wrapHeight) {
+        if (joints.size() < 2 || bb == null) {
+            return 0;
+        }
+
+        while (joints.size() > 2) {
+            Vec3 last = joints.get(joints.size() - 1);
+            Vec3 prev = joints.get(joints.size() - 2);
+            if (last.distanceToSqr(prev) < 1.0e-4) {
+                joints.remove(joints.size() - 1);
+            } else {
+                break;
+            }
+        }
+
+        Vec3 tip = BlackwhipChainAnchors.resolveWaistEntry(bb, wrist, 0.0f, wrapHeight);
+        BlackwhipChainAnchors.redistributeJoints(joints, wrist, tip);
+        int ropeCount = joints.size();
+
+        float wrapBlend = Mth.clamp(wrapProgress, 0.0f, 1.0f);
+        if (wrapBlend <= 0.02f) {
+            return ropeCount;
+        }
+        wrapBlend = 1.0f - (float) Math.pow(1.0 - wrapBlend, 2.0);
+
+        Vec3[] coil = BlackwhipChainAnchors.buildRenderCoil(
+                bb, wrist, BlackwhipChainAnchors.RENDER_COIL_SAMPLES, wrapTurns, wrapHeight);
         int keep = Math.max(2, Math.round((coil.length - 1) * wrapBlend) + 1);
 
         Vec3 lockedTip = joints.get(joints.size() - 1);

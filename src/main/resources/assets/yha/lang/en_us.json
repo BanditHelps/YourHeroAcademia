@@ -57,6 +57,7 @@
   "ability.yha.blackwhip_chain_disarm": "Disarm",
   "ability.yha.blackwhip_chain_item_pull": "Item Pull",
   "ability.yha.blackwhip_chain_magnet": "Magnet",
+  "ability.yha.blackwhip_chain_block_toss": "Block Toss",
   "ability.yha.blackwhip_chain_swing": "Whip Swing",
   "ability.yha.blackwhip_web_swing": "Web Swing",
   "ability.yha.blackwhip_chain_zip": "Whip Zip",
@@ -64,6 +65,7 @@
 
   "entity.yha.blackwhip_chain": "Blackwhip Chain",
   "entity.yha.blackwhip_segment": "Blackwhip Segment",
+  "entity.yha.blackwhip_tossed_block": "Whipped Block",
 
   "condition.yha.body_health": "Body Health",
   "condition.yha.body_float": "Body String",

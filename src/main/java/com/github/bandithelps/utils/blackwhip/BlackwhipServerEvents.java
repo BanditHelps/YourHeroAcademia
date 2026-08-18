@@ -7,6 +7,7 @@ import com.github.bandithelps.entities.BlackwhipChainEntity;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -33,6 +34,7 @@ public final class BlackwhipServerEvents {
 
         BlackwhipWebSwingAbility.tickReleaseEchoes(event.getServer());
         BlackwhipChainZipAbility.tickSessions(event.getServer());
+        BlackwhipBlockTossStore.tick(event.getServer());
 
         if (event.getServer().getTickCount() % 10 != 0) {
             return;
@@ -48,6 +50,14 @@ public final class BlackwhipServerEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             BlackwhipTagStore.clearTags(player);
             BlackwhipChainTagStore.clearTags(player);
+            BlackwhipBlockTossStore.dropAll(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerDeath(LivingDeathEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            BlackwhipBlockTossStore.dropAll(player);
         }
     }
 }

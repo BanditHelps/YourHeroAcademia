@@ -69,7 +69,7 @@
             "type": "yha:upgrade_point",
             "points": 5
           },
-          "conditions": [
+          "requires": [
             {
               "type": "palladium:ability_unlocked",
               "ability": "register_smoke_bar_0"
@@ -339,7 +339,7 @@
             "type": "yha:upgrade_point",
             "points": 3
           },
-          "conditions": [
+          "requires": [
             {
               "type": "palladium:ability_unlocked",
               "ability": "quirk_info"

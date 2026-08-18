@@ -1,5 +1,6 @@
 package com.github.bandithelps.utils.blackwhip;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -129,6 +130,16 @@ public final class BlackwhipChainAnchors {
         double halfW = target.getBbWidth() * 0.5;
         double h = target.getBbHeight();
         return new AABB(pos.x - halfW, pos.y, pos.z - halfW, pos.x + halfW, pos.y + h, pos.z + halfW);
+    }
+
+    /** Axis-aligned cube of {@code size} centered on {@code center}. */
+    public static AABB cubeAround(Vec3 center, double size) {
+        double h = size * 0.5;
+        return new AABB(center.x - h, center.y - h, center.z - h, center.x + h, center.y + h, center.z + h);
+    }
+
+    public static AABB blockAabb(BlockPos pos) {
+        return new AABB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1.0, pos.getY() + 1.0, pos.getZ() + 1.0);
     }
 
     /**
@@ -286,6 +297,40 @@ public final class BlackwhipChainAnchors {
         double baseAngle = Math.atan2(flat.z, flat.x);
 
         // Prefer two full loops so the spaced bands read as distinct rings.
+        float useTurns = Math.max(2.0f, turns);
+        int n = Math.max(2, samples);
+        Vec3[] out = new Vec3[n];
+        out[0] = entry;
+        for (int i = 1; i < n; i++) {
+            double t = i / (double) (n - 1);
+            double angle = baseAngle + t * useTurns * Math.PI * 2.0;
+            double y = yLow + (yHigh - yLow) * t;
+            out[i] = new Vec3(cx + Math.cos(angle) * radius, y, cz + Math.sin(angle) * radius);
+        }
+        return out;
+    }
+
+    public static Vec3[] buildRenderCoil(AABB bb, Vec3 fromOwner, int samples, float turns, float wrapHeight) {
+        double cx = (bb.minX + bb.maxX) * 0.5;
+        double cz = (bb.minZ + bb.maxZ) * 0.5;
+        double radius = Math.max(bb.getXsize(), bb.getZsize()) * 0.5 + WRAP_RADIUS_PAD;
+        float mid = Mth.clamp(wrapHeight, MIN_WRAP_HEIGHT, MAX_WRAP_HEIGHT);
+        Vec3 entry = resolveWaistEntry(bb, fromOwner, 0.0f, mid);
+        double halfGap = bb.getYsize() * WRAP_RING_HALF_SPACING;
+        double midY = bb.minY + bb.getYsize() * mid;
+        double yLow = Math.max(bb.minY + bb.getYsize() * 0.05, midY - halfGap);
+        double yHigh = Math.min(bb.maxY - bb.getYsize() * 0.05, midY + halfGap);
+        if (yHigh < yLow) {
+            yHigh = yLow;
+        }
+
+        Vec3 flat = new Vec3(fromOwner.x - cx, 0, fromOwner.z - cz);
+        if (flat.lengthSqr() < 1.0e-6) {
+            flat = new Vec3(1.0, 0.0, 0.0);
+        }
+        flat = flat.normalize();
+        double baseAngle = Math.atan2(flat.z, flat.x);
+
         float useTurns = Math.max(2.0f, turns);
         int n = Math.max(2, samples);
         Vec3[] out = new Vec3[n];

@@ -1,6 +1,7 @@
 package com.github.bandithelps.entities;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.utils.blackwhip.BlackwhipBlockTossStore;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainDisarmLogic;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainTagStore;
@@ -84,8 +85,10 @@ public class BlackwhipChainEntity extends Entity {
     public static final int PURPOSE_DISARM = 5;
     /** Auto item-magnet tip; shares the living-grab tether cap. */
     public static final int PURPOSE_MAGNET = 6;
+    /** Grabs nearby blocks, hovers them, then throws on ability re-press. */
+    public static final int PURPOSE_BLOCK_TOSS = 7;
 
-    private static final int PURPOSE_MAX = PURPOSE_MAGNET;
+    private static final int PURPOSE_MAX = PURPOSE_BLOCK_TOSS;
 
     private static final int LATCH_BLEND_TICKS = 5;
     /** Client wrap coil ease after latch (tip settle then helix grow). */
@@ -189,6 +192,11 @@ public class BlackwhipChainEntity extends Entity {
     /** Auto-retract countdown for short-lived anchors (simple zip). 0 = no lifetime. */
     private int lifetimeTicks;
 
+    /** Block this toss chain is flying toward / wrapping. */
+    private BlockPos tossTargetPos;
+    /** Ticks remaining in wrap-on-block before the block is ripped. {@code < 0} = idle. */
+    private int wrapThenRipTicks = -1;
+
     /**
      * When {@code > 0}, IK grow/shrink is frozen and Lead soft-spring uses this owner↔target distance.
      * {@code <= 0} means unlocked (normal resize).
@@ -209,9 +217,9 @@ public class BlackwhipChainEntity extends Entity {
         return ACTIVE_SERVER;
     }
 
-    /** Living-grab or magnet tips that occupy the shared tether pool. */
+    /** Living-grab, magnet, or block-toss tips that occupy the shared tether pool. */
     public static boolean isGrabTetherPurpose(int purpose) {
-        return purpose == PURPOSE_TAG || purpose == PURPOSE_MAGNET;
+        return purpose == PURPOSE_TAG || purpose == PURPOSE_MAGNET || purpose == PURPOSE_BLOCK_TOSS;
     }
 
     /** Active deploying or latched grab tethers owned by {@code ownerId} (includes magnet; excludes swing/zip/disarm). */
@@ -227,6 +235,20 @@ public class BlackwhipChainEntity extends Entity {
             }
         }
         return count;
+    }
+
+    /** True if an active block-toss chain owned by {@code ownerId} is already flying at {@code pos}. */
+    public static boolean isBlockTossTargeting(int ownerId, BlockPos pos) {
+        if (ownerId < 0 || pos == null) {
+            return false;
+        }
+        for (BlackwhipChainEntity chain : ACTIVE_SERVER) {
+            if (chain.isAlive() && chain.isActive() && chain.getOwnerId() == ownerId
+                    && chain.getPurpose() == PURPOSE_BLOCK_TOSS && pos.equals(chain.getTossTargetPos())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** True if an active magnet chain owned by {@code ownerId} is already flying at {@code itemId}. */
@@ -471,8 +493,15 @@ public class BlackwhipChainEntity extends Entity {
         }
 
         LivingEntity target = getTargetLiving();
-        if (isLatched() && (target == null || !target.isAlive())) {
+        if (isLatched() && (target == null || !target.isAlive()) && !isTossCargoAlive()) {
             deactivate();
+        }
+
+        if (getPurpose() == PURPOSE_BLOCK_TOSS && isAnchored() && wrapThenRipTicks > 0) {
+            wrapThenRipTicks--;
+            if (wrapThenRipTicks == 0) {
+                BlackwhipBlockTossStore.completePickup(this);
+            }
         }
 
         if (isAnchored()) {
@@ -542,14 +571,24 @@ public class BlackwhipChainEntity extends Entity {
         if (isDeploying()) {
             tickDeployFlight(owner);
             if (!isDeploying()) {
-                // Latched, reeling, or dissolving mid-tick — finish with the matching branch below.
+                // Latched, reeling, anchored, or dissolving mid-tick — finish with the matching branch below.
                 if (isLatched()) {
                     LivingEntity target = getTargetLiving();
                     if (target != null && target.isAlive()) {
                         maybeResize(owner, target);
                         updateLatchedJoints(owner, target);
                         moveSegments(owner);
+                    } else if (isTossCargoAlive()) {
+                        Entity cargo = getTargetEntity();
+                        maybeResizeToTip(owner);
+                        updateFollowEntityJoints(owner, cargo);
+                        moveSegments(owner);
                     }
+                } else if (isAnchored()) {
+                    tipPos = getAnchorPoint();
+                    maybeResizeToTip(owner);
+                    updateAnchoredJoints(owner);
+                    moveSegments(owner);
                 } else if (isReeling()) {
                     tickReel(owner);
                     moveSegments(owner);
@@ -584,6 +623,11 @@ public class BlackwhipChainEntity extends Entity {
             maybeResize(owner, target);
             updateLatchedJoints(owner, target);
             moveSegments(owner);
+        } else if (isLatched() && isTossCargoAlive()) {
+            Entity cargo = getTargetEntity();
+            maybeResizeToTip(owner);
+            updateFollowEntityJoints(owner, cargo);
+            moveSegments(owner);
         } else if (!isActive()) {
             updateDissolveJoints();
             moveSegments(owner);
@@ -609,6 +653,9 @@ public class BlackwhipChainEntity extends Entity {
             beginDeploy(owner.getLookAngle(), getMaxRange());
         }
         if (getPurpose() == PURPOSE_MAGNET && !steerMagnetTowardItem()) {
+            return;
+        }
+        if (getPurpose() == PURPOSE_BLOCK_TOSS && !steerTossTowardBlock()) {
             return;
         }
         // Point-blank: tip already overlapping a hitbox (spawn inside / against a target).
@@ -655,6 +702,10 @@ public class BlackwhipChainEntity extends Entity {
 
         if (blockHit.getType() == HitResult.Type.BLOCK) {
             tipPos = blockHit.getLocation();
+            if (getPurpose() == PURPOSE_BLOCK_TOSS) {
+                applyDeployBlockHit(blockHit);
+                return;
+            }
             deactivate();
             return;
         }
@@ -692,6 +743,93 @@ public class BlackwhipChainEntity extends Entity {
         return true;
     }
 
+    /** Steers the toss tip at its assigned block. Retracts if the block is gone or no longer grabbable. */
+    private boolean steerTossTowardBlock() {
+        BlockPos pos = tossTargetPos;
+        if (pos == null) {
+            deactivate();
+            return false;
+        }
+        if (!BlackwhipBlockTossStore.isGrabbable(this.level(), pos)) {
+            deactivate();
+            return false;
+        }
+        Vec3 aim = Vec3.atCenterOf(pos);
+        Vec3 to = aim.subtract(tipPos);
+        if (to.lengthSqr() > 1.0e-8) {
+            double speed = tipVelocity.length();
+            if (speed < 1.0e-6) {
+                speed = getMaxRange() / (double) Math.max(1, getTravelTicks());
+            }
+            tipVelocity = to.normalize().scale(speed);
+        }
+        return true;
+    }
+
+    private void applyDeployBlockHit(BlockHitResult hit) {
+        BlockPos hitPos = hit.getBlockPos();
+        if (!BlackwhipBlockTossStore.isGrabbable(this.level(), hitPos)) {
+            deactivate();
+            return;
+        }
+        tossTargetPos = hitPos.immutable();
+        Vec3 center = Vec3.atCenterOf(hitPos);
+        latchBlock(center, hitPos);
+        setWrapTurns(Math.max(2.0f, getWrapTurns()));
+        wrapThenRipTicks = WRAP_ANIM_TICKS;
+    }
+
+    /**
+     * After ripping a block, follow the hovering display as a non-living latch target.
+     * Must be called <strong>before</strong> the support block is removed.
+     */
+    public void followTossDisplay(Entity display) {
+        if (display == null || !display.isAlive()) {
+            return;
+        }
+        this.virtualAnchor = true;
+        this.supportPos = BlockPos.ZERO;
+        this.wrapThenRipTicks = -1;
+        this.tipPos = display.position();
+        this.tipVelocity = Vec3.ZERO;
+        setTargetId(display.getId());
+        setPhase(PHASE_LATCHED);
+        setLatchTick(this.tickCount - WRAP_ANIM_TICKS);
+        setWrapHeight(BlackwhipChainAnchors.DEFAULT_WRAP_HEIGHT);
+        setAnchorPoint(this.tipPos);
+        this.latchBlendFrom = this.tipPos;
+        this.latchBlendRemaining = 0;
+        this.getEntityData().set(DATA_ACTIVE, true);
+        this.retractCountdown = -1;
+        this.dissolveCaptured = false;
+        this.dissolveAge = 0;
+    }
+
+    public void setTossTargetPos(BlockPos pos) {
+        this.tossTargetPos = pos == null ? null : pos.immutable();
+    }
+
+    public BlockPos getTossTargetPos() {
+        return tossTargetPos;
+    }
+
+    public boolean isTossCargoAlive() {
+        if (getPurpose() != PURPOSE_BLOCK_TOSS) {
+            return false;
+        }
+        Entity cargo = getTargetEntity();
+        return cargo != null && cargo.isAlive();
+    }
+
+    public Entity getTargetEntity() {
+        int id = getTargetId();
+        if (id < 0) {
+            return null;
+        }
+        Entity e = this.level().getEntity(id);
+        return e != null && e.isAlive() ? e : null;
+    }
+
     /** Point sample at the current tip — catches overlaps ProjectileUtil can miss when start is inside. */
     private boolean tryInteractAtTip(Entity owner) {
         AABB tipBox = new AABB(tipPos, tipPos).inflate(TIP_HIT_INFLATE);
@@ -722,6 +860,9 @@ public class BlackwhipChainEntity extends Entity {
             return false;
         }
         int purpose = getPurpose();
+        if (purpose == PURPOSE_BLOCK_TOSS) {
+            return false;
+        }
         if (purpose == PURPOSE_MAGNET) {
             return e instanceof ItemEntity item && !item.getItem().isEmpty();
         }
@@ -1055,6 +1196,7 @@ public class BlackwhipChainEntity extends Entity {
         Entity owner = getOwner();
         if (owner instanceof ServerPlayer player) {
             BlackwhipChainTagStore.removeTagByChain(player, this.getId());
+            BlackwhipBlockTossStore.onChainBroken(player, this.getId());
         }
     }
 
@@ -1296,6 +1438,22 @@ public class BlackwhipChainEntity extends Entity {
                 Math.min(BlackwhipChainAnchors.MAX_WRAP_JOINTS, Math.max(1, n - 2)));
         int ropeEnd = Math.max(2, n - tipJoints);
         solveRopeToTip(root, reachEntry, ropeEnd, n, -1.0f);
+    }
+
+    private void updateFollowEntityJoints(Entity owner, Entity target) {
+        int n = getSegmentCount();
+        if (n < 2 || target == null) {
+            return;
+        }
+        Vec3 root = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        AABB bb = BlackwhipChainAnchors.cubeAround(target.position(), 1.0);
+        Vec3 entry = BlackwhipChainAnchors.resolveWaistEntry(bb, root, 0.0f, getWrapHeight());
+        tipPos = entry;
+        setAnchorPoint(entry);
+        int tipJoints = Mth.clamp(getWrapJoints(), BlackwhipChainAnchors.MIN_WRAP_JOINTS,
+                Math.min(BlackwhipChainAnchors.MAX_WRAP_JOINTS, Math.max(1, n - 2)));
+        int ropeEnd = Math.max(2, n - tipJoints);
+        solveRopeToTip(root, entry, ropeEnd, n, 0.55f);
     }
 
     /**
@@ -1771,6 +1929,14 @@ public class BlackwhipChainEntity extends Entity {
     public float getExtendProgress(float partial) {
         int phase = getPhase();
         if (phase == PHASE_ANCHORED) {
+            if (getPurpose() == PURPOSE_BLOCK_TOSS) {
+                int latchAt = getLatchTick();
+                if (latchAt < 0) {
+                    return 1.0f;
+                }
+                float wrap = (this.tickCount - latchAt + partial) / (float) WRAP_ANIM_TICKS;
+                return Mth.clamp(wrap, 0.0f, 1.0f);
+            }
             return 1.0f;
         }
         if (phase == PHASE_LATCHED || phase == PHASE_RETRACTING) {

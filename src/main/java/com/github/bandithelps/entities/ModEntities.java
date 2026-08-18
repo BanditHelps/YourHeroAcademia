@@ -110,4 +110,19 @@ public class ModEntities {
                     ))
     );
 
+    public static final Supplier<EntityType<BlackwhipTossedBlockEntity>> BLACKWHIP_TOSSED_BLOCK = ENTITY_TYPES.register(
+            "blackwhip_tossed_block",
+            () -> EntityType.Builder.<BlackwhipTossedBlockEntity>of(
+                            BlackwhipTossedBlockEntity::new,
+                            MobCategory.MISC
+                    )
+                    .sized(0.98f, 0.98f)
+                    .clientTrackingRange(8)
+                    .updateInterval(1)
+                    .build(ResourceKey.create(
+                            Registries.ENTITY_TYPE,
+                            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "blackwhip_tossed_block")
+                    ))
+    );
+
 }

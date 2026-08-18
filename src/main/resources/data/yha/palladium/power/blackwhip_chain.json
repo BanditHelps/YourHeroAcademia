@@ -518,7 +518,7 @@
       "properties": {
         "title": "Lock",
         "description": "Toggle to lock tether length, turning blackwhip into a lead. Behavior changes based on the size and strength of the entity(s).",
-        "icon": "minecraft:lead",
+        "icon": "yha:textures/icons/blackwhip/lock.png",
         "list_index": 4,
         "hidden_in_gui": false,
         "gui_position": [
@@ -1088,6 +1088,64 @@
         "unlocking": {
           "type": "palladium:ability_unlocked",
           "ability": "blackwhip_chain_charge_zip"
+        }
+      }
+    },
+    "blackwhip_chain_block_toss": {
+      "type": "yha:blackwhip_chain_block_toss",
+      "range": {
+        "type": "palladium:molang_float",
+        "molang": "8 + yha.quirk_factor()"
+      },
+      "qf_range_bonus": 1,
+      "throw_speed": {
+        "type": "palladium:molang_float",
+        "molang": "1.35 + yha.quirk_factor() * 0.05"
+      },
+      "base_damage": 1,
+      "damage_per_hardness": 1.5,
+      "knockback": 0.35,
+      "segment_count": 4,
+      "link_length": 0.85,
+      "thickness": 1.0,
+      "travel_ticks": 10,
+      "properties": {
+        "title": "Block Toss",
+        "description": "Unused whips wrap random nearby blocks (never chests or other containers) and hover them around you. Press again to throw one. Harder blocks hit harder. Hitting a mob drops the block as an item; hitting terrain places it.",
+        "icon": "minecraft:grass_block",
+        "list_index": 12,
+        "hidden_in_gui": false,
+        "gui_position": [
+          2.2,
+          0.35
+        ],
+        "gui_connection": [
+          [
+            0.5,
+            0
+          ],
+          [
+            1.5,
+            0.2
+          ]
+        ],
+        "activation_stamina": 12
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "activation"
+        },
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "quirk_info"
+          }
         }
       }
     }

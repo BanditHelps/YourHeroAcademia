@@ -2,6 +2,7 @@ package com.github.bandithelps.abilities.blackwhip.chain;
 
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
+import com.github.bandithelps.utils.blackwhip.BlackwhipBlockTossStore;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainTagStore;
 import com.github.bandithelps.utils.blackwhip.BlackwhipTargeting;
 import com.mojang.serialization.Codec;
@@ -81,8 +82,9 @@ public class BlackwhipChainDetachAbility extends Ability {
                 BlackwhipChainEntity.PURPOSE_WEB_SWING,
                 BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,
                 BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
+        boolean dumpedToss = BlackwhipBlockTossStore.dropAll(player);
 
-        if (releasedTags || this.all) {
+        if (releasedTags || dumpedToss || this.all) {
             level.playSound(null, player.blockPosition(), SoundEvents.LEAD_BREAK, SoundSource.PLAYERS, 0.8f, 0.8f);
         }
     }

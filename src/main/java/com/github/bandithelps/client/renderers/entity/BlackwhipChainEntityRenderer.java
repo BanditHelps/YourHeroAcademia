@@ -25,6 +25,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
@@ -200,11 +201,16 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         state.ropeJointCount = state.joints.size();
 
         boolean pinAnchor = dissolvingFallback ? isAnchorDissolveFallback(entity) : entity.isAnchored();
-        if (pinAnchor && state.joints.size() >= 2 && wrist != null) {
+        if (pinAnchor && entity.getPurpose() != BlackwhipChainEntity.PURPOSE_BLOCK_TOSS
+                && state.joints.size() >= 2 && wrist != null) {
             Vec3 tip = entity.getAnchorPoint();
             state.joints.set(state.joints.size() - 1, tip);
             BlackwhipChainAnchors.redistributeJoints(state.joints, wrist, tip);
             state.ropeJointCount = state.joints.size();
+            return;
+        }
+
+        if (tryAppendBlockTossCoil(entity, state, wrist, partial, dissolvingFallback)) {
             return;
         }
 
@@ -230,6 +236,45 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
                 state.boneTip = bone.get();
             }
         }
+    }
+
+    private static boolean tryAppendBlockTossCoil(BlackwhipChainEntity entity, BlackwhipChainRenderState state,
+                                                  Vec3 wrist, float partial, boolean dissolvingFallback) {
+        if (entity.getPurpose() != BlackwhipChainEntity.PURPOSE_BLOCK_TOSS || wrist == null
+                || state.joints.size() < 2 || entity.getWrapTurns() <= 0.0f) {
+            return false;
+        }
+        boolean wrapping = dissolvingFallback
+                || entity.isAnchored()
+                || entity.isLatched();
+        if (!wrapping) {
+            return false;
+        }
+        AABB wrapBox = resolveTossWrapBox(entity, partial);
+        if (wrapBox == null) {
+            return false;
+        }
+        int ropeCount = BlackwhipWaistBoneHelper.attachTipAndCoil(
+                state.joints, wrapBox, wrist, entity.getWrapTurns(),
+                dissolvingFallback ? 1.0f : state.extendProgress,
+                entity.getWrapHeight());
+        if (ropeCount > 0) {
+            state.ropeJointCount = ropeCount;
+            state.coilAppended = state.joints.size() > ropeCount;
+        }
+        return true;
+    }
+
+    private static AABB resolveTossWrapBox(BlackwhipChainEntity entity, float partial) {
+        Entity cargo = entity.level().getEntity(entity.getTargetId());
+        if (cargo != null && cargo.isAlive()) {
+            return BlackwhipChainAnchors.cubeAround(cargo.getPosition(partial), 1.0);
+        }
+        Vec3 anchor = entity.getAnchorPoint();
+        if (anchor.lengthSqr() < 1.0e-8) {
+            return null;
+        }
+        return BlackwhipChainAnchors.cubeAround(anchor, 1.0);
     }
 
     private static boolean isAnchorDissolveFallback(BlackwhipChainEntity entity) {
