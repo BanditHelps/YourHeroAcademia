@@ -756,10 +756,6 @@
       },
       "segment_count": 8,
       "link_length": 0.85,
-      "chain_hp": {
-        "type": "palladium:molang_float",
-        "molang": "16 + yha.quirk_factor() * 1.5"
-      },
       "thickness": 0.9,
       "travel_ticks": 10,
       "properties": {
@@ -884,10 +880,6 @@
       "thickness": 0.85,
       "segment_count": 10,
       "link_length": 0.9,
-      "chain_hp": {
-        "type": "palladium:molang_float",
-        "molang": "24 + yha.quirk_factor() * 2"
-      },
       "max_distance": 48,
       "pump_accel": 0.038,
       "qf_pump_bonus": 0.008,

@@ -1,6 +1,8 @@
 package com.github.bandithelps.abilities.blackwhip.chain;
 
 import com.github.bandithelps.abilities.AbilityRegister;
+import com.github.bandithelps.capabilities.body.BodyAttachments;
+import com.github.bandithelps.capabilities.body.BodyPart;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import com.github.bandithelps.network.BlackwhipChainSwingPayload;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
@@ -58,7 +60,6 @@ public class BlackwhipChainSwingAbility extends Ability {
                     Value.CODEC.optionalFieldOf("thickness", new StaticValue(0.85f)).forGetter((ab) -> ab.thickness),
                     Value.CODEC.optionalFieldOf("segment_count", new StaticValue(10.0f)).forGetter((ab) -> ab.segmentCount),
                     Value.CODEC.optionalFieldOf("link_length", new StaticValue(0.9f)).forGetter((ab) -> ab.linkLength),
-                    Value.CODEC.optionalFieldOf("chain_hp", new StaticValue(24.0f)).forGetter((ab) -> ab.chainHp),
                     Value.CODEC.optionalFieldOf("max_distance", new StaticValue(48.0f)).forGetter((ab) -> ab.maxDistance),
                     Value.CODEC.optionalFieldOf("pump_accel", new StaticValue(0.038f)).forGetter((ab) -> ab.pumpAccel),
                     Value.CODEC.optionalFieldOf("qf_pump_bonus", new StaticValue(0.008f)).forGetter((ab) -> ab.qfPumpBonus),
@@ -73,7 +74,6 @@ public class BlackwhipChainSwingAbility extends Ability {
     public final Value thickness;
     public final Value segmentCount;
     public final Value linkLength;
-    public final Value chainHp;
     public final Value maxDistance;
     public final Value pumpAccel;
     public final Value qfPumpBonus;
@@ -81,7 +81,7 @@ public class BlackwhipChainSwingAbility extends Ability {
     public final Value qfSpeedBonus;
 
     public BlackwhipChainSwingAbility(Value range, Value releaseUpBoost, Value thickness, Value segmentCount,
-                                      Value linkLength, Value chainHp, Value maxDistance, Value pumpAccel,
+                                      Value linkLength, Value maxDistance, Value pumpAccel,
                                       Value qfPumpBonus, Value maxSpeed, Value qfSpeedBonus,
                                       AbilityProperties properties, AbilityStateManager conditions,
                                       List<EnergyBarUsage> energyBarUsages) {
@@ -91,7 +91,6 @@ public class BlackwhipChainSwingAbility extends Ability {
         this.thickness = thickness;
         this.segmentCount = segmentCount;
         this.linkLength = linkLength;
-        this.chainHp = chainHp;
         this.maxDistance = maxDistance;
         this.pumpAccel = pumpAccel;
         this.qfPumpBonus = qfPumpBonus;
@@ -128,11 +127,13 @@ public class BlackwhipChainSwingAbility extends Ability {
         // Latch on the hit face (nudged along the face normal), not the block's top.
         Vec3 anchor = BlackwhipChainAnchors.surfaceAttachPoint(hit);
         double qf = QuirkFactorUtil.getQuirkFactor(player);
+        float hp = Math.max(1.0f, BodyAttachments.get(player).getCustomFloat(
+                player, BodyPart.CHEST, BlackwhipChainTagAbility.CHAIN_HP_KEY, 1.0f));
         BlackwhipChainEntity chain = BlackwhipChainHelper.spawnAnchoredChain(
                 player, anchor, hit.getBlockPos(), BlackwhipChainEntity.PURPOSE_SWING,
                 Math.max(4, this.segmentCount.getAsInt(context)),
                 this.linkLength.getAsFloat(context),
-                this.chainHp.getAsFloat(context),
+                hp,
                 this.thickness.getAsFloat(context),
                 this.maxDistance.getAsFloat(context),
                 2,
@@ -243,7 +244,7 @@ public class BlackwhipChainSwingAbility extends Ability {
                     .add("qf_speed_bonus", TYPE_VALUE, "Extra max-speed multiplier per quirk factor.")
                     .addExampleObject(new BlackwhipChainSwingAbility(
                             new StaticValue(28.0f), new StaticValue(0.18f), new StaticValue(0.85f),
-                            new StaticValue(10.0f), new StaticValue(0.9f), new StaticValue(24.0f),
+                            new StaticValue(10.0f), new StaticValue(0.9f),
                             new StaticValue(48.0f), new StaticValue(0.038f), new StaticValue(0.008f),
                             new StaticValue(2.4f), new StaticValue(0.12f),
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));

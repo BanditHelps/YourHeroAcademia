@@ -1,6 +1,8 @@
 package com.github.bandithelps.abilities.blackwhip.chain;
 
 import com.github.bandithelps.abilities.AbilityRegister;
+import com.github.bandithelps.capabilities.body.BodyAttachments;
+import com.github.bandithelps.capabilities.body.BodyPart;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainHelper;
 import com.mojang.serialization.MapCodec;
@@ -35,7 +37,6 @@ public class BlackwhipChainDisarmAbility extends Ability {
                     Value.CODEC.optionalFieldOf("range", new StaticValue(14.0f)).forGetter((ab) -> ab.range),
                     Value.CODEC.optionalFieldOf("segment_count", new StaticValue(8.0f)).forGetter((ab) -> ab.segmentCount),
                     Value.CODEC.optionalFieldOf("link_length", new StaticValue(0.85f)).forGetter((ab) -> ab.linkLength),
-                    Value.CODEC.optionalFieldOf("chain_hp", new StaticValue(16.0f)).forGetter((ab) -> ab.chainHp),
                     Value.CODEC.optionalFieldOf("thickness", new StaticValue(0.9f)).forGetter((ab) -> ab.thickness),
                     Value.CODEC.optionalFieldOf("travel_ticks", new StaticValue(10.0f)).forGetter((ab) -> ab.travelTicks),
                     propertiesCodec(),
@@ -45,18 +46,16 @@ public class BlackwhipChainDisarmAbility extends Ability {
     public final Value range;
     public final Value segmentCount;
     public final Value linkLength;
-    public final Value chainHp;
     public final Value thickness;
     public final Value travelTicks;
 
-    public BlackwhipChainDisarmAbility(Value range, Value segmentCount, Value linkLength, Value chainHp,
+    public BlackwhipChainDisarmAbility(Value range, Value segmentCount, Value linkLength,
                                        Value thickness, Value travelTicks, AbilityProperties properties,
                                        AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.range = range;
         this.segmentCount = segmentCount;
         this.linkLength = linkLength;
-        this.chainHp = chainHp;
         this.thickness = thickness;
         this.travelTicks = travelTicks;
     }
@@ -70,7 +69,8 @@ public class BlackwhipChainDisarmAbility extends Ability {
         double range = this.range.getAsFloat(context);
         int segments = Math.max(2, this.segmentCount.getAsInt(context));
         float link = this.linkLength.getAsFloat(context);
-        float hp = Math.max(1.0f, this.chainHp.getAsFloat(context));
+        float hp = Math.max(1.0f, BodyAttachments.get(player).getCustomFloat(
+                player, BodyPart.CHEST, BlackwhipChainTagAbility.CHAIN_HP_KEY, 1.0f));
         float thickness = this.thickness.getAsFloat(context);
         int travel = Math.max(1, this.travelTicks.getAsInt(context));
 
@@ -100,12 +100,11 @@ public class BlackwhipChainDisarmAbility extends Ability {
                     .add("range", TYPE_VALUE, "Maximum tip travel distance before the whip retracts on a miss.")
                     .add("segment_count", TYPE_VALUE, "Number of IK joints / hit-proxy segments (2-16).")
                     .add("link_length", TYPE_VALUE, "World-space length of each IK link.")
-                    .add("chain_hp", TYPE_VALUE, "Shared hit points for the whole chain.")
                     .add("thickness", TYPE_VALUE, "Visual whip thickness.")
                     .add("travel_ticks", TYPE_VALUE, "Ticks for the tip to reach max range.")
                     .addExampleObject(new BlackwhipChainDisarmAbility(
                             new StaticValue(14.0f), new StaticValue(8.0f), new StaticValue(0.85f),
-                            new StaticValue(16.0f), new StaticValue(0.9f), new StaticValue(10.0f),
+                            new StaticValue(0.9f), new StaticValue(10.0f),
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
     }
