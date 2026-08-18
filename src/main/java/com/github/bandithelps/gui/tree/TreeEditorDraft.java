@@ -58,6 +58,7 @@ public final class TreeEditorDraft {
                     gridY,
                     parentKey,
                     TreeEditorCostDraft.fromUnlocking(ability.getStateManager().getUnlockingHandler()),
+                    TreeConnectionPath.fromProperties(ability.getProperties()),
                     false
             ));
         }
@@ -136,10 +137,14 @@ public final class TreeEditorDraft {
     public boolean setParent(TreeEditorNode child, @Nullable TreeEditorNode parent) {
         if (parent == null) {
             child.setParentKey(null);
+            child.setConnectionPath(TreeConnectionPath.EMPTY);
             return true;
         }
         if (child == parent || wouldCycle(child, parent)) {
             return false;
+        }
+        if (!parent.getKey().equals(child.getParentKey())) {
+            child.setConnectionPath(TreeConnectionPath.EMPTY);
         }
         child.setParentKey(parent.getKey());
         return true;
@@ -153,6 +158,7 @@ public final class TreeEditorDraft {
         for (TreeEditorNode other : this.nodes) {
             if (node.getKey().equals(other.getParentKey())) {
                 other.setParentKey(null);
+                other.setConnectionPath(TreeConnectionPath.EMPTY);
             }
         }
         return true;

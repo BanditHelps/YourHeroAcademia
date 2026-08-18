@@ -27,6 +27,8 @@ public final class TreeEditorNode {
     private final String originalParentKey;
     private TreeEditorCostDraft cost;
     private final TreeEditorCostDraft originalCost;
+    private TreeConnectionPath connectionPath;
+    private final TreeConnectionPath originalConnectionPath;
     private final boolean created;
 
     public TreeEditorNode(
@@ -39,6 +41,7 @@ public final class TreeEditorNode {
             float gridY,
             @Nullable String parentKey,
             TreeEditorCostDraft cost,
+            TreeConnectionPath connectionPath,
             boolean created
     ) {
         this.key = key;
@@ -59,11 +62,13 @@ public final class TreeEditorNode {
         this.originalParentKey = parentKey;
         this.cost = cost == null ? TreeEditorCostDraft.none() : cost;
         this.originalCost = this.cost.copy();
+        this.connectionPath = connectionPath == null ? TreeConnectionPath.EMPTY : connectionPath.copy();
+        this.originalConnectionPath = this.connectionPath.copy();
         this.created = created;
     }
 
     public static TreeEditorNode created(String key, String title, float gridX, float gridY) {
-        return new TreeEditorNode(key, title, "", "", parseIcon("minecraft:paper"), gridX, gridY, null, TreeEditorCostDraft.none(), true);
+        return new TreeEditorNode(key, title, "", "", parseIcon("minecraft:paper"), gridX, gridY, null, TreeEditorCostDraft.none(), TreeConnectionPath.EMPTY, true);
     }
 
     public String getKey() {
@@ -170,6 +175,14 @@ public final class TreeEditorNode {
         this.cost = cost == null ? TreeEditorCostDraft.none() : cost;
     }
 
+    public TreeConnectionPath getConnectionPath() {
+        return this.connectionPath;
+    }
+
+    public void setConnectionPath(TreeConnectionPath connectionPath) {
+        this.connectionPath = connectionPath == null ? TreeConnectionPath.EMPTY : connectionPath;
+    }
+
     public boolean isCreated() {
         return this.created;
     }
@@ -192,6 +205,10 @@ public final class TreeEditorNode {
 
     public boolean costChanged() {
         return !this.cost.sameAs(this.originalCost);
+    }
+
+    public boolean connectionChanged() {
+        return !this.connectionPath.equals(this.originalConnectionPath);
     }
 
     @Nullable

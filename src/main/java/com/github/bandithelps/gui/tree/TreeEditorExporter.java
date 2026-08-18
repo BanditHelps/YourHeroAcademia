@@ -47,7 +47,7 @@ public final class TreeEditorExporter {
             if (ability == null) {
                 continue;
             }
-            if (node.positionChanged() || node.metadataChanged()) {
+            if (node.positionChanged() || node.metadataChanged() || node.connectionChanged()) {
                 patchProperties(ability, node);
             }
             if (node.parentChanged() || node.costChanged()) {
@@ -74,6 +74,13 @@ public final class TreeEditorExporter {
         }
         if (node.positionChanged()) {
             properties.add("gui_position", positionArray(node.getGridX(), node.getGridY()));
+        }
+        if (node.connectionChanged()) {
+            if (node.getConnectionPath().isEmpty()) {
+                properties.remove(TreeConnectionPath.JSON_KEY);
+            } else {
+                properties.add(TreeConnectionPath.JSON_KEY, node.getConnectionPath().toJson());
+            }
         }
         if (node.metadataChanged()) {
             properties.addProperty("title", node.getTitle());
@@ -221,6 +228,9 @@ public final class TreeEditorExporter {
         properties.addProperty("hidden_in_bar", true);
         properties.addProperty("hidden_in_gui", false);
         properties.add("gui_position", positionArray(node.getGridX(), node.getGridY()));
+        if (!node.getConnectionPath().isEmpty()) {
+            properties.add(TreeConnectionPath.JSON_KEY, node.getConnectionPath().toJson());
+        }
         ability.add("properties", properties);
 
         JsonObject cost = node.getCost().toJson(schemas);
