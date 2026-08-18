@@ -42,7 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Web Swing: Palladium-style forward-up fan attach (real block preferred, ideal air pivot fallback),
  * client pendulum while held, momentum release fling on let-go. Separate from look-raycast
- * {@link BlackwhipChainSwingAbility}.
+ * {@link BlackwhipSwingAbility}.
  */
 public class BlackwhipWebSwingAbility extends Ability {
 
@@ -181,9 +181,9 @@ public class BlackwhipWebSwingAbility extends Ability {
         DataContext context = DataContext.forEntity(entity);
         stopSwing(player, level, false);
 
-        BlackwhipChainSwingAbility.forceStop(player);
-        BlackwhipChainZipAbility.forceStop(player);
-        BlackwhipChainChargeZipAbility.forceStop(player);
+        BlackwhipSwingAbility.forceStop(player);
+        BlackwhipZipAbility.forceStop(player);
+        BlackwhipChargeZipAbility.forceStop(player);
         BlackwhipChainEntity.retractOwnedByPurpose(player.getId(),
                 BlackwhipChainEntity.PURPOSE_SWING,
                 BlackwhipChainEntity.PURPOSE_WEB_SWING,

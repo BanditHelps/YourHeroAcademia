@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Whip Swing: instant-raycast block attach, then client pendulum physics while held.
  */
-public class BlackwhipChainSwingAbility extends Ability {
+public class BlackwhipSwingAbility extends Ability {
 
     private static final float MIN_ROPE = 2.0f;
     private static final float MAX_ROPE = 48.0f;
@@ -53,7 +53,7 @@ public class BlackwhipChainSwingAbility extends Ability {
     private record SwingSession(int chainId, Vec3 anchor, float ropeLength) {
     }
 
-    public static final MapCodec<BlackwhipChainSwingAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+    public static final MapCodec<BlackwhipSwingAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("range", new StaticValue(28.0f)).forGetter((ab) -> ab.range),
                     Value.CODEC.optionalFieldOf("release_up_boost", new StaticValue(0.18f)).forGetter((ab) -> ab.releaseUpBoost),
@@ -67,7 +67,7 @@ public class BlackwhipChainSwingAbility extends Ability {
                     Value.CODEC.optionalFieldOf("qf_speed_bonus", new StaticValue(0.12f)).forGetter((ab) -> ab.qfSpeedBonus),
                     propertiesCodec(),
                     stateCodec(),
-                    energyBarUsagesCodec()).apply(instance, BlackwhipChainSwingAbility::new));
+                    energyBarUsagesCodec()).apply(instance, BlackwhipSwingAbility::new));
 
     public final Value range;
     public final Value releaseUpBoost;
@@ -80,11 +80,11 @@ public class BlackwhipChainSwingAbility extends Ability {
     public final Value maxSpeed;
     public final Value qfSpeedBonus;
 
-    public BlackwhipChainSwingAbility(Value range, Value releaseUpBoost, Value thickness, Value segmentCount,
-                                      Value linkLength, Value maxDistance, Value pumpAccel,
-                                      Value qfPumpBonus, Value maxSpeed, Value qfSpeedBonus,
-                                      AbilityProperties properties, AbilityStateManager conditions,
-                                      List<EnergyBarUsage> energyBarUsages) {
+    public BlackwhipSwingAbility(Value range, Value releaseUpBoost, Value thickness, Value segmentCount,
+                                 Value linkLength, Value maxDistance, Value pumpAccel,
+                                 Value qfPumpBonus, Value maxSpeed, Value qfSpeedBonus,
+                                 AbilityProperties properties, AbilityStateManager conditions,
+                                 List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.range = range;
         this.releaseUpBoost = releaseUpBoost;
@@ -107,8 +107,8 @@ public class BlackwhipChainSwingAbility extends Ability {
         stopSwing(player, level, false);
 
         BlackwhipWebSwingAbility.forceStop(player);
-        BlackwhipChainZipAbility.forceStop(player);
-        BlackwhipChainChargeZipAbility.forceStop(player);
+        BlackwhipZipAbility.forceStop(player);
+        BlackwhipChargeZipAbility.forceStop(player);
         BlackwhipChainEntity.retractOwnedByPurpose(player.getId(),
                 BlackwhipChainEntity.PURPOSE_WEB_SWING,
                 BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE,
@@ -128,7 +128,7 @@ public class BlackwhipChainSwingAbility extends Ability {
         Vec3 anchor = BlackwhipChainAnchors.surfaceAttachPoint(hit);
         double qf = QuirkFactorUtil.getQuirkFactor(player);
         float hp = Math.max(1.0f, BodyAttachments.get(player).getCustomFloat(
-                player, BodyPart.CHEST, BlackwhipChainTagAbility.CHAIN_HP_KEY, 1.0f));
+                player, BodyPart.CHEST, BlackwhipTagAbility.CHAIN_HP_KEY, 1.0f));
         BlackwhipChainEntity chain = BlackwhipChainHelper.spawnAnchoredChain(
                 player, anchor, hit.getBlockPos(), BlackwhipChainEntity.PURPOSE_SWING,
                 Math.max(4, this.segmentCount.getAsInt(context)),
@@ -226,15 +226,15 @@ public class BlackwhipChainSwingAbility extends Ability {
 
     @Override
     public AbilitySerializer<?> getSerializer() {
-        return AbilityRegister.BLACKWHIP_CHAIN_SWING.get();
+        return AbilityRegister.BLACKWHIP_SWING.get();
     }
 
-    public static class Serializer extends AbilitySerializer<BlackwhipChainSwingAbility> {
-        public MapCodec<BlackwhipChainSwingAbility> codec() {
-            return BlackwhipChainSwingAbility.CODEC;
+    public static class Serializer extends AbilitySerializer<BlackwhipSwingAbility> {
+        public MapCodec<BlackwhipSwingAbility> codec() {
+            return BlackwhipSwingAbility.CODEC;
         }
 
-        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainSwingAbility> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipSwingAbility> builder, HolderLookup.Provider provider) {
             builder.setDescription("Latch a chain to a surface and swing. Hold WASD to pump momentum along the arc. Space climbs up the chain, Shift slides down. Release keeps momentum.")
                     .add("range", TYPE_VALUE, "Look-raycast attach range.")
                     .add("release_up_boost", TYPE_VALUE, "Small upward velocity added on release.")
@@ -242,7 +242,7 @@ public class BlackwhipChainSwingAbility extends Ability {
                     .add("qf_pump_bonus", TYPE_VALUE, "Extra pump accel per quirk factor.")
                     .add("max_speed", TYPE_VALUE, "Soft swing speed cap before quirk scaling.")
                     .add("qf_speed_bonus", TYPE_VALUE, "Extra max-speed multiplier per quirk factor.")
-                    .addExampleObject(new BlackwhipChainSwingAbility(
+                    .addExampleObject(new BlackwhipSwingAbility(
                             new StaticValue(28.0f), new StaticValue(0.18f), new StaticValue(0.85f),
                             new StaticValue(10.0f), new StaticValue(0.9f),
                             new StaticValue(48.0f), new StaticValue(0.038f), new StaticValue(0.008f),

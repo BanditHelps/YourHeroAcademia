@@ -39,9 +39,9 @@ import java.util.List;
 /**
  * Toggle: unused grab tethers shoot at nearby dropped items and retract them into inventory.
  */
-public class BlackwhipChainMagnetAbility extends Ability {
+public class BlackwhipMagnetAbility extends Ability {
 
-    public static final MapCodec<BlackwhipChainMagnetAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+    public static final MapCodec<BlackwhipMagnetAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("range", new StaticValue(8.0f)).forGetter((ab) -> ab.range),
                     Value.CODEC.optionalFieldOf("qf_range_bonus", new StaticValue(2.0f)).forGetter((ab) -> ab.qfRangeBonus),
@@ -51,7 +51,7 @@ public class BlackwhipChainMagnetAbility extends Ability {
                     Value.CODEC.optionalFieldOf("travel_ticks", new StaticValue(12.0f)).forGetter((ab) -> ab.travelTicks),
                     propertiesCodec(),
                     stateCodec(),
-                    energyBarUsagesCodec()).apply(instance, BlackwhipChainMagnetAbility::new));
+                    energyBarUsagesCodec()).apply(instance, BlackwhipMagnetAbility::new));
 
     public final Value range;
     public final Value qfRangeBonus;
@@ -60,9 +60,9 @@ public class BlackwhipChainMagnetAbility extends Ability {
     public final Value thickness;
     public final Value travelTicks;
 
-    public BlackwhipChainMagnetAbility(Value range, Value qfRangeBonus, Value segmentCount, Value linkLength,
-                                       Value thickness, Value travelTicks, AbilityProperties properties,
-                                       AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
+    public BlackwhipMagnetAbility(Value range, Value qfRangeBonus, Value segmentCount, Value linkLength,
+                                  Value thickness, Value travelTicks, AbilityProperties properties,
+                                  AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.range = range;
         this.qfRangeBonus = qfRangeBonus;
@@ -91,7 +91,7 @@ public class BlackwhipChainMagnetAbility extends Ability {
         DataContext context = DataContext.forEntity(player);
         double qf = QuirkFactorUtil.getQuirkFactor(player);
         int maxTethers = (int) ((int) BodyAttachments.get(player).getCustomFloat(
-                player, BodyPart.CHEST, BlackwhipChainTagAbility.MAX_TETHERS_KEY, 1) + (qf * 2));
+                player, BodyPart.CHEST, BlackwhipTagAbility.MAX_TETHERS_KEY, 1) + (qf * 2));
         int freeSlots = maxTethers - BlackwhipChainEntity.countOwnedActive(player.getId());
         if (freeSlots <= 0) {
             return;
@@ -117,7 +117,7 @@ public class BlackwhipChainMagnetAbility extends Ability {
         int segments = Math.max(2, this.segmentCount.getAsInt(context));
         float link = this.linkLength.getAsFloat(context);
         float hp = Math.max(1.0f, BodyAttachments.get(player).getCustomFloat(
-                player, BodyPart.CHEST, BlackwhipChainTagAbility.CHAIN_HP_KEY, 1.0f));
+                player, BodyPart.CHEST, BlackwhipTagAbility.CHAIN_HP_KEY, 1.0f));
         float thickness = this.thickness.getAsFloat(context);
         int travel = Math.max(1, this.travelTicks.getAsInt(context));
 
@@ -170,15 +170,15 @@ public class BlackwhipChainMagnetAbility extends Ability {
 
     @Override
     public AbilitySerializer<?> getSerializer() {
-        return AbilityRegister.BLACKWHIP_CHAIN_MAGNET.get();
+        return AbilityRegister.BLACKWHIP_MAGNET.get();
     }
 
-    public static class Serializer extends AbilitySerializer<BlackwhipChainMagnetAbility> {
-        public MapCodec<BlackwhipChainMagnetAbility> codec() {
-            return BlackwhipChainMagnetAbility.CODEC;
+    public static class Serializer extends AbilitySerializer<BlackwhipMagnetAbility> {
+        public MapCodec<BlackwhipMagnetAbility> codec() {
+            return BlackwhipMagnetAbility.CODEC;
         }
 
-        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainMagnetAbility> builder,
+        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipMagnetAbility> builder,
                                      HolderLookup.Provider provider) {
             builder.setDescription("While toggled on, unused grab tethers shoot at nearby dropped items and "
                             + "retract them into the owner's inventory. Shares the living-tag tether cap. "
@@ -189,7 +189,7 @@ public class BlackwhipChainMagnetAbility extends Ability {
                     .add("link_length", TYPE_VALUE, "World-space length of each IK link.")
                     .add("thickness", TYPE_VALUE, "Visual whip thickness.")
                     .add("travel_ticks", TYPE_VALUE, "Ticks for the tip to reach max range.")
-                    .addExampleObject(new BlackwhipChainMagnetAbility(
+                    .addExampleObject(new BlackwhipMagnetAbility(
                             new StaticValue(8.0f), new StaticValue(2.0f), new StaticValue(4.0f),
                             new StaticValue(0.85f), new StaticValue(1.0f), new StaticValue(12.0f),
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));

@@ -31,12 +31,12 @@ import java.util.List;
 /**
  * Chain-Blackwhip tendril grab: shoots an IK chain tip along the look direction; latches on tip contact.
  */
-public class BlackwhipChainTagAbility extends Ability {
+public class BlackwhipTagAbility extends Ability {
 
     public static final String MAX_TETHERS_KEY = "bw_max_tethers";
-    public static final String CHAIN_HP_KEY = "bw_chain_hp";
+    public static final String CHAIN_HP_KEY = "bw_hp";
 
-    public static final MapCodec<BlackwhipChainTagAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+    public static final MapCodec<BlackwhipTagAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("range", new StaticValue(18.0f)).forGetter((ab) -> ab.range),
                     Value.CODEC.optionalFieldOf("ttl_ticks", new StaticValue(0.0f)).forGetter((ab) -> ab.ttlTicks),
@@ -47,7 +47,7 @@ public class BlackwhipChainTagAbility extends Ability {
                     Value.CODEC.optionalFieldOf("travel_ticks", new StaticValue(12.0f)).forGetter((ab) -> ab.travelTicks),
                     propertiesCodec(),
                     stateCodec(),
-                    energyBarUsagesCodec()).apply(instance, BlackwhipChainTagAbility::new));
+                    energyBarUsagesCodec()).apply(instance, BlackwhipTagAbility::new));
 
     public final Value range;
     public final Value ttlTicks;
@@ -57,10 +57,10 @@ public class BlackwhipChainTagAbility extends Ability {
     public final Value thickness;
     public final Value travelTicks;
 
-    public BlackwhipChainTagAbility(Value range, Value ttlTicks, Value maxDistance,
-                                    Value segmentCount, Value linkLength, Value thickness,
-                                    Value travelTicks, AbilityProperties properties, AbilityStateManager conditions,
-                                    List<EnergyBarUsage> energyBarUsages) {
+    public BlackwhipTagAbility(Value range, Value ttlTicks, Value maxDistance,
+                               Value segmentCount, Value linkLength, Value thickness,
+                               Value travelTicks, AbilityProperties properties, AbilityStateManager conditions,
+                               List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.range = range;
         this.ttlTicks = ttlTicks;
@@ -108,15 +108,15 @@ public class BlackwhipChainTagAbility extends Ability {
 
     @Override
     public AbilitySerializer<?> getSerializer() {
-        return AbilityRegister.BLACKWHIP_CHAIN_TAG.get();
+        return AbilityRegister.BLACKWHIP_TAG.get();
     }
 
-    public static class Serializer extends AbilitySerializer<BlackwhipChainTagAbility> {
-        public MapCodec<BlackwhipChainTagAbility> codec() {
-            return BlackwhipChainTagAbility.CODEC;
+    public static class Serializer extends AbilitySerializer<BlackwhipTagAbility> {
+        public MapCodec<BlackwhipTagAbility> codec() {
+            return BlackwhipTagAbility.CODEC;
         }
 
-        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainTagAbility> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipTagAbility> builder, HolderLookup.Provider provider) {
             builder.setDescription("Shoots an IK chain Blackwhip tip along the look direction. Latches on tip contact. Tip can be damaged or knocked off course while deploying.")
                     .add("range", TYPE_VALUE, "Maximum tip travel distance before the whip retracts on a miss.")
                     .add("ttl_ticks", TYPE_VALUE, "Ticks before a latched tag auto-expires (0 = never by time).")
@@ -125,7 +125,7 @@ public class BlackwhipChainTagAbility extends Ability {
                     .add("link_length", TYPE_VALUE, "World-space length of each IK link.")
                     .add("thickness", TYPE_VALUE, "Visual whip thickness.")
                     .add("travel_ticks", TYPE_VALUE, "Ticks for the tip to reach max range (tip speed = range / travel_ticks).")
-                    .addExampleObject(new BlackwhipChainTagAbility(
+                    .addExampleObject(new BlackwhipTagAbility(
                             new StaticValue(18.0f), new StaticValue(0.0f), new StaticValue(32.0f),
                             new StaticValue(10.0f), new StaticValue(1.1f),
                             new StaticValue(20.0f), new StaticValue(12.0f),

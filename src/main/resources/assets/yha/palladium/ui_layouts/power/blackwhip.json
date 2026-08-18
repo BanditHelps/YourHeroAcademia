@@ -27,7 +27,7 @@
       "widgets": [
         {
           "type": "yha:zoomable_power_tree",
-          "power": "yha:blackwhip_chain",
+          "power": "yha:blackwhip",
           "default_zoom": 1.0,
           "background": {
             "type": "palladium:repeating_texture",

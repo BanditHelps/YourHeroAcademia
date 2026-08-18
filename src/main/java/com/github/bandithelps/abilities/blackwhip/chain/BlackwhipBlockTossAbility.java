@@ -39,9 +39,9 @@ import java.util.List;
  * First press: unused grab tethers wrap random nearby blocks and hover them. Later presses throw
  * one hovering block at a time.
  */
-public class BlackwhipChainBlockTossAbility extends Ability {
+public class BlackwhipBlockTossAbility extends Ability {
 
-    public static final MapCodec<BlackwhipChainBlockTossAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+    public static final MapCodec<BlackwhipBlockTossAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("range", new StaticValue(8.0f)).forGetter((ab) -> ab.range),
                     Value.CODEC.optionalFieldOf("qf_range_bonus", new StaticValue(1.0f)).forGetter((ab) -> ab.qfRangeBonus),
@@ -55,7 +55,7 @@ public class BlackwhipChainBlockTossAbility extends Ability {
                     Value.CODEC.optionalFieldOf("travel_ticks", new StaticValue(10.0f)).forGetter((ab) -> ab.travelTicks),
                     propertiesCodec(),
                     stateCodec(),
-                    energyBarUsagesCodec()).apply(instance, BlackwhipChainBlockTossAbility::new));
+                    energyBarUsagesCodec()).apply(instance, BlackwhipBlockTossAbility::new));
 
     public final Value range;
     public final Value qfRangeBonus;
@@ -68,11 +68,11 @@ public class BlackwhipChainBlockTossAbility extends Ability {
     public final Value thickness;
     public final Value travelTicks;
 
-    public BlackwhipChainBlockTossAbility(Value range, Value qfRangeBonus, Value throwSpeed, Value baseDamage,
-                                          Value damagePerHardness, Value knockback, Value segmentCount,
-                                          Value linkLength, Value thickness, Value travelTicks,
-                                          AbilityProperties properties, AbilityStateManager conditions,
-                                          List<EnergyBarUsage> energyBarUsages) {
+    public BlackwhipBlockTossAbility(Value range, Value qfRangeBonus, Value throwSpeed, Value baseDamage,
+                                     Value damagePerHardness, Value knockback, Value segmentCount,
+                                     Value linkLength, Value thickness, Value travelTicks,
+                                     AbilityProperties properties, AbilityStateManager conditions,
+                                     List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.range = range;
         this.qfRangeBonus = qfRangeBonus;
@@ -111,7 +111,7 @@ public class BlackwhipChainBlockTossAbility extends Ability {
     private void grabNearbyBlocks(ServerPlayer player, ServerLevel level, DataContext context) {
         double qf = QuirkFactorUtil.getQuirkFactor(player);
         int maxTethers = (int) ((int) BodyAttachments.get(player).getCustomFloat(
-                player, BodyPart.CHEST, BlackwhipChainTagAbility.MAX_TETHERS_KEY, 1) + (qf * 2));
+                player, BodyPart.CHEST, BlackwhipTagAbility.MAX_TETHERS_KEY, 1) + (qf * 2));
         int freeSlots = maxTethers - BlackwhipChainEntity.countOwnedActive(player.getId());
         if (freeSlots <= 0) {
             return;
@@ -128,7 +128,7 @@ public class BlackwhipChainBlockTossAbility extends Ability {
         int segments = Math.max(2, this.segmentCount.getAsInt(context));
         float link = this.linkLength.getAsFloat(context);
         float hp = Math.max(1.0f, BodyAttachments.get(player).getCustomFloat(
-                player, BodyPart.CHEST, BlackwhipChainTagAbility.CHAIN_HP_KEY, 1.0f));
+                player, BodyPart.CHEST, BlackwhipTagAbility.CHAIN_HP_KEY, 1.0f));
         float thickness = this.thickness.getAsFloat(context);
         int travel = Math.max(1, this.travelTicks.getAsInt(context));
 
@@ -208,15 +208,15 @@ public class BlackwhipChainBlockTossAbility extends Ability {
 
     @Override
     public AbilitySerializer<?> getSerializer() {
-        return AbilityRegister.BLACKWHIP_CHAIN_BLOCK_TOSS.get();
+        return AbilityRegister.BLACKWHIP_BLOCK_TOSS.get();
     }
 
-    public static class Serializer extends AbilitySerializer<BlackwhipChainBlockTossAbility> {
-        public MapCodec<BlackwhipChainBlockTossAbility> codec() {
-            return BlackwhipChainBlockTossAbility.CODEC;
+    public static class Serializer extends AbilitySerializer<BlackwhipBlockTossAbility> {
+        public MapCodec<BlackwhipBlockTossAbility> codec() {
+            return BlackwhipBlockTossAbility.CODEC;
         }
 
-        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainBlockTossAbility> builder,
+        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipBlockTossAbility> builder,
                                      HolderLookup.Provider provider) {
             builder.setDescription("First press sends unused grab tethers at random nearby blocks. "
                             + "They wrap, rip (skipping chests and other block entities), and hover. "
@@ -232,7 +232,7 @@ public class BlackwhipChainBlockTossAbility extends Ability {
                     .add("link_length", TYPE_VALUE, "World-space length of each IK link.")
                     .add("thickness", TYPE_VALUE, "Visual whip thickness.")
                     .add("travel_ticks", TYPE_VALUE, "Ticks for the tip to reach max range.")
-                    .addExampleObject(new BlackwhipChainBlockTossAbility(
+                    .addExampleObject(new BlackwhipBlockTossAbility(
                             new StaticValue(8.0f), new StaticValue(1.0f), new StaticValue(1.35f),
                             new StaticValue(1.0f), new StaticValue(1.5f), new StaticValue(0.35f),
                             new StaticValue(4.0f), new StaticValue(0.85f), new StaticValue(1.0f),

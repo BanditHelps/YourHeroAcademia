@@ -1,7 +1,7 @@
 package com.github.bandithelps.network;
 
 import com.github.bandithelps.YourHeroAcademia;
-import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainMoveTaggedAbility;
+import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipMoveTaggedAbility;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -32,7 +32,7 @@ public record BlackwhipChainReelScrollPayload(int direction) implements CustomPa
     public static void handle(BlackwhipChainReelScrollPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer player) {
-                BlackwhipChainMoveTaggedAbility.handleScroll(player, payload.direction());
+                BlackwhipMoveTaggedAbility.handleScroll(player, payload.direction());
             }
         });
     }

@@ -40,7 +40,7 @@
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "yha:blackwhip_chain#bw_max_tethers_1"
+              "ability": "yha:blackwhip#bw_max_tethers_1"
             }
           ]
         }
@@ -49,7 +49,7 @@
     "bw_tether_health_default": {
       "type": "yha:set_body_float",
       "part": "chest",
-      "key": "bw_chain_hp",
+      "key": "bw_hp",
       "value": 1.0,
       "properties": {
         "title": "Default Tether Health (1)",
@@ -68,7 +68,7 @@
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "yha:blackwhip_chain#bw_tether_health_1"
+              "ability": "yha:blackwhip#bw_tether_health_1"
             }
           ]
         }
@@ -107,7 +107,7 @@
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "yha:blackwhip_chain#bw_max_tethers_2"
+              "ability": "yha:blackwhip#bw_max_tethers_2"
             }
           ]
         }
@@ -146,7 +146,7 @@
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "yha:blackwhip_chain#bw_max_tethers_3"
+              "ability": "yha:blackwhip#bw_max_tethers_3"
             }
           ]
         }
@@ -185,7 +185,7 @@
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "yha:blackwhip_chain#bw_max_tethers_4"
+              "ability": "yha:blackwhip#bw_max_tethers_4"
             }
           ]
         }
@@ -224,7 +224,7 @@
     "bw_tether_health_1": {
       "type": "yha:set_body_float",
       "part": "chest",
-      "key": "bw_chain_hp",
+      "key": "bw_hp",
       "value": 5.0,
       "properties": {
         "title": "Max Health - I",
@@ -254,7 +254,7 @@
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "yha:blackwhip_chain#bw_tether_health_2"
+              "ability": "yha:blackwhip#bw_tether_health_2"
             }
           ]
         }
@@ -263,7 +263,7 @@
     "bw_tether_health_2": {
       "type": "yha:set_body_float",
       "part": "chest",
-      "key": "bw_chain_hp",
+      "key": "bw_hp",
       "value": 10.0,
       "properties": {
         "title": "Max Health - II",
@@ -293,7 +293,7 @@
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "yha:blackwhip_chain#bw_tether_health_3"
+              "ability": "yha:blackwhip#bw_tether_health_3"
             }
           ]
         }
@@ -302,7 +302,7 @@
     "bw_tether_health_3": {
       "type": "yha:set_body_float",
       "part": "chest",
-      "key": "bw_chain_hp",
+      "key": "bw_hp",
       "value": 15.0,
       "properties": {
         "title": "Max Health - III",
@@ -332,7 +332,7 @@
           "conditions": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "yha:blackwhip_chain#bw_tether_health_4"
+              "ability": "yha:blackwhip#bw_tether_health_4"
             }
           ]
         }
@@ -341,7 +341,7 @@
     "bw_tether_health_4": {
       "type": "yha:set_body_float",
       "part": "chest",
-      "key": "bw_chain_hp",
+      "key": "bw_hp",
       "value": 20.0,
       "properties": {
         "title": "Max Health - IV",
@@ -453,7 +453,7 @@
       }
     },
     "bw_tag": {
-      "type": "yha:blackwhip_chain_tag",
+      "type": "yha:blackwhip_tag",
       "range": {
         "type": "yha:upgrade_switch",
         "cases": [
@@ -508,7 +508,7 @@
       }
     },
     "bw_lock": {
-      "type": "yha:blackwhip_chain_restrict",
+      "type": "yha:blackwhip_restrict",
       "strength": {
         "type": "palladium:molang_float",
         "molang": "math.min(1.0 + yha.quirk_factor() * 0.1, 6.0)"
@@ -571,7 +571,7 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "bw_chain_item_pull"
+              "ability": "bw_item_pull"
             }
           ]
         }
@@ -606,8 +606,8 @@
         }
       }
     },
-    "bw_chain_puppet_single": {
-      "type": "yha:blackwhip_chain_move_tagged",
+    "bw_puppet_single": {
+      "type": "yha:blackwhip_move_tagged",
       "hold_distance": {
         "type": "palladium:molang_float",
         "molang": "5 + yha.quirk_factor() * 0.5"
@@ -642,7 +642,7 @@
       }
     },
     "bw_puppet_all": {
-      "type": "yha:blackwhip_chain_move_tagged",
+      "type": "yha:blackwhip_move_tagged",
       "hold_distance": {
         "type": "palladium:molang_float",
         "molang": "5 + yha.quirk_factor() * 0.5"
@@ -683,14 +683,14 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "bw_chain_puppet_single"
+              "ability": "bw_puppet_single"
             }
           ]
         }
       }
     },
-    "bw_chain_detach_single": {
-      "type": "yha:blackwhip_chain_detach",
+    "bw_detach_single": {
+      "type": "yha:blackwhip_detach",
       "range": 20,
       "all": false,
       "properties": {
@@ -718,14 +718,14 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "bw_chain_detach_all"
+              "ability": "bw_detach_all"
             }
           ]
         }
       }
     },
-    "bw_chain_detach_all": {
-      "type": "yha:blackwhip_chain_detach",
+    "bw_detach_all": {
+      "type": "yha:blackwhip_detach",
       "range": 20,
       "all": true,
       "properties": {
@@ -746,8 +746,8 @@
         }
       }
     },
-    "bw_chain_disarm": {
-      "type": "yha:blackwhip_chain_disarm",
+    "bw_disarm": {
+      "type": "yha:blackwhip_disarm",
       "range": {
         "type": "palladium:molang_float",
         "molang": "12 + yha.quirk_factor() * 1.5"
@@ -782,13 +782,13 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "bw_chain_item_pull"
+              "ability": "bw_item_pull"
             }
           ]
         }
       }
     },
-    "bw_chain_item_pull": {
+    "bw_item_pull": {
       "type": "palladium:dummy",
       "properties": {
         "title": "Item Pull",
@@ -827,8 +827,8 @@
         }
       }
     },
-    "bw_chain_pickup": {
-      "type": "yha:blackwhip_chain_magnet",
+    "bw_pickup": {
+      "type": "yha:blackwhip_magnet",
       "range": {
         "type": "yha:upgrade_switch",
         "cases": [
@@ -865,8 +865,8 @@
         }
       }
     },
-    "bw_chain_swing": {
-      "type": "yha:blackwhip_chain_swing",
+    "bw_swing": {
+      "type": "yha:blackwhip_swing",
       "range": {
         "type": "palladium:molang_float",
         "molang": "28 + yha.quirk_factor() * 3"
@@ -970,7 +970,7 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "bw_chain_swing"
+              "ability": "bw_swing"
             }
           ]
         }
@@ -1048,8 +1048,8 @@
         }
       }
     },
-    "bw_chain_zip": {
-      "type": "yha:blackwhip_chain_zip",
+    "bw_zip": {
+      "type": "yha:blackwhip_zip",
       "range": {
         "type": "yha:upgrade_switch",
         "cases": [
@@ -1122,8 +1122,8 @@
         }
       }
     },
-    "bw_chain_charge_zip": {
-      "type": "yha:blackwhip_chain_charge_zip",
+    "bw_charge_zip": {
+      "type": "yha:blackwhip_charge_zip",
       "range": {
         "type": "palladium:molang_float",
         "molang": "10 + yha.quirk_factor() * 3"
@@ -1230,14 +1230,14 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "bw_chain_charge_zip"
+              "ability": "bw_charge_zip"
             }
           ]
         }
       }
     },
-    "bw_chain_block_toss": {
-      "type": "yha:blackwhip_chain_block_toss",
+    "bw_block_toss": {
+      "type": "yha:blackwhip_block_toss",
       "range": {
         "type": "palladium:molang_float",
         "molang": "8 + yha.quirk_factor()"

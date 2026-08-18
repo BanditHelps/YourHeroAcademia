@@ -61,7 +61,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Block-burst echoes and entity reels are driven from {@link #tickSessions}. Entity reels also end
  * from {@link #lastTick} when the held key is released.
  */
-public class BlackwhipChainZipAbility extends Ability {
+public class BlackwhipZipAbility extends Ability {
 
     private static final float THICKNESS = 0.9f;
     private static final float LINK_LENGTH = 0.85f;
@@ -131,7 +131,7 @@ public class BlackwhipChainZipAbility extends Ability {
         final Set<Integer> damagedIds = new HashSet<>();
     }
 
-    public static final MapCodec<BlackwhipChainZipAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+    public static final MapCodec<BlackwhipZipAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("range", new StaticValue(22.0f)).forGetter((ab) -> ab.range),
                     Value.CODEC.optionalFieldOf("simple_pull_power", new StaticValue(2.2f)).forGetter((ab) -> ab.simplePullPower),
@@ -140,7 +140,7 @@ public class BlackwhipChainZipAbility extends Ability {
                     Value.CODEC.optionalFieldOf("damage", new StaticValue(4.0f)).forGetter((ab) -> ab.damage),
                     propertiesCodec(),
                     stateCodec(),
-                    energyBarUsagesCodec()).apply(instance, BlackwhipChainZipAbility::new));
+                    energyBarUsagesCodec()).apply(instance, BlackwhipZipAbility::new));
 
     public final Value range;
     public final Value simplePullPower;
@@ -148,9 +148,9 @@ public class BlackwhipChainZipAbility extends Ability {
     public final Value simpleVisualTicks;
     public final Value damage;
 
-    public BlackwhipChainZipAbility(Value range, Value simplePullPower, Value qfPullBonus, Value simpleVisualTicks,
-                                    Value damage, AbilityProperties properties, AbilityStateManager conditions,
-                                    List<EnergyBarUsage> energyBarUsages) {
+    public BlackwhipZipAbility(Value range, Value simplePullPower, Value qfPullBonus, Value simpleVisualTicks,
+                               Value damage, AbilityProperties properties, AbilityStateManager conditions,
+                               List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.range = range;
         this.simplePullPower = simplePullPower;
@@ -164,9 +164,9 @@ public class BlackwhipChainZipAbility extends Ability {
         if (!(entity instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) {
             return;
         }
-        BlackwhipChainSwingAbility.forceStop(player);
+        BlackwhipSwingAbility.forceStop(player);
         BlackwhipWebSwingAbility.forceStop(player);
-        BlackwhipChainChargeZipAbility.forceStop(player);
+        BlackwhipChargeZipAbility.forceStop(player);
         clearSession(player, level);
 
         DataContext context = DataContext.forEntity(entity);
@@ -590,22 +590,22 @@ public class BlackwhipChainZipAbility extends Ability {
 
     @Override
     public AbilitySerializer<?> getSerializer() {
-        return AbilityRegister.BLACKWHIP_CHAIN_ZIP.get();
+        return AbilityRegister.BLACKWHIP_ZIP.get();
     }
 
-    public static class Serializer extends AbilitySerializer<BlackwhipChainZipAbility> {
-        public MapCodec<BlackwhipChainZipAbility> codec() {
-            return BlackwhipChainZipAbility.CODEC;
+    public static class Serializer extends AbilitySerializer<BlackwhipZipAbility> {
+        public MapCodec<BlackwhipZipAbility> codec() {
+            return BlackwhipZipAbility.CODEC;
         }
 
-        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainZipAbility> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipZipAbility> builder, HolderLookup.Provider provider) {
             builder.setDescription("Look-targeted whip zip. Bursts toward a looked-at surface, or if the look-ray misses, auto-latches a solid block in a forward cone preferring look-center (does nothing in open air/void). When damage is greater than zero, hold to reel into a living entity (accelerates while held) until release or contact for knockback; slam damage scales linearly with latch distance versus range (damage is the max). Already-tagged targets reuse the tether: both are yanked together and the tag stays. Pull power uses a single quirk-factor bonus (do not also scale simple_pull_power by QF in molang).")
                     .add("range", TYPE_VALUE, "Raycast reach for the zip target, and the distance at which slam damage reaches its max.")
                     .add("simple_pull_power", TYPE_VALUE, "Base launch velocity toward a block (no QF inside this value).")
                     .add("qf_pull_bonus", TYPE_VALUE, "Extra launch multiplier per quirk factor: power * (1 + qf * bonus).")
                     .add("simple_visual_ticks", TYPE_VALUE, "How long the block-zip chain stays visible.")
                     .add("damage", TYPE_VALUE, "Max slam/sweep damage at full range. Zero disables entity attach. Scales linearly with distance / range.")
-                    .addExampleObject(new BlackwhipChainZipAbility(
+                    .addExampleObject(new BlackwhipZipAbility(
                             new StaticValue(22.0f), new StaticValue(2.2f), new StaticValue(0.04f),
                             new StaticValue(10.0f), new StaticValue(4.0f),
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));

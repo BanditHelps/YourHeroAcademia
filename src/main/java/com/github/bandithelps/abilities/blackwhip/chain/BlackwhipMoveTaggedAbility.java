@@ -39,7 +39,7 @@ import java.util.List;
  * with Lock active, scroll extends/retracts locked tether length. Heavier hitboxes resist movement
  * (scaled by {@code yha:strength}); overloaded locked leads can drag the owner instead.
  */
-public class BlackwhipChainMoveTaggedAbility extends Ability {
+public class BlackwhipMoveTaggedAbility extends Ability {
 
     private static final double MIN_MASS_SCALE = 0.04;
     /** Strain above this applies Slowness / movement drag (0 = effortless, 1 = immovable). */
@@ -49,7 +49,7 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
     /** Horizontal speed kept at full strain (effect stacks on top). */
     private static final double MIN_PLAYER_MOVE_FACTOR = 0.18;
 
-    public static final MapCodec<BlackwhipChainMoveTaggedAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+    public static final MapCodec<BlackwhipMoveTaggedAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("hold_distance", new StaticValue(5.0f)).forGetter((ab) -> ab.holdDistance),
                     Value.CODEC.optionalFieldOf("pull_factor", new StaticValue(0.5f)).forGetter((ab) -> ab.pullFactor),
@@ -62,7 +62,7 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
                     Value.CODEC.optionalFieldOf("reel_max_length", new StaticValue(28.0f)).forGetter((ab) -> ab.reelMaxLength),
                     propertiesCodec(),
                     stateCodec(),
-                    energyBarUsagesCodec()).apply(instance, BlackwhipChainMoveTaggedAbility::new));
+                    energyBarUsagesCodec()).apply(instance, BlackwhipMoveTaggedAbility::new));
 
     /**
      * Default hold point distance along look (blocks from eyes).
@@ -87,10 +87,10 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
     /** Farthest locked leash length scroll may extend to (also capped by the tag's break distance). */
     public final Value reelMaxLength;
 
-    public BlackwhipChainMoveTaggedAbility(Value holdDistance, Value pullFactor, Value moveStep, String mode,
-                                           double referenceVolume, double reelStep, Value reelMinLength,
-                                           Value reelMaxLength, AbilityProperties properties,
-                                           AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
+    public BlackwhipMoveTaggedAbility(Value holdDistance, Value pullFactor, Value moveStep, String mode,
+                                      double referenceVolume, double reelStep, Value reelMinLength,
+                                      Value reelMaxLength, AbilityProperties properties,
+                                      AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.holdDistance = holdDistance;
         this.pullFactor = pullFactor;
@@ -268,15 +268,15 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
 
     @Override
     public AbilitySerializer<?> getSerializer() {
-        return AbilityRegister.BLACKWHIP_CHAIN_MOVE_TAGGED.get();
+        return AbilityRegister.BLACKWHIP_MOVE_TAGGED.get();
     }
 
-    public static class Serializer extends AbilitySerializer<BlackwhipChainMoveTaggedAbility> {
-        public MapCodec<BlackwhipChainMoveTaggedAbility> codec() {
-            return BlackwhipChainMoveTaggedAbility.CODEC;
+    public static class Serializer extends AbilitySerializer<BlackwhipMoveTaggedAbility> {
+        public MapCodec<BlackwhipMoveTaggedAbility> codec() {
+            return BlackwhipMoveTaggedAbility.CODEC;
         }
 
-        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainMoveTaggedAbility> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipMoveTaggedAbility> builder, HolderLookup.Provider provider) {
             builder.setDescription(
                             "Telekinesis for chain-tagged entities: hold to drag them to a look-based hold point. "
                                     + "Mode selects single vs all targets. With lock on, scroll reels tether length. "
@@ -297,7 +297,7 @@ public class BlackwhipChainMoveTaggedAbility extends Ability {
                             "Shortest locked leash length allowed when scrolling in.")
                     .add("reel_max_length", TYPE_VALUE,
                             "Farthest locked leash length allowed when scrolling out (also capped by the tag's max_distance).")
-                    .addExampleObject(new BlackwhipChainMoveTaggedAbility(
+                    .addExampleObject(new BlackwhipMoveTaggedAbility(
                             new StaticValue(5.0f), new StaticValue(0.5f), new StaticValue(1.4f), "all",
                             BlackwhipChainLeadPhysics.DEFAULT_REFERENCE_VOLUME, 0.5,
                             new StaticValue(0.5f), new StaticValue(28.0f),

@@ -31,21 +31,21 @@ import java.util.List;
 /**
  * Releases chain-Blackwhip tethers.
  */
-public class BlackwhipChainDetachAbility extends Ability {
+public class BlackwhipDetachAbility extends Ability {
 
-    public static final MapCodec<BlackwhipChainDetachAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+    public static final MapCodec<BlackwhipDetachAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("range", new StaticValue(20.0f)).forGetter((ab) -> ab.range),
                     Codec.BOOL.optionalFieldOf("all", false).forGetter((ab) -> ab.all),
                     propertiesCodec(),
                     stateCodec(),
-                    energyBarUsagesCodec()).apply(instance, BlackwhipChainDetachAbility::new));
+                    energyBarUsagesCodec()).apply(instance, BlackwhipDetachAbility::new));
 
     public final Value range;
     public final boolean all;
 
-    public BlackwhipChainDetachAbility(Value range, boolean all, AbilityProperties properties,
-                                       AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
+    public BlackwhipDetachAbility(Value range, boolean all, AbilityProperties properties,
+                                  AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.range = range;
         this.all = all;
@@ -73,10 +73,10 @@ public class BlackwhipChainDetachAbility extends Ability {
         }
 
         // Also drop movement ropes (swing / web swing / zip) that are not living TagStore entries.
-        BlackwhipChainSwingAbility.forceStop(player);
+        BlackwhipSwingAbility.forceStop(player);
         BlackwhipWebSwingAbility.forceStop(player);
-        BlackwhipChainZipAbility.forceStop(player);
-        BlackwhipChainChargeZipAbility.forceStop(player);
+        BlackwhipZipAbility.forceStop(player);
+        BlackwhipChargeZipAbility.forceStop(player);
         BlackwhipChainEntity.retractOwnedByPurpose(player.getId(),
                 BlackwhipChainEntity.PURPOSE_SWING,
                 BlackwhipChainEntity.PURPOSE_WEB_SWING,
@@ -91,19 +91,19 @@ public class BlackwhipChainDetachAbility extends Ability {
 
     @Override
     public AbilitySerializer<?> getSerializer() {
-        return AbilityRegister.BLACKWHIP_CHAIN_DETACH.get();
+        return AbilityRegister.BLACKWHIP_DETACH.get();
     }
 
-    public static class Serializer extends AbilitySerializer<BlackwhipChainDetachAbility> {
-        public MapCodec<BlackwhipChainDetachAbility> codec() {
-            return BlackwhipChainDetachAbility.CODEC;
+    public static class Serializer extends AbilitySerializer<BlackwhipDetachAbility> {
+        public MapCodec<BlackwhipDetachAbility> codec() {
+            return BlackwhipDetachAbility.CODEC;
         }
 
-        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainDetachAbility> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipDetachAbility> builder, HolderLookup.Provider provider) {
             builder.setDescription("Releases chain-Blackwhip tethers. With all=true, always releases everything.")
                     .add("range", TYPE_VALUE, "Reach of the targeted-release raycast.")
                     .add("all", TYPE_BOOLEAN, "If true, always release every tether.")
-                    .addExampleObject(new BlackwhipChainDetachAbility(new StaticValue(20.0f), false,
+                    .addExampleObject(new BlackwhipDetachAbility(new StaticValue(20.0f), false,
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
     }

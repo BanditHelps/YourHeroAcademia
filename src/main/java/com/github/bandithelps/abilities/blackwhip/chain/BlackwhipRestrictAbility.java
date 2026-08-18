@@ -30,19 +30,19 @@ import java.util.List;
  * (including slack). Past that length, soft-springs the weaker side — oversized / stronger
  * targets can drag the owner along the lead.
  */
-public class BlackwhipChainRestrictAbility extends Ability {
+public class BlackwhipRestrictAbility extends Ability {
 
-    public static final MapCodec<BlackwhipChainRestrictAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+    public static final MapCodec<BlackwhipRestrictAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("strength", new StaticValue(1.0f)).forGetter((ab) -> ab.strength),
                     propertiesCodec(),
                     stateCodec(),
-                    energyBarUsagesCodec()).apply(instance, BlackwhipChainRestrictAbility::new));
+                    energyBarUsagesCodec()).apply(instance, BlackwhipRestrictAbility::new));
 
     public final Value strength;
 
-    public BlackwhipChainRestrictAbility(Value strength, AbilityProperties properties,
-                                         AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
+    public BlackwhipRestrictAbility(Value strength, AbilityProperties properties,
+                                    AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.strength = strength;
     }
@@ -87,18 +87,18 @@ public class BlackwhipChainRestrictAbility extends Ability {
 
     @Override
     public AbilitySerializer<?> getSerializer() {
-        return AbilityRegister.BLACKWHIP_CHAIN_RESTRICT.get();
+        return AbilityRegister.BLACKWHIP_RESTRICT.get();
     }
 
-    public static class Serializer extends AbilitySerializer<BlackwhipChainRestrictAbility> {
-        public MapCodec<BlackwhipChainRestrictAbility> codec() {
-            return BlackwhipChainRestrictAbility.CODEC;
+    public static class Serializer extends AbilitySerializer<BlackwhipRestrictAbility> {
+        public MapCodec<BlackwhipRestrictAbility> codec() {
+            return BlackwhipRestrictAbility.CODEC;
         }
 
-        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainRestrictAbility> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipRestrictAbility> builder, HolderLookup.Provider provider) {
             builder.setDescription("Toggle that locks tether length. Soft-reels weaker tagged entities; stronger/heavier ones can drag the owner.")
                     .add("strength", TYPE_VALUE, "How strongly the lead reels entities when the owner wins the contest.")
-                    .addExampleObject(new BlackwhipChainRestrictAbility(new StaticValue(1.0f),
+                    .addExampleObject(new BlackwhipRestrictAbility(new StaticValue(1.0f),
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
     }

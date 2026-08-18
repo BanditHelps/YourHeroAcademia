@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Charge Zip: hold to shoot side chains, stretch backward, and release to fling along the start facing.
  */
-public class BlackwhipChainChargeZipAbility extends Ability {
+public class BlackwhipChargeZipAbility extends Ability {
 
     private static final float LAUNCH_UP_BIAS = 0.22f;
     private static final float HIT_RADIUS = 2.15f;
@@ -82,7 +82,7 @@ public class BlackwhipChainChargeZipAbility extends Ability {
         final Set<Integer> hitIds = new HashSet<>();
     }
 
-    public static final MapCodec<BlackwhipChainChargeZipAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+    public static final MapCodec<BlackwhipChargeZipAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("range", new StaticValue(28.0f)).forGetter((ab) -> ab.range),
                     Value.CODEC.optionalFieldOf("max_charge_ticks", new StaticValue(40.0f)).forGetter((ab) -> ab.maxChargeTicks),
@@ -96,7 +96,7 @@ public class BlackwhipChainChargeZipAbility extends Ability {
                     Value.CODEC.optionalFieldOf("max_hits", new StaticValue(4.0f)).forGetter((ab) -> ab.maxHits),
                     propertiesCodec(),
                     stateCodec(),
-                    energyBarUsagesCodec()).apply(instance, BlackwhipChainChargeZipAbility::new));
+                    energyBarUsagesCodec()).apply(instance, BlackwhipChargeZipAbility::new));
 
     public final Value range;
     public final Value maxChargeTicks;
@@ -109,11 +109,11 @@ public class BlackwhipChainChargeZipAbility extends Ability {
     public final Value damage;
     public final Value maxHits;
 
-    public BlackwhipChainChargeZipAbility(Value range, Value maxChargeTicks, Value baseLaunchPower,
-                                          Value maxLaunchPower, Value qfLaunchBonus, Value sideCount,
-                                          Value sideAngle, Value pullbackSpeed, Value damage, Value maxHits,
-                                          AbilityProperties properties, AbilityStateManager conditions,
-                                          List<EnergyBarUsage> energyBarUsages) {
+    public BlackwhipChargeZipAbility(Value range, Value maxChargeTicks, Value baseLaunchPower,
+                                     Value maxLaunchPower, Value qfLaunchBonus, Value sideCount,
+                                     Value sideAngle, Value pullbackSpeed, Value damage, Value maxHits,
+                                     AbilityProperties properties, AbilityStateManager conditions,
+                                     List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.range = range;
         this.maxChargeTicks = maxChargeTicks;
@@ -132,9 +132,9 @@ public class BlackwhipChainChargeZipAbility extends Ability {
         if (!(entity instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) {
             return;
         }
-        BlackwhipChainSwingAbility.forceStop(player);
+        BlackwhipSwingAbility.forceStop(player);
         BlackwhipWebSwingAbility.forceStop(player);
-        BlackwhipChainZipAbility.forceStop(player);
+        BlackwhipZipAbility.forceStop(player);
         FLIGHTS.remove(player.getUUID());
         clearSession(player, level);
 
@@ -423,15 +423,15 @@ public class BlackwhipChainChargeZipAbility extends Ability {
 
     @Override
     public AbilitySerializer<?> getSerializer() {
-        return AbilityRegister.BLACKWHIP_CHAIN_CHARGE_ZIP.get();
+        return AbilityRegister.BLACKWHIP_CHARGE_ZIP.get();
     }
 
-    public static class Serializer extends AbilitySerializer<BlackwhipChainChargeZipAbility> {
-        public MapCodec<BlackwhipChainChargeZipAbility> codec() {
-            return BlackwhipChainChargeZipAbility.CODEC;
+    public static class Serializer extends AbilitySerializer<BlackwhipChargeZipAbility> {
+        public MapCodec<BlackwhipChargeZipAbility> codec() {
+            return BlackwhipChargeZipAbility.CODEC;
         }
 
-        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainChargeZipAbility> builder, HolderLookup.Provider provider) {
+        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChargeZipAbility> builder, HolderLookup.Provider provider) {
             builder.setDescription("Hold to shoot side chains from both hands and stretch backward. Release to fling in the facing from when the charge started. Charge time scales launch power.")
                     .add("range", TYPE_VALUE, "Raycast reach for side-chain tips.")
                     .add("max_charge_ticks", TYPE_VALUE, "Hold ticks for a full-power launch.")
@@ -443,7 +443,7 @@ public class BlackwhipChainChargeZipAbility extends Ability {
                     .add("pullback_speed", TYPE_VALUE, "Blocks per tick the player is pulled backward while charging.")
                     .add("damage", TYPE_VALUE, "Full-charge damage for the first entity hit. Scales linearly with charge percentage.")
                     .add("max_hits", TYPE_VALUE, "Maximum entities damaged per launch. Each successive hit deals 1/max_hits less of full damage.")
-                    .addExampleObject(new BlackwhipChainChargeZipAbility(
+                    .addExampleObject(new BlackwhipChargeZipAbility(
                             new StaticValue(28.0f), new StaticValue(40.0f),
                             new StaticValue(1.1f), new StaticValue(2.9f), new StaticValue(0.08f),
                             new StaticValue(2.0f), new StaticValue(42.0f), new StaticValue(0.06f),

@@ -30,9 +30,9 @@ import java.util.List;
 /**
  * Shoots a chain tip that rolls a strength contest to rip a held item into the owner's inventory.
  */
-public class BlackwhipChainDisarmAbility extends Ability {
+public class BlackwhipDisarmAbility extends Ability {
 
-    public static final MapCodec<BlackwhipChainDisarmAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
+    public static final MapCodec<BlackwhipDisarmAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
                     Value.CODEC.optionalFieldOf("range", new StaticValue(14.0f)).forGetter((ab) -> ab.range),
                     Value.CODEC.optionalFieldOf("segment_count", new StaticValue(8.0f)).forGetter((ab) -> ab.segmentCount),
@@ -41,7 +41,7 @@ public class BlackwhipChainDisarmAbility extends Ability {
                     Value.CODEC.optionalFieldOf("travel_ticks", new StaticValue(10.0f)).forGetter((ab) -> ab.travelTicks),
                     propertiesCodec(),
                     stateCodec(),
-                    energyBarUsagesCodec()).apply(instance, BlackwhipChainDisarmAbility::new));
+                    energyBarUsagesCodec()).apply(instance, BlackwhipDisarmAbility::new));
 
     public final Value range;
     public final Value segmentCount;
@@ -49,9 +49,9 @@ public class BlackwhipChainDisarmAbility extends Ability {
     public final Value thickness;
     public final Value travelTicks;
 
-    public BlackwhipChainDisarmAbility(Value range, Value segmentCount, Value linkLength,
-                                       Value thickness, Value travelTicks, AbilityProperties properties,
-                                       AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
+    public BlackwhipDisarmAbility(Value range, Value segmentCount, Value linkLength,
+                                  Value thickness, Value travelTicks, AbilityProperties properties,
+                                  AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.range = range;
         this.segmentCount = segmentCount;
@@ -70,7 +70,7 @@ public class BlackwhipChainDisarmAbility extends Ability {
         int segments = Math.max(2, this.segmentCount.getAsInt(context));
         float link = this.linkLength.getAsFloat(context);
         float hp = Math.max(1.0f, BodyAttachments.get(player).getCustomFloat(
-                player, BodyPart.CHEST, BlackwhipChainTagAbility.CHAIN_HP_KEY, 1.0f));
+                player, BodyPart.CHEST, BlackwhipTagAbility.CHAIN_HP_KEY, 1.0f));
         float thickness = this.thickness.getAsFloat(context);
         int travel = Math.max(1, this.travelTicks.getAsInt(context));
 
@@ -85,15 +85,15 @@ public class BlackwhipChainDisarmAbility extends Ability {
 
     @Override
     public AbilitySerializer<?> getSerializer() {
-        return AbilityRegister.BLACKWHIP_CHAIN_DISARM.get();
+        return AbilityRegister.BLACKWHIP_DISARM.get();
     }
 
-    public static class Serializer extends AbilitySerializer<BlackwhipChainDisarmAbility> {
-        public MapCodec<BlackwhipChainDisarmAbility> codec() {
-            return BlackwhipChainDisarmAbility.CODEC;
+    public static class Serializer extends AbilitySerializer<BlackwhipDisarmAbility> {
+        public MapCodec<BlackwhipDisarmAbility> codec() {
+            return BlackwhipDisarmAbility.CODEC;
         }
 
-        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainDisarmAbility> builder,
+        public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipDisarmAbility> builder,
                                      HolderLookup.Provider provider) {
             builder.setDescription("Shoots a chain tip that rolls Strength vs the target to rip a held item "
                             + "(shields first; blocking raises defense). Stolen items go to the owner's inventory.")
@@ -102,7 +102,7 @@ public class BlackwhipChainDisarmAbility extends Ability {
                     .add("link_length", TYPE_VALUE, "World-space length of each IK link.")
                     .add("thickness", TYPE_VALUE, "Visual whip thickness.")
                     .add("travel_ticks", TYPE_VALUE, "Ticks for the tip to reach max range.")
-                    .addExampleObject(new BlackwhipChainDisarmAbility(
+                    .addExampleObject(new BlackwhipDisarmAbility(
                             new StaticValue(14.0f), new StaticValue(8.0f), new StaticValue(0.85f),
                             new StaticValue(0.9f), new StaticValue(10.0f),
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
