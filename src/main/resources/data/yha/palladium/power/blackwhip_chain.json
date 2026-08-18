@@ -1006,7 +1006,7 @@
       "properties": {
         "title": "Whip Zip",
         "description": "Use your whip's to pull you in the direction you are looking",
-        "icon": "minecraft:breeze_rod",
+        "icon": "yha:textures/icons/blackwhip/whip_zip.png",
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
@@ -1020,7 +1020,7 @@
       "properties": {
         "title": "Whip Zip - II",
         "description": "Further extends the range and speed of the whip zip",
-        "icon": "minecraft:lead",
+        "icon": "yha:textures/icons/blackwhip/whip_zip_2.png",
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
@@ -1054,7 +1054,7 @@
         "hidden_in_gui": false,
         "gui_position": [
           0,
-          3
+          2.4
         ]
       },
       "state": {
@@ -1067,7 +1067,7 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_charge_zip"
+              "ability": "bw_tree_whip_zip_2"
             }
           ]
         }
@@ -1118,7 +1118,7 @@
             "ability": "bw_tree_zip_slam",
             "value": {
               "type": "palladium:molang_float",
-              "molang": "4 + yha.quirk_factor() * 0.5"
+              "molang": "8 + yha.quirk_factor() * 2"
             }
           }
         ],
@@ -1126,8 +1126,8 @@
       },
       "properties": {
         "title": "Whip Zip",
-        "description": "Zip toward the block or enemy you're looking at. Surfaces give a quick directional burst. On a living target, hold to reel in (speeds up as you go) until you release or slam into them for damage and knockback. If they're already tagged, the existing whip yanks you both together for the kick without spawning a new tether. Hold Shift and use Charge Zip for a rubber-band launch.",
-        "icon": "minecraft:tripwire_hook",
+        "description": "Zip toward the block you're looking at, or if you miss, auto-latch a solid block ahead of you (prefers the center of your view; does nothing in open air). Surfaces give a quick directional burst. With Zip Slam unlocked, hold on a living target to reel in until you release or slam: damage scales with how far the zip was, up to the max at full range. If they're already tagged, the existing whip yanks you both together for the kick without spawning a new tether. Hold Shift and use Charge Zip for a rubber-band launch.",
+        "icon": "yha:textures/icons/blackwhip/whip_zip.png",
         "list_index": 6,
         "hidden_in_gui": true,
         "gui_position": [
@@ -1175,14 +1175,18 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          0,
-          2.4
+          -1,
+          2
         ],
         "activation_stamina": 16,
         "gui_connection": [
           [
-            0,
-            2.1
+            -0.2,
+            1.8
+          ],
+          [
+            -0.4,
+            2
           ]
         ]
       },

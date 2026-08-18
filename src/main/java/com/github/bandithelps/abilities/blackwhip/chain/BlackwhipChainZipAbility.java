@@ -50,6 +50,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * Whip Zip: look-targeted directional burst toward a block, or a held reel into a living entity
  * (speeds up while held, ends on release or contact) with damage + knockback.
  * <p>
+ * A missed look-ray auto-latches a solid block in a forward cone, preferring whatever is
+ * closest to look-center; open air / void does nothing. Entity reels only start when
+ * {@code damage} is greater than zero, and slam damage scales linearly with latch distance
+ * versus {@code range}.
+ * <p>
  * If the target is already chain-tagged, no new whip is spawned — player and mob are pulled
  * together along the existing tether for the slam, and the tag is left intact.
  * <p>
@@ -95,6 +100,10 @@ public class BlackwhipChainZipAbility extends Ability {
     private static final float MAX_UP_PER_QF = 0.08f;
     /** Tiny loft only when the burst is nearly flat. */
     private static final float FLAT_UP_BIAS = 0.12f;
+    /** Forward-cone half-angle used when the look-ray misses a block. */
+    private static final double AUTO_ATTACH_HALF_ANGLE = 28.0;
+    private static final int AUTO_ATTACH_RINGS = 3;
+    private static final int AUTO_ATTACH_RAYS_PER_RING = 8;
 
     private enum ZipMode {
         BLOCK_BURST,
@@ -162,13 +171,14 @@ public class BlackwhipChainZipAbility extends Ability {
 
         DataContext context = DataContext.forEntity(entity);
         double range = this.range.getAsFloat(context);
+        float maxDamage = Math.max(0.0f, this.damage.getAsFloat(context));
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle().normalize();
         Vec3 rayEnd = eye.add(look.scale(range));
 
         BlockHitResult blockHit = level.clip(new ClipContext(
                 eye, rayEnd, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
-        LivingEntity entityHit = BlackwhipTargeting.raycastLiving(player, range);
+        LivingEntity entityHit = maxDamage > 0.0f ? BlackwhipTargeting.raycastLiving(player, range) : null;
 
         double blockDist = blockHit.getType() == HitResult.Type.BLOCK
                 ? eye.distanceTo(blockHit.getLocation())
@@ -177,14 +187,18 @@ public class BlackwhipChainZipAbility extends Ability {
 
         boolean preferEntity = entityHit != null && entityDist < blockDist;
         if (!preferEntity && blockHit.getType() != HitResult.Type.BLOCK) {
-            return;
+            blockHit = BlackwhipTargeting.furthestBlockInCone(
+                    player, range, AUTO_ATTACH_HALF_ANGLE, AUTO_ATTACH_RINGS, AUTO_ATTACH_RAYS_PER_RING);
+            if (blockHit == null || blockHit.getType() != HitResult.Type.BLOCK) {
+                return;
+            }
         }
 
         double qf = QuirkFactorUtil.getQuirkFactor(player);
         float power = resolvePullPower(context, qf);
 
         if (preferEntity) {
-            startEntityReel(player, level, context, entityHit, range, power);
+            startEntityReel(player, level, entityHit, range, power, maxDamage);
         } else {
             startBlockBurst(player, level, context, blockHit, range, power, qf);
         }
@@ -214,8 +228,8 @@ public class BlackwhipChainZipAbility extends Ability {
         level.playSound(null, player.blockPosition(), SoundEvents.LEAD_TIED, SoundSource.PLAYERS, 0.7f, 1.35f);
     }
 
-    private void startEntityReel(ServerPlayer player, ServerLevel level, DataContext context,
-                                 LivingEntity target, double range, float power) {
+    private void startEntityReel(ServerPlayer player, ServerLevel level,
+                                 LivingEntity target, double range, float power, float maxDamage) {
         boolean alreadyTagged = BlackwhipChainTagStore.isTagged(player, target.getId());
         int chainId = -1;
         if (!alreadyTagged) {
@@ -228,7 +242,8 @@ public class BlackwhipChainZipAbility extends Ability {
             chainId = chain.getId();
         }
 
-        float dmg = Math.max(0.0f, this.damage.getAsFloat(context));
+        float zipFrac = Mth.clamp((float) (player.distanceTo(target) / Math.max(range, 1.0e-3)), 0.0f, 1.0f);
+        float dmg = maxDamage * zipFrac;
         float reelPeak = Mth.clamp(REEL_SPEED_PEAK * (0.92f + power * 0.06f), 1.4f, 2.15f);
 
         ZipSession session = new ZipSession();
@@ -584,12 +599,12 @@ public class BlackwhipChainZipAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainZipAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("Look-targeted whip zip. Bursts toward a surface, or hold to reel into a living entity (accelerates while held) until release or contact for damage + knockback. Already-tagged targets reuse the tether: both are yanked together and the tag stays. Pull power uses a single quirk-factor bonus (do not also scale simple_pull_power by QF in molang).")
-                    .add("range", TYPE_VALUE, "Raycast reach for the zip target.")
+            builder.setDescription("Look-targeted whip zip. Bursts toward a looked-at surface, or if the look-ray misses, auto-latches a solid block in a forward cone preferring look-center (does nothing in open air/void). When damage is greater than zero, hold to reel into a living entity (accelerates while held) until release or contact for knockback; slam damage scales linearly with latch distance versus range (damage is the max). Already-tagged targets reuse the tether: both are yanked together and the tag stays. Pull power uses a single quirk-factor bonus (do not also scale simple_pull_power by QF in molang).")
+                    .add("range", TYPE_VALUE, "Raycast reach for the zip target, and the distance at which slam damage reaches its max.")
                     .add("simple_pull_power", TYPE_VALUE, "Base launch velocity toward a block (no QF inside this value).")
                     .add("qf_pull_bonus", TYPE_VALUE, "Extra launch multiplier per quirk factor: power * (1 + qf * bonus).")
                     .add("simple_visual_ticks", TYPE_VALUE, "How long the block-zip chain stays visible.")
-                    .add("damage", TYPE_VALUE, "Damage dealt when reeling into / sweeping through entities.")
+                    .add("damage", TYPE_VALUE, "Max slam/sweep damage at full range. Zero disables entity attach. Scales linearly with distance / range.")
                     .addExampleObject(new BlackwhipChainZipAbility(
                             new StaticValue(22.0f), new StaticValue(2.2f), new StaticValue(0.04f),
                             new StaticValue(10.0f), new StaticValue(4.0f),
