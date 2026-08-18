@@ -12,7 +12,26 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(AbilityListComponent.class)
 public abstract class AbilityListComponentMixin {
-    @Inject(method = "extractContent", at = @At("RETURN"))
+    @Inject(method = "extractContent", at = @At("HEAD"))
+    private void yha$beginModeSlideout(
+            Minecraft minecraft,
+            GuiGraphicsExtractor gui,
+            int x,
+            int y,
+            AbilityBarAlignment alignment,
+            CallbackInfo ci
+    ) {
+        AbilityModeOverlay.beginPass();
+    }
+
+    @Inject(
+            method = "extractContent",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/threetag/palladium/client/gui/screen/abilitybar/AbilityListComponent;renderAbility(Lnet/minecraft/client/Minecraft;Lnet/minecraft/resources/Identifier;Lnet/minecraft/client/gui/GuiGraphicsExtractor;IILnet/threetag/palladium/client/gui/screen/abilitybar/AbilityBarAlignment;Lnet/threetag/palladium/power/ability/AbilityInstance;I)V",
+                    shift = At.Shift.BEFORE
+            )
+    )
     private void yha$renderModeSlideout(
             Minecraft minecraft,
             GuiGraphicsExtractor gui,

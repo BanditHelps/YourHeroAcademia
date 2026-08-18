@@ -37,6 +37,7 @@ public class TreeEditorEditPopupScreen extends Screen {
     private final TreeEditorNode node;
     private final List<TreeEditorCostSchema> schemas;
     private final List<BodyItem> body = new ArrayList<>();
+    private final boolean creating;
     private EditBox keyBox;
 
     private String titleValue;
@@ -53,12 +54,18 @@ public class TreeEditorEditPopupScreen extends Screen {
     private int panelH;
     private int contentHeight;
     private int scroll;
+    private boolean committed;
 
     public TreeEditorEditPopupScreen(TreeEditorScreen parent, TreeEditorDraft draft, TreeEditorNode node) {
+        this(parent, draft, node, false);
+    }
+
+    public TreeEditorEditPopupScreen(TreeEditorScreen parent, TreeEditorDraft draft, TreeEditorNode node, boolean creating) {
         super(Component.literal("Edit Tree Node"));
         this.parent = parent;
         this.draft = draft;
         this.node = node;
+        this.creating = creating;
         this.schemas = parent.costSchemas();
         this.titleValue = node.getTitle();
         this.keyValue = node.getKey();
@@ -201,6 +208,9 @@ public class TreeEditorEditPopupScreen extends Screen {
 
     @Override
     public void onClose() {
+        if (this.creating && !this.committed) {
+            this.parent.discardCreatedNode(this.node);
+        }
         if (this.minecraft != null) {
             this.minecraft.setScreen(this.parent);
         }
@@ -326,6 +336,7 @@ public class TreeEditorEditPopupScreen extends Screen {
         this.node.setLockedDescription(this.splitDescription ? this.lockedDescriptionValue.trim() : "");
         this.node.setIconId(this.iconId);
         this.node.setCost(this.cost);
+        this.committed = true;
         this.onClose();
     }
 

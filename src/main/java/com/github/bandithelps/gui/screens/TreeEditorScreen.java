@@ -37,6 +37,10 @@ public class TreeEditorScreen extends Screen {
     private static final int LEFT_WIDTH = 100;
     private static final int LEFT_PADDING = 7;
     private static final int LEFT_FOOTER = 28;
+    private static final int LEFT_INSET = 4;
+    private static final int LEFT_SCROLLBAR = 3;
+    private static final int LEFT_SCROLLBAR_GAP = 2;
+    private static final int LEFT_LINE = 10;
     private static final int MIN_TREE_WIDTH = 250;
     private static final int MIN_TREE_HEIGHT = 200;
     private static final int CHIP_HEIGHT = 28;
@@ -83,6 +87,10 @@ public class TreeEditorScreen extends Screen {
     private TreeEditorNode parentLinkSource;
     @Nullable
     private ContextMenu contextMenu;
+    @Nullable
+    private TreeEditorNode leftScrollNode;
+    private int leftScroll;
+    private int leftMaxScroll;
     private String status = "Right-click empty space to add a node. Drag nodes to move. Right-click lines to add vertices. E exports JSON.";
 
     public TreeEditorScreen(TreeEditorDraft draft) {
@@ -259,6 +267,15 @@ public class TreeEditorScreen extends Screen {
     }
 
     @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (this.isInLeftPanel((int) mouseX, (int) mouseY) && this.leftMaxScroll > 0) {
+            this.leftScroll = Math.max(0, Math.min(this.leftMaxScroll, this.leftScroll - (int) Math.signum(scrollY) * 20));
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
     public boolean keyPressed(KeyEvent event) {
         if (event.key() == GLFW.GLFW_KEY_ESCAPE && this.parentLinkSource != null) {
             this.parentLinkSource = null;
@@ -300,16 +317,28 @@ public class TreeEditorScreen extends Screen {
     public void addNodeAt(int mouseX, int mouseY) {
         TreeEditorNode node = this.draft.addDummy(this.snap(this.screenToGridX(mouseX)), this.snap(this.screenToGridY(mouseY)));
         this.selected = node;
-        this.openEdit(node);
+        this.openEdit(node, true);
     }
 
     public void openEdit(TreeEditorNode node) {
+        this.openEdit(node, false);
+    }
+
+    public void openEdit(TreeEditorNode node, boolean creating) {
         if (this.minecraft != null) {
-            this.minecraft.setScreen(new TreeEditorEditPopupScreen(this, this.draft, node));
+            this.minecraft.setScreen(new TreeEditorEditPopupScreen(this, this.draft, node, creating));
         }
     }
 
     public void deleteNode(TreeEditorNode node) {
+        this.removeNode(node, "Deleted " + node.getKey());
+    }
+
+    public void discardCreatedNode(TreeEditorNode node) {
+        this.removeNode(node, "Cancelled new node.");
+    }
+
+    private void removeNode(TreeEditorNode node, String successStatus) {
         if (this.draft.remove(node)) {
             if (this.selected == node) {
                 this.selected = null;
@@ -317,7 +346,7 @@ public class TreeEditorScreen extends Screen {
             if (this.draggingWaypointNode == node) {
                 this.draggingWaypointNode = null;
             }
-            this.status = "Deleted " + node.getKey();
+            this.status = successStatus;
         } else {
             this.status = "Existing datapack nodes cannot be deleted here.";
         }
@@ -396,34 +425,75 @@ public class TreeEditorScreen extends Screen {
     }
 
     private void drawLeftPanel(GuiGraphicsExtractor graphics) {
+        if (this.selected != this.leftScrollNode) {
+            this.leftScrollNode = this.selected;
+            this.leftScroll = 0;
+        }
+
+        int clipLeft = this.leftX + LEFT_INSET;
+        int clipTop = this.leftY + LEFT_INSET;
+        int clipRight = this.leftX + LEFT_WIDTH - LEFT_INSET;
+        int clipBottom = this.leftY + this.leftH - LEFT_FOOTER;
+        int viewportH = Math.max(0, clipBottom - clipTop);
         int textX = this.leftX + LEFT_PADDING;
-        int textY = this.leftY + LEFT_PADDING;
         int textW = LEFT_WIDTH - LEFT_PADDING * 2;
-        graphics.centeredText(this.font, this.draft.getPowerName(), this.leftX + LEFT_WIDTH / 2, textY, TEXT_LIGHT);
+        int contentH = this.walkLeftPanel(null, textX, clipTop + (LEFT_PADDING - LEFT_INSET), textW);
+        this.leftMaxScroll = Math.max(0, contentH - viewportH);
+        if (this.leftMaxScroll > 0) {
+            textW -= LEFT_SCROLLBAR + LEFT_SCROLLBAR_GAP;
+            contentH = this.walkLeftPanel(null, textX, clipTop + (LEFT_PADDING - LEFT_INSET), textW);
+            this.leftMaxScroll = Math.max(0, contentH - viewportH);
+        }
+        this.leftScroll = Math.max(0, Math.min(this.leftScroll, this.leftMaxScroll));
+
+        graphics.enableScissor(clipLeft, clipTop, clipRight, clipBottom);
+        this.walkLeftPanel(graphics, textX, clipTop + (LEFT_PADDING - LEFT_INSET) - this.leftScroll, textW);
+        graphics.disableScissor();
+
+        if (this.leftMaxScroll > 0) {
+            this.drawLeftScrollbar(graphics, clipRight - LEFT_SCROLLBAR, clipTop, viewportH, contentH);
+        }
+    }
+
+    private int walkLeftPanel(@Nullable GuiGraphicsExtractor graphics, int textX, int textY, int textW) {
+        int startY = textY;
+        if (graphics != null) {
+            graphics.centeredText(this.font, this.draft.getPowerName(), this.leftX + LEFT_WIDTH / 2, textY, TEXT_LIGHT);
+        }
         textY += 16;
-        textY = this.drawWrapped(graphics, this.draft.getPowerId().toString(), textX, textY, textW, TEXT_LIGHT) + 6;
+        textY = this.walkWrapped(graphics, this.draft.getPowerId().toString(), textX, textY, textW, TEXT_LIGHT) + 6;
 
         if (this.selected != null) {
-            textY = this.drawWrapped(graphics, this.selected.getTitle(), textX, textY, textW, TEXT_LIGHT) + 2;
-            textY = this.drawWrapped(graphics, this.selected.getKey(), textX, textY, textW, TEXT_LIGHT) + 2;
+            textY = this.walkWrapped(graphics, this.selected.getTitle(), textX, textY, textW, TEXT_LIGHT) + 2;
+            textY = this.walkWrapped(graphics, this.selected.getKey(), textX, textY, textW, TEXT_LIGHT) + 2;
             if (!this.selected.getDescription().isBlank()) {
-                textY = this.drawWrapped(graphics, this.selected.getDescription(), textX, textY, textW, 0xFFCCCCCC) + 2;
+                textY = this.walkWrapped(graphics, this.selected.getDescription(), textX, textY, textW, 0xFFCCCCCC) + 2;
             }
-            textY = this.drawWrapped(graphics, this.selected.getCost().summary(this.costSchemas), textX, textY, textW, TEXT_LIGHT) + 6;
+            textY = this.walkWrapped(graphics, this.selected.getCost().summary(this.costSchemas), textX, textY, textW, TEXT_LIGHT) + 6;
         }
 
         String help = this.parentLinkSource != null
                 ? "Parent mode: click a node to parent '" + this.parentLinkSource.getKey() + "'. Esc cancels."
                 : this.status;
-        this.drawWrapped(graphics, help, textX, textY, textW, TEXT_LIGHT);
+        textY = this.walkWrapped(graphics, help, textX, textY, textW, TEXT_LIGHT);
+        return textY + LEFT_INSET - startY + (LEFT_PADDING - LEFT_INSET);
     }
 
-    private int drawWrapped(GuiGraphicsExtractor graphics, String text, int x, int y, int maxWidth, int color) {
+    private int walkWrapped(@Nullable GuiGraphicsExtractor graphics, String text, int x, int y, int maxWidth, int color) {
         for (FormattedCharSequence line : this.font.split(Component.literal(text), maxWidth)) {
-            graphics.text(this.font, line, x, y, color, false);
-            y += 10;
+            if (graphics != null) {
+                graphics.text(this.font, line, x, y, color, false);
+            }
+            y += LEFT_LINE;
         }
         return y;
+    }
+
+    private void drawLeftScrollbar(GuiGraphicsExtractor graphics, int trackX, int trackY, int trackH, int contentH) {
+        int thumbH = Math.max(12, trackH * trackH / Math.max(trackH, contentH));
+        int thumbY = trackY + (trackH - thumbH) * this.leftScroll / this.leftMaxScroll;
+        graphics.fill(trackX, trackY, trackX + LEFT_SCROLLBAR, trackY + trackH, 0xFF3A3A3A);
+        graphics.fill(trackX, thumbY, trackX + LEFT_SCROLLBAR, thumbY + thumbH, 0xFFB0B0B0);
     }
 
     private void drawConnections(GuiGraphicsExtractor graphics) {
@@ -559,6 +629,11 @@ public class TreeEditorScreen extends Screen {
     private boolean isInTree(int mouseX, int mouseY) {
         return mouseX >= this.treeX && mouseX < this.treeX + this.treeW
                 && mouseY >= this.treeY && mouseY < this.treeY + this.treeH;
+    }
+
+    private boolean isInLeftPanel(int mouseX, int mouseY) {
+        return mouseX >= this.leftX && mouseX < this.leftX + LEFT_WIDTH
+                && mouseY >= this.leftY && mouseY < this.leftY + this.leftH;
     }
 
     private int nodeScreenX(TreeEditorNode node) {

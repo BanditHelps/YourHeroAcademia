@@ -28,8 +28,13 @@ public final class AbilityModeOverlay {
     private static final float SLIDE_SPEED = 0.18F;
 
     private static float progress;
+    private static boolean renderedThisPass;
 
     private AbilityModeOverlay() {
+    }
+
+    public static void beginPass() {
+        renderedThisPass = false;
     }
 
     public static void render(
@@ -40,6 +45,11 @@ public final class AbilityModeOverlay {
             int barY,
             AbilityBarAlignment alignment
     ) {
+        if (renderedThisPass) {
+            return;
+        }
+        renderedThisPass = true;
+
         LocalPlayer player = minecraft.player;
         if (player == null) {
             return;
