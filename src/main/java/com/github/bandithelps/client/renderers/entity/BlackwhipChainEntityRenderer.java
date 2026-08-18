@@ -94,7 +94,8 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
             state.tipItemModel.clear();
         }
 
-        boolean dissolving = !state.active || entity.getPhase() == BlackwhipChainEntity.PHASE_RETRACTING;
+        boolean dissolving = entity.getPhase() != BlackwhipChainEntity.PHASE_REELING
+                && (!state.active || entity.getPhase() == BlackwhipChainEntity.PHASE_RETRACTING);
         state.dissolving = dissolving;
         if (dissolving) {
             int since = INACTIVE_SINCE.computeIfAbsent(entity.getId(), k -> entity.tickCount);
@@ -384,14 +385,13 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         }
     }
 
-    /** Draws cargo stuck to the freeze tip while the whip dissolves. */
+    /** Draws cargo at the whip tip. During reel-in it rides back to the wrist; dissolve still fades in place. */
     private static void submitTipItem(BlackwhipChainRenderState state, List<Vec3> points,
                                       PoseStack poseStack, SubmitNodeCollector collector) {
         if (state.tipItem.isEmpty() || state.tipItemModel.isEmpty() || points.size() < 2) {
             return;
         }
-        // Fade out in place so the item does not ride back to the wrist.
-        float fade = smooth(1.0f - state.retractProgress);
+        float fade = state.dissolving ? smooth(1.0f - state.retractProgress) : 1.0f;
         if (fade < 0.08f) {
             return;
         }

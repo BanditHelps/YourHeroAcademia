@@ -54,10 +54,10 @@ public final class TreeEditorNode {
         this.originalLockedDescription = this.lockedDescription;
         this.icon = icon;
         this.originalIconId = this.getIconId();
-        this.gridX = gridX;
-        this.gridY = gridY;
-        this.originalGridX = gridX;
-        this.originalGridY = gridY;
+        this.gridX = TreeEditorDraft.clean(gridX);
+        this.gridY = TreeEditorDraft.clean(gridY);
+        this.originalGridX = this.gridX;
+        this.originalGridY = this.gridY;
         this.parentKey = parentKey;
         this.originalParentKey = parentKey;
         this.cost = cost == null ? TreeEditorCostDraft.none() : cost;
@@ -141,8 +141,8 @@ public final class TreeEditorNode {
     }
 
     public void setGrid(float gridX, float gridY) {
-        this.gridX = gridX;
-        this.gridY = gridY;
+        this.gridX = TreeEditorDraft.clean(gridX);
+        this.gridY = TreeEditorDraft.clean(gridY);
     }
 
     public float getOriginalGridX() {

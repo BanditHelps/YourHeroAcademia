@@ -385,15 +385,8 @@ public final class TreeEditorExporter {
 
     private static JsonArray positionArray(float x, float y) {
         JsonArray array = new JsonArray();
-        array.add(number(x));
-        array.add(number(y));
+        array.add(TreeEditorDraft.gridNumber(x));
+        array.add(TreeEditorDraft.gridNumber(y));
         return array;
-    }
-
-    private static JsonPrimitive number(float value) {
-        if (Math.abs(value - Math.round(value)) < 0.001F) {
-            return new JsonPrimitive(Math.round(value));
-        }
-        return new JsonPrimitive(value);
     }
 }

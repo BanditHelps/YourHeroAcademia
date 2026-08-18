@@ -48,7 +48,7 @@ public class BlackwhipChainRenderState extends EntityRenderState {
      */
     public boolean fadeRoot = false;
 
-    /** Cargo stuck at the freeze tip during dissolve (ground grab / disarm). */
+    /** Cargo stuck at the whip tip during reel-in (magnet / disarm). */
     public ItemStack tipItem = ItemStack.EMPTY;
     public final ItemStackRenderState tipItemModel = new ItemStackRenderState();
 }

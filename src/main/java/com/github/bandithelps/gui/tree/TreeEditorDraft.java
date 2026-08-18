@@ -3,6 +3,7 @@ package com.github.bandithelps.gui.tree;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec2;
@@ -184,7 +185,25 @@ public final class TreeEditorDraft {
 
     public static float snap(float value, float step) {
         float size = Math.max(STEP_MIN_SNAP, step);
-        return Math.round(value / size) * size;
+        double snapped = Math.round(value / size) * (double) size;
+        return clean(snapped);
+    }
+
+    public static float clean(float value) {
+        return clean((double) value);
+    }
+
+    public static float clean(double value) {
+        return (float) (Math.round(value * 100.0) / 100.0);
+    }
+
+    public static JsonPrimitive gridNumber(float value) {
+        double cleaned = Math.round(value * 100.0) / 100.0;
+        long whole = Math.round(cleaned);
+        if (Math.abs(cleaned - whole) < 0.001) {
+            return new JsonPrimitive(whole);
+        }
+        return new JsonPrimitive(cleaned);
     }
 
     public static String keyFromTitle(String title) {

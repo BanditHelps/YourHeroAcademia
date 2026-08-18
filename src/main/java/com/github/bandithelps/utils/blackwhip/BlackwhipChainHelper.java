@@ -33,8 +33,9 @@ public final class BlackwhipChainHelper {
     }
 
     /**
-     * Spawns a deploying tip with the given purpose. Tag tips respect living-tether {@code maxKeep};
-     * disarm tips allow at most one active disarm chain and do not count against grab tethers.
+     * Spawns a deploying tip with the given purpose. Tag and magnet tips share living-tether
+     * {@code maxKeep}; disarm tips allow at most one active disarm chain and do not count against
+     * grab tethers.
      */
     public static BlackwhipChainEntity spawnFlyingChain(LivingEntity owner, Vec3 direction, double maxRange,
                                                         int segmentCount, float linkLength, float chainHp,
@@ -72,7 +73,8 @@ public final class BlackwhipChainHelper {
         chain.setThickness(thickness);
         chain.setTravelTicks(travelTicks);
         chain.setRetractTicks(10);
-        chain.setWrapTurns(purpose == BlackwhipChainEntity.PURPOSE_DISARM ? 0.0f : 2.0f);
+        chain.setWrapTurns(purpose == BlackwhipChainEntity.PURPOSE_DISARM
+                || purpose == BlackwhipChainEntity.PURPOSE_MAGNET ? 0.0f : 2.0f);
         chain.setLatchParams(ttlTicks, maxDistance, keep);
         applyOwnerColors(chain, owner);
         chain.setSeed(owner.getRandom().nextInt());

@@ -26,8 +26,9 @@
       "height": 200,
       "widgets": [
         {
-          "type": "palladium:power_tree",
+          "type": "yha:zoomable_power_tree",
           "power": "yha:blackwhip_chain",
+          "default_zoom": 1.0,
           "background": {
             "type": "palladium:repeating_texture",
             "texture": "minecraft:textures/block/sculk.png"

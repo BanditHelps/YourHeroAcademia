@@ -67,6 +67,8 @@ public class BlackwhipChainEntity extends Entity {
     public static final int PHASE_RETRACTING = 2;
     /** Tip pinned to a fixed world / block anchor (swing, zip). */
     public static final int PHASE_ANCHORED = 3;
+    /** Pulling the tip (and any cargo) back to the wrist before discard. */
+    public static final int PHASE_REELING = 4;
 
     /** Living-entity grab tether (default). */
     public static final int PURPOSE_TAG = 0;
@@ -80,8 +82,10 @@ public class BlackwhipChainEntity extends Entity {
     public static final int PURPOSE_WEB_SWING = 4;
     /** One-shot tip that tries to rip a held item; does not latch. */
     public static final int PURPOSE_DISARM = 5;
+    /** Auto item-magnet tip; shares the living-grab tether cap. */
+    public static final int PURPOSE_MAGNET = 6;
 
-    private static final int PURPOSE_MAX = PURPOSE_DISARM;
+    private static final int PURPOSE_MAX = PURPOSE_MAGNET;
 
     private static final int LATCH_BLEND_TICKS = 5;
     /** Client wrap coil ease after latch (tip settle then helix grow). */
@@ -142,13 +146,17 @@ public class BlackwhipChainEntity extends Entity {
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_ANCHOR_Z =
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.FLOAT);
-    /** Item stuck at the frozen tip during dissolve (ground grab / disarm). Delivered when dissolve finishes. */
+    /** Item stuck at the tip during cargo reel / dissolve. Delivered when the chain finishes. */
     private static final EntityDataAccessor<ItemStack> DATA_HELD_TIP_ITEM =
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.ITEM_STACK);
 
-    /** Slightly longer dissolve so tip cargo is readable. */
+    /** Fallback dissolve length when a chain snaps without reeling. */
     private static final int ITEM_CARRY_RETRACT_TICKS = 12;
     private static final int DEFAULT_DISSOLVE_TICKS = 10;
+    /** World blocks the cargo tip travels toward the wrist each tick while reeling. */
+    private static final float CARGO_REEL_SPEED = 1.2f;
+    private static final int CARGO_REEL_MIN_TICKS = 8;
+    private static final int CARGO_REEL_MAX_TICKS = 22;
 
     private final int[] segmentIds = new int[MAX_SEGMENTS];
     private final Vec3[] joints = new Vec3[MAX_SEGMENTS];
@@ -166,6 +174,8 @@ public class BlackwhipChainEntity extends Entity {
     private boolean tipReady;
     private int latchBlendRemaining;
     private Vec3 latchBlendFrom = Vec3.ZERO;
+    /** World-space grab point at the start of {@link #PHASE_REELING}. */
+    private Vec3 reelFromTip = Vec3.ZERO;
 
     /** Stored at spawn for {@link BlackwhipChainTagStore#registerChain} on latch. */
     private int latchTtlTicks;
@@ -199,7 +209,12 @@ public class BlackwhipChainEntity extends Entity {
         return ACTIVE_SERVER;
     }
 
-    /** Active deploying or latched grab tethers owned by {@code ownerId} (excludes swing/zip/disarm). */
+    /** Living-grab or magnet tips that occupy the shared tether pool. */
+    public static boolean isGrabTetherPurpose(int purpose) {
+        return purpose == PURPOSE_TAG || purpose == PURPOSE_MAGNET;
+    }
+
+    /** Active deploying or latched grab tethers owned by {@code ownerId} (includes magnet; excludes swing/zip/disarm). */
     public static int countOwnedActive(int ownerId) {
         if (ownerId < 0) {
             return 0;
@@ -207,11 +222,25 @@ public class BlackwhipChainEntity extends Entity {
         int count = 0;
         for (BlackwhipChainEntity chain : ACTIVE_SERVER) {
             if (chain.isAlive() && chain.isActive() && chain.getOwnerId() == ownerId
-                    && chain.getPurpose() == PURPOSE_TAG) {
+                    && isGrabTetherPurpose(chain.getPurpose())) {
                 count++;
             }
         }
         return count;
+    }
+
+    /** True if an active magnet chain owned by {@code ownerId} is already flying at {@code itemId}. */
+    public static boolean isMagnetTargeting(int ownerId, int itemId) {
+        if (ownerId < 0 || itemId < 0) {
+            return false;
+        }
+        for (BlackwhipChainEntity chain : ACTIVE_SERVER) {
+            if (chain.isAlive() && chain.isActive() && chain.getOwnerId() == ownerId
+                    && chain.getPurpose() == PURPOSE_MAGNET && chain.getTargetId() == itemId) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static BlackwhipChainEntity findOwnedActive(int ownerId) {
@@ -513,7 +542,7 @@ public class BlackwhipChainEntity extends Entity {
         if (isDeploying()) {
             tickDeployFlight(owner);
             if (!isDeploying()) {
-                // Latched or retracting mid-tick — finish with the matching branch below.
+                // Latched, reeling, or dissolving mid-tick — finish with the matching branch below.
                 if (isLatched()) {
                     LivingEntity target = getTargetLiving();
                     if (target != null && target.isAlive()) {
@@ -521,6 +550,9 @@ public class BlackwhipChainEntity extends Entity {
                         updateLatchedJoints(owner, target);
                         moveSegments(owner);
                     }
+                } else if (isReeling()) {
+                    tickReel(owner);
+                    moveSegments(owner);
                 } else if (!isActive()) {
                     updateDissolveJoints();
                     moveSegments(owner);
@@ -529,6 +561,12 @@ public class BlackwhipChainEntity extends Entity {
             }
             maybeResizeToTip(owner);
             updateDeployJoints(owner);
+            moveSegments(owner);
+            return;
+        }
+
+        if (isReeling()) {
+            tickReel(owner);
             moveSegments(owner);
             return;
         }
@@ -569,6 +607,9 @@ public class BlackwhipChainEntity extends Entity {
     private void tickDeployFlight(Entity owner) {
         if (!tipReady) {
             beginDeploy(owner.getLookAngle(), getMaxRange());
+        }
+        if (getPurpose() == PURPOSE_MAGNET && !steerMagnetTowardItem()) {
+            return;
         }
         // Point-blank: tip already overlapping a hitbox (spawn inside / against a target).
         if (tryInteractAtTip(owner)) {
@@ -627,6 +668,30 @@ public class BlackwhipChainEntity extends Entity {
         }
     }
 
+    /** Steers the magnet tip at its assigned item. Retracts and returns false if the item is gone. */
+    private boolean steerMagnetTowardItem() {
+        int id = getTargetId();
+        if (id < 0) {
+            deactivate();
+            return false;
+        }
+        Entity tracked = this.level().getEntity(id);
+        if (!(tracked instanceof ItemEntity item) || !item.isAlive() || item.getItem().isEmpty()) {
+            deactivate();
+            return false;
+        }
+        Vec3 aim = item.position().add(0.0, item.getBbHeight() * 0.5, 0.0);
+        Vec3 to = aim.subtract(tipPos);
+        if (to.lengthSqr() > 1.0e-8) {
+            double speed = tipVelocity.length();
+            if (speed < 1.0e-6) {
+                speed = getMaxRange() / (double) Math.max(1, getTravelTicks());
+            }
+            tipVelocity = to.normalize().scale(speed);
+        }
+        return true;
+    }
+
     /** Point sample at the current tip — catches overlaps ProjectileUtil can miss when start is inside. */
     private boolean tryInteractAtTip(Entity owner) {
         AABB tipBox = new AABB(tipPos, tipPos).inflate(TIP_HIT_INFLATE);
@@ -657,6 +722,9 @@ public class BlackwhipChainEntity extends Entity {
             return false;
         }
         int purpose = getPurpose();
+        if (purpose == PURPOSE_MAGNET) {
+            return e instanceof ItemEntity item && !item.getItem().isEmpty();
+        }
         // ItemEntity is often not pickable; allow grab tips with the item-pull upgrade.
         if (purpose == PURPOSE_TAG && e instanceof ItemEntity item
                 && !item.getItem().isEmpty()
@@ -690,6 +758,14 @@ public class BlackwhipChainEntity extends Entity {
     private void applyDeployEntityHit(Entity hit) {
         if (getPurpose() == PURPOSE_DISARM) {
             applyDisarmHit(hit);
+            return;
+        }
+        if (getPurpose() == PURPOSE_MAGNET) {
+            if (hit instanceof ItemEntity item) {
+                grabItemEntity(item);
+            } else {
+                deactivate();
+            }
             return;
         }
         LivingEntity living = BlackwhipTargeting.asLivingTarget(hit);
@@ -729,21 +805,20 @@ public class BlackwhipChainEntity extends Entity {
             item.discard();
             attachTipCargo(stack);
             if (this.level() instanceof ServerLevel level) {
-                level.playSound(null, ownerEntity.blockPosition(), SoundEvents.ITEM_PICKUP,
-                        SoundSource.PLAYERS, 0.55f, 1.2f);
+                level.playSound(null, ownerEntity.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE,
+                        SoundSource.PLAYERS, 0.55f, 1.25f);
             }
         }
         deactivate();
     }
 
-    /** Pins cargo at the freeze tip for the dissolve; delivered in {@link #forceDiscard()}. */
+    /** Pins cargo at the tip for the reel-in; delivered in {@link #forceDiscard()}. */
     private void attachTipCargo(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return;
         }
         setHeldTipItem(stack);
         setRetractTicks(Math.max(getRetractTicks(), ITEM_CARRY_RETRACT_TICKS));
-        // Snap tip joint so the cargo starts at the grab point.
         int tipIndex = getSegmentCount() - 1;
         if (tipIndex >= 0 && tipIndex < joints.length) {
             joints[tipIndex] = tipPos;
@@ -904,13 +979,52 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     public void deactivate() {
+        if (getPhase() == PHASE_REELING && this.retractCountdown >= 0) {
+            return;
+        }
         if (!isActive() && this.retractCountdown >= 0) {
+            return;
+        }
+        if (shouldReelIn()) {
+            beginReel();
             return;
         }
         this.getEntityData().set(DATA_ACTIVE, false);
         setPhase(PHASE_RETRACTING);
         this.retractCountdown = Math.max(1, getRetractTicks());
         captureDissolvePose();
+    }
+
+    private boolean shouldReelIn() {
+        if (!getHeldTipItem().isEmpty()) {
+            return true;
+        }
+        int purpose = getPurpose();
+        return purpose == PURPOSE_MAGNET || purpose == PURPOSE_DISARM;
+    }
+
+    private void beginReel() {
+        Entity owner = getOwner();
+        Vec3 wrist = owner != null ? BlackwhipChainAnchors.resolveOwnerWrist(owner) : this.position();
+        this.reelFromTip = tipPos;
+        this.tipVelocity = Vec3.ZERO;
+        this.getEntityData().set(DATA_ACTIVE, true);
+        setPhase(PHASE_REELING);
+        double dist = Math.max(0.5, this.reelFromTip.distanceTo(wrist));
+        int ticks = Mth.clamp((int) Math.ceil(dist / CARGO_REEL_SPEED), CARGO_REEL_MIN_TICKS, CARGO_REEL_MAX_TICKS);
+        setRetractTicks(ticks);
+        this.retractCountdown = ticks;
+        this.dissolveCaptured = false;
+    }
+
+    private void tickReel(Entity owner) {
+        Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        int total = Math.max(1, getRetractTicks());
+        float progress = 1.0f - (Math.max(0, this.retractCountdown) / (float) total);
+        float eased = progress * progress * (3.0f - 2.0f * progress);
+        tipPos = this.reelFromTip.lerp(wrist, eased);
+        maybeResizeToTip(owner);
+        updateDeployJoints(owner);
     }
 
     private void captureDissolvePose() {
@@ -1243,7 +1357,7 @@ public class BlackwhipChainEntity extends Entity {
         joints[0] = root;
         // Deploy + block-anchored ropes keep the authored tip — collide must not lift a wall/ceiling
         // latch onto the top face of the support block.
-        if (isDeploying() || isAnchored()) {
+        if (isDeploying() || isAnchored() || isReeling()) {
             joints[ropeEnd - 1] = tip;
         }
         Vec3 finalTip = joints[ropeEnd - 1];
@@ -1479,7 +1593,7 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     public void setPhase(int phase) {
-        this.getEntityData().set(DATA_PHASE, Mth.clamp(phase, PHASE_DEPLOYING, PHASE_ANCHORED));
+        this.getEntityData().set(DATA_PHASE, Mth.clamp(phase, PHASE_DEPLOYING, PHASE_REELING));
     }
 
     public void setMaxRange(float range) {
@@ -1629,6 +1743,10 @@ public class BlackwhipChainEntity extends Entity {
 
     public boolean isAnchored() {
         return isActive() && getPhase() == PHASE_ANCHORED;
+    }
+
+    public boolean isReeling() {
+        return isActive() && getPhase() == PHASE_REELING;
     }
 
     public int getPurpose() {

@@ -3,7 +3,6 @@ package com.github.bandithelps.gui.tree;
 import com.github.bandithelps.utils.tree.ConnectionPathProperties;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import net.minecraft.world.phys.Vec2;
@@ -42,7 +41,7 @@ public final class TreeConnectionPath {
         }
         List<Vec2> copy = new ArrayList<>(waypoints.size());
         for (Vec2 point : waypoints) {
-            copy.add(new Vec2(point.x, point.y));
+            copy.add(new Vec2(TreeEditorDraft.clean(point.x), TreeEditorDraft.clean(point.y)));
         }
         this.waypoints = List.copyOf(copy);
     }
@@ -114,8 +113,8 @@ public final class TreeConnectionPath {
         JsonArray array = new JsonArray();
         for (Vec2 point : this.waypoints) {
             JsonArray pair = new JsonArray();
-            pair.add(number(point.x));
-            pair.add(number(point.y));
+            pair.add(TreeEditorDraft.gridNumber(point.x));
+            pair.add(TreeEditorDraft.gridNumber(point.y));
             array.add(pair);
         }
         return array;
@@ -127,13 +126,6 @@ public final class TreeConnectionPath {
             next.add(new Vec2(point.x, point.y));
         }
         return next;
-    }
-
-    private static JsonPrimitive number(float value) {
-        if (Math.abs(value - Math.round(value)) < 0.001F) {
-            return new JsonPrimitive(Math.round(value));
-        }
-        return new JsonPrimitive(value);
     }
 
     @Override

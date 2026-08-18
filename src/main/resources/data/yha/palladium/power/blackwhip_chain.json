@@ -82,12 +82,12 @@
       "properties": {
         "title": "Max Tethers - I",
         "description": "You can cast out and control an additional tether.",
-        "icon": "minecraft:chain",
+        "icon": "yha:textures/icons/blackwhip/max_tethers_1.png",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          0,
-          1
+          1,
+          0
         ]
       },
       "state": {
@@ -96,6 +96,10 @@
           "cost": {
             "type": "yha:upgrade_point",
             "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "quirk_info"
           }
         },
         "enabling": {
@@ -117,12 +121,12 @@
       "properties": {
         "title": "Max Tethers - II",
         "description": "Gain an additional tether.",
-        "icon": "minecraft:chain",
+        "icon": "yha:textures/icons/blackwhip/max_tethers_2.png",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          0,
-          1.75
+          1.6,
+          0
         ]
       },
       "state": {
@@ -156,12 +160,12 @@
       "properties": {
         "title": "Max Tethers - III",
         "description": "Gain control of yet another tether.",
-        "icon": "minecraft:chain",
+        "icon": "yha:textures/icons/blackwhip/max_tethers_3.png",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          0,
-          2.5
+          2.2,
+          0
         ]
       },
       "state": {
@@ -195,12 +199,12 @@
       "properties": {
         "title": "Max Tethers - IV",
         "description": "Final maximum tethers upgrade. (Increase Quirk Factor to obtain more!)",
-        "icon": "minecraft:chain",
+        "icon": "yha:textures/icons/blackwhip/max_tethers_4.png",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          0,
-          3.25
+          2.8,
+          0
         ]
       },
       "state": {
@@ -230,7 +234,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -1,
-          1
+          0
         ]
       },
       "state": {
@@ -239,6 +243,10 @@
           "cost": {
             "type": "yha:upgrade_point",
             "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "quirk_info"
           }
         },
         "enabling": {
@@ -264,8 +272,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -1,
-          1.75
+          -1.6,
+          0
         ]
       },
       "state": {
@@ -303,8 +311,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -1,
-          2.5
+          -2.2,
+          0
         ]
       },
       "state": {
@@ -342,8 +350,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -1,
-          3.25
+          -2.8,
+          0
         ]
       },
       "state": {
@@ -369,8 +377,18 @@
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
-          -2,
-          1
+          -1.3,
+          -1
+        ],
+        "gui_connection": [
+          [
+            -0.5,
+            -0.5
+          ],
+          [
+            -1,
+            -1
+          ]
         ]
       },
       "state": {
@@ -390,8 +408,8 @@
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
-          -2,
-          1.75
+          -1.9,
+          -1
         ]
       },
       "state": {
@@ -418,8 +436,8 @@
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
-          -2,
-          2.5
+          -2.5,
+          -1
         ]
       },
       "state": {
@@ -504,8 +522,18 @@
         "list_index": 4,
         "hidden_in_gui": false,
         "gui_position": [
-          0.75,
-          0.5
+          1.3,
+          1
+        ],
+        "gui_connection": [
+          [
+            0.5,
+            0.5
+          ],
+          [
+            1,
+            1
+          ]
         ]
       },
       "state": {
@@ -523,6 +551,64 @@
             "type": "palladium:ability_unlocked",
             "ability": "quirk_info"
           }
+        }
+      }
+    },
+    "bw_tree_auto_pickup_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Auto Pickup - I",
+        "description": "Use your free whips to pull in items around you in a 3 block radius.",
+        "icon": "minecraft:blue_orchid",
+        "hidden_in_bar": true,
+        "hidden_in_gui": false,
+        "gui_position": [
+          2,
+          -0.7
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "blackwhip_chain_item_pull"
+            }
+          ]
+        }
+      }
+    },
+    "bw_tree_auto_pickup_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Auto Pickup - II",
+        "description": "Extends the range of the auto pickup to 6 blocks",
+        "icon": "minecraft:red_tulip",
+        "hidden_in_bar": true,
+        "hidden_in_gui": false,
+        "gui_position": [
+          2.6,
+          -0.7
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "bw_tree_auto_pickup_1"
+            }
+          ]
         }
       }
     },
@@ -548,7 +634,7 @@
         "list_index": 7,
         "hidden_in_gui": false,
         "gui_position": [
-          -2,
+          0,
           -2
         ],
         "stamina_interval": 20,
@@ -565,7 +651,7 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "conditions": [
+          "requires": [
             {
               "type": "palladium:ability_unlocked",
               "ability": "blackwhip_chain_restrict"
@@ -596,8 +682,8 @@
         "list_index": 8,
         "hidden_in_gui": false,
         "gui_position": [
-          -3,
-          -2
+          0,
+          -2.6
         ],
         "stamina_interval": 20,
         "stamina_interval_cost": 10
@@ -613,7 +699,7 @@
             "type": "yha:upgrade_point",
             "points": 3
           },
-          "conditions": [
+          "requires": [
             {
               "type": "palladium:ability_unlocked",
               "ability": "blackwhip_chain_puppet_single"
@@ -634,7 +720,7 @@
         "hidden_in_gui": false,
         "gui_position": [
           -1,
-          -2
+          -1.6
         ]
       },
       "state": {
@@ -665,8 +751,8 @@
         "list_index": 9,
         "hidden_in_gui": false,
         "gui_position": [
-          -1,
-          -0.5
+          2,
+          -1.3
         ],
         "activation_stamina": 10
       },
@@ -681,10 +767,10 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "conditions": [
+          "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "bw_tag"
+              "ability": "blackwhip_chain_item_pull"
             }
           ]
         }
@@ -699,8 +785,18 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          0,
+          1.3,
           -1
+        ],
+        "gui_connection": [
+          [
+            0.5,
+            -0.5
+          ],
+          [
+            1,
+            -1
+          ]
         ]
       },
       "state": {
@@ -710,12 +806,50 @@
             "type": "yha:upgrade_point",
             "points": 1
           },
-          "conditions": [
+          "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "bw_tag"
+              "ability": "quirk_info"
             }
           ]
+        }
+      }
+    },
+    "blackwhip_chain_pickup": {
+      "type": "yha:blackwhip_chain_magnet",
+      "range": {
+        "type": "yha:upgrade_switch",
+        "cases": [
+          {
+            "ability": "bw_tree_auto_pickup_1",
+            "value": 3
+          },
+          {
+            "ability": "bw_tree_auto_pickup_2",
+            "value": 6
+          }
+        ]
+      },
+      "qf_range_bonus": 1,
+      "properties": {
+        "title": "Auto Pickup",
+        "description": "Toggle to send unused whips after nearby dropped items and pull them into your inventory. Range grows with quirk factor. Tagged enemies occupy the same whip slots.",
+        "icon": "minecraft:lodestone",
+        "list_index": 11,
+        "hidden_in_gui": true,
+        "gui_position": [
+          4,
+          -0.7
+        ]
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "toggle"
+        },
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "bw_tree_auto_pickup_1"
         }
       }
     },
@@ -749,7 +883,7 @@
         "hidden_in_gui": false,
         "gui_position": [
           0,
-          -2
+          1
         ],
         "stamina_interval": 20,
         "stamina_interval_cost": 4
@@ -806,8 +940,8 @@
         "list_index": 5,
         "hidden_in_gui": false,
         "gui_position": [
-          -5,
-          -2
+          0,
+          1.6
         ],
         "stamina_interval": 20,
         "stamina_interval_cost": 3
@@ -824,7 +958,7 @@
             "type": "yha:upgrade_point",
             "points": 3
           },
-          "conditions": [
+          "requires": [
             {
               "type": "palladium:ability_unlocked",
               "ability": "blackwhip_chain_swing"
@@ -854,7 +988,7 @@
         "hidden_in_gui": false,
         "gui_position": [
           1,
-          -1
+          -1.6
         ],
         "activation_stamina": 12
       },
@@ -869,7 +1003,7 @@
             "type": "yha:upgrade_point",
             "points": 3
           },
-          "conditions": [
+          "requires": [
             {
               "type": "palladium:ability_unlocked",
               "ability": "bw_tag"
@@ -906,7 +1040,7 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          1,
+          1.75,
           -2
         ],
         "activation_stamina": 16

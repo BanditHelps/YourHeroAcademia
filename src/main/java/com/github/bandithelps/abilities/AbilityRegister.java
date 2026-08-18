@@ -21,6 +21,7 @@ import com.github.bandithelps.abilities.blackwhip.BlackwhipYankAbility;
 import com.github.bandithelps.abilities.blackwhip.BlackwhipZipAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainChargeZipAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainDetachAbility;
+import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainMagnetAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainDisarmAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainMoveTaggedAbility;
 import com.github.bandithelps.abilities.blackwhip.chain.BlackwhipChainRestrictAbility;
@@ -97,6 +98,7 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipWebSwingAbility.Serializer> BLACKWHIP_WEB_SWING;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainZipAbility.Serializer> BLACKWHIP_CHAIN_ZIP;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainChargeZipAbility.Serializer> BLACKWHIP_CHAIN_CHARGE_ZIP;
+    public static final DeferredHolder<AbilitySerializer<?>, BlackwhipChainMagnetAbility.Serializer> BLACKWHIP_CHAIN_MAGNET;
 
     /*=========================
      |    Smokescreen         |
@@ -154,6 +156,7 @@ public class AbilityRegister {
         BLACKWHIP_WEB_SWING = ABILITIES.register("blackwhip_web_swing", BlackwhipWebSwingAbility.Serializer::new);
         BLACKWHIP_CHAIN_ZIP = ABILITIES.register("blackwhip_chain_zip", BlackwhipChainZipAbility.Serializer::new);
         BLACKWHIP_CHAIN_CHARGE_ZIP = ABILITIES.register("blackwhip_chain_charge_zip", BlackwhipChainChargeZipAbility.Serializer::new);
+        BLACKWHIP_CHAIN_MAGNET = ABILITIES.register("blackwhip_chain_magnet", BlackwhipChainMagnetAbility.Serializer::new);
     }
 
 }
