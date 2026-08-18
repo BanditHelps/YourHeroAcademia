@@ -8,6 +8,7 @@ import com.github.bandithelps.utils.quirk.QuirkFactorUtil;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -32,9 +33,11 @@ import net.threetag.palladium.power.energybar.EnergyBarUsage;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,7 +47,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BlackwhipChainChargeZipAbility extends Ability {
 
     private static final float LAUNCH_UP_BIAS = 0.22f;
-    private static final float HIT_RADIUS = 1.5f;
+    private static final float HIT_RADIUS = 2.15f;
+    private static final float HIT_KNOCKBACK = 0.55f;
+    private static final float MIN_FLIGHT_SPEED = 0.28f;
+    private static final int FLIGHT_HIT_TICKS = 24;
     private static final float THICKNESS = 0.9f;
     private static final float LINK_LENGTH = 0.95f;
     private static final float CHAIN_HP = 18.0f;
@@ -55,6 +61,7 @@ public class BlackwhipChainChargeZipAbility extends Ability {
     private static final int TRAVEL_TICKS = 10;
 
     private static final Map<UUID, ChargeSession> SESSIONS = new ConcurrentHashMap<>();
+    private static final Map<UUID, FlightHit> FLIGHTS = new ConcurrentHashMap<>();
 
     private static final class ChargeSession {
         int heldTicks;
@@ -64,6 +71,15 @@ public class BlackwhipChainChargeZipAbility extends Ability {
         Vec3 lockedLook = Vec3.ZERO;
         Vec3 startPos = Vec3.ZERO;
         final List<Integer> chainIds = new ArrayList<>();
+    }
+
+    /** Post-release slam window so fly-throughs keep counting after the launch tick. */
+    private static final class FlightHit {
+        int ticksLeft;
+        int maxHits;
+        float damage;
+        Vec3 lastCenter = Vec3.ZERO;
+        final Set<Integer> hitIds = new HashSet<>();
     }
 
     public static final MapCodec<BlackwhipChainChargeZipAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
@@ -77,6 +93,7 @@ public class BlackwhipChainChargeZipAbility extends Ability {
                     Value.CODEC.optionalFieldOf("side_angle", new StaticValue(42.0f)).forGetter((ab) -> ab.sideAngle),
                     Value.CODEC.optionalFieldOf("pullback_speed", new StaticValue(0.06f)).forGetter((ab) -> ab.pullbackSpeed),
                     Value.CODEC.optionalFieldOf("damage", new StaticValue(5.0f)).forGetter((ab) -> ab.damage),
+                    Value.CODEC.optionalFieldOf("max_hits", new StaticValue(4.0f)).forGetter((ab) -> ab.maxHits),
                     propertiesCodec(),
                     stateCodec(),
                     energyBarUsagesCodec()).apply(instance, BlackwhipChainChargeZipAbility::new));
@@ -90,10 +107,11 @@ public class BlackwhipChainChargeZipAbility extends Ability {
     public final Value sideAngle;
     public final Value pullbackSpeed;
     public final Value damage;
+    public final Value maxHits;
 
     public BlackwhipChainChargeZipAbility(Value range, Value maxChargeTicks, Value baseLaunchPower,
                                           Value maxLaunchPower, Value qfLaunchBonus, Value sideCount,
-                                          Value sideAngle, Value pullbackSpeed, Value damage,
+                                          Value sideAngle, Value pullbackSpeed, Value damage, Value maxHits,
                                           AbilityProperties properties, AbilityStateManager conditions,
                                           List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
@@ -106,6 +124,7 @@ public class BlackwhipChainChargeZipAbility extends Ability {
         this.sideAngle = sideAngle;
         this.pullbackSpeed = pullbackSpeed;
         this.damage = damage;
+        this.maxHits = maxHits;
     }
 
     @Override
@@ -116,6 +135,7 @@ public class BlackwhipChainChargeZipAbility extends Ability {
         BlackwhipChainSwingAbility.forceStop(player);
         BlackwhipWebSwingAbility.forceStop(player);
         BlackwhipChainZipAbility.forceStop(player);
+        FLIGHTS.remove(player.getUUID());
         clearSession(player, level);
 
         DataContext context = DataContext.forEntity(entity);
@@ -230,31 +250,93 @@ public class BlackwhipChainChargeZipAbility extends Ability {
         player.resetFallDistance();
         player.setOnGround(false);
 
-        applySweptDamage(player, level, context, launchDir, ratio, qf);
+        float dmg = this.damage.getAsFloat(context) * (0.5f + 0.5f * ratio) * (float) (1.0 + 0.1 * qf);
+        int maxHits = Math.max(0, this.maxHits.getAsInt(context));
+        startFlightHits(player, dmg, maxHits);
         float pitch = 1.15f + 0.35f * ratio;
         level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 0.7f, pitch);
     }
 
-    private void applySweptDamage(ServerPlayer player, ServerLevel level, DataContext context, Vec3 dir,
-                                  float ratio, double qf) {
-        double range = this.range.getAsFloat(context);
-        float baseDamage = this.damage.getAsFloat(context);
-        if (baseDamage <= 0.0f || range <= 0.0) {
+    private void startFlightHits(ServerPlayer player, float damage, int maxHits) {
+        if (damage <= 0.0f || maxHits <= 0) {
             return;
         }
-        float dmg = baseDamage * (0.5f + 0.5f * ratio) * (float) (1.0 + 0.1 * qf);
-        Vec3 start = player.getEyePosition();
-        Vec3 end = start.add(dir.scale(range));
-        AABB search = new AABB(start, end).inflate(HIT_RADIUS);
+        FlightHit flight = new FlightHit();
+        flight.ticksLeft = FLIGHT_HIT_TICKS;
+        flight.maxHits = maxHits;
+        flight.damage = damage;
+        flight.lastCenter = player.position().add(0.0, player.getBbHeight() * 0.5, 0.0);
+        FLIGHTS.put(player.getUUID(), flight);
+        if (player.level() instanceof ServerLevel level) {
+            sweepFlightHits(player, level, flight);
+        }
+    }
+
+    /**
+     * Continues slam hit detection after release. Called once per server tick from
+     * {@link com.github.bandithelps.utils.blackwhip.BlackwhipServerEvents}.
+     */
+    public static void tickFlightHits(MinecraftServer server) {
+        if (FLIGHTS.isEmpty()) {
+            return;
+        }
+        Iterator<Map.Entry<UUID, FlightHit>> it = FLIGHTS.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, FlightHit> entry = it.next();
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            if (player == null || !(player.level() instanceof ServerLevel level) || !player.isAlive()) {
+                it.remove();
+                continue;
+            }
+            FlightHit flight = entry.getValue();
+            sweepFlightHits(player, level, flight);
+            flight.ticksLeft--;
+            if (flight.hitIds.size() >= flight.maxHits
+                    || flight.ticksLeft <= 0
+                    || player.getDeltaMovement().lengthSqr() < MIN_FLIGHT_SPEED * MIN_FLIGHT_SPEED) {
+                it.remove();
+            }
+        }
+    }
+
+    private static void sweepFlightHits(ServerPlayer player, ServerLevel level, FlightHit flight) {
+        if (flight.hitIds.size() >= flight.maxHits) {
+            return;
+        }
+        Vec3 center = player.position().add(0.0, player.getBbHeight() * 0.5, 0.0);
+        Vec3 motion = player.getDeltaMovement();
+        Vec3 end = motion.lengthSqr() > 1.0e-6 ? center.add(motion) : center;
+        AABB aroundPlayer = player.getBoundingBox().inflate(HIT_RADIUS);
+        AABB search = aroundPlayer.minmax(new AABB(flight.lastCenter, end).inflate(HIT_RADIUS));
+        List<LivingEntity> candidates = new ArrayList<>();
         for (Entity e : level.getEntities(player, search)) {
             if (!(e instanceof LivingEntity target) || !target.isAlive() || target == player) {
                 continue;
             }
-            Optional<Vec3> impact = target.getBoundingBox().inflate(HIT_RADIUS).clip(start, end);
-            if (impact.isPresent()) {
-                target.hurt(level.damageSources().mobAttack(player), dmg);
+            if (flight.hitIds.contains(target.getId())) {
+                continue;
+            }
+            AABB hitBox = target.getBoundingBox().inflate(0.65);
+            boolean overlapped = hitBox.intersects(aroundPlayer);
+            boolean swept = hitBox.clip(flight.lastCenter, end).isPresent()
+                    || hitBox.clip(flight.lastCenter, center).isPresent();
+            if (overlapped || swept) {
+                candidates.add(target);
             }
         }
+        candidates.sort((a, b) -> Double.compare(a.distanceToSqr(player), b.distanceToSqr(player)));
+        for (LivingEntity target : candidates) {
+            if (flight.hitIds.size() >= flight.maxHits) {
+                break;
+            }
+            target.hurt(level.damageSources().mobAttack(player), flight.damage);
+            target.knockback(HIT_KNOCKBACK, player.getX() - target.getX(), player.getZ() - target.getZ());
+            target.hurtMarked = true;
+            flight.hitIds.add(target.getId());
+            level.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_STRONG,
+                    SoundSource.PLAYERS, 0.65f, 1.1f);
+        }
+        flight.lastCenter = center;
     }
 
     private float chargeRatio(ChargeSession session, DataContext context) {
@@ -319,6 +401,7 @@ public class BlackwhipChainChargeZipAbility extends Ability {
             }
         }
         BlackwhipChainEntity.retractOwnedByPurpose(player.getId(), BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
+        FLIGHTS.remove(player.getUUID());
         stopClient(player);
     }
 
@@ -342,12 +425,13 @@ public class BlackwhipChainChargeZipAbility extends Ability {
                     .add("side_count", TYPE_VALUE, "Number of side chains (minimum 2).")
                     .add("side_angle", TYPE_VALUE, "Horizontal yaw fan half-angle in degrees.")
                     .add("pullback_speed", TYPE_VALUE, "Blocks per tick the player is pulled backward while charging.")
-                    .add("damage", TYPE_VALUE, "Base impact damage along the launch path.")
+                    .add("damage", TYPE_VALUE, "Impact damage to entities the player flies through after release.")
+                    .add("max_hits", TYPE_VALUE, "Maximum number of entities damaged per launch.")
                     .addExampleObject(new BlackwhipChainChargeZipAbility(
                             new StaticValue(28.0f), new StaticValue(40.0f),
                             new StaticValue(1.1f), new StaticValue(2.9f), new StaticValue(0.08f),
                             new StaticValue(2.0f), new StaticValue(42.0f), new StaticValue(0.06f),
-                            new StaticValue(5.0f),
+                            new StaticValue(5.0f), new StaticValue(4.0f),
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
     }

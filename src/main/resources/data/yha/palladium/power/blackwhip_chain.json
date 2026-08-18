@@ -1153,23 +1153,45 @@
         "type": "palladium:molang_float",
         "molang": "10 + yha.quirk_factor() * 3"
       },
-      "max_charge_ticks": 40,
+      "max_charge_ticks": 80,
       "base_launch_power": 1.1,
       "max_launch_power": {
-        "type": "palladium:molang_float",
-        "molang": "4.9 + yha.quirk_factor() * 0.12"
+        "type": "yha:upgrade_switch",
+        "cases": [
+          {
+            "ability": "bw_tree_charge_zip_2",
+            "value": {
+              "type": "palladium:molang_float",
+              "molang": "5.0 + yha.quirk_factor() * 0.12"
+            }
+          }
+        ],
+        "fallback": {
+          "type": "palladium:molang_float",
+          "molang": "4.0 + yha.quirk_factor() * 0.12"
+        }
       },
       "qf_launch_bonus": 0.08,
       "side_count": 2,
       "side_angle": 42,
       "pullback_speed": 0.06,
       "damage": {
-        "type": "palladium:molang_float",
-        "molang": "5 + yha.quirk_factor()"
+        "type": "yha:upgrade_switch",
+        "cases": [
+          {
+            "ability": "bw_tree_charge_zip_2",
+            "value": {
+              "type": "palladium:molang_float",
+              "molang": "8 + yha.quirk_factor()"
+            }
+          }
+        ],
+        "fallback": 5
       },
+      "max_hits": 4,
       "properties": {
         "title": "Charge Zip",
-        "description": "Hold to shoot whips from both hands, stretch backward, and fling the way you were facing when the charge started. The longer you hold, the harder you launch. You can look around while charging.",
+        "description": "Hold to shoot whips from both hands, stretch backward, and fling yourself forwards. The longer you hold, the harder you launch. Entities in your path take damage",
         "icon": "yha:textures/icons/blackwhip/whip_zip_2.png",
         "list_index": 9,
         "hidden_in_gui": false,
@@ -1205,6 +1227,35 @@
             {
               "type": "palladium:ability_unlocked",
               "ability": "bw_tree_whip_zip_2"
+            }
+          ]
+        }
+      }
+    },
+    "bw_tree_charge_zip_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Zip Charge - II",
+        "description": "Extends the charge time for a further distance, and more damage",
+        "icon": "minecraft:paper",
+        "hidden_in_bar": true,
+        "hidden_in_gui": false,
+        "gui_position": [
+          -1.8,
+          1.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 5
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "blackwhip_chain_charge_zip"
             }
           ]
         }
