@@ -5,6 +5,7 @@ import com.github.bandithelps.client.blackwhip.BlackwhipWaistBoneHelper;
 import com.github.bandithelps.client.renderers.entity.state.BlackwhipChainRenderState;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import com.github.bandithelps.entities.BlackwhipSegmentEntity;
+import com.github.bandithelps.entities.BlackwhipTossedBlockEntity;
 import com.github.bandithelps.particles.BlackwhipDissolveParticle;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -267,8 +268,16 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
 
     private static AABB resolveTossWrapBox(BlackwhipChainEntity entity, float partial) {
         Entity cargo = entity.level().getEntity(entity.getTargetId());
+        if (cargo instanceof BlackwhipTossedBlockEntity tossed && tossed.isHovering()) {
+            return BlackwhipChainAnchors.cubeAround(tossed.hoverVisualCenter(partial), 1.0);
+        }
         if (cargo != null && cargo.isAlive()) {
-            return BlackwhipChainAnchors.cubeAround(cargo.getPosition(partial), 1.0);
+            AABB bb = cargo.getBoundingBox();
+            Vec3 visual = cargo.getPosition(partial);
+            if (bb.getXsize() >= 0.25 && bb.getYsize() >= 0.25 && bb.getZsize() >= 0.25) {
+                return bb.move(visual.subtract(cargo.position()));
+            }
+            return BlackwhipChainAnchors.cubeAround(visual, 1.0);
         }
         Vec3 anchor = entity.getAnchorPoint();
         if (anchor.lengthSqr() < 1.0e-8) {

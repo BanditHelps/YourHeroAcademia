@@ -1446,7 +1446,10 @@ public class BlackwhipChainEntity extends Entity {
             return;
         }
         Vec3 root = BlackwhipChainAnchors.resolveOwnerWrist(owner);
-        AABB bb = BlackwhipChainAnchors.cubeAround(target.position(), 1.0);
+        AABB bb = target.getBoundingBox();
+        if (bb.getXsize() < 0.25 || bb.getYsize() < 0.25 || bb.getZsize() < 0.25) {
+            bb = BlackwhipChainAnchors.cubeAround(target.position(), 1.0);
+        }
         Vec3 entry = BlackwhipChainAnchors.resolveWaistEntry(bb, root, 0.0f, getWrapHeight());
         tipPos = entry;
         setAnchorPoint(entry);

@@ -25,6 +25,8 @@ public final class BlackwhipServerEvents {
     public static void onServerTick(ServerTickEvent.Post event) {
         BlackwhipStruggle.cleanup(event.getServer());
 
+        BlackwhipBlockTossStore.tick(event.getServer());
+
         // Chain IK after entity movement so wrist attach tracks the owner without a tick of lag.
         for (BlackwhipChainEntity chain : BlackwhipChainEntity.activeServerChains()) {
             if (chain.isAlive()) {
@@ -34,7 +36,6 @@ public final class BlackwhipServerEvents {
 
         BlackwhipWebSwingAbility.tickReleaseEchoes(event.getServer());
         BlackwhipChainZipAbility.tickSessions(event.getServer());
-        BlackwhipBlockTossStore.tick(event.getServer());
 
         if (event.getServer().getTickCount() % 10 != 0) {
             return;

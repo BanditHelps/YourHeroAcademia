@@ -2,6 +2,7 @@ package com.github.bandithelps.utils.blockdisplays;
 
 import com.github.bandithelps.YourHeroAcademia;
 import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
@@ -65,6 +66,11 @@ public class BetterBlockDisplay extends Display.BlockDisplay{
     public void setInterpolation(int interpolation) { this.getEntityData().set(DATA_TRANSFORMATION_INTERPOLATION_DURATION_ID, interpolation); }
 
     public void startInterpolation() { this.getEntityData().set(DATA_TRANSFORMATION_INTERPOLATION_START_DELTA_TICKS_ID, -1, true); }
+
+    /** Vanilla Display teleport lerp. 0 snaps (jitter); 3 matches living-entity interpolation. */
+    public void setTeleportDuration(int ticks) {
+        this.getEntityData().set(DATA_POS_ROT_INTERPOLATION_DURATION_ID, Mth.clamp(ticks, 0, 59));
+    }
 
     public void setLifetime(int lifetime) { this.lifetime = lifetime; }
 

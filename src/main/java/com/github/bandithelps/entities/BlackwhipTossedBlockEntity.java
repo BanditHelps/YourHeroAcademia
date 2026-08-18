@@ -1,5 +1,6 @@
 package com.github.bandithelps.entities;
 
+import com.github.bandithelps.utils.blackwhip.BlackwhipBlockTossStore;
 import com.github.bandithelps.utils.blockdisplays.BetterBlockDisplay;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -29,18 +30,24 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Thrown Blackwhip cargo: hardness-scaled entity hits drop the block as an item; block hits place
- * it like a vanilla falling block.
+ * Blackwhip block cargo. Hovers as a normal interpolating entity (BlockDisplay snaps, which looks
+ * like teleporting), then flies with hardness-scaled hits that drop an item or place like a falling
+ * block.
  */
 public class BlackwhipTossedBlockEntity extends ThrowableProjectile {
 
     private static final float MAX_DAMAGE = 20.0f;
     private static final int MAX_LIFE_TICKS = 200;
+    /** Skip clip for a moment so the wrap, other cargo, and any overlapped blocks don't eat the throw. */
+    private static final int THROW_COLLIDE_GRACE_TICKS = 2;
+
+    private int throwCollideGraceTicks;
 
     private static final EntityDataAccessor<BlockState> DATA_BLOCK_STATE =
             SynchedEntityData.defineId(BlackwhipTossedBlockEntity.class, EntityDataSerializers.BLOCK_STATE);
@@ -52,6 +59,14 @@ public class BlackwhipTossedBlockEntity extends ThrowableProjectile {
             SynchedEntityData.defineId(BlackwhipTossedBlockEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_KNOCKBACK =
             SynchedEntityData.defineId(BlackwhipTossedBlockEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Boolean> DATA_HOVERING =
+            SynchedEntityData.defineId(BlackwhipTossedBlockEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> DATA_ORBIT_SLOT =
+            SynchedEntityData.defineId(BlackwhipTossedBlockEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_ORBIT_COUNT =
+            SynchedEntityData.defineId(BlackwhipTossedBlockEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_OWNER_ID =
+            SynchedEntityData.defineId(BlackwhipTossedBlockEntity.class, EntityDataSerializers.INT);
 
     public BlackwhipTossedBlockEntity(EntityType<? extends BlackwhipTossedBlockEntity> type, Level level) {
         super(type, level);
@@ -66,6 +81,19 @@ public class BlackwhipTossedBlockEntity extends ThrowableProjectile {
         this.entityData.set(DATA_BASE_DAMAGE, baseDamage);
         this.entityData.set(DATA_DAMAGE_PER_HARDNESS, damagePerHardness);
         this.entityData.set(DATA_KNOCKBACK, knockback);
+        this.setHovering(false);
+    }
+
+    public static BlackwhipTossedBlockEntity createHovering(Level level, LivingEntity owner, BlockState state,
+                                                            float hardness) {
+        BlackwhipTossedBlockEntity cargo = new BlackwhipTossedBlockEntity(level, owner, state, hardness, 0.0f, 0.0f, 0.0f);
+        cargo.setHovering(true);
+        cargo.setDeltaMovement(Vec3.ZERO);
+        return cargo;
+    }
+
+    public void armThrowGrace() {
+        this.throwCollideGraceTicks = THROW_COLLIDE_GRACE_TICKS;
     }
 
     @Override
@@ -75,6 +103,62 @@ public class BlackwhipTossedBlockEntity extends ThrowableProjectile {
         builder.define(DATA_BASE_DAMAGE, 1.0f);
         builder.define(DATA_DAMAGE_PER_HARDNESS, 1.5f);
         builder.define(DATA_KNOCKBACK, 0.35f);
+        builder.define(DATA_HOVERING, false);
+        builder.define(DATA_ORBIT_SLOT, 0);
+        builder.define(DATA_ORBIT_COUNT, 1);
+        builder.define(DATA_OWNER_ID, -1);
+    }
+
+    @Override
+    public void setOwner(Entity owner) {
+        super.setOwner(owner);
+        this.entityData.set(DATA_OWNER_ID, owner == null ? -1 : owner.getId());
+    }
+
+    public Entity resolveHoverOwner() {
+        int id = this.entityData.get(DATA_OWNER_ID);
+        if (id >= 0) {
+            Entity byId = this.level().getEntity(id);
+            if (byId != null) {
+                return byId;
+            }
+        }
+        return this.getOwner();
+    }
+
+    public boolean isHovering() {
+        return this.entityData.get(DATA_HOVERING);
+    }
+
+    public void setHovering(boolean hovering) {
+        this.entityData.set(DATA_HOVERING, hovering);
+        this.noPhysics = hovering;
+        this.setNoGravity(hovering);
+    }
+
+    public void setOrbitSlot(int slot, int count) {
+        this.entityData.set(DATA_ORBIT_SLOT, slot);
+        this.entityData.set(DATA_ORBIT_COUNT, Math.max(1, count));
+    }
+
+    public int getOrbitSlot() {
+        return this.entityData.get(DATA_ORBIT_SLOT);
+    }
+
+    public int getOrbitCount() {
+        return Math.max(1, this.entityData.get(DATA_ORBIT_COUNT));
+    }
+
+    /**
+     * Client/render cube center that follows the owner's interpolated pose, matching chain smoothness.
+     */
+    public Vec3 hoverVisualCenter(float partialTick) {
+        Entity owner = resolveHoverOwner();
+        if (!isHovering() || owner == null || !owner.isAlive()) {
+            return super.getPosition(partialTick).add(0.0, this.getBbHeight() * 0.5, 0.0);
+        }
+        return BlackwhipBlockTossStore.orbitVisualCenter(
+                owner, getOrbitSlot(), getOrbitCount(), owner.level().getGameTime(), partialTick);
     }
 
     public BlockState getBlockState() {
@@ -100,6 +184,15 @@ public class BlackwhipTossedBlockEntity extends ThrowableProjectile {
 
     @Override
     public void tick() {
+        if (isHovering()) {
+            tickHovering();
+            return;
+        }
+        if (this.throwCollideGraceTicks > 0) {
+            this.throwCollideGraceTicks--;
+            tickThrownGrace();
+            return;
+        }
         super.tick();
         if (!this.level().isClientSide() && this.tickCount > MAX_LIFE_TICKS) {
             dropAsItem();
@@ -107,10 +200,81 @@ public class BlackwhipTossedBlockEntity extends ThrowableProjectile {
         }
     }
 
+    private void tickThrownGrace() {
+        this.applyGravity();
+        Vec3 movement = this.getDeltaMovement();
+        float inertia = this.isInWater() ? 0.8f : 0.99f;
+        movement = movement.scale(inertia);
+        this.setDeltaMovement(movement);
+        this.setPos(this.getX() + movement.x, this.getY() + movement.y, this.getZ() + movement.z);
+        this.updateRotation();
+        this.baseTick();
+    }
+
+    private void tickHovering() {
+        this.baseTick();
+        Entity owner = resolveHoverOwner();
+        if (this.level().isClientSide()) {
+            snapToOwnerOrbit(owner);
+            return;
+        }
+        if (owner == null || !owner.isAlive()) {
+            dropAsItem();
+            this.discard();
+        }
+    }
+
+    private void snapToOwnerOrbit(Entity owner) {
+        if (owner == null || !owner.isAlive()) {
+            return;
+        }
+        Vec3 center = BlackwhipBlockTossStore.orbitVisualCenter(
+                owner, getOrbitSlot(), getOrbitCount(), owner.level().getGameTime(), 0.0f);
+        this.setPos(center.x, center.y - this.getBbHeight() * 0.5, center.z);
+        this.setDeltaMovement(owner.getDeltaMovement());
+    }
+
+    @Override
+    public void snapTo(Vec3 pos, float yRot, float xRot) {
+        if (isHovering() && this.level().isClientSide() && this.tickCount > 0) {
+            return;
+        }
+        super.snapTo(pos, yRot, xRot);
+    }
+
+    @Override
+    public boolean shouldRenderAtSqrDistance(double distance) {
+        if (isHovering()) {
+            return distance < 4096.0;
+        }
+        return super.shouldRenderAtSqrDistance(distance);
+    }
+
+    @Override
+    public boolean isPickable() {
+        return !isHovering() && super.isPickable();
+    }
+
+    @Override
+    public boolean canBeHitByProjectile() {
+        return !isHovering() && super.canBeHitByProjectile();
+    }
+
+    @Override
+    public AABB makeBoundingBox(Vec3 position) {
+        if (isHovering()) {
+            return new AABB(position, position);
+        }
+        return super.makeBoundingBox(position);
+    }
+
     @Override
     protected boolean canHitEntity(Entity entity) {
-        if (entity instanceof BlackwhipChainEntity
+        if (this.throwCollideGraceTicks > 0
+                || isHovering()
+                || entity instanceof BlackwhipChainEntity
                 || entity instanceof BlackwhipSegmentEntity
+                || entity instanceof BlackwhipEntity
                 || entity instanceof BetterBlockDisplay
                 || entity instanceof BlackwhipTossedBlockEntity) {
             return false;
@@ -203,6 +367,7 @@ public class BlackwhipTossedBlockEntity extends ThrowableProjectile {
         output.putFloat("BaseDamage", this.entityData.get(DATA_BASE_DAMAGE));
         output.putFloat("DamagePerHardness", this.entityData.get(DATA_DAMAGE_PER_HARDNESS));
         output.putFloat("Knockback", this.entityData.get(DATA_KNOCKBACK));
+        output.putBoolean("Hovering", isHovering());
     }
 
     @Override
@@ -213,16 +378,34 @@ public class BlackwhipTossedBlockEntity extends ThrowableProjectile {
         this.entityData.set(DATA_BASE_DAMAGE, input.getFloatOr("BaseDamage", 1.0f));
         this.entityData.set(DATA_DAMAGE_PER_HARDNESS, input.getFloatOr("DamagePerHardness", 1.5f));
         this.entityData.set(DATA_KNOCKBACK, input.getFloatOr("Knockback", 0.35f));
+        this.setHovering(input.getBooleanOr("Hovering", false));
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> accessor) {
+        super.onSyncedDataUpdated(accessor);
+        if (DATA_HOVERING.equals(accessor)) {
+            boolean hovering = isHovering();
+            this.noPhysics = hovering;
+            this.setNoGravity(hovering);
+        }
     }
 
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity, Block.getId(this.getBlockState()));
+        return new ClientboundAddEntityPacket(this, serverEntity, packedSpawnData());
     }
 
     @Override
     public void recreateFromPacket(ClientboundAddEntityPacket packet) {
         super.recreateFromPacket(packet);
-        this.setBlockState(Block.stateById(packet.getData()));
+        int data = packet.getData();
+        this.setHovering((data & 0x80000000) != 0);
+        this.setBlockState(Block.stateById(data & 0x7FFFFFFF));
+    }
+
+    private int packedSpawnData() {
+        int id = Block.getId(this.getBlockState()) & 0x7FFFFFFF;
+        return isHovering() ? id | 0x80000000 : id;
     }
 }

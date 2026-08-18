@@ -2,7 +2,6 @@ package com.github.bandithelps.utils.blackwhip;
 
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import com.github.bandithelps.entities.BlackwhipTossedBlockEntity;
-import com.github.bandithelps.utils.blockdisplays.BetterBlockDisplay;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -10,14 +9,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,7 +25,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Server-side hovering blocks for chain Block Toss. Chains fly and wrap on their own; this store
- * owns ripped {@link BetterBlockDisplay} cargo, orbits it around the player, and throws on re-press.
+ * owns ripped {@link BlackwhipTossedBlockEntity} cargo, orbits it around the player, and throws on
+ * re-press. Cargo uses a normal interpolating entity instead of BlockDisplay so it tracks with the
+ * player instead of snapping.
  */
 public final class BlackwhipBlockTossStore {
 
@@ -36,11 +35,11 @@ public final class BlackwhipBlockTossStore {
     }
 
     private static final Map<UUID, List<Carry>> PLAYER_CARRIES = new ConcurrentHashMap<>();
-    private static final double ORBIT_RADIUS = 1.25;
+    public static final double ORBIT_RADIUS = 1.25;
     /** Cube center above the top of the player's hitbox so first-person view stays clear. */
-    private static final double ORBIT_ABOVE_HEAD = 1.15;
-    private static final double ORBIT_Y_BOB = 0.10;
-    private static final float ORBIT_DEG_PER_TICK = 2.4f;
+    public static final double ORBIT_ABOVE_HEAD = 1.15;
+    public static final double ORBIT_Y_BOB = 0.10;
+    public static final float ORBIT_DEG_PER_TICK = 2.4f;
     /** Aim at this distance along the look ray so throws converge on the crosshair. */
     private static final double THROW_AIM_DISTANCE = 32.0;
 
@@ -92,11 +91,11 @@ public final class BlackwhipBlockTossStore {
         BlockState state = level.getBlockState(pos);
         float hardness = Math.max(0.0f, state.getDestroySpeed(level, pos));
         Vec3 center = Vec3.atCenterOf(pos);
-        BetterBlockDisplay display = spawnDisplay(level, state, center);
-        chain.followTossDisplay(display);
+        BlackwhipTossedBlockEntity cargo = spawnHoveringCargo(level, player, state, hardness, center);
+        chain.followTossDisplay(cargo);
         level.removeBlock(pos, false);
         PLAYER_CARRIES.computeIfAbsent(player.getUUID(), key -> new ArrayList<>())
-                .add(new Carry(chain.getId(), display.getId(), state, hardness));
+                .add(new Carry(chain.getId(), cargo.getId(), state, hardness));
         level.playSound(null, player.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.45f, 0.7f);
     }
 
@@ -113,7 +112,7 @@ public final class BlackwhipBlockTossStore {
         carries.remove(chosen);
         Entity display = level.getEntity(chosen.displayId());
         Vec3 from = display != null && display.isAlive()
-                ? display.position()
+                ? display.getBoundingBox().getCenter()
                 : player.getEyePosition().add(player.getLookAngle().scale(0.8));
         if (display != null) {
             display.discard();
@@ -121,16 +120,18 @@ public final class BlackwhipBlockTossStore {
         if (level.getEntity(chosen.chainId()) instanceof BlackwhipChainEntity chain) {
             chain.deactivate();
         }
-        BlackwhipTossedBlockEntity thrown = new BlackwhipTossedBlockEntity(
-                level, player, chosen.state(), chosen.hardness(), baseDamage, damagePerHardness, knockback);
-        thrown.setPos(from.x, from.y, from.z);
         Vec3 eye = player.getEyePosition();
         Vec3 aimPoint = eye.add(player.getLookAngle().scale(THROW_AIM_DISTANCE));
         Vec3 dir = aimPoint.subtract(from);
         if (dir.lengthSqr() < 1.0e-6) {
             dir = player.getLookAngle();
         }
+        from = from.add(dir.normalize().scale(0.35));
+        BlackwhipTossedBlockEntity thrown = new BlackwhipTossedBlockEntity(
+                level, player, chosen.state(), chosen.hardness(), baseDamage, damagePerHardness, knockback);
+        thrown.setPos(from.x, from.y, from.z);
         thrown.shoot(dir.x, dir.y, dir.z, throwSpeed, 0.0f);
+        thrown.armThrowGrace();
         level.addFreshEntity(thrown);
         level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP,
                 SoundSource.PLAYERS, 0.55f, 0.75f);
@@ -179,11 +180,11 @@ public final class BlackwhipBlockTossStore {
 
     public static void tick(MinecraftServer server) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            tickPlayer(player, server.getTickCount());
+            tickPlayer(player);
         }
     }
 
-    private static void tickPlayer(ServerPlayer player, int tickCount) {
+    private static void tickPlayer(ServerPlayer player) {
         List<Carry> carries = PLAYER_CARRIES.get(player.getUUID());
         if (carries == null || carries.isEmpty() || !(player.level() instanceof ServerLevel level)) {
             return;
@@ -192,7 +193,9 @@ public final class BlackwhipBlockTossStore {
         for (Carry carry : carries) {
             Entity display = level.getEntity(carry.displayId());
             Entity chainEnt = level.getEntity(carry.chainId());
-            boolean displayOk = display instanceof BetterBlockDisplay && display.isAlive();
+            boolean displayOk = display instanceof BlackwhipTossedBlockEntity cargo
+                    && cargo.isAlive()
+                    && cargo.isHovering();
             boolean chainOk = chainEnt instanceof BlackwhipChainEntity chain
                     && chain.isAlive()
                     && chain.isActive()
@@ -213,27 +216,41 @@ public final class BlackwhipBlockTossStore {
             alive.add(carry);
         }
         PLAYER_CARRIES.put(player.getUUID(), alive);
-        updateOrbit(player, level, alive, tickCount);
+        updateOrbit(player, level, alive, level.getGameTime());
     }
 
-    private static void updateOrbit(ServerPlayer player, ServerLevel level, List<Carry> carries, int tickCount) {
+    /**
+     * Visual cube center for a hovering block, using the owner's interpolated position so the
+     * client tracks as smoothly as Blackwhip chains.
+     */
+    public static Vec3 orbitVisualCenter(Entity owner, int slot, int count, long gameTime, float partialTick) {
+        int n = Math.max(1, count);
+        int i = Math.floorMod(slot, n);
+        double baseYaw = Math.toRadians((gameTime + partialTick) * ORBIT_DEG_PER_TICK);
+        double angle = baseYaw + (Math.PI * 2.0 * i) / n;
+        double bob = Math.sin(baseYaw * 1.7 + i) * ORBIT_Y_BOB;
+        Vec3 center = owner.getPosition(partialTick).add(0.0, owner.getBbHeight() + ORBIT_ABOVE_HEAD, 0.0);
+        return new Vec3(
+                center.x + Math.cos(angle) * ORBIT_RADIUS,
+                center.y + bob,
+                center.z + Math.sin(angle) * ORBIT_RADIUS);
+    }
+
+    private static void updateOrbit(ServerPlayer player, ServerLevel level, List<Carry> carries, long gameTime) {
         int n = carries.size();
         if (n <= 0) {
             return;
         }
-        double baseYaw = Math.toRadians(tickCount * ORBIT_DEG_PER_TICK);
-        Vec3 center = player.position().add(0.0, player.getBbHeight() + ORBIT_ABOVE_HEAD, 0.0);
         for (int i = 0; i < n; i++) {
             Carry carry = carries.get(i);
-            if (!(level.getEntity(carry.displayId()) instanceof BetterBlockDisplay display)) {
+            if (!(level.getEntity(carry.displayId()) instanceof BlackwhipTossedBlockEntity display)
+                    || !display.isHovering()) {
                 continue;
             }
-            double angle = baseYaw + (Math.PI * 2.0 * i) / n;
-            double bob = Math.sin(baseYaw * 1.7 + i) * ORBIT_Y_BOB;
-            display.setPos(
-                    center.x + Math.cos(angle) * ORBIT_RADIUS,
-                    center.y + bob,
-                    center.z + Math.sin(angle) * ORBIT_RADIUS);
+            display.setOrbitSlot(i, n);
+            Vec3 center = orbitVisualCenter(player, i, n, gameTime, 0.0f);
+            display.setDeltaMovement(player.getDeltaMovement());
+            display.setPos(center.x, center.y - display.getBbHeight() * 0.5, center.z);
         }
     }
 
@@ -244,7 +261,7 @@ public final class BlackwhipBlockTossStore {
         double bestDot = -2.0;
         for (Carry carry : carries) {
             Entity display = level.getEntity(carry.displayId());
-            Vec3 pos = display != null ? display.position() : eye.add(look);
+            Vec3 pos = display != null ? display.getBoundingBox().getCenter() : eye.add(look);
             Vec3 dir = pos.subtract(eye);
             double len = dir.length();
             double dot = len < 1.0e-6 ? 1.0 : dir.normalize().dot(look);
@@ -256,15 +273,12 @@ public final class BlackwhipBlockTossStore {
         return best;
     }
 
-    private static BetterBlockDisplay spawnDisplay(ServerLevel level, BlockState state, Vec3 center) {
-        BetterBlockDisplay display = new BetterBlockDisplay(EntityType.BLOCK_DISPLAY, level);
-        display.setBlock(state);
-        display.setScale(new Vector3f(1.0f, 1.0f, 1.0f));
-        display.setTranslation(new Vector3f(-0.5f, -0.5f, -0.5f));
-        display.setLifetime(-1);
-        display.setPos(center.x, center.y, center.z);
-        level.addFreshEntity(display);
-        return display;
+    private static BlackwhipTossedBlockEntity spawnHoveringCargo(ServerLevel level, ServerPlayer player,
+                                                                BlockState state, float hardness, Vec3 center) {
+        BlackwhipTossedBlockEntity cargo = BlackwhipTossedBlockEntity.createHovering(level, player, state, hardness);
+        cargo.setPos(center.x, center.y - cargo.getBbHeight() * 0.5, center.z);
+        level.addFreshEntity(cargo);
+        return cargo;
     }
 
     private static void dropItem(ServerLevel level, Vec3 at, BlockState state) {
