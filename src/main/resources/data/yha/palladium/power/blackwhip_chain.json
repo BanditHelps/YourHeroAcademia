@@ -373,7 +373,7 @@
       "properties": {
         "title": "Tether",
         "description": "Shoot an energy tendril towards any opponent or entity. If they are hit, they become ensnared in your whip, allowing you to perform multiple actions.",
-        "icon": "minecraft:lead",
+        "icon": "yha:textures/icons/blackwhip/tether.png",
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
@@ -403,7 +403,7 @@
       "properties": {
         "title": "Tether Range - I",
         "description": "Extends the range that your tether can reach by 3 blocks.",
-        "icon": "minecraft:lead",
+        "icon": "yha:textures/icons/blackwhip/tether_range_1.png",
         "list_index": 0,
         "hidden_in_bar": true,
         "hidden_in_gui": false,
@@ -431,7 +431,7 @@
       "properties": {
         "title": "Tether Range - II",
         "description": "Extends the range that your tether can reach by an additional 3 blocks.",
-        "icon": "minecraft:lead",
+        "icon": "yha:textures/icons/blackwhip/tether_range_2.png",
         "list_index": 0,
         "hidden_in_bar": true,
         "hidden_in_gui": false,
@@ -494,7 +494,7 @@
       "travel_ticks": 12,
       "properties": {
         "title": "Tether",
-        "icon": "minecraft:lead",
+        "icon": "yha:textures/icons/blackwhip/tether.png",
         "list_index": 0,
         "hidden_in_gui": true
       },
@@ -661,7 +661,7 @@
       "properties": {
         "title": "Puppet (All)",
         "description": "Hold to drag every tagged target to a point in front of your crosshair. With Lead on, scroll up to lengthen tethers and scroll down to shorten them. Bigger or many targets need more Strength — heavy loads slow you down.",
-        "icon": "yha:textures/icons/blackwhip/detach.png",
+        "icon": "yha:textures/icons/blackwhip/multi_puppet.png",
         "list_index": 8,
         "hidden_in_gui": false,
         "gui_position": [
@@ -691,14 +691,49 @@
         }
       }
     },
-    "blackwhip_chain_detach": {
+    "blackwhip_chain_detach_single": {
+      "type": "yha:blackwhip_chain_detach",
+      "range": 20,
+      "all": false,
+      "properties": {
+        "title": "Detach (Single)",
+        "description": "Release only the tether of the entity you are looking at",
+        "icon": "yha:textures/icons/blackwhip/detach_single.png",
+        "list_index": 1,
+        "hidden_in_gui": false,
+        "gui_position": [
+          -1.75,
+          -2
+        ]
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "activation"
+        },
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "blackwhip_chain_detach_all"
+            }
+          ]
+        }
+      }
+    },
+    "blackwhip_chain_detach_all": {
       "type": "yha:blackwhip_chain_detach",
       "range": 20,
       "all": true,
       "properties": {
-        "title": "Detach",
+        "title": "Detach (All)",
         "description": "Release all of your active chain tethers at once.",
-        "icon": "yha:textures/icons/blackwhip/detach.png",
+        "icon": "yha:textures/icons/blackwhip/detach_all.png",
         "list_index": 1,
         "hidden_in_gui": false,
         "gui_position": [
