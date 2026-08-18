@@ -702,7 +702,7 @@
         "list_index": 1,
         "hidden_in_gui": false,
         "gui_position": [
-          -1.75,
+          -1.8,
           -2
         ]
       },
@@ -900,11 +900,21 @@
         "list_index": 2,
         "hidden_in_gui": false,
         "gui_position": [
-          0,
-          1
+          1,
+          2
         ],
         "stamina_interval": 20,
-        "stamina_interval_cost": 4
+        "stamina_interval_cost": 4,
+        "gui_connection": [
+          [
+            0.2,
+            1.8
+          ],
+          [
+            0.4,
+            2
+          ]
+        ]
       },
       "state": {
         "enabling": {
@@ -916,7 +926,13 @@
           "cost": {
             "type": "yha:upgrade_point",
             "points": 2
-          }
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "bw_tree_whip_zip_2"
+            }
+          ]
         }
       }
     },
@@ -958,8 +974,8 @@
         "list_index": 5,
         "hidden_in_gui": false,
         "gui_position": [
-          0,
-          1.6
+          1.8,
+          1.5
         ],
         "stamina_interval": 20,
         "stamina_interval_cost": 3
@@ -985,28 +1001,138 @@
         }
       }
     },
-    "blackwhip_chain_zip": {
+    "bw_tree_whip_zip_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Whip Zip",
+        "description": "Use your whip's to pull you in the direction you are looking",
+        "icon": "minecraft:breeze_rod",
+        "hidden_in_bar": true,
+        "hidden_in_gui": false,
+        "gui_position": [
+          0,
+          1.2
+        ]
+      }
+    },
+    "bw_tree_whip_zip_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Whip Zip - II",
+        "description": "Further extends the range and speed of the whip zip",
+        "icon": "minecraft:lead",
+        "hidden_in_bar": true,
+        "hidden_in_gui": false,
+        "gui_position": [
+          0,
+          1.8
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "bw_tree_whip_zip_1"
+            }
+          ]
+        }
+      }
+    },
+    "bw_tree_zip_slam": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Zip Slam",
+        "description": "When tethering into entities, you fly towards and do a slam kick on them.",
+        "icon": "minecraft:mace",
+        "hidden_in_bar": true,
+        "hidden_in_gui": false,
+        "gui_position": [
+          0,
+          3
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "blackwhip_chain_charge_zip"
+            }
+          ]
+        }
+      }
+    },
+    "bw_chain_zip": {
       "type": "yha:blackwhip_chain_zip",
       "range": {
-        "type": "palladium:molang_float",
-        "molang": "32 + yha.quirk_factor() * 2"
+        "type": "yha:upgrade_switch",
+        "cases": [
+          {
+            "ability": "bw_tree_whip_zip_1",
+            "value": {
+              "type": "palladium:molang_float",
+              "molang": "10 + yha.quirk_factor() * 2"
+            }
+          },
+          {
+            "ability": "bw_tree_whip_zip_2",
+            "value": {
+              "type": "palladium:molang_float",
+              "molang": "20 + yha.quirk_factor() * 3"
+            }
+          }
+        ],
+        "fallback": 10
       },
-      "simple_pull_power": 2.2,
+      "simple_pull_power": {
+        "type": "yha:upgrade_switch",
+        "cases": [
+          {
+            "ability": "bw_tree_whip_zip_1",
+            "value": 1.2
+          },
+          {
+            "ability": "bw_tree_whip_zip_2",
+            "value": 2
+          }
+        ],
+        "fallback": 1.2
+      },
       "qf_pull_bonus": 0.04,
       "simple_visual_ticks": 10,
       "damage": {
-        "type": "palladium:molang_float",
-        "molang": "4 + yha.quirk_factor() * 0.5"
+        "type": "yha:upgrade_switch",
+        "cases": [
+          {
+            "ability": "bw_tree_zip_slam",
+            "value": {
+              "type": "palladium:molang_float",
+              "molang": "4 + yha.quirk_factor() * 0.5"
+            }
+          }
+        ],
+        "fallback": 0
       },
       "properties": {
         "title": "Whip Zip",
         "description": "Zip toward the block or enemy you're looking at. Surfaces give a quick directional burst. On a living target, hold to reel in (speeds up as you go) until you release or slam into them for damage and knockback. If they're already tagged, the existing whip yanks you both together for the kick without spawning a new tether. Hold Shift and use Charge Zip for a rubber-band launch.",
         "icon": "minecraft:tripwire_hook",
         "list_index": 6,
-        "hidden_in_gui": false,
+        "hidden_in_gui": true,
         "gui_position": [
-          1,
-          -1.6
+          -1,
+          2.7
         ],
         "activation_stamina": 12
       },
@@ -1016,17 +1142,8 @@
           "behaviour": "held"
         },
         "unlocking": {
-          "type": "palladium:buyable",
-          "cost": {
-            "type": "yha:upgrade_point",
-            "points": 3
-          },
-          "requires": [
-            {
-              "type": "palladium:ability_unlocked",
-              "ability": "bw_tag"
-            }
-          ]
+          "type": "palladium:ability_unlocked",
+          "ability": "bw_tree_whip_zip_1"
         }
       }
     },
@@ -1058,10 +1175,16 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          1.75,
-          -2
+          0,
+          2.4
         ],
-        "activation_stamina": 16
+        "activation_stamina": 16,
+        "gui_connection": [
+          [
+            0,
+            2.1
+          ]
+        ]
       },
       "state": {
         "enabling": [
@@ -1079,10 +1202,10 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "conditions": [
+          "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_zip"
+              "ability": "bw_tree_whip_zip_2"
             }
           ]
         }
@@ -1160,6 +1283,58 @@
             "type": "palladium:ability_unlocked",
             "ability": "quirk_info"
           }
+        }
+      }
+    },
+    "bw_arm_reinforce": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Arm Reinforce",
+        "description": "Use blackwhip to reinforce your arm muscles, reducing limb damage and adding small strength boost.",
+        "icon": "minecraft:diamond_sword",
+        "hidden_in_bar": true,
+        "hidden_in_gui": false,
+        "gui_position": [
+          1,
+          -1.6
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 7
+          }
+        }
+      }
+    },
+    "bw_body_reinforce": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Body Reinforce",
+        "description": "Wind Blackwhip underneath your skin to reinforce the muscles. Significantly reduces stamina usage at the cost of full body damage.",
+        "icon": "minecraft:paper",
+        "hidden_in_bar": true,
+        "hidden_in_gui": false,
+        "gui_position": [
+          1.8,
+          -2
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 10
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "bw_arm_reinforce"
+            }
+          ]
         }
       }
     }
