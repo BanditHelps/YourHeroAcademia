@@ -2,6 +2,7 @@ package com.github.bandithelps.client;
 
 import com.github.bandithelps.gui.screens.BodyDebugScreen;
 import com.github.bandithelps.gui.screens.TreeEditorScreen;
+import com.github.bandithelps.gui.tree.PowerSourceJson;
 import com.github.bandithelps.gui.tree.TreeEditorDraft;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
@@ -20,7 +21,7 @@ public final class ClientScreenOpener {
         minecraft.setScreen(new BodyDebugScreen());
     }
 
-    public static void openTreeEditorScreen(String rawPowerId, String sourceJson) {
+    public static void openTreeEditorScreen(String rawPowerId) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
             return;
@@ -39,6 +40,7 @@ public final class ClientScreenOpener {
             minecraft.player.sendSystemMessage(Component.literal("Unknown power: " + powerId));
             return;
         }
+        String sourceJson = PowerSourceJson.read(minecraft, powerId);
         minecraft.setScreen(new TreeEditorScreen(TreeEditorDraft.fromPower(powerId, holder.value(), sourceJson)));
     }
 }

@@ -15,13 +15,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.packs.resources.Resource;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.threetag.palladium.power.Power;
 import net.threetag.palladium.registry.PalladiumRegistryKeys;
-
-import java.io.Reader;
-import java.io.StringWriter;
 
 public final class TreeEditorCommand {
     private static final DynamicCommandExceptionType UNKNOWN_POWER = new DynamicCommandExceptionType(value ->
@@ -59,35 +55,8 @@ public final class TreeEditorCommand {
         var lookup = source.registryAccess().lookupOrThrow(PalladiumRegistryKeys.POWER);
         ResourceKey<Power> key = ResourceKey.create(PalladiumRegistryKeys.POWER, powerId);
         Holder.Reference<Power> holder = lookup.get(key).orElseThrow(() -> UNKNOWN_POWER.create(rawId));
-        String sourceJson = readPowerSourceJson(source, powerId);
-        PacketDistributor.sendToPlayer(player, new OpenTreeEditorScreenPayload(
-                holder.key().identifier().toString(),
-                sourceJson
-        ));
-        if (sourceJson.isEmpty()) {
-            source.sendSuccess(() -> Component.literal(
-                    "Opened tree editor for " + powerId + " (datapack JSON not found; export will fail)."
-            ), false);
-        } else {
-            source.sendSuccess(() -> Component.literal("Opened tree editor for " + powerId), false);
-        }
+        PacketDistributor.sendToPlayer(player, new OpenTreeEditorScreenPayload(holder.key().identifier().toString()));
+        source.sendSuccess(() -> Component.literal("Opened tree editor for " + powerId), false);
         return 1;
-    }
-
-    private static String readPowerSourceJson(CommandSourceStack source, Identifier powerId) {
-        Identifier resourceId = Identifier.fromNamespaceAndPath(
-                powerId.getNamespace(),
-                "palladium/power/" + powerId.getPath() + ".json"
-        );
-        Resource resource = source.getServer().getResourceManager().getResource(resourceId).orElse(null);
-        if (resource == null) {
-            return "";
-        }
-        try (Reader reader = resource.openAsReader(); StringWriter writer = new StringWriter()) {
-            reader.transferTo(writer);
-            return writer.toString();
-        } catch (Exception exception) {
-            return "";
-        }
     }
 }
