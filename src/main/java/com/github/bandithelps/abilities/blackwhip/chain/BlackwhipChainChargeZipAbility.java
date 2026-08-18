@@ -250,7 +250,7 @@ public class BlackwhipChainChargeZipAbility extends Ability {
         player.resetFallDistance();
         player.setOnGround(false);
 
-        float dmg = this.damage.getAsFloat(context) * (0.5f + 0.5f * ratio) * (float) (1.0 + 0.1 * qf);
+        float dmg = this.damage.getAsFloat(context) * ratio * (float) (1.0 + 0.1 * qf);
         int maxHits = Math.max(0, this.maxHits.getAsInt(context));
         startFlightHits(player, dmg, maxHits);
         float pitch = 1.15f + 0.35f * ratio;
@@ -329,7 +329,11 @@ public class BlackwhipChainChargeZipAbility extends Ability {
             if (flight.hitIds.size() >= flight.maxHits) {
                 break;
             }
-            target.hurt(level.damageSources().mobAttack(player), flight.damage);
+            float hitDamage = damageForHit(flight);
+            if (hitDamage <= 0.0f) {
+                break;
+            }
+            target.hurt(level.damageSources().mobAttack(player), hitDamage);
             target.knockback(HIT_KNOCKBACK, player.getX() - target.getX(), player.getZ() - target.getZ());
             target.hurtMarked = true;
             flight.hitIds.add(target.getId());
@@ -337,6 +341,18 @@ public class BlackwhipChainChargeZipAbility extends Ability {
                     SoundSource.PLAYERS, 0.65f, 1.1f);
         }
         flight.lastCenter = center;
+    }
+
+    /**
+     * First hit deals full charge-scaled damage; each later hit drops by {@code 1 / max_hits}.
+     * With {@code max_hits = 4}: 100%, 75%, 50%, 25%.
+     */
+    private static float damageForHit(FlightHit flight) {
+        int remaining = flight.maxHits - flight.hitIds.size();
+        if (remaining <= 0 || flight.maxHits <= 0) {
+            return 0.0f;
+        }
+        return flight.damage * remaining / (float) flight.maxHits;
     }
 
     private float chargeRatio(ChargeSession session, DataContext context) {
@@ -425,8 +441,8 @@ public class BlackwhipChainChargeZipAbility extends Ability {
                     .add("side_count", TYPE_VALUE, "Number of side chains (minimum 2).")
                     .add("side_angle", TYPE_VALUE, "Horizontal yaw fan half-angle in degrees.")
                     .add("pullback_speed", TYPE_VALUE, "Blocks per tick the player is pulled backward while charging.")
-                    .add("damage", TYPE_VALUE, "Impact damage to entities the player flies through after release.")
-                    .add("max_hits", TYPE_VALUE, "Maximum number of entities damaged per launch.")
+                    .add("damage", TYPE_VALUE, "Full-charge damage for the first entity hit. Scales linearly with charge percentage.")
+                    .add("max_hits", TYPE_VALUE, "Maximum entities damaged per launch. Each successive hit deals 1/max_hits less of full damage.")
                     .addExampleObject(new BlackwhipChainChargeZipAbility(
                             new StaticValue(28.0f), new StaticValue(40.0f),
                             new StaticValue(1.1f), new StaticValue(2.9f), new StaticValue(0.08f),

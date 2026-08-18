@@ -573,7 +573,7 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_item_pull"
+              "ability": "bw_chain_item_pull"
             }
           ]
         }
@@ -608,7 +608,7 @@
         }
       }
     },
-    "blackwhip_chain_puppet_single": {
+    "bw_chain_puppet_single": {
       "type": "yha:blackwhip_chain_move_tagged",
       "hold_distance": {
         "type": "palladium:molang_float",
@@ -685,13 +685,13 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_puppet_single"
+              "ability": "bw_chain_puppet_single"
             }
           ]
         }
       }
     },
-    "blackwhip_chain_detach_single": {
+    "bw_chain_detach_single": {
       "type": "yha:blackwhip_chain_detach",
       "range": 20,
       "all": false,
@@ -720,13 +720,13 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_detach_all"
+              "ability": "bw_chain_detach_all"
             }
           ]
         }
       }
     },
-    "blackwhip_chain_detach_all": {
+    "bw_chain_detach_all": {
       "type": "yha:blackwhip_chain_detach",
       "range": 20,
       "all": true,
@@ -748,7 +748,7 @@
         }
       }
     },
-    "blackwhip_chain_disarm": {
+    "bw_chain_disarm": {
       "type": "yha:blackwhip_chain_disarm",
       "range": {
         "type": "palladium:molang_float",
@@ -788,13 +788,13 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_item_pull"
+              "ability": "bw_chain_item_pull"
             }
           ]
         }
       }
     },
-    "blackwhip_chain_item_pull": {
+    "bw_chain_item_pull": {
       "type": "palladium:dummy",
       "properties": {
         "title": "Item Pull",
@@ -833,7 +833,7 @@
         }
       }
     },
-    "blackwhip_chain_pickup": {
+    "bw_chain_pickup": {
       "type": "yha:blackwhip_chain_magnet",
       "range": {
         "type": "yha:upgrade_switch",
@@ -871,7 +871,7 @@
         }
       }
     },
-    "blackwhip_chain_swing": {
+    "bw_chain_swing": {
       "type": "yha:blackwhip_chain_swing",
       "range": {
         "type": "palladium:molang_float",
@@ -936,7 +936,7 @@
         }
       }
     },
-    "blackwhip_web_swing": {
+    "bw_web_swing": {
       "type": "yha:blackwhip_web_swing",
       "range": {
         "type": "palladium:molang_float",
@@ -995,7 +995,7 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_swing"
+              "ability": "bw_chain_swing"
             }
           ]
         }
@@ -1147,7 +1147,7 @@
         }
       }
     },
-    "blackwhip_chain_charge_zip": {
+    "bw_chain_charge_zip": {
       "type": "yha:blackwhip_chain_charge_zip",
       "range": {
         "type": "palladium:molang_float",
@@ -1192,7 +1192,7 @@
       "properties": {
         "title": "Charge Zip",
         "description": "Hold to shoot whips from both hands, stretch backward, and fling yourself forwards. The longer you hold, the harder you launch. Entities in your path take damage",
-        "icon": "yha:textures/icons/blackwhip/whip_zip_2.png",
+        "icon": "yha:textures/icons/blackwhip/charge_zip.png",
         "list_index": 9,
         "hidden_in_gui": false,
         "hidden_in_bar": false,
@@ -1235,9 +1235,9 @@
     "bw_tree_charge_zip_2": {
       "type": "palladium:dummy",
       "properties": {
-        "title": "Zip Charge - II",
+        "title": "Charge Zip - II",
         "description": "Extends the charge time for a further distance, and more damage",
-        "icon": "minecraft:paper",
+        "icon": "yha:textures/icons/blackwhip/charge_zip_2.png",
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
@@ -1255,13 +1255,13 @@
           "requires": [
             {
               "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_charge_zip"
+              "ability": "bw_chain_charge_zip"
             }
           ]
         }
       }
     },
-    "blackwhip_chain_block_toss": {
+    "bw_chain_block_toss": {
       "type": "yha:blackwhip_chain_block_toss",
       "range": {
         "type": "palladium:molang_float",
