@@ -100,25 +100,14 @@ public final class TreeEditorExporter {
         JsonObject unlocking = state != null && state.has("unlocking") && state.get("unlocking").isJsonObject()
                 ? state.getAsJsonObject("unlocking")
                 : null;
-        String type = readType(unlocking);
-        if (!type.isEmpty() && !TYPE_ABILITY_UNLOCKED.equals(type) && !TYPE_BUYABLE.equals(type)) {
-            return;
-        }
-
         boolean hasParent = node.getParentKey() != null && !node.getParentKey().isBlank();
         JsonObject costJson = node.getCost().toJson(schemas);
+        String type = readType(unlocking);
 
         if (unlocking == null) {
-            if (!hasParent && costJson == null) {
+            unlocking = createUnlocking(hasParent ? node.getParentKey() : null, costJson);
+            if (unlocking == null) {
                 return;
-            }
-            unlocking = new JsonObject();
-            unlocking.addProperty("type", TYPE_BUYABLE);
-            if (costJson != null) {
-                unlocking.add("cost", costJson);
-            }
-            if (hasParent) {
-                unlocking.add("requires", abilityUnlocked(node.getParentKey()));
             }
             if (state == null) {
                 state = new JsonObject();
@@ -133,13 +122,7 @@ public final class TreeEditorExporter {
                 String parent = node.parentChanged()
                         ? (hasParent ? node.getParentKey() : null)
                         : readAbilityKey(unlocking);
-                JsonObject buyable = new JsonObject();
-                buyable.addProperty("type", TYPE_BUYABLE);
-                buyable.add("cost", costJson);
-                if (parent != null && !parent.isBlank()) {
-                    buyable.add("requires", abilityUnlocked(parent));
-                }
-                state.add("unlocking", buyable);
+                state.add("unlocking", createUnlocking(parent, costJson));
                 return;
             }
             if (node.parentChanged()) {
@@ -153,56 +136,170 @@ public final class TreeEditorExporter {
             return;
         }
 
-        if (node.costChanged()) {
-            if (costJson == null) {
-                unlocking.remove("cost");
-            } else {
-                unlocking.add("cost", costJson);
+        if (TYPE_BUYABLE.equals(type)) {
+            if (node.costChanged()) {
+                if (costJson == null) {
+                    unlocking.remove("cost");
+                } else {
+                    unlocking.add("cost", costJson);
+                }
             }
-        }
-        if (node.parentChanged()) {
-            patchBuyableParent(unlocking, node.getParentKey());
-        }
-        pruneUnlocking(ability, state, unlocking);
-    }
-
-    private static void patchBuyableParent(JsonObject unlocking, @Nullable String parentKey) {
-        boolean hasParent = parentKey != null && !parentKey.isBlank();
-        if (unlocking.has("requires")) {
-            if (!hasParent) {
-                unlocking.remove("requires");
+            String parent = node.parentChanged()
+                    ? (hasParent ? node.getParentKey() : null)
+                    : readBuyableParent(unlocking);
+            if (!unlocking.has("cost")) {
+                if (parent != null && !parent.isBlank()) {
+                    state.add("unlocking", abilityUnlocked(parent));
+                } else {
+                    pruneUnlocking(ability, state, unlocking);
+                }
                 return;
             }
-            JsonObject requires = unlocking.get("requires").isJsonObject() ? unlocking.getAsJsonObject("requires") : null;
-            if (requires != null && TYPE_ABILITY_UNLOCKED.equals(readType(requires))) {
-                requires.addProperty("ability", parentKey);
-            } else {
-                unlocking.add("requires", abilityUnlocked(parentKey));
+            if (node.parentChanged() || node.costChanged()) {
+                setBuyableRequires(unlocking, parent);
             }
+            pruneUnlocking(ability, state, unlocking);
             return;
         }
-        if (unlocking.has("conditions") && unlocking.get("conditions").isJsonArray()) {
-            JsonArray conditions = unlocking.getAsJsonArray("conditions");
-            int index = findAbilityUnlockedIndex(conditions);
-            if (!hasParent) {
-                if (index >= 0) {
-                    conditions.remove(index);
-                }
-                if (conditions.isEmpty()) {
-                    unlocking.remove("conditions");
-                }
-                return;
+
+        if (node.parentChanged()) {
+            if (hasParent) {
+                attachParentToUnlocking(state, unlocking, node.getParentKey());
+            } else {
+                detachParentFromUnlocking(ability, state, unlocking);
             }
+        }
+    }
+
+    @Nullable
+    private static JsonObject createUnlocking(@Nullable String parentKey, @Nullable JsonObject costJson) {
+        boolean hasParent = parentKey != null && !parentKey.isBlank();
+        if (!hasParent && costJson == null) {
+            return null;
+        }
+        if (costJson != null) {
+            JsonObject buyable = new JsonObject();
+            buyable.addProperty("type", TYPE_BUYABLE);
+            buyable.add("cost", costJson);
+            if (hasParent) {
+                buyable.add("requires", requiresArray(parentKey));
+            }
+            return buyable;
+        }
+        return abilityUnlocked(parentKey);
+    }
+
+    private static void setBuyableRequires(JsonObject unlocking, @Nullable String parentKey) {
+        boolean hasParent = parentKey != null && !parentKey.isBlank();
+        JsonArray requires = existingRequiresArray(unlocking);
+        int index = findAbilityUnlockedIndex(requires);
+        if (!hasParent) {
+            if (index >= 0) {
+                requires.remove(index);
+            }
+            if (requires.isEmpty()) {
+                unlocking.remove("requires");
+            } else {
+                unlocking.add("requires", requires);
+            }
+            unlocking.remove("conditions");
+            return;
+        }
+        if (index >= 0 && requires.get(index).isJsonObject()) {
+            requires.get(index).getAsJsonObject().addProperty("ability", parentKey);
+        } else {
+            requires.add(abilityUnlocked(parentKey));
+        }
+        unlocking.add("requires", requires);
+        unlocking.remove("conditions");
+    }
+
+    private static JsonArray existingRequiresArray(JsonObject unlocking) {
+        if (unlocking.has("requires")) {
+            JsonElement element = unlocking.get("requires");
+            if (element.isJsonArray()) {
+                return element.getAsJsonArray();
+            }
+            JsonArray requires = new JsonArray();
+            if (element.isJsonObject()) {
+                requires.add(element.getAsJsonObject());
+            }
+            return requires;
+        }
+        if (unlocking.has("conditions") && unlocking.get("conditions").isJsonArray()) {
+            return unlocking.getAsJsonArray("conditions").deepCopy();
+        }
+        return new JsonArray();
+    }
+
+    private static JsonArray requiresArray(String parentKey) {
+        JsonArray requires = new JsonArray();
+        requires.add(abilityUnlocked(parentKey));
+        return requires;
+    }
+
+    @Nullable
+    private static String readBuyableParent(JsonObject unlocking) {
+        JsonArray requires = existingRequiresArray(unlocking);
+        int index = findAbilityUnlockedIndex(requires);
+        if (index < 0 || !requires.get(index).isJsonObject()) {
+            return null;
+        }
+        return readAbilityKey(requires.get(index).getAsJsonObject());
+    }
+
+    private static void attachParentToUnlocking(JsonObject state, JsonObject unlocking, String parentKey) {
+        String type = readType(unlocking);
+        if ("palladium:and".equals(type)) {
+            JsonArray conditions = conditionsArray(unlocking);
+            int index = findAbilityUnlockedIndex(conditions);
             if (index >= 0 && conditions.get(index).isJsonObject()) {
                 conditions.get(index).getAsJsonObject().addProperty("ability", parentKey);
             } else {
                 conditions.add(abilityUnlocked(parentKey));
             }
+            unlocking.add("conditions", conditions);
             return;
         }
-        if (hasParent) {
-            unlocking.add("requires", abilityUnlocked(parentKey));
+        JsonObject and = new JsonObject();
+        and.addProperty("type", "palladium:and");
+        JsonArray conditions = new JsonArray();
+        conditions.add(unlocking.deepCopy());
+        conditions.add(abilityUnlocked(parentKey));
+        and.add("conditions", conditions);
+        state.add("unlocking", and);
+    }
+
+    private static void detachParentFromUnlocking(JsonObject ability, JsonObject state, JsonObject unlocking) {
+        if (!"palladium:and".equals(readType(unlocking))) {
+            return;
         }
+        JsonArray conditions = conditionsArray(unlocking);
+        int index = findAbilityUnlockedIndex(conditions);
+        if (index >= 0) {
+            conditions.remove(index);
+        }
+        if (conditions.size() == 1 && conditions.get(0).isJsonObject()) {
+            state.add("unlocking", conditions.get(0).getAsJsonObject());
+            return;
+        }
+        if (conditions.isEmpty()) {
+            pruneUnlocking(ability, state, unlocking);
+            return;
+        }
+        unlocking.add("conditions", conditions);
+    }
+
+    private static JsonArray conditionsArray(JsonObject object) {
+        if (object.has("conditions") && object.get("conditions").isJsonArray()) {
+            return object.getAsJsonArray("conditions");
+        }
+        JsonArray conditions = new JsonArray();
+        if (object.has("conditions") && object.get("conditions").isJsonObject()) {
+            conditions.add(object.getAsJsonObject("conditions"));
+        }
+        object.add("conditions", conditions);
+        return conditions;
     }
 
     private static void pruneUnlocking(JsonObject ability, JsonObject state, JsonObject unlocking) {
@@ -235,15 +332,8 @@ public final class TreeEditorExporter {
 
         JsonObject cost = node.getCost().toJson(schemas);
         boolean hasParent = node.getParentKey() != null && !node.getParentKey().isBlank();
-        if (cost != null || hasParent) {
-            JsonObject unlocking = new JsonObject();
-            unlocking.addProperty("type", TYPE_BUYABLE);
-            if (cost != null) {
-                unlocking.add("cost", cost);
-            }
-            if (hasParent) {
-                unlocking.add("requires", abilityUnlocked(node.getParentKey()));
-            }
+        JsonObject unlocking = createUnlocking(hasParent ? node.getParentKey() : null, cost);
+        if (unlocking != null) {
             JsonObject state = new JsonObject();
             state.add("unlocking", unlocking);
             ability.add("state", state);

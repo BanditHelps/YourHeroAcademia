@@ -45,6 +45,9 @@ public final class TreeEditorDraft {
             float gridX = position == null ? 0.0F : position.x;
             float gridY = position == null ? 0.0F : position.y;
             String parentKey = firstParentKey(ability);
+            if (parentKey == null) {
+                parentKey = parentKeyFromSource(draft.sourceJson, entry.getKey());
+            }
             Icon icon = ability.getProperties().getIcon();
             String title = ability.getDisplayName().getString();
             DescriptionText description = readDescription(ability);
@@ -231,7 +234,76 @@ public final class TreeEditorDraft {
         if (parents == null || parents.isEmpty()) {
             return null;
         }
-        return parents.getFirst().abilityKey();
+        return localAbilityKey(parents.getFirst().abilityKey());
+    }
+
+    @Nullable
+    private static String parentKeyFromSource(@Nullable JsonObject sourceJson, String abilityKey) {
+        if (sourceJson == null || !sourceJson.has("abilities") || !sourceJson.get("abilities").isJsonObject()) {
+            return null;
+        }
+        JsonObject abilities = sourceJson.getAsJsonObject("abilities");
+        if (!abilities.has(abilityKey) || !abilities.get(abilityKey).isJsonObject()) {
+            return null;
+        }
+        JsonObject ability = abilities.getAsJsonObject(abilityKey);
+        JsonObject state = ability.has("state") && ability.get("state").isJsonObject()
+                ? ability.getAsJsonObject("state")
+                : null;
+        JsonObject unlocking = state != null && state.has("unlocking") && state.get("unlocking").isJsonObject()
+                ? state.getAsJsonObject("unlocking")
+                : null;
+        if (unlocking == null) {
+            return null;
+        }
+        String direct = readAbilityField(unlocking);
+        if (direct != null) {
+            return direct;
+        }
+        String fromRequires = firstAbilityFromListOrObject(unlocking.get("requires"));
+        if (fromRequires != null) {
+            return fromRequires;
+        }
+        return firstAbilityFromListOrObject(unlocking.get("conditions"));
+    }
+
+    @Nullable
+    private static String firstAbilityFromListOrObject(@Nullable JsonElement element) {
+        if (element == null) {
+            return null;
+        }
+        if (element.isJsonObject()) {
+            return readAbilityField(element.getAsJsonObject());
+        }
+        if (!element.isJsonArray()) {
+            return null;
+        }
+        for (JsonElement entry : element.getAsJsonArray()) {
+            if (entry.isJsonObject()) {
+                String nested = readAbilityField(entry.getAsJsonObject());
+                if (nested != null) {
+                    return nested;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    private static String readAbilityField(JsonObject object) {
+        if (!object.has("ability") || !object.get("ability").isJsonPrimitive()) {
+            return null;
+        }
+        return localAbilityKey(object.get("ability").getAsString());
+    }
+
+    @Nullable
+    private static String localAbilityKey(@Nullable String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        int hash = raw.indexOf('#');
+        return hash >= 0 ? raw.substring(hash + 1) : raw;
     }
 
     private static DescriptionText readDescription(Ability ability) {
