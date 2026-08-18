@@ -62,6 +62,8 @@
   "ability.yha.blackwhip_web_swing": "Web Swing",
   "ability.yha.blackwhip_chain_zip": "Whip Zip",
   "ability.yha.blackwhip_chain_charge_zip": "Charge Zip",
+  "ability.yha.blackwhip_chain_charge_zip.title": "Charge Zip",
+  "ability.yha.blackwhip_chain_charge_zip.charging": "Charging %s%%",
 
   "entity.yha.blackwhip_chain": "Blackwhip Chain",
   "entity.yha.blackwhip_segment": "Blackwhip Segment",

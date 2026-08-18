@@ -1126,7 +1126,7 @@
       },
       "properties": {
         "title": "Whip Zip",
-        "description": "Zip toward the block you're looking at, or if you miss, auto-latch a solid block ahead of you (prefers the center of your view; does nothing in open air). Surfaces give a quick directional burst. With Zip Slam unlocked, hold on a living target to reel in until you release or slam: damage scales with how far the zip was, up to the max at full range. If they're already tagged, the existing whip yanks you both together for the kick without spawning a new tether. Hold Shift and use Charge Zip for a rubber-band launch.",
+        "description": "Zip toward the block you're looking at, or if you miss, auto-latch a solid block ahead of you (prefers the center of your view; does nothing in open air). Surfaces give a quick directional burst. With Zip Slam unlocked, hold on a living target to reel in until you release or slam: damage scales with how far the zip was, up to the max at full range. If they're already tagged, the existing whip yanks you both together for the kick without spawning a new tether.",
         "icon": "yha:textures/icons/blackwhip/whip_zip.png",
         "list_index": 6,
         "hidden_in_gui": true,
@@ -1151,29 +1151,29 @@
       "type": "yha:blackwhip_chain_charge_zip",
       "range": {
         "type": "palladium:molang_float",
-        "molang": "34 + yha.quirk_factor() * 3"
+        "molang": "10 + yha.quirk_factor() * 3"
       },
-      "max_charge_ticks": 36,
-      "base_launch_power": 1.05,
+      "max_charge_ticks": 40,
+      "base_launch_power": 1.1,
       "max_launch_power": {
         "type": "palladium:molang_float",
-        "molang": "2.85 + yha.quirk_factor() * 0.12"
+        "molang": "4.9 + yha.quirk_factor() * 0.12"
       },
       "qf_launch_bonus": 0.08,
-      "side_count": 4,
-      "side_angle": 52,
-      "pullback_charge_rate": 0.05,
+      "side_count": 2,
+      "side_angle": 42,
+      "pullback_speed": 0.06,
       "damage": {
         "type": "palladium:molang_float",
         "molang": "5 + yha.quirk_factor()"
       },
       "properties": {
         "title": "Charge Zip",
-        "description": "While crouching, hold to latch four wide chains. Back up to stretch the slingshot, then release to fling toward the anchors.",
-        "icon": "minecraft:fishing_rod",
-        "list_index": 10,
+        "description": "Hold to shoot whips from both hands, stretch backward, and fling the way you were facing when the charge started. The longer you hold, the harder you launch. You can look around while charging.",
+        "icon": "yha:textures/icons/blackwhip/whip_zip_2.png",
+        "list_index": 9,
         "hidden_in_gui": false,
-        "hidden_in_bar": true,
+        "hidden_in_bar": false,
         "gui_position": [
           -1,
           2
@@ -1191,15 +1191,10 @@
         ]
       },
       "state": {
-        "enabling": [
-          {
-            "type": "palladium:crouching"
-          },
-          {
-            "type": "palladium:ability_enabled",
-            "ability": "blackwhip_chain_charge_zip_key"
-          }
-        ],
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "held"
+        },
         "unlocking": {
           "type": "palladium:buyable",
           "cost": {
@@ -1212,27 +1207,6 @@
               "ability": "bw_tree_whip_zip_2"
             }
           ]
-        }
-      }
-    },
-    "blackwhip_chain_charge_zip_key": {
-      "type": "palladium:dummy",
-      "properties": {
-        "title": "Charge Zip",
-        "description": "Hold while crouching to latch four chains, back up to stretch, release to slingshot forward.",
-        "icon": "minecraft:fishing_rod",
-        "list_index": 9,
-        "hidden_in_gui": true,
-        "hidden_in_bar": false
-      },
-      "state": {
-        "enabling": {
-          "type": "palladium:key_bind",
-          "behaviour": "held"
-        },
-        "unlocking": {
-          "type": "palladium:ability_unlocked",
-          "ability": "blackwhip_chain_charge_zip"
         }
       }
     },

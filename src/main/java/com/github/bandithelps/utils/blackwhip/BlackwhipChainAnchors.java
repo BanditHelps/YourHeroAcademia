@@ -58,8 +58,14 @@ public final class BlackwhipChainAnchors {
         return eye.add(dir.scale(0.25));
     }
 
-    /** Owner wrist/hand attach. {@code partialTick} is used for interpolated pose on the client. */
+    /** Owner wrist/hand attach on the owner's main arm. */
     public static Vec3 resolveOwnerWrist(Entity owner, float partialTick) {
+        HumanoidArm arm = owner instanceof LivingEntity living ? living.getMainArm() : HumanoidArm.RIGHT;
+        return resolveOwnerWrist(owner, partialTick, arm);
+    }
+
+    /** Owner wrist/hand attach on a specific arm. {@code partialTick} interpolates client pose. */
+    public static Vec3 resolveOwnerWrist(Entity owner, float partialTick, HumanoidArm arm) {
         if (!(owner instanceof LivingEntity living)) {
             return owner.getPosition(partialTick).add(0, owner.getBbHeight() * 0.5, 0);
         }
@@ -75,7 +81,8 @@ public final class BlackwhipChainAnchors {
         }
         right = right.normalize();
 
-        float side = living.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
+        HumanoidArm useArm = arm != null ? arm : living.getMainArm();
+        float side = useArm == HumanoidArm.RIGHT ? 1.0f : -1.0f;
         double crouch = living.isCrouching() ? -0.20 : 0.0;
         // Lower forearm / wrist band — sits on the hand rather than floating ahead of it.
         double wristY = Math.max(0.42, Math.min(1.20, living.getBbHeight() * 0.49)) + crouch;
@@ -95,6 +102,10 @@ public final class BlackwhipChainAnchors {
      * relative to the camera so it reads as emerging from the arm like in the anime.
      */
     public static Vec3 resolveFirstPersonHand(LivingEntity owner, float partialTick) {
+        return resolveFirstPersonHand(owner, partialTick, owner.getMainArm());
+    }
+
+    public static Vec3 resolveFirstPersonHand(LivingEntity owner, float partialTick, HumanoidArm arm) {
         Vec3 eye = owner.getEyePosition(partialTick);
         float yaw = Mth.lerp(partialTick, owner.yRotO, owner.getYRot());
         float pitch = Mth.lerp(partialTick, owner.xRotO, owner.getXRot());
@@ -109,12 +120,16 @@ public final class BlackwhipChainAnchors {
         right = right.normalize();
         Vec3 up = right.cross(look).normalize();
 
-        float side = owner.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
-        // Slightly below/right of center FOV, a short distance ahead of the camera.
+        HumanoidArm useArm = arm != null ? arm : owner.getMainArm();
+        float side = useArm == HumanoidArm.RIGHT ? 1.0f : -1.0f;
+        // Left/offhand sits lower and wider in vanilla first-person than the main hand.
+        double forward = useArm == HumanoidArm.LEFT ? 0.36 : 0.42;
+        double lateral = useArm == HumanoidArm.LEFT ? 0.38 : 0.28;
+        double down = useArm == HumanoidArm.LEFT ? 0.42 : 0.22;
         return eye
-                .add(look.scale(0.42))
-                .add(right.scale(0.28 * side))
-                .add(up.scale(-0.22));
+                .add(look.scale(forward))
+                .add(right.scale(lateral * side))
+                .add(up.scale(-down));
     }
 
     public static Vec3 resolveOwnerWrist(Entity owner) {
@@ -142,11 +157,19 @@ public final class BlackwhipChainAnchors {
     }
 
     public static Vec3 resolveOwnerAttach(Entity owner, float partialTick, boolean fromBack) {
-        return fromBack ? resolveOwnerBack(owner, partialTick) : resolveOwnerWrist(owner, partialTick);
+        return resolveOwnerAttach(owner, partialTick, fromBack, null);
+    }
+
+    public static Vec3 resolveOwnerAttach(Entity owner, float partialTick, boolean fromBack, HumanoidArm arm) {
+        return fromBack ? resolveOwnerBack(owner, partialTick) : resolveOwnerWrist(owner, partialTick, arm);
     }
 
     public static Vec3 resolveOwnerAttach(Entity owner, boolean fromBack) {
         return resolveOwnerAttach(owner, 1.0f, fromBack);
+    }
+
+    public static Vec3 resolveOwnerAttach(Entity owner, boolean fromBack, HumanoidArm arm) {
+        return resolveOwnerAttach(owner, 1.0f, fromBack, arm);
     }
 
     /**

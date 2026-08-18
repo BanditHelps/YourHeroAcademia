@@ -21,6 +21,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -89,6 +90,9 @@ public class BlackwhipChainEntity extends Entity {
     public static final int PURPOSE_BLOCK_TOSS = 7;
 
     private static final int PURPOSE_MAX = PURPOSE_BLOCK_TOSS;
+    public static final byte ARM_MAIN = 0;
+    public static final byte ARM_LEFT = 1;
+    public static final byte ARM_RIGHT = 2;
 
     private static final int LATCH_BLEND_TICKS = 5;
     /** Client wrap coil ease after latch (tip settle then helix grow). */
@@ -143,6 +147,9 @@ public class BlackwhipChainEntity extends Entity {
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_PURPOSE =
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.INT);
+    /** 0 = owner's main arm, 1 = left, 2 = right. */
+    private static final EntityDataAccessor<Byte> DATA_OWNER_ARM =
+            SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Float> DATA_ANCHOR_X =
             SynchedEntityData.defineId(BlackwhipChainEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_ANCHOR_Y =
@@ -358,6 +365,7 @@ public class BlackwhipChainEntity extends Entity {
         builder.define(DATA_MAX_RANGE, 18.0f);
         builder.define(DATA_LATCH_TICK, -1);
         builder.define(DATA_PURPOSE, PURPOSE_TAG);
+        builder.define(DATA_OWNER_ARM, ARM_MAIN);
         builder.define(DATA_ANCHOR_X, 0.0f);
         builder.define(DATA_ANCHOR_Y, 0.0f);
         builder.define(DATA_ANCHOR_Z, 0.0f);
@@ -706,6 +714,10 @@ public class BlackwhipChainEntity extends Entity {
                 applyDeployBlockHit(blockHit);
                 return;
             }
+            if (getPurpose() == PURPOSE_ZIP_CHARGE) {
+                latchBlock(BlackwhipChainAnchors.surfaceAttachPoint(blockHit), blockHit.getBlockPos());
+                return;
+            }
             deactivate();
             return;
         }
@@ -715,6 +727,10 @@ public class BlackwhipChainEntity extends Entity {
             return;
         }
         if (atMax) {
+            if (getPurpose() == PURPOSE_ZIP_CHARGE) {
+                latchVirtual(next);
+                return;
+            }
             deactivate();
         }
     }
@@ -860,6 +876,9 @@ public class BlackwhipChainEntity extends Entity {
             return false;
         }
         int purpose = getPurpose();
+        if (purpose == PURPOSE_ZIP_CHARGE) {
+            return false;
+        }
         if (purpose == PURPOSE_BLOCK_TOSS) {
             return false;
         }
@@ -1621,11 +1640,13 @@ public class BlackwhipChainEntity extends Entity {
     }
 
     private Vec3 ownerAttach(Entity owner) {
-        return BlackwhipChainAnchors.resolveOwnerAttach(owner, getPurpose() == PURPOSE_BLOCK_TOSS);
+        return BlackwhipChainAnchors.resolveOwnerAttach(
+                owner, 1.0f, getPurpose() == PURPOSE_BLOCK_TOSS, resolveOwnerArm(owner));
     }
 
     private Vec3 ownerAttach(Entity owner, float partialTick) {
-        return BlackwhipChainAnchors.resolveOwnerAttach(owner, partialTick, getPurpose() == PURPOSE_BLOCK_TOSS);
+        return BlackwhipChainAnchors.resolveOwnerAttach(
+                owner, partialTick, getPurpose() == PURPOSE_BLOCK_TOSS, resolveOwnerArm(owner));
     }
 
     public static Vec3 resolveWaistLatch(LivingEntity target) {
@@ -1775,6 +1796,28 @@ public class BlackwhipChainEntity extends Entity {
 
     public void setPurpose(int purpose) {
         this.getEntityData().set(DATA_PURPOSE, Mth.clamp(purpose, PURPOSE_TAG, PURPOSE_MAX));
+    }
+
+    public void setOwnerArm(HumanoidArm arm) {
+        byte value = ARM_MAIN;
+        if (arm == HumanoidArm.LEFT) {
+            value = ARM_LEFT;
+        } else if (arm == HumanoidArm.RIGHT) {
+            value = ARM_RIGHT;
+        }
+        this.getEntityData().set(DATA_OWNER_ARM, value);
+    }
+
+    /** Resolved attach arm: explicit left/right, otherwise the owner's main arm. */
+    public HumanoidArm resolveOwnerArm(Entity owner) {
+        byte value = this.getEntityData().get(DATA_OWNER_ARM);
+        if (value == ARM_LEFT) {
+            return HumanoidArm.LEFT;
+        }
+        if (value == ARM_RIGHT) {
+            return HumanoidArm.RIGHT;
+        }
+        return owner instanceof LivingEntity living ? living.getMainArm() : HumanoidArm.RIGHT;
     }
 
     /** Whether Lead (or another length lock) has frozen IK grow/shrink. */

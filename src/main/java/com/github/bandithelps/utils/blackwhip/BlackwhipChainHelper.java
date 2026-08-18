@@ -5,6 +5,7 @@ import com.github.bandithelps.entities.ModEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
@@ -29,7 +30,7 @@ public final class BlackwhipChainHelper {
                                                         float thickness, int travelTicks,
                                                         int ttlTicks, double maxDistance, int maxKeep) {
         return spawnFlyingChain(owner, direction, maxRange, segmentCount, linkLength, chainHp, thickness,
-                travelTicks, ttlTicks, maxDistance, maxKeep, BlackwhipChainEntity.PURPOSE_TAG);
+                travelTicks, ttlTicks, maxDistance, maxKeep, BlackwhipChainEntity.PURPOSE_TAG, null);
     }
 
     /**
@@ -42,6 +43,19 @@ public final class BlackwhipChainHelper {
                                                         float thickness, int travelTicks,
                                                         int ttlTicks, double maxDistance, int maxKeep,
                                                         int purpose) {
+        return spawnFlyingChain(owner, direction, maxRange, segmentCount, linkLength, chainHp, thickness,
+                travelTicks, ttlTicks, maxDistance, maxKeep, purpose, null);
+    }
+
+    /**
+     * Spawns a deploying tip with the given purpose and optional owner-arm attach.
+     * {@code ownerArm} {@code null} uses the owner's main hand.
+     */
+    public static BlackwhipChainEntity spawnFlyingChain(LivingEntity owner, Vec3 direction, double maxRange,
+                                                        int segmentCount, float linkLength, float chainHp,
+                                                        float thickness, int travelTicks,
+                                                        int ttlTicks, double maxDistance, int maxKeep,
+                                                        int purpose, HumanoidArm ownerArm) {
         if (!(owner.level() instanceof ServerLevel level)) {
             return null;
         }
@@ -50,12 +64,18 @@ public final class BlackwhipChainHelper {
             if (BlackwhipChainEntity.countOwnedActiveByPurpose(owner.getId(), BlackwhipChainEntity.PURPOSE_DISARM) >= 1) {
                 return null;
             }
+        } else if (isMovementRope(purpose)) {
+            if (countTowardKeep(owner.getId(), purpose) >= keep) {
+                return null;
+            }
         } else if (BlackwhipChainEntity.countOwnedActive(owner.getId()) >= keep) {
             return null;
         }
 
         float link = Math.max(0.25f, linkLength);
-        Vec3 wrist = BlackwhipChainAnchors.resolveOwnerWrist(owner);
+        Vec3 wrist = ownerArm != null
+                ? BlackwhipChainAnchors.resolveOwnerWrist(owner, 1.0f, ownerArm)
+                : BlackwhipChainAnchors.resolveOwnerWrist(owner);
         Vec3 dir = direction.lengthSqr() < 1.0e-6 ? owner.getLookAngle() : direction.normalize();
         int seed = Mth.clamp(segmentCount, BlackwhipChainEntity.MIN_SEGMENTS, BlackwhipChainEntity.MAX_SEGMENTS);
         // Start short; flight resize grows toward tip.
@@ -74,8 +94,12 @@ public final class BlackwhipChainHelper {
         chain.setTravelTicks(travelTicks);
         chain.setRetractTicks(10);
         chain.setWrapTurns(purpose == BlackwhipChainEntity.PURPOSE_DISARM
-                || purpose == BlackwhipChainEntity.PURPOSE_MAGNET ? 0.0f : 2.0f);
+                || purpose == BlackwhipChainEntity.PURPOSE_MAGNET
+                || purpose == BlackwhipChainEntity.PURPOSE_ZIP_CHARGE ? 0.0f : 2.0f);
         chain.setLatchParams(ttlTicks, maxDistance, keep);
+        if (ownerArm != null) {
+            chain.setOwnerArm(ownerArm);
+        }
         applyOwnerColors(chain, owner);
         chain.setSeed(owner.getRandom().nextInt());
         chain.setPos(wrist.x, wrist.y, wrist.z);
@@ -237,6 +261,13 @@ public final class BlackwhipChainHelper {
         level.addFreshEntity(chain);
         chain.latchVirtual(anchor);
         return chain;
+    }
+
+    private static boolean isMovementRope(int purpose) {
+        return purpose == BlackwhipChainEntity.PURPOSE_SWING
+                || purpose == BlackwhipChainEntity.PURPOSE_WEB_SWING
+                || purpose == BlackwhipChainEntity.PURPOSE_ZIP_SIMPLE
+                || purpose == BlackwhipChainEntity.PURPOSE_ZIP_CHARGE;
     }
 
     private static int countTowardKeep(int ownerId, int purpose) {

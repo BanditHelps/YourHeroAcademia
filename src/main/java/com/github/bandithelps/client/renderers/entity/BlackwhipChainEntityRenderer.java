@@ -331,7 +331,8 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
      */
     private static Vec3 resolveVisualRoot(BlackwhipChainEntity entity, Entity owner, float partial) {
         return BlackwhipChainClientAnchors.resolveVisualRoot(
-                owner, partial, entity.getPurpose() == BlackwhipChainEntity.PURPOSE_BLOCK_TOSS);
+                owner, partial, entity.getPurpose() == BlackwhipChainEntity.PURPOSE_BLOCK_TOSS,
+                entity.resolveOwnerArm(owner));
     }
 
     /** True when the camera player owns this whip and is in first person. */

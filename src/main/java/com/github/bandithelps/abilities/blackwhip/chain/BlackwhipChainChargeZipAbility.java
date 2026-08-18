@@ -2,8 +2,7 @@ package com.github.bandithelps.abilities.blackwhip.chain;
 
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
-import com.github.bandithelps.network.BlackwhipChainSwingPayload;
-import com.github.bandithelps.utils.blackwhip.BlackwhipChainAnchors;
+import com.github.bandithelps.network.BlackwhipChainChargeZipPayload;
 import com.github.bandithelps.utils.blackwhip.BlackwhipChainHelper;
 import com.github.bandithelps.utils.quirk.QuirkFactorUtil;
 import com.mojang.serialization.MapCodec;
@@ -15,11 +14,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
@@ -42,48 +39,43 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Charge Zip: latch four wide-spread chains, walk/back up like a slingshot to stretch charge, release to fling.
+ * Charge Zip: hold to shoot side chains, stretch backward, and release to fling along the start facing.
  */
 public class BlackwhipChainChargeZipAbility extends Ability {
 
-    private static final float LAUNCH_UP_BIAS = 0.28f;
+    private static final float LAUNCH_UP_BIAS = 0.22f;
     private static final float HIT_RADIUS = 1.5f;
     private static final float THICKNESS = 0.9f;
     private static final float LINK_LENGTH = 0.95f;
     private static final float CHAIN_HP = 18.0f;
+    private static final float MAX_STRETCH_BLOCKS = 6.0f;
+    private static final float DOWNWARD_BIAS = 0.15f;
     private static final int SEGMENT_COUNT = 12;
     private static final int MAX_KEEP = 8;
-    /** How many blocks of stretch past latch distance maps to full slingshot charge. */
-    private static final float FULL_STRETCH_BLOCKS = 8.5f;
-    /** Soft rubber-band spring strength (keeps slingshot feel without locking the player). */
-    private static final float SPRING_STRENGTH = 0.038f;
-    private static final float SPRING_MAX = 0.18f;
-    /** Outward velocity damping while stretched — leave most of the player's backup speed. */
-    private static final float OUTWARD_DAMP = 0.18f;
+    private static final int TRAVEL_TICKS = 10;
 
     private static final Map<UUID, ChargeSession> SESSIONS = new ConcurrentHashMap<>();
 
     private static final class ChargeSession {
         int heldTicks;
-        boolean armed;
-        float stretchCharge;
-        float initialDist;
-        float peakStretch;
-        Vec3 centroid = Vec3.ZERO;
+        float lockedYaw;
+        float lockedPitch;
+        float pullbackSpeed;
+        Vec3 lockedLook = Vec3.ZERO;
+        Vec3 startPos = Vec3.ZERO;
         final List<Integer> chainIds = new ArrayList<>();
-        final List<Vec3> anchors = new ArrayList<>();
     }
 
     public static final MapCodec<BlackwhipChainChargeZipAbility> CODEC = RecordCodecBuilder.mapCodec((instance) ->
             instance.group(
-                    Value.CODEC.optionalFieldOf("range", new StaticValue(34.0f)).forGetter((ab) -> ab.range),
-                    Value.CODEC.optionalFieldOf("max_charge_ticks", new StaticValue(36.0f)).forGetter((ab) -> ab.maxChargeTicks),
-                    Value.CODEC.optionalFieldOf("base_launch_power", new StaticValue(1.05f)).forGetter((ab) -> ab.baseLaunchPower),
-                    Value.CODEC.optionalFieldOf("max_launch_power", new StaticValue(2.85f)).forGetter((ab) -> ab.maxLaunchPower),
+                    Value.CODEC.optionalFieldOf("range", new StaticValue(28.0f)).forGetter((ab) -> ab.range),
+                    Value.CODEC.optionalFieldOf("max_charge_ticks", new StaticValue(40.0f)).forGetter((ab) -> ab.maxChargeTicks),
+                    Value.CODEC.optionalFieldOf("base_launch_power", new StaticValue(1.1f)).forGetter((ab) -> ab.baseLaunchPower),
+                    Value.CODEC.optionalFieldOf("max_launch_power", new StaticValue(2.9f)).forGetter((ab) -> ab.maxLaunchPower),
                     Value.CODEC.optionalFieldOf("qf_launch_bonus", new StaticValue(0.08f)).forGetter((ab) -> ab.qfLaunchBonus),
-                    Value.CODEC.optionalFieldOf("side_count", new StaticValue(4.0f)).forGetter((ab) -> ab.sideCount),
-                    Value.CODEC.optionalFieldOf("side_angle", new StaticValue(52.0f)).forGetter((ab) -> ab.sideAngle),
-                    Value.CODEC.optionalFieldOf("pullback_charge_rate", new StaticValue(0.05f)).forGetter((ab) -> ab.pullbackChargeRate),
+                    Value.CODEC.optionalFieldOf("side_count", new StaticValue(2.0f)).forGetter((ab) -> ab.sideCount),
+                    Value.CODEC.optionalFieldOf("side_angle", new StaticValue(42.0f)).forGetter((ab) -> ab.sideAngle),
+                    Value.CODEC.optionalFieldOf("pullback_speed", new StaticValue(0.06f)).forGetter((ab) -> ab.pullbackSpeed),
                     Value.CODEC.optionalFieldOf("damage", new StaticValue(5.0f)).forGetter((ab) -> ab.damage),
                     propertiesCodec(),
                     stateCodec(),
@@ -96,12 +88,12 @@ public class BlackwhipChainChargeZipAbility extends Ability {
     public final Value qfLaunchBonus;
     public final Value sideCount;
     public final Value sideAngle;
-    public final Value pullbackChargeRate;
+    public final Value pullbackSpeed;
     public final Value damage;
 
     public BlackwhipChainChargeZipAbility(Value range, Value maxChargeTicks, Value baseLaunchPower,
                                           Value maxLaunchPower, Value qfLaunchBonus, Value sideCount,
-                                          Value sideAngle, Value pullbackChargeRate, Value damage,
+                                          Value sideAngle, Value pullbackSpeed, Value damage,
                                           AbilityProperties properties, AbilityStateManager conditions,
                                           List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
@@ -112,7 +104,7 @@ public class BlackwhipChainChargeZipAbility extends Ability {
         this.qfLaunchBonus = qfLaunchBonus;
         this.sideCount = sideCount;
         this.sideAngle = sideAngle;
-        this.pullbackChargeRate = pullbackChargeRate;
+        this.pullbackSpeed = pullbackSpeed;
         this.damage = damage;
     }
 
@@ -128,11 +120,17 @@ public class BlackwhipChainChargeZipAbility extends Ability {
 
         DataContext context = DataContext.forEntity(entity);
         ChargeSession session = new ChargeSession();
+        session.lockedYaw = player.getYRot();
+        session.lockedPitch = player.getXRot();
+        session.lockedLook = player.getLookAngle().normalize();
+        session.startPos = player.position();
+        session.pullbackSpeed = Math.max(0.0f, this.pullbackSpeed.getAsFloat(context));
         SESSIONS.put(player.getUUID(), session);
 
-        if (!armCharge(player, level, context, session)) {
-            SESSIONS.remove(player.getUUID());
-        }
+        spawnSideChains(player, context, session);
+        syncClient(player, session, 0.0f);
+        level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.PLAYERS, 0.7f, 0.85f);
+        level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 0.35f, 1.55f);
     }
 
     @Override
@@ -141,19 +139,16 @@ public class BlackwhipChainChargeZipAbility extends Ability {
             return super.tick(entity, abilityInstance, enabled);
         }
         ChargeSession session = SESSIONS.get(player.getUUID());
-        if (session == null || !session.armed) {
+        if (session == null) {
             return super.tick(entity, abilityInstance, enabled);
         }
 
         DataContext context = DataContext.forEntity(entity);
         session.heldTicks++;
         pruneDeadChains(level, session);
-        if (session.anchors.size() < 2) {
-            retractChains(level, session);
-            SESSIONS.remove(player.getUUID());
-            return super.tick(entity, abilityInstance, enabled);
-        }
-        tickSlingshot(player, context, session);
+        float ratio = chargeRatio(session, context);
+        tickPullback(player, session, ratio);
+        syncClient(player, session, ratio);
         return super.tick(entity, abilityInstance, enabled);
     }
 
@@ -164,141 +159,79 @@ public class BlackwhipChainChargeZipAbility extends Ability {
         }
         ChargeSession session = SESSIONS.remove(player.getUUID());
         if (session == null) {
+            stopClient(player);
             return;
         }
 
         DataContext context = DataContext.forEntity(entity);
-        // Launch only if still crouching (key released). Standing cancels.
-        if (session.armed && session.anchors.size() >= 2 && entity.isCrouching()) {
-            performChargeLaunch(player, level, context, session);
-        } else {
-            retractChains(level, session);
-        }
+        performChargeLaunch(player, level, context, session);
+        retractChains(level, session);
+        stopClient(player);
     }
 
-    private boolean armCharge(ServerPlayer player, ServerLevel level, DataContext context, ChargeSession session) {
-        PacketDistributor.sendToPlayer(player, BlackwhipChainSwingPayload.stop());
-
-        double range = this.range.getAsFloat(context);
-        int count = Math.max(4, this.sideCount.getAsInt(context));
+    private void spawnSideChains(ServerPlayer player, DataContext context, ChargeSession session) {
+        double range = Math.max(4.0, this.range.getAsFloat(context));
+        int count = Math.max(2, this.sideCount.getAsInt(context));
         float angleDeg = this.sideAngle.getAsFloat(context);
+        Vec3 look = session.lockedLook.lengthSqr() < 1.0e-6 ? player.getLookAngle().normalize() : session.lockedLook;
+        double maxDistance = range + MAX_STRETCH_BLOCKS + 10.0;
 
-        Vec3 look = player.getLookAngle().normalize();
-        Vec3 worldUp = new Vec3(0, 1, 0);
-        Vec3 right = worldUp.cross(look);
-        if (right.lengthSqr() < 1.0e-6) {
-            right = new Vec3(1, 0, 0);
-        }
-        right = right.normalize();
-        Vec3 up = look.cross(right).normalize();
-        Vec3 eye = player.getEyePosition();
-        double cone = Math.toRadians(angleDeg);
-
-        // Wide diamond: four rays around a broad cone so anchors land farther apart.
         for (int i = 0; i < count; i++) {
-            double ring = (2.0 * Math.PI * i) / count + Math.PI * 0.25;
-            Vec3 offset = right.scale(Math.cos(ring)).add(up.scale(Math.sin(ring))).normalize();
-            Vec3 dir = look.scale(Math.cos(cone)).add(offset.scale(Math.sin(cone))).normalize();
-            BlockHitResult hit = level.clip(new ClipContext(
-                    eye, eye.add(dir.scale(range)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
-            if (hit.getType() != HitResult.Type.BLOCK) {
-                continue;
+            float t = count <= 1 ? 0.0f : (i / (float) (count - 1)) * 2.0f - 1.0f;
+            Vec3 dir = yawOffset(look, t * angleDeg).add(0.0, -DOWNWARD_BIAS, 0.0);
+            if (dir.lengthSqr() < 1.0e-6) {
+                dir = look;
+            } else {
+                dir = dir.normalize();
             }
-            Vec3 anchor = BlackwhipChainAnchors.surfaceAttachPoint(hit);
-            // Long max-distance so the player can walk back and stretch the slingshot.
-            BlackwhipChainEntity chain = BlackwhipChainHelper.spawnAnchoredChain(
-                    player, anchor, hit.getBlockPos(), BlackwhipChainEntity.PURPOSE_ZIP_CHARGE,
-                    SEGMENT_COUNT, LINK_LENGTH, CHAIN_HP, THICKNESS, range + FULL_STRETCH_BLOCKS + 10.0, MAX_KEEP, 0);
+            HumanoidArm arm = i < (count + 1) / 2 ? HumanoidArm.LEFT : HumanoidArm.RIGHT;
+            BlackwhipChainEntity chain = BlackwhipChainHelper.spawnFlyingChain(
+                    player, dir, range, SEGMENT_COUNT, LINK_LENGTH, CHAIN_HP, THICKNESS,
+                    TRAVEL_TICKS, 0, maxDistance, MAX_KEEP, BlackwhipChainEntity.PURPOSE_ZIP_CHARGE, arm);
             if (chain != null) {
                 session.chainIds.add(chain.getId());
-                session.anchors.add(anchor);
             }
         }
-
-        if (session.anchors.size() < 2) {
-            retractChains(level, session);
-            return false;
-        }
-
-        session.armed = true;
-        session.centroid = averageAnchors(session);
-        Vec3 center = player.position().add(0, player.getBbHeight() * 0.5, 0);
-        session.initialDist = (float) center.distanceTo(session.centroid);
-        level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 0.35f, 1.55f);
-        return true;
     }
 
-    private void tickSlingshot(ServerPlayer player, DataContext context, ChargeSession session) {
-        session.centroid = averageAnchors(session);
-        Vec3 center = player.position().add(0, player.getBbHeight() * 0.5, 0);
-        Vec3 toCentroid = session.centroid.subtract(center);
-        double dist = toCentroid.length();
-        if (dist < 1.0e-4) {
+    private void tickPullback(ServerPlayer player, ChargeSession session, float chargeRatio) {
+        if (player.horizontalCollision) {
             return;
         }
-        Vec3 toward = toCentroid.scale(1.0 / dist);
-        Vec3 away = toward.scale(-1.0);
-        double stretch = dist - session.initialDist;
-        session.peakStretch = Math.max(session.peakStretch, (float) Math.max(0.0, stretch));
-
-        // Stretch is the primary slingshot charge — backing up loads the band.
-        float stretchCharge = Mth.clamp(session.peakStretch / FULL_STRETCH_BLOCKS, 0.0f, 1.0f);
-        session.stretchCharge = Math.max(session.stretchCharge, stretchCharge);
-
+        Vec3 look = session.lockedLook;
+        Vec3 back = new Vec3(-look.x, 0.0, -look.z);
+        if (back.lengthSqr() < 1.0e-6) {
+            return;
+        }
+        back = back.normalize();
+        double stretch = player.position().distanceTo(session.startPos);
         Vec3 vel = player.getDeltaMovement();
-        double awaySpeed = vel.dot(away);
-        float rate = this.pullbackChargeRate.getAsFloat(context);
-        if (awaySpeed > 0.015 || stretch > 0.35) {
-            // Keep feeding charge while the player actively stretches further.
-            session.stretchCharge = Math.min(1.0f, session.stretchCharge + rate);
-        }
-
-        // Soft rubber-band: resist stretch gently so you can still walk back and load it.
-        if (stretch > 0.2) {
-            float spring = (float) Math.min(stretch * SPRING_STRENGTH, SPRING_MAX);
-            if (awaySpeed > 0.02) {
-                vel = vel.subtract(away.scale(awaySpeed * OUTWARD_DAMP));
-            }
-            player.setDeltaMovement(vel.add(toward.scale(spring)));
+        if (stretch >= MAX_STRETCH_BLOCKS) {
+            player.setDeltaMovement(0.0, vel.y, 0.0);
             player.hurtMarked = true;
+            return;
         }
+        float speed = session.pullbackSpeed * (0.7f + 0.3f * chargeRatio);
+        player.setDeltaMovement(back.x * speed, vel.y, back.z * speed);
+        player.hurtMarked = true;
+        player.setOnGround(false);
     }
 
     private void performChargeLaunch(ServerPlayer player, ServerLevel level, DataContext context, ChargeSession session) {
-        session.centroid = averageAnchors(session);
-        Vec3 center = player.position().add(0, player.getBbHeight() * 0.5, 0);
-        Vec3 toCentroid = session.centroid.subtract(center);
-        double dist = toCentroid.length();
-        Vec3 towardAnchors = dist > 1.0e-4 ? toCentroid.scale(1.0 / dist) : player.getLookAngle().normalize();
-        Vec3 look = player.getLookAngle().normalize();
-        // Mostly slingshot toward the latch cluster, with a bit of look aim.
-        Vec3 launchDir = towardAnchors.scale(0.72).add(look.scale(0.28));
-        if (launchDir.lengthSqr() < 1.0e-6) {
-            launchDir = look;
-        } else {
-            launchDir = launchDir.normalize();
-        }
-
-        int max = Math.max(1, this.maxChargeTicks.getAsInt(context));
-        float holdRatio = Mth.clamp(session.heldTicks / (float) max, 0.0f, 1.0f);
-        // Stretch dominates charge; hold time is a small assist.
-        float chargeRatio = Mth.clamp(session.stretchCharge * 0.85f + holdRatio * 0.25f, 0.0f, 1.0f);
+        float ratio = chargeRatio(session, context);
         double qf = QuirkFactorUtil.getQuirkFactor(player);
-
-        double power = Mth.lerp(chargeRatio,
+        Vec3 launchDir = session.lockedLook.lengthSqr() < 1.0e-6 ? player.getLookAngle().normalize() : session.lockedLook;
+        double power = Mth.lerp(ratio,
                 this.baseLaunchPower.getAsFloat(context),
                 this.maxLaunchPower.getAsFloat(context))
                 * (1.0 + qf * this.qfLaunchBonus.getAsFloat(context));
-        player.setDeltaMovement(launchDir.scale(power).add(0, power * LAUNCH_UP_BIAS, 0));
+        player.setDeltaMovement(launchDir.scale(power).add(0.0, power * LAUNCH_UP_BIAS, 0.0));
         player.hurtMarked = true;
         player.resetFallDistance();
         player.setOnGround(false);
 
-        PacketDistributor.sendToPlayer(player, BlackwhipChainSwingPayload.stop());
-        retractChains(level, session);
-        applySweptDamage(player, level, context, launchDir, chargeRatio, qf);
-
-        float pitch = 1.15f + 0.35f * chargeRatio;
+        applySweptDamage(player, level, context, launchDir, ratio, qf);
+        float pitch = 1.15f + 0.35f * ratio;
         level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 0.7f, pitch);
     }
 
@@ -324,22 +257,23 @@ public class BlackwhipChainChargeZipAbility extends Ability {
         }
     }
 
-    private static Vec3 averageAnchors(ChargeSession session) {
-        Vec3 sum = Vec3.ZERO;
-        for (Vec3 a : session.anchors) {
-            sum = sum.add(a);
-        }
-        return sum.scale(1.0 / session.anchors.size());
+    private float chargeRatio(ChargeSession session, DataContext context) {
+        int max = Math.max(1, this.maxChargeTicks.getAsInt(context));
+        return Mth.clamp(session.heldTicks / (float) max, 0.0f, 1.0f);
+    }
+
+    private static Vec3 yawOffset(Vec3 look, float yawDeg) {
+        double rad = Math.toRadians(yawDeg);
+        double cos = Math.cos(rad);
+        double sin = Math.sin(rad);
+        return new Vec3(look.x * cos - look.z * sin, look.y, look.x * sin + look.z * cos);
     }
 
     private static void pruneDeadChains(ServerLevel level, ChargeSession session) {
         for (int i = session.chainIds.size() - 1; i >= 0; i--) {
             int id = session.chainIds.get(i);
-            if (!(level.getEntity(id) instanceof BlackwhipChainEntity chain) || !chain.isAnchored()) {
+            if (!(level.getEntity(id) instanceof BlackwhipChainEntity chain) || !chain.isActive()) {
                 session.chainIds.remove(i);
-                if (i < session.anchors.size()) {
-                    session.anchors.remove(i);
-                }
             }
         }
     }
@@ -351,8 +285,6 @@ public class BlackwhipChainChargeZipAbility extends Ability {
             }
         }
         session.chainIds.clear();
-        session.anchors.clear();
-        session.armed = false;
     }
 
     private void clearSession(ServerPlayer player, ServerLevel level) {
@@ -361,6 +293,16 @@ public class BlackwhipChainChargeZipAbility extends Ability {
             retractChains(level, session);
         }
         BlackwhipChainEntity.retractOwnedByPurpose(player.getId(), BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
+        stopClient(player);
+    }
+
+    private static void syncClient(ServerPlayer player, ChargeSession session, float chargeRatio) {
+        PacketDistributor.sendToPlayer(player, new BlackwhipChainChargeZipPayload(
+                true, session.lockedYaw, session.lockedPitch, chargeRatio, session.pullbackSpeed));
+    }
+
+    private static void stopClient(ServerPlayer player) {
+        PacketDistributor.sendToPlayer(player, BlackwhipChainChargeZipPayload.stop());
     }
 
     /** Clears charge-zip state for mutex with swing / simple zip / detach. */
@@ -377,6 +319,7 @@ public class BlackwhipChainChargeZipAbility extends Ability {
             }
         }
         BlackwhipChainEntity.retractOwnedByPurpose(player.getId(), BlackwhipChainEntity.PURPOSE_ZIP_CHARGE);
+        stopClient(player);
     }
 
     @Override
@@ -390,16 +333,20 @@ public class BlackwhipChainChargeZipAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, BlackwhipChainChargeZipAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("While crouching, hold to latch four wide chains, back up to stretch the slingshot, release to fling forward.")
-                    .add("range", TYPE_VALUE, "Raycast reach for side-chain anchors.")
-                    .add("max_charge_ticks", TYPE_VALUE, "Hold ticks that assist launch power (stretch is primary).")
-                    .add("side_count", TYPE_VALUE, "Number of side-chain raycasts (use 4).")
-                    .add("side_angle", TYPE_VALUE, "Cone angle (degrees) spreading the four chains.")
-                    .add("pullback_charge_rate", TYPE_VALUE, "Extra charge gained while actively stretching back.")
+            builder.setDescription("Hold to shoot side chains from both hands and stretch backward. Release to fling in the facing from when the charge started. Charge time scales launch power.")
+                    .add("range", TYPE_VALUE, "Raycast reach for side-chain tips.")
+                    .add("max_charge_ticks", TYPE_VALUE, "Hold ticks for a full-power launch.")
+                    .add("base_launch_power", TYPE_VALUE, "Launch velocity at zero charge.")
+                    .add("max_launch_power", TYPE_VALUE, "Launch velocity at full charge.")
+                    .add("qf_launch_bonus", TYPE_VALUE, "Extra launch multiplier per quirk factor.")
+                    .add("side_count", TYPE_VALUE, "Number of side chains (minimum 2).")
+                    .add("side_angle", TYPE_VALUE, "Horizontal yaw fan half-angle in degrees.")
+                    .add("pullback_speed", TYPE_VALUE, "Blocks per tick the player is pulled backward while charging.")
+                    .add("damage", TYPE_VALUE, "Base impact damage along the launch path.")
                     .addExampleObject(new BlackwhipChainChargeZipAbility(
-                            new StaticValue(34.0f), new StaticValue(36.0f),
-                            new StaticValue(1.05f), new StaticValue(2.85f), new StaticValue(0.08f),
-                            new StaticValue(4.0f), new StaticValue(52.0f), new StaticValue(0.05f),
+                            new StaticValue(28.0f), new StaticValue(40.0f),
+                            new StaticValue(1.1f), new StaticValue(2.9f), new StaticValue(0.08f),
+                            new StaticValue(2.0f), new StaticValue(42.0f), new StaticValue(0.06f),
                             new StaticValue(5.0f),
                             AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
