@@ -626,7 +626,7 @@
       "properties": {
         "title": "Puppet (Single)",
         "description": "Hold to drag the looked-at (or nearest) tagged target to a point in front of your crosshair. With Lead on, scroll up to lengthen the tether and scroll down to shorten it. Bigger hitboxes need more Strength — oversized loads slow you down, and can drag you if they overpower you.",
-        "icon": "minecraft:string",
+        "icon": "yha:textures/icons/blackwhip/puppet.png",
         "list_index": 7,
         "hidden_in_gui": false,
         "gui_position": [
@@ -640,19 +640,6 @@
         "enabling": {
           "type": "palladium:key_bind",
           "behaviour": "held"
-        },
-        "unlocking": {
-          "type": "palladium:buyable",
-          "cost": {
-            "type": "yha:upgrade_point",
-            "points": 2
-          },
-          "requires": [
-            {
-              "type": "palladium:ability_unlocked",
-              "ability": "blackwhip_chain_restrict"
-            }
-          ]
         }
       }
     },
@@ -674,7 +661,7 @@
       "properties": {
         "title": "Puppet (All)",
         "description": "Hold to drag every tagged target to a point in front of your crosshair. With Lead on, scroll up to lengthen tethers and scroll down to shorten them. Bigger or many targets need more Strength — heavy loads slow you down.",
-        "icon": "minecraft:string",
+        "icon": "yha:textures/icons/blackwhip/detach.png",
         "list_index": 8,
         "hidden_in_gui": false,
         "gui_position": [

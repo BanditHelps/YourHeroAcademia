@@ -2,6 +2,8 @@ package com.github.bandithelps.client.renderers.entity;
 
 import com.github.bandithelps.client.blackwhip.BlackwhipChainClientAnchors;
 import com.github.bandithelps.client.blackwhip.BlackwhipWaistBoneHelper;
+import com.github.bandithelps.client.renderers.BlackwhipRibbonLateRenderer;
+import com.github.bandithelps.client.renderers.YhaRenderTypes;
 import com.github.bandithelps.client.renderers.entity.state.BlackwhipChainRenderState;
 import com.github.bandithelps.entities.BlackwhipChainEntity;
 import com.github.bandithelps.entities.BlackwhipSegmentEntity;
@@ -18,7 +20,6 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
@@ -41,8 +42,8 @@ import java.util.Map;
 public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainEntity, BlackwhipChainRenderState> {
 
     private static final Identifier TEXTURE = Identifier.parse("minecraft:textures/block/white_concrete.png");
-    private static final RenderType GLOW_TYPE = RenderTypes.entityTranslucentEmissive(TEXTURE);
-    private static final RenderType CORE_TYPE = RenderTypes.entityTranslucent(TEXTURE);
+    private static final RenderType GLOW_TYPE = YhaRenderTypes.entityTranslucentEmissive(TEXTURE);
+    private static final RenderType CORE_TYPE = YhaRenderTypes.entityTranslucent(TEXTURE);
     private static final int FULL_BRIGHT = 0xF000F0;
 
     private static final Map<Integer, Integer> INACTIVE_SINCE = new HashMap<>();
@@ -395,14 +396,13 @@ public class BlackwhipChainEntityRenderer extends EntityRenderer<BlackwhipChainE
         float finalBase = base * 1.12f; // applying thickness with the extra 1.12
         float finalFlash = spawnFlash ;
 
-        // Small camera-depth bias separates coplanar glow/outer/core and kills ribbon z-fight.
-        collector.submitCustomGeometry(poseStack, GLOW_TYPE, (pose, buffer) -> {
+        BlackwhipRibbonLateRenderer.queue(poseStack, GLOW_TYPE, (pose, buffer) -> {
             emitLayer(buffer, pose, frame, finalBase * 2.6f, glow,
                     0.16f * alphaScale * (1.0f + 0.6f * finalFlash), state, 0.0f, 0.88f, finalFlash, 0.0f);
             emitLayer(buffer, pose, frame, finalBase * 1.15f, outer,
                     0.95f * alphaScale, state, 1.0f, 1.0f, finalFlash, 0.012f);
         });
-        collector.submitCustomGeometry(poseStack, CORE_TYPE, (pose, buffer) ->
+        BlackwhipRibbonLateRenderer.queue(poseStack, CORE_TYPE, (pose, buffer) ->
                 emitLayer(buffer, pose, frame, finalBase * 0.5f, core,
                         alphaScale, state, 0.0f, 1.2f, 0.0f, 0.024f));
 

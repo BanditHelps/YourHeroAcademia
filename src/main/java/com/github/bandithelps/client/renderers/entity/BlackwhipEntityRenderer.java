@@ -1,5 +1,7 @@
 package com.github.bandithelps.client.renderers.entity;
 
+import com.github.bandithelps.client.renderers.BlackwhipRibbonLateRenderer;
+import com.github.bandithelps.client.renderers.YhaRenderTypes;
 import com.github.bandithelps.client.renderers.entity.state.BlackwhipRenderState;
 import com.github.bandithelps.entities.BlackwhipAnchor;
 import com.github.bandithelps.entities.BlackwhipEntity;
@@ -10,7 +12,6 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
@@ -32,8 +33,8 @@ import java.util.Random;
 public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, BlackwhipRenderState> {
 
     private static final Identifier TEXTURE = Identifier.parse("minecraft:textures/block/white_concrete.png");
-    private static final RenderType GLOW_TYPE = RenderTypes.entityTranslucentEmissive(TEXTURE);
-    private static final RenderType CORE_TYPE = RenderTypes.entityTranslucent(TEXTURE);
+    private static final RenderType GLOW_TYPE = YhaRenderTypes.entityTranslucentEmissive(TEXTURE);
+    private static final RenderType CORE_TYPE = YhaRenderTypes.entityTranslucent(TEXTURE);
 
     /** Packed light value for full-bright rendering (block 15, sky 15). */
     private static final int FULL_BRIGHT = 0xF000F0;
@@ -171,8 +172,7 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
         int outer = state.outerColor;
         int core = state.coreColor;
 
-        // Halo = glow, mid body = outer, dark spine = inner/core.
-        collector.submitCustomGeometry(poseStack, GLOW_TYPE, (pose, buffer) -> {
+        BlackwhipRibbonLateRenderer.queue(poseStack, GLOW_TYPE, (pose, buffer) -> {
             for (RibbonFrame f : frames) {
                 emitLayer(buffer, pose, f, base * 2.6f, glow,
                         0.16f * alphaScale * (1.0f + 0.6f * spawnFlash), state, 0.0f, 0.55f, spawnFlash);
@@ -180,7 +180,7 @@ public class BlackwhipEntityRenderer extends EntityRenderer<BlackwhipEntity, Bla
                         0.95f * alphaScale, state, 1.0f, 1.0f, spawnFlash);
             }
         });
-        collector.submitCustomGeometry(poseStack, CORE_TYPE, (pose, buffer) -> {
+        BlackwhipRibbonLateRenderer.queue(poseStack, CORE_TYPE, (pose, buffer) -> {
             for (RibbonFrame f : frames) {
                 emitLayer(buffer, pose, f, base * 0.5f, core,
                         alphaScale, state, 0.0f, 1.2f, 0.0f);
