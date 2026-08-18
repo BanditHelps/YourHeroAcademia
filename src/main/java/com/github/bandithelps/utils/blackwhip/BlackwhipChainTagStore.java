@@ -19,7 +19,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Server-side registry for latched chain-Blackwhip tethers. Parallel to {@link BlackwhipTagStore}; uses a
+ * Server-side registry for latched chain-Blackwhip tethers. Uses a
  * separate body-data key so the ribbon Blackwhip HUD is not affected. Deploying (unlatched) chains are
  * not registered here — only successful tip latches call {@link #registerChain}.
  */

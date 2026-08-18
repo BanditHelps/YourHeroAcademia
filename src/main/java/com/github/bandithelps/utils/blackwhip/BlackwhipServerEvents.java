@@ -24,8 +24,6 @@ public final class BlackwhipServerEvents {
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
-        BlackwhipStruggle.cleanup(event.getServer());
-
         BlackwhipBlockTossStore.tick(event.getServer());
 
         // Chain IK after entity movement so wrist attach tracks the owner without a tick of lag.
@@ -43,7 +41,6 @@ public final class BlackwhipServerEvents {
             return;
         }
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
-            BlackwhipTagStore.tick(player);
             BlackwhipChainTagStore.tick(player);
         }
     }
@@ -51,7 +48,6 @@ public final class BlackwhipServerEvents {
     @SubscribeEvent
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            BlackwhipTagStore.clearTags(player);
             BlackwhipChainTagStore.clearTags(player);
             BlackwhipBlockTossStore.dropAll(player);
         }

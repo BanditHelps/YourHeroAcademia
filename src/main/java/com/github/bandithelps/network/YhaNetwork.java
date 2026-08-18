@@ -31,15 +31,12 @@ public final class YhaNetwork {
         registrar.playToServer(BioPrinterTransferPayload.TYPE, BioPrinterTransferPayload.STREAM_CODEC, BioPrinterTransferPayload::handle);
         registrar.playToServer(BioPrinterPrintPayload.TYPE, BioPrinterPrintPayload.STREAM_CODEC, BioPrinterPrintPayload::handle);
         registrar.playToClient(GeneCombinationBrowserDataPayload.TYPE, GeneCombinationBrowserDataPayload.STREAM_CODEC, GeneCombinationBrowserDataPayload::handle);
-        registrar.playToClient(BlackwhipSwingPayload.TYPE, BlackwhipSwingPayload.STREAM_CODEC, BlackwhipSwingPayload::handle);
         registrar.playToClient(BlackwhipChainSwingPayload.TYPE, BlackwhipChainSwingPayload.STREAM_CODEC, BlackwhipChainSwingPayload::handle);
         registrar.playToClient(BlackwhipWebSwingPayload.TYPE, BlackwhipWebSwingPayload.STREAM_CODEC, BlackwhipWebSwingPayload::handle);
         registrar.playToServer(BlackwhipWebSwingVelocityPayload.TYPE, BlackwhipWebSwingVelocityPayload.STREAM_CODEC, BlackwhipWebSwingVelocityPayload::handle);
         registrar.playToServer(BlackwhipWebSwingBreakPayload.TYPE, BlackwhipWebSwingBreakPayload.STREAM_CODEC, BlackwhipWebSwingBreakPayload::handle);
         registrar.playToClient(BlackwhipChainZipAnimPayload.TYPE, BlackwhipChainZipAnimPayload.STREAM_CODEC, BlackwhipChainZipAnimPayload::handle);
         registrar.playToClient(BlackwhipChainChargeZipPayload.TYPE, BlackwhipChainChargeZipPayload.STREAM_CODEC, BlackwhipChainChargeZipPayload::handle);
-        registrar.playToClient(BlackwhipStruggleStatusPayload.TYPE, BlackwhipStruggleStatusPayload.STREAM_CODEC, BlackwhipStruggleStatusPayload::handle);
-        registrar.playToServer(BlackwhipStruggleTapPayload.TYPE, BlackwhipStruggleTapPayload.STREAM_CODEC, BlackwhipStruggleTapPayload::handle);
         registrar.playToClient(BlackwhipChainLeadPayload.TYPE, BlackwhipChainLeadPayload.STREAM_CODEC, BlackwhipChainLeadPayload::handle);
         registrar.playToClient(BlackwhipChainReelSessionPayload.TYPE, BlackwhipChainReelSessionPayload.STREAM_CODEC, BlackwhipChainReelSessionPayload::handle);
         registrar.playToServer(BlackwhipChainReelScrollPayload.TYPE, BlackwhipChainReelScrollPayload.STREAM_CODEC, BlackwhipChainReelScrollPayload::handle);
