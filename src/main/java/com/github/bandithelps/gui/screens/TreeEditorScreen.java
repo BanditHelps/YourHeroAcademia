@@ -8,6 +8,7 @@ import com.github.bandithelps.gui.tree.TreeEditorNode;
 import com.github.bandithelps.gui.tree.TreeConnectionPath;
 import com.github.bandithelps.gui.tree.TreeConnectionRenderer;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -28,6 +29,7 @@ import org.lwjgl.glfw.GLFW;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class TreeEditorScreen extends Screen {
     private static final int GRID_SIZE = 50;
@@ -39,6 +41,9 @@ public class TreeEditorScreen extends Screen {
     private static final int MIN_TREE_HEIGHT = 200;
     private static final int CHIP_HEIGHT = 28;
     private static final int CHIP_GAP = 2;
+    private static final float STEP_MIN = 0.05F;
+    private static final float STEP_MAX = 2.0F;
+    private static final float STEP_TICK = 0.05F;
     private static final int LINE_CYAN = 0xFF00FFFF;
     private static final int LINE_OUTLINE = 0xFF000000;
     private static final int TEXT_LIGHT = 0xFFFFFFFF;
@@ -65,6 +70,7 @@ public class TreeEditorScreen extends Screen {
     private boolean showGrid;
     private boolean showGridNumbers;
     private boolean showNodeHover;
+    private float stepSize = TreeEditorDraft.GRID_SNAP;
     private boolean panning;
     @Nullable
     private TreeEditorNode dragging;
@@ -223,16 +229,16 @@ public class TreeEditorScreen extends Screen {
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         if (this.draggingWaypointNode != null && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            float gridX = TreeEditorDraft.snap(this.screenToGridX((int) event.x()));
-            float gridY = TreeEditorDraft.snap(this.screenToGridY((int) event.y()));
+            float gridX = this.snap(this.screenToGridX((int) event.x()));
+            float gridY = this.snap(this.screenToGridY((int) event.y()));
             this.draggingWaypointNode.setConnectionPath(
                     this.draggingWaypointNode.getConnectionPath().withReplaced(this.draggingWaypointIndex, gridX, gridY)
             );
             return true;
         }
         if (this.dragging != null && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            float gridX = TreeEditorDraft.snap(this.screenToGridX((int) event.x()));
-            float gridY = TreeEditorDraft.snap(this.screenToGridY((int) event.y()));
+            float gridX = this.snap(this.screenToGridX((int) event.x()));
+            float gridY = this.snap(this.screenToGridY((int) event.y()));
             this.dragging.setGrid(gridX, gridY);
             return true;
         }
@@ -292,7 +298,7 @@ public class TreeEditorScreen extends Screen {
     }
 
     public void addNodeAt(int mouseX, int mouseY) {
-        TreeEditorNode node = this.draft.addDummy(this.screenToGridX(mouseX), this.screenToGridY(mouseY));
+        TreeEditorNode node = this.draft.addDummy(this.snap(this.screenToGridX(mouseX)), this.snap(this.screenToGridY(mouseY)));
         this.selected = node;
         this.openEdit(node);
     }
@@ -324,7 +330,7 @@ public class TreeEditorScreen extends Screen {
         }
         List<Vec2> points = this.fullGridPoints(parent, child);
         int insertAt = Math.max(1, Math.min(segmentIndex + 1, points.size() - 1));
-        points.add(insertAt, new Vec2(TreeEditorDraft.snap(gridX), TreeEditorDraft.snap(gridY)));
+        points.add(insertAt, new Vec2(this.snap(gridX), this.snap(gridY)));
         child.setConnectionPath(this.waypointsFromFullPath(points));
         this.status = "Added vertex on " + child.getKey();
     }
@@ -608,7 +614,7 @@ public class TreeEditorScreen extends Screen {
         List<Vec2> points = new ArrayList<>();
         points.add(new Vec2(parent.getGridX(), parent.getGridY()));
         if (child.getConnectionPath().isEmpty()) {
-            float busGridX = TreeEditorDraft.snap(this.screenToGridX(this.busScreenX(parent)));
+            float busGridX = this.snap(this.screenToGridX(this.busScreenX(parent)));
             points.add(new Vec2(busGridX, parent.getGridY()));
             points.add(new Vec2(busGridX, child.getGridY()));
         } else {
@@ -716,12 +722,13 @@ public class TreeEditorScreen extends Screen {
         int gap = 3;
         int pad = 4;
         int available = Math.max(0, this.treeW - pad * 2);
-        int[] widths = {70, 52, 52, 62, 56, 52};
-        int needed = widths[0] + widths[1] + widths[2] + widths[3] + widths[4] + widths[5] + gap * 5;
+        int[] widths = {68, 50, 50, 60, 56, 50};
+        int sliderMin = 90;
+        int needed = widths[0] + widths[1] + widths[2] + widths[3] + sliderMin + widths[4] + widths[5] + gap * 6;
         if (needed > available) {
             int shrink = needed - available;
             for (int i = 0; i < widths.length && shrink > 0; i++) {
-                int reduce = Math.min(shrink, widths[i] - 40);
+                int reduce = Math.min(shrink, widths[i] - 38);
                 widths[i] -= reduce;
                 shrink -= reduce;
             }
@@ -730,6 +737,8 @@ public class TreeEditorScreen extends Screen {
         int closeX = this.treeX + this.treeW - pad - widths[5];
         int exportX = closeX - gap - widths[4];
         int hoverX = leftX + widths[0] + gap + widths[1] + gap + widths[2] + gap;
+        int sliderX = hoverX + widths[3] + gap;
+        int sliderW = Math.max(70, exportX - gap - sliderX);
         this.addRenderableWidget(Button.builder(Component.literal("Background"), button -> this.openBackgroundPicker())
                 .bounds(leftX, y, widths[0], 20)
                 .build());
@@ -751,6 +760,7 @@ public class TreeEditorScreen extends Screen {
                 })
                 .bounds(hoverX, y, widths[3], 20)
                 .build());
+        this.addRenderableWidget(new StepSlider(sliderX, y, sliderW, 20));
         this.addRenderableWidget(Button.builder(Component.literal("Export"), button -> this.exportDraft())
                 .bounds(exportX, y, widths[4], 20)
                 .build());
@@ -769,6 +779,47 @@ public class TreeEditorScreen extends Screen {
 
     private String hoverLabel() {
         return this.showNodeHover ? "Hover: On" : "Hover: Off";
+    }
+
+    private float snap(float value) {
+        return TreeEditorDraft.snap(value, this.stepSize);
+    }
+
+    private static double sliderProgress(float step) {
+        float clamped = Math.max(STEP_MIN, Math.min(STEP_MAX, step));
+        return (clamped - STEP_MIN) / (STEP_MAX - STEP_MIN);
+    }
+
+    private static float stepFromProgress(double progress) {
+        float raw = STEP_MIN + (float) progress * (STEP_MAX - STEP_MIN);
+        float snapped = Math.round(raw / STEP_TICK) * STEP_TICK;
+        return Math.max(STEP_MIN, Math.min(STEP_MAX, snapped));
+    }
+
+    private static String formatStep(float step) {
+        String text = String.format(Locale.ROOT, "%.2f", step);
+        if (text.indexOf('.') >= 0) {
+            text = text.replaceAll("0+$", "").replaceAll("\\.$", "");
+        }
+        return text;
+    }
+
+    private final class StepSlider extends AbstractSliderButton {
+        private StepSlider(int x, int y, int width, int height) {
+            super(x, y, width, height, Component.empty(), sliderProgress(TreeEditorScreen.this.stepSize));
+            this.updateMessage();
+        }
+
+        @Override
+        protected void updateMessage() {
+            this.setMessage(Component.literal("Step: " + formatStep(TreeEditorScreen.this.stepSize)));
+        }
+
+        @Override
+        protected void applyValue() {
+            TreeEditorScreen.this.stepSize = stepFromProgress(this.value);
+            this.updateMessage();
+        }
     }
 
     public void applyBackground(Identifier textureOrBlock) {

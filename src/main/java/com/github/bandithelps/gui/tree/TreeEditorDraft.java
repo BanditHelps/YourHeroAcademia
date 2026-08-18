@@ -20,6 +20,7 @@ import java.util.Locale;
 
 public final class TreeEditorDraft {
     public static final float GRID_SNAP = 0.25F;
+    private static final float STEP_MIN_SNAP = 0.05F;
 
     private final Identifier powerId;
     private final String powerName;
@@ -108,7 +109,7 @@ public final class TreeEditorDraft {
 
     public TreeEditorNode addDummy(float gridX, float gridY) {
         String key = uniqueKey("new_node");
-        TreeEditorNode node = TreeEditorNode.created(key, "New Node", snap(gridX), snap(gridY));
+        TreeEditorNode node = TreeEditorNode.created(key, "New Node", gridX, gridY);
         this.nodes.add(node);
         return node;
     }
@@ -178,7 +179,12 @@ public final class TreeEditorDraft {
     }
 
     public static float snap(float value) {
-        return Math.round(value / GRID_SNAP) * GRID_SNAP;
+        return snap(value, GRID_SNAP);
+    }
+
+    public static float snap(float value, float step) {
+        float size = Math.max(STEP_MIN_SNAP, step);
+        return Math.round(value / size) * size;
     }
 
     public static String keyFromTitle(String title) {
