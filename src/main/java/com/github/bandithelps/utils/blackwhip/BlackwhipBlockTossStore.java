@@ -36,10 +36,13 @@ public final class BlackwhipBlockTossStore {
     }
 
     private static final Map<UUID, List<Carry>> PLAYER_CARRIES = new ConcurrentHashMap<>();
-    private static final double ORBIT_RADIUS = 1.6;
-    private static final double ORBIT_Y_FRAC = 0.72;
-    private static final double ORBIT_Y_BOB = 0.18;
+    private static final double ORBIT_RADIUS = 1.25;
+    /** Cube center above the top of the player's hitbox so first-person view stays clear. */
+    private static final double ORBIT_ABOVE_HEAD = 1.15;
+    private static final double ORBIT_Y_BOB = 0.10;
     private static final float ORBIT_DEG_PER_TICK = 2.4f;
+    /** Aim at this distance along the look ray so throws converge on the crosshair. */
+    private static final double THROW_AIM_DISTANCE = 32.0;
 
     private BlackwhipBlockTossStore() {
     }
@@ -121,7 +124,13 @@ public final class BlackwhipBlockTossStore {
         BlackwhipTossedBlockEntity thrown = new BlackwhipTossedBlockEntity(
                 level, player, chosen.state(), chosen.hardness(), baseDamage, damagePerHardness, knockback);
         thrown.setPos(from.x, from.y, from.z);
-        thrown.shootFromRotation(player, player.getXRot(), player.getYRot(), -2.0f, throwSpeed, 0.4f);
+        Vec3 eye = player.getEyePosition();
+        Vec3 aimPoint = eye.add(player.getLookAngle().scale(THROW_AIM_DISTANCE));
+        Vec3 dir = aimPoint.subtract(from);
+        if (dir.lengthSqr() < 1.0e-6) {
+            dir = player.getLookAngle();
+        }
+        thrown.shoot(dir.x, dir.y, dir.z, throwSpeed, 0.0f);
         level.addFreshEntity(thrown);
         level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP,
                 SoundSource.PLAYERS, 0.55f, 0.75f);
@@ -213,7 +222,7 @@ public final class BlackwhipBlockTossStore {
             return;
         }
         double baseYaw = Math.toRadians(tickCount * ORBIT_DEG_PER_TICK);
-        Vec3 center = player.position().add(0.0, Math.max(0.9, player.getBbHeight() * ORBIT_Y_FRAC), 0.0);
+        Vec3 center = player.position().add(0.0, player.getBbHeight() + ORBIT_ABOVE_HEAD, 0.0);
         for (int i = 0; i < n; i++) {
             Carry carry = carries.get(i);
             if (!(level.getEntity(carry.displayId()) instanceof BetterBlockDisplay display)) {
