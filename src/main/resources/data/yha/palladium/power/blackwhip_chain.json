@@ -928,33 +928,18 @@
     },
     "bw_web_swing": {
       "type": "yha:blackwhip_web_swing",
-      "range": {
-        "type": "palladium:molang_float",
-        "molang": "32"
-      },
+      "range": 32,
       "min_pivot_dist": 14,
-      "max_pivot_dist": {
-        "type": "palladium:molang_float",
-        "molang": "28"
-      },
+      "max_pivot_dist": 28,
       "elev_bias": 0.28,
       "start_slack": 0.85,
-      "takeoff_boost": {
-        "type": "palladium:molang_float",
-        "molang": "0.48"
-      },
+      "takeoff_boost": 0.48,
       "pump_accel": 0.09,
       "turn_assist": 0.058,
       "auto_reel_rate": 0.1,
       "max_speed": 3.8,
-      "release_forward": {
-        "type": "palladium:molang_float",
-        "molang": "0.58"
-      },
-      "release_up": {
-        "type": "palladium:molang_float",
-        "molang": "0.48"
-      },
+      "release_forward": 0.58,
+      "release_up": 0.48,
       "release_speed_scale": 0.3,
       "max_ground_height": 12,
       "properties": {
