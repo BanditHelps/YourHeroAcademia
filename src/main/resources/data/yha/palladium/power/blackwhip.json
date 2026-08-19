@@ -845,7 +845,7 @@
       "properties": {
         "title": "Disarm",
         "description": "Shoot a tip that tries to rip a held item into your inventory. Shields are targeted first (offhand or while blocking). Strength vs Strength is a chance roll — blocking raises their defense.",
-        "icon": "minecraft:iron_sword",
+        "icon": "yha:textures/icons/blackwhip/disarm.png",
         "list_index": 4,
         "hidden_in_gui": false,
         "gui_position": [
@@ -879,7 +879,7 @@
       "properties": {
         "title": "Item Pull",
         "description": "Upgrade Chain Grab so its tip can snatch items off the ground into your inventory.",
-        "icon": "minecraft:hopper",
+        "icon": "yha:textures/icons/blackwhip/item_pull.png",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
@@ -970,9 +970,9 @@
       "max_speed": 2.4,
       "qf_speed_bonus": 0.12,
       "properties": {
-        "title": "Whip Swing",
+        "title": "Manual Swing",
         "description": "Latch a chain and swing. Hold WASD to build momentum. Space climbs up the chain, Shift slides down. Release to fling with your momentum.",
-        "icon": "minecraft:string",
+        "icon": "yha:textures/icons/blackwhip/whip_swing.png",
         "list_index": 2,
         "hidden_in_gui": false,
         "gui_position": [
@@ -1031,7 +1031,7 @@
       "properties": {
         "title": "Web Swing",
         "description": "Swing without aiming at a block when solid terrain is nearby below or beside you. Whips fan-search for a solid latch ahead and above (Palladium-style), or fall back to an air pivot. Steer with WASD and the camera, Shift brakes, Jump hops. Release near the top of the arc to fling forward — holding too long snaps the whip with almost no launch.",
-        "icon": "minecraft:cobweb",
+        "icon": "yha:textures/icons/blackwhip/web_swing.png",
         "list_index": 2,
         "hidden_in_gui": false,
         "gui_position": [
@@ -1110,7 +1110,7 @@
       "properties": {
         "title": "Zip Slam",
         "description": "When tethering into entities, you fly towards and do a slam kick on them.",
-        "icon": "minecraft:mace",
+        "icon": "yha:textures/icons/blackwhip/zip_slam.png",
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
@@ -1343,7 +1343,7 @@
       "properties": {
         "title": "Block Toss",
         "description": "Unused whips wrap random nearby blocks (never chests or other containers) and hover them around you. Press again to throw one. Harder blocks hit harder. Hitting a mob drops the block as an item; hitting terrain places it.",
-        "icon": "minecraft:grass_block",
+        "icon": "yha:textures/icons/blackwhip/block_toss.png",
         "list_index": 3,
         "hidden_in_gui": false,
         "gui_position": [
@@ -1623,7 +1623,7 @@
       "properties": {
         "title": "AOE Grab",
         "description": "Hold Shift while using Tether to automatically grab all nearby entities within range, up to your max tethers. Tips still have to connect — fast targets can dodge.",
-        "icon": "minecraft:sculk_sensor",
+        "icon": "yha:textures/icons/blackwhip/aoe_tether.png",
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
