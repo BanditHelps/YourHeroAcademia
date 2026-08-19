@@ -17,7 +17,7 @@ import net.threetag.palladium.power.ability.AbilityUtil;
  * Runtime lookups for Blackwhip reinforce abilities via Palladium {@link AbilityUtil}.
  */
 public final class BlackwhipReinforceUtil {
-    public static final Identifier POWER_ID = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "blackwhip_chain");
+    public static final Identifier POWER_ID = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "blackwhip");
     public static final String ARM_REINFORCE_KEY = "bw_arm_reinforce";
     public static final String LEG_REINFORCE_KEY = "bw_leg_reinforce";
     public static final String BODY_REINFORCE_KEY = "bw_body_reinforce";

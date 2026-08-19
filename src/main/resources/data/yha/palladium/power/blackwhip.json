@@ -502,8 +502,94 @@
           "behaviour": "held"
         },
         "unlocking": {
-          "type": "palladium:ability_unlocked",
-          "ability": "bw_tree_tag_9"
+          "type": "palladium:and",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "bw_tree_tag_9"
+            },
+            {
+              "type": "palladium:not",
+              "conditions": [
+                {
+                  "type": "palladium:and",
+                  "conditions": [
+                    {
+                      "type": "palladium:crouching"
+                    },
+                    {
+                      "type": "palladium:ability_unlocked",
+                      "ability": "bw_aoe_grab"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "bw_tag_aoe": {
+      "type": "yha:blackwhip_tag",
+      "aoe": true,
+      "range": {
+        "type": "yha:upgrade_switch",
+        "cases": [
+          {
+            "ability": "bw_tree_tag_9",
+            "value": {
+              "type": "palladium:molang_float",
+              "molang": "9 + yha.quirk_factor() * 3"
+            }
+          },
+          {
+            "ability": "bw_tree_tag_12",
+            "value": {
+              "type": "palladium:molang_float",
+              "molang": "12 + yha.quirk_factor() * 3"
+            }
+          },
+          {
+            "ability": "bw_tree_tag_15",
+            "value": {
+              "type": "palladium:molang_float",
+              "molang": "15 + yha.quirk_factor() * 3"
+            }
+          }
+        ],
+        "fallback": 9
+      },
+      "max_distance": {
+        "type": "palladium:molang_float",
+        "molang": "28 + yha.quirk_factor() * 4"
+      },
+      "ttl_ticks": 0,
+      "segment_count": 4,
+      "link_length": 0.85,
+      "thickness": 1.0,
+      "travel_ticks": 12,
+      "properties": {
+        "title": "Tether (AOE)",
+        "icon": "yha:textures/icons/blackwhip/tether.png",
+        "list_index": 0,
+        "hidden_in_gui": true
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "held"
+        },
+        "unlocking": {
+          "type": "palladium:and",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "bw_aoe_grab"
+            },
+            {
+              "type": "palladium:crouching"
+            }
+          ]
         }
       }
     },
@@ -1295,7 +1381,7 @@
       "properties": {
         "title": "Limb Reinforcement",
         "description": "Your blackwhip now autonomously acts to protect harmed limbs, reducing their damage taken.",
-        "icon": "minecraft:obsidian",
+        "icon": "yha:textures/icons/blackwhip/limb_reinforce.png",
         "hidden_in_bar": true,
         "hidden_in_gui": false,
         "gui_position": [
@@ -1313,21 +1399,20 @@
         }
       }
     },
-    "bw_arm_reinforce": {
+    "bw_left_arm_reinforce": {
       "type": "yha:blackwhip_limb_reinforce",
       "parts": [
         "left_arm",
-        "right_arm",
-        "left_hand",
-        "right_hand"
+        "left_hand"
       ],
       "reduction": 0.5,
       "properties": {
-        "title": "Arm Reinforce",
-        "description": "When any arm or hand drops to 50% health or below, Blackwhip wraps those limbs and halves further body damage to them.",
-        "icon": "minecraft:diamond_sword",
+        "title": "Arm Reinforce - Left",
+        "description": "When left arm or hand drops to 50% health or below, Blackwhip wraps it up and halves further body damage to them.",
+        "icon": "yha:textures/icons/blackwhip/limb_reinforce.png",
         "hidden_in_bar": true,
-        "hidden_in_gui": true
+        "hidden_in_gui": true,
+        "animation_timer": 14
       },
       "state": {
         "unlocking": {
@@ -1347,15 +1432,42 @@
             },
             {
               "type": "yha:body_health",
-              "part": "right_arm",
+              "part": "left_hand",
               "check_type": "value",
               "operator": "<=",
               "state": "null",
               "target": 50
-            },
+            }
+          ]
+        }
+      }
+    },
+    "bw_right_arm_reinforce": {
+      "type": "yha:blackwhip_limb_reinforce",
+      "parts": [
+        "right_arm",
+        "right_hand"
+      ],
+      "reduction": 0.5,
+      "properties": {
+        "title": "Arm Reinforce - right",
+        "description": "When right arm or hand drops to 50% health or below, Blackwhip wraps it up and halves further body damage to them.",
+        "icon": "yha:textures/icons/blackwhip/limb_reinforce.png",
+        "hidden_in_bar": true,
+        "hidden_in_gui": true,
+        "animation_timer": 15
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "bw_tree_limb_reinforcement"
+        },
+        "enabling": {
+          "type": "palladium:or",
+          "conditions": [
             {
               "type": "yha:body_health",
-              "part": "left_hand",
+              "part": "right_arm",
               "check_type": "value",
               "operator": "<=",
               "state": "null",
@@ -1373,21 +1485,20 @@
         }
       }
     },
-    "bw_leg_reinforce": {
+    "bw_left_leg_reinforce": {
       "type": "yha:blackwhip_limb_reinforce",
       "parts": [
         "left_leg",
-        "right_leg",
-        "left_foot",
-        "right_foot"
+        "left_foot"
       ],
       "reduction": 0.5,
       "properties": {
         "title": "Leg Reinforce",
         "description": "When any leg or foot drops to 50% health or below, Blackwhip wraps those limbs and halves further body damage to them.",
-        "icon": "minecraft:iron_boots",
+        "icon": "yha:textures/icons/blackwhip/limb_reinforce.png",
         "hidden_in_bar": true,
-        "hidden_in_gui": true
+        "hidden_in_gui": true,
+        "animation_timer": 14
       },
       "state": {
         "unlocking": {
@@ -1407,15 +1518,42 @@
             },
             {
               "type": "yha:body_health",
-              "part": "right_leg",
+              "part": "left_foot",
               "check_type": "value",
               "operator": "<=",
               "state": "null",
               "target": 50
-            },
+            }
+          ]
+        }
+      }
+    },
+    "bw_right_leg_reinforce": {
+      "type": "yha:blackwhip_limb_reinforce",
+      "parts": [
+        "right_leg",
+        "right_foot"
+      ],
+      "reduction": 0.5,
+      "properties": {
+        "title": "Leg Reinforce",
+        "description": "When right leg or foot drops to 50% health or below, Blackwhip wraps those limbs and halves further body damage to them.",
+        "icon": "yha:textures/icons/blackwhip/limb_reinforce.png",
+        "hidden_in_bar": true,
+        "hidden_in_gui": true,
+        "animation_timer": 14
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "bw_tree_limb_reinforcement"
+        },
+        "enabling": {
+          "type": "palladium:or",
+          "conditions": [
             {
               "type": "yha:body_health",
-              "part": "left_foot",
+              "part": "right_leg",
               "check_type": "value",
               "operator": "<=",
               "state": "null",
@@ -1451,7 +1589,7 @@
       "properties": {
         "title": "Body Reinforce",
         "description": "Toggle to stop all stamina drain. Stamina that would have been spent is converted into body damage instead.",
-        "icon": "minecraft:paper",
+        "icon": "yha:textures/icons/blackwhip/body_reinforce.png",
         "list_index": 4,
         "hidden_in_bar": false,
         "hidden_in_gui": false,
@@ -1475,6 +1613,35 @@
             {
               "type": "palladium:ability_unlocked",
               "ability": "bw_tree_limb_reinforcement"
+            }
+          ]
+        }
+      }
+    },
+    "bw_aoe_grab": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "AOE Grab",
+        "description": "Hold Shift while using Tether to automatically grab all nearby entities within range, up to your max tethers. Tips still have to connect — fast targets can dodge.",
+        "icon": "minecraft:sculk_sensor",
+        "hidden_in_bar": true,
+        "hidden_in_gui": false,
+        "gui_position": [
+          0,
+          -3.2
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "bw_puppet_all"
             }
           ]
         }

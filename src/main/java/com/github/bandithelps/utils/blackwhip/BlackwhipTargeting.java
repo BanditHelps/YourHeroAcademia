@@ -95,6 +95,50 @@ public final class BlackwhipTargeting {
     }
 
     /**
+     * Finds living entities in a full sphere around the owner, sorted nearest-first.
+     * Walls block candidates (collider line-of-sight from the owner's eyes to the target center).
+     *
+     * @param max maximum number of entities to return ({@code <= 0} for unlimited)
+     */
+    public static List<LivingEntity> entitiesInRange(LivingEntity owner, double range, int max) {
+        Vec3 eye = owner.getEyePosition();
+        double rangeSqr = range * range;
+        AABB search = owner.getBoundingBox().inflate(range);
+
+        List<LivingEntity> results = new ArrayList<>();
+        for (Entity e : owner.level().getEntities(owner, search)) {
+            LivingEntity living = asLivingTarget(e);
+            if (living == null || living == owner || !e.isPickable() || results.contains(living)) {
+                continue;
+            }
+            if (living.distanceToSqr(owner) > rangeSqr) {
+                continue;
+            }
+            if (!hasLineOfSight(owner, living, eye)) {
+                continue;
+            }
+            results.add(living);
+        }
+        results.sort(Comparator.comparingDouble(owner::distanceToSqr));
+        if (max > 0 && results.size() > max) {
+            return new ArrayList<>(results.subList(0, max));
+        }
+        return results;
+    }
+
+    /** True when a collider clip from {@code origin} reaches {@code target} without hitting a block first. */
+    public static boolean hasLineOfSight(LivingEntity owner, Entity target, Vec3 origin) {
+        Vec3 to = target.position().add(0.0, target.getBbHeight() * 0.5, 0.0);
+        BlockHitResult hit = owner.level().clip(new ClipContext(
+                origin, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, owner));
+        if (hit.getType() == HitResult.Type.MISS) {
+            return true;
+        }
+        double targetDist = origin.distanceTo(to);
+        return origin.distanceTo(hit.getLocation()) >= targetDist - 0.35;
+    }
+
+    /**
      * Fans collider clips in a forward cone and returns a solid block hit within {@code range},
      * or {@code null} if nothing lands (open air / void).
      * <p>
