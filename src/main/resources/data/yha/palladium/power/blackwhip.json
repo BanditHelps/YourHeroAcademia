@@ -570,7 +570,7 @@
       "travel_ticks": 12,
       "properties": {
         "title": "Tether (AOE)",
-        "icon": "yha:textures/icons/blackwhip/tether.png",
+        "icon": "yha:textures/icons/blackwhip/aoe_tether.png",
         "list_index": 0,
         "hidden_in_gui": true
       },
