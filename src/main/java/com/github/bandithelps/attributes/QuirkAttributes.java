@@ -13,7 +13,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class QuirkAttributes {
 
-    public static final double QUIRK_FACTOR_DEFAULT = 1.0D;
+    public static final double QUIRK_FACTOR_DEFAULT = 0.0D;
     public static final double QUIRK_FACTOR_MIN = 0.0D;
     public static final double QUIRK_FACTOR_MAX = 2048.0D;
 

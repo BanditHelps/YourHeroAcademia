@@ -37,6 +37,7 @@ public record BodyFloatCondition(String part, String key, NumberComparator opera
             if (part == null) return false;
             IBodyData body = BodyAttachments.get(player);
 
+            // TODO THIS MIGHT NOT WORK! CHECK THAT target IS AN ACTUAL NUMBER!
             Object target = this.target.get(dataContext);
             if (target instanceof Number num2) {
                 Number num1 = body.getCustomFloat(player, part, this.key, 0);

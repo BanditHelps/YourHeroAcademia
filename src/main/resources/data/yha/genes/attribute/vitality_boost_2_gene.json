@@ -1,0 +1,35 @@
+{
+  "id": "yha:vitality_boost_2",
+  "category": "ATTRIBUTE",
+  "rarity": "RARE",
+  "qualityRange": [1, 100],
+  "combinable": true,
+  "attributes": [
+    {
+      "id": "minecraft:max_health",
+      "minModifier": 6.0,
+      "maxModifier": 11.0
+    }
+  ],
+  "description": "An rare gene mutated to provide a higher vitality than the previous generation.",
+  "mobs": [
+    "minecraft:iron_golem",
+    "minecraft:ravager",
+    "minecraft:wither",
+    "minecraft:warden"
+  ],
+  "combination": {
+    "requires": [
+      {
+        "id": "yha:vitality_boost_1",
+        "minQuality": 70
+      }
+    ],
+    "builder": {
+      "count": 1,
+      "minQuality": 50,
+      "rarity": "UNCOMMON"
+    },
+    "successRate": 75
+  }
+}

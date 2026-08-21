@@ -1,0 +1,136 @@
+{
+  "name": "Physical Upgrades",
+  "icon": "minecraft:iron_sword",
+  "screen": "yha:power/quirk",
+  "gui_display_type": "tree",
+  "abilities": {
+    "speed_upgrade_1": {
+      "type": "palladium:attribute_modifier",
+      "modifiers": [
+        {
+          "attribute": "minecraft:movement_speed",
+          "amount": {
+            "type": "palladium:molang_float",
+            "molang": "yha.speed_current() * 0.005"
+          },
+          "operation": "add_value"
+        }
+      ],
+      "properties": {
+        "title": "Speed Upgrade (+0.005)",
+        "description": {
+          "locked": "Adds +0.005 to Movement Speed",
+          "unlocked": "+0.005 Movement Speed"
+        },
+        "icon": "yha:textures/icons/physical/speed_upgrade_1.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [0, 0]
+      }
+    },
+    "strength_upgrade_1": {
+      "type": "palladium:attribute_modifier",
+      "modifiers": [
+        {
+          "attribute": "minecraft:attack_damage",
+          "amount": {
+            "type": "palladium:molang_float",
+            "molang": "yha.strength_current() * 0.25"
+          },
+          "operation": "add_value"
+        },
+        {
+          "attribute": "yha:strength",
+          "amount": {
+            "type": "palladium:molang_float",
+            "molang": "yha.strength_current()"
+          },
+          "operation": "add_value"
+        }
+      ],
+      "properties": {
+        "title": "Strength Upgrade",
+        "description": {
+          "locked": "Adds Attack Damage and yha:strength (Lead/Puppet contests)",
+          "unlocked": "+0.25 Attack Damage and +1 Strength per point"
+        },
+        "icon": "yha:textures/icons/physical/strength_upgrade_1.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [0.90, 0]
+      }
+    },
+    "armor_upgrade_1": {
+      "type": "palladium:attribute_modifier",
+      "modifiers": [
+        {
+          "attribute": "minecraft:armor",
+          "amount": {
+            "type": "palladium:molang_float",
+            "molang": "yha.armor_current() * 0.25"
+          },
+          "operation": "add_value"
+        }
+      ],
+      "properties": {
+        "title": "Armor Upgrade (+0.5)",
+        "description": {
+          "locked": "Adds +0.5 to Armor",
+          "unlocked": "+0.5 Armor"
+        },
+        "icon": "yha:textures/icons/physical/armor_upgrade_1.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [1.87, 0]
+      }
+    },
+    "health_upgrade_1": {
+      "type": "palladium:attribute_modifier",
+      "modifiers": [
+        {
+          "attribute": "minecraft:max_health",
+          "amount": {
+            "type": "palladium:molang_float",
+            "molang": "yha.max_health_current() * 0.5"
+          },
+          "operation": "add_value"
+        }
+      ],
+      "properties": {
+        "title": "Health Upgrade (+0.5)",
+        "description": {
+          "locked": "Adds +0.5 to Health",
+          "unlocked": "+0.5 Health"
+        },
+        "icon": "yha:textures/icons/physical/health_upgrade_1.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [2.83, 0]
+      }
+    },
+    "toughness_upgrade_1": {
+      "type": "palladium:attribute_modifier",
+      "modifiers": [
+        {
+          "attribute": "minecraft:armor_toughness",
+          "amount": {
+            "type": "palladium:molang_float",
+            "molang": "yha.armor_toughness_current() * 0.15"
+          },
+          "operation": "add_value"
+        }
+      ],
+      "properties": {
+        "title": "Toughness Upgrade (+0.30)",
+        "description": {
+          "locked": "Adds +0.30 to Toughness",
+          "unlocked": "+0.30 Toughness"
+        },
+        "icon": "minecraft:diamond_chestplate",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [3.8, 0]
+      }
+    }
+  }
+}

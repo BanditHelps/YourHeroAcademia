@@ -4,7 +4,15 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "AbilityPropertiesMixin",
-    "AbilityInstanceMixin"
+    "AbilityInstanceMixin",
+    "ServerCommonPacketListenerImplMixin"
+  ],
+  "client": [
+    "AbilityBarMixin",
+    "AbilityBarAbilityListMixin",
+    "AbilityListComponentMixin",
+    "PalladiumKeyMappingsMixin",
+    "AbilityConnectionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

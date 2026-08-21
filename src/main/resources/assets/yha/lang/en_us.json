@@ -1,27 +1,85 @@
 {
-  "itemGroup.yourheroacademia": "Example Mod Tab",
+  "itemGroup.yourheroacademia": "Your Hero Academia",
+
   "block.yourheroacademia.example_block": "Example Block",
   "block.yha.treadmill": "Treadmill",
+  "block.yha.dna_analyzer": "DNA Analyzer",
+  "block.yha.dna_splicer": "DNA Splicer",
+  "block.yha.gene_combiner": "Gene Combiner",
+  "block.yha.bio_printer": "Bio Printer",
+
   "item.yha.treadmill": "Treadmill",
+  "item.yha.empty_canister": "Empty Canister",
+  "item.yha.filled_smoke_canister": "Filled Smoke Canister",
+  "item.yha.infused_smoke_canister": "Infused Smoke Canister",
+  "item.yha.pipette": "Pipette",
+  "item.yha.empty_gene_vial": "Empty Gene Vial",
   "item.yourheroacademia.example_item": "Example Item",
+  "item.yha.tissue_sample": "Tissue Sample",
+  "item.yha.tissue_extractor": "Tissue Extractor",
+  "item.yha.gene_vial": "Gene Vial",
+  "item.yha.dna_injector": "DNA Injector",
+  "item.yha.genetic_slop": "Genetic Slop",
+
+  "effect.yha.smoke_blind": "Smoke Blindness",
+  "effect.yha.decay": "Decay",
+
+  "palladium.ability.yha.bd_body_part_emitter": "Block Display - Body Emitter",
+  "palladium.ability.yha.bd_dome": "Block Display - Dome",
+  "palladium.ability.yha.bd_shockwave": "Block Display - Shockwave",
+  "palladium.ability.yha.bd_trail": "Block Display - Trail",
+
+  "palladium.ability.yha.blackwhip_block_toss": "Blackwhip - Block Toss",
+  "palladium.ability.yha.blackwhip_body_reinforce": "Blackwhip - Carnage Mode",
+  "palladium.ability.yha.blackwhip_charge_zip": "Blackwhip - Charge Zip",
+  "palladium.ability.yha.blackwhip_detach": "Blackwhip - Detach",
+  "palladium.ability.yha.blackwhip_disarm": "Blackwhip - Disarm",
+  "palladium.ability.yha.blackwhip_limb_reinforce": "Blackwhip - Limb Reinforce",
+  "palladium.ability.yha.blackwhip_magnet": "Blackwhip - Magnet",
+  "palladium.ability.yha.blackwhip_move_tagged": "Blackwhip - Puppet",
+  "palladium.ability.yha.blackwhip_restrict": "Blackwhip - Restrict Length",
+  "palladium.ability.yha.blackwhip_swing": "Blackwhip - Manual Swing",
+  "palladium.ability.yha.blackwhip_tag": "Blackwhip - Tether",
+  "palladium.ability.yha.blackwhip_web_swing": "Blackwhip - Web Swing",
+  "palladium.ability.yha.blackwhip_zip": "Blackwhip - Grapple",
+
+  "palladium.ability.yha.change_body_value": "Body - Update Body Float (Interval)",
+  "palladium.ability.yha.damage_body_part": "Body - Damage Body Part",
+  "palladium.ability.yha.heal_body_part": "Body - Heal Body Part",
+  "palladium.ability.yha.display_body_bar": "Body - Display Bar",
+  "palladium.ability.yha.set_body_float": "Body - Set Float",
+  "palladium.ability.yha.set_body_string": "Body - Set String",
+
+  "palladium.ability.yha.dash": "Dash",
+  "palladium.ability.yha.play_sound": "Play Sound",
+  "palladium.ability.yha.potion_gen": "Spawn Potion Field",
+  "palladium.ability.yha.spray_attack": "Spray attack",
+
+  "palladium.ability.yha.decay_fist": "Decay - Fist",
+  "palladium.ability.yha.decay_instability": "Decay - Internal",
+  "palladium.ability.yha.environment_decay": "Decay - Environment",
+  "palladium.ability.yha.rot_wave": "Decay - Rot Wave",
+
+  "palladium.ability.yha.smoke_canister_charge": "Smokescreen - Charge Smoke Canister",
 
 
-  "ability.yha.dash": "Dash",
-  "ability.yha.damage_body_part": "Damage Body Part",
-  "ability.yha.change_body_value": "Change Body Value",
-  "ability.yha.display_body_bar": "Display Body Bar",
-  "ability.yha.heal_body_part": "Heal Body Bar",
-  "ability.yha.bd_shockwave": "Shockwave Effect",
+  "palladium.ability.yha.smoke_canister_charge.not_enough_smoke": "Not enough smoke capacity to charge.",
+  "palladium.ability.yha.smoke_canister_charge.charged": "Canister charged to tier %1$s/%2$s.",
+
+  "entity.yha.blackwhip_chain": "Blackwhip Chain",
+  "entity.yha.blackwhip_segment": "Blackwhip Segment",
+  "entity.yha.blackwhip_tossed_block": "Whipped Block",
 
   "condition.yha.body_health": "Body Health",
   "condition.yha.body_float": "Body String",
   "condition.yha.body_string": "Body String",
 
   "attribute.yha.quirk_factor": "Quirk Factor",
+  "attribute.yha.strength": "Strength",
 
   "death.attack.exhaustion": "%1$s overexerted themselves and paid the price.",
-
-
+  "death.attack.decay": "%1$s rotted away.",
+  "death.attack.decay.player": "%1$s was rotted away by %2$s.",
 
   "yourheroacademia.configuration.title": "Your Hero Academia Configs",
   "yourheroacademia.configuration.section.yourheroacademia.common.toml": "Your Hero Academia Configs",
@@ -30,5 +88,13 @@
   "yourheroacademia.configuration.logDirtBlock": "Log Dirt Block",
   "yourheroacademia.configuration.magicNumberIntroduction": "Magic Number Text",
   "yourheroacademia.configuration.magicNumber": "Magic Number",
-  "yha.gui.example_title": "Example Screen"
+  "yha.gui.example_title": "Example Screen",
+
+  "yha:quirk#startup": "Startup",
+  "ability.yha.smoke_canister_charge.empty_hand": "You must be holding a smoke canister to use this!",
+  "ability.yha.smoke_canister_charge.max_tier": "You don't have the strength to compress the smoke further",
+  "gui.yha.upgrade_point": "Upgrade Point",
+
+  "key.yha.ability_mode_select": "Ability Mode Select"
+
 }

@@ -1,0 +1,9 @@
+{
+  "screen_layout": "yha:power/blackwhip",
+  "render_layers": {
+    "yha:blackwhip/left_leg_reinforce": true,
+    "yha:blackwhip/right_leg_reinforce": true,
+    "yha:blackwhip/left_arm_reinforce": true,
+    "yha:blackwhip/right_arm_reinforce": true
+  }
+}

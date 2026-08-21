@@ -3,8 +3,8 @@ package com.github.bandithelps.utils.stamina;
 import com.github.bandithelps.capabilities.stamina.IStaminaData;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaSyncEvents;
+import com.github.bandithelps.utils.blackwhip.BlackwhipReinforceUtil;
 import com.github.bandithelps.values.ModDamageTypes;
-import com.github.bandithelps.values.StaminaConstants;
 import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -115,6 +115,10 @@ public class StaminaUtil {
         if (player.gameMode.getGameModeForPlayer() == GameType.CREATIVE) return;
         if (!player.isAlive()) return;
 
+        if (BlackwhipReinforceUtil.tryConvertStaminaToBodyDamage(player, amount)) {
+            return;
+        }
+
         IStaminaData stamina = StaminaAttachments.get(player);
 
         int currentStamina = stamina.getCurrentStamina();
@@ -199,6 +203,21 @@ public class StaminaUtil {
             applyExhaustionEffects(player, newExhaustionLevel);
         }
 
+        StaminaSyncEvents.syncNow(player);
+    }
+
+    /**
+     * Subtracts the "amount" from the total number of upgrade points.
+     * Will never set upgrade points below 0.
+     * @param player
+     * @param amount
+     */
+    public static void spendUpgradePoints(ServerPlayer player, int amount) {
+        if (amount <= 0) return;
+
+        IStaminaData stamina = StaminaAttachments.get(player);
+        int currentUpgradePoints = stamina.getUpgradePoints();
+        stamina.setUpgradePoints(Math.max(0, currentUpgradePoints - amount));
         StaminaSyncEvents.syncNow(player);
     }
 

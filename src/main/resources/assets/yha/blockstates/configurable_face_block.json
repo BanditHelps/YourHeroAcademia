@@ -1,0 +1,52 @@
+{
+  "variants": {
+    "face_color=white": {
+      "model": "minecraft:block/white_concrete"
+    },
+    "face_color=orange": {
+      "model": "minecraft:block/orange_concrete"
+    },
+    "face_color=magenta": {
+      "model": "minecraft:block/magenta_concrete"
+    },
+    "face_color=light_blue": {
+      "model": "minecraft:block/light_blue_concrete"
+    },
+    "face_color=yellow": {
+      "model": "minecraft:block/yellow_concrete"
+    },
+    "face_color=lime": {
+      "model": "minecraft:block/lime_concrete"
+    },
+    "face_color=pink": {
+      "model": "minecraft:block/pink_concrete"
+    },
+    "face_color=gray": {
+      "model": "minecraft:block/gray_concrete"
+    },
+    "face_color=light_gray": {
+      "model": "minecraft:block/light_gray_concrete"
+    },
+    "face_color=cyan": {
+      "model": "minecraft:block/cyan_concrete"
+    },
+    "face_color=purple": {
+      "model": "minecraft:block/purple_concrete"
+    },
+    "face_color=blue": {
+      "model": "minecraft:block/blue_concrete"
+    },
+    "face_color=brown": {
+      "model": "minecraft:block/brown_concrete"
+    },
+    "face_color=green": {
+      "model": "minecraft:block/green_concrete"
+    },
+    "face_color=red": {
+      "model": "minecraft:block/red_concrete"
+    },
+    "face_color=black": {
+      "model": "minecraft:block/black_concrete"
+    }
+  }
+}

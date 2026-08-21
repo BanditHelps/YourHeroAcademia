@@ -2,8 +2,10 @@ package com.github.bandithelps.conditions;
 
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.body.BodyPart;
+import com.github.bandithelps.capabilities.body.BodyPartData;
 import com.github.bandithelps.capabilities.body.DamageState;
 import com.github.bandithelps.capabilities.body.IBodyData;
+import com.github.bandithelps.client.body.ClientBodyState;
 import com.github.bandithelps.values.ModSettingTypes;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -35,33 +37,49 @@ public record BodyHealthCondition(String part, String checkType, NumberComparato
 
 
     public boolean test(DataContext dataContext) {
-        Player p = dataContext.getPlayer();
+        Player player = dataContext.getPlayer();
+        if (player == null) {
+            return false;
+        }
 
-        if (p instanceof ServerPlayer player) {
-            BodyPart part = BodyPart.fromId(this.part);
-            if (part == null) return false;
-            IBodyData body = BodyAttachments.get(player);
+        BodyPart part = BodyPart.fromId(this.part);
+        if (part == null) {
+            return false;
+        }
+        BodyPart resolved = BodyPart.resolveForPlayer(player, part);
+        BodyPartData partData = partData(player, resolved);
+        if (partData == null) {
+            return false;
+        }
 
-            if (this.checkType.equals("value")) {
-                Object target = this.target.get(dataContext);
-                if (target instanceof Number num2) {
-                    Number num1 = body.getHealth(player, part);
-                    return this.operator.compare(num1, num2);
-                }
-            } else { // defaults to "state" in the event they type it wrong
-                DamageState checkState = DamageState.fromId(this.state);
-
-                if (checkState != null) {
-                    if (this.operator == NumberComparator.EQUALS) {
-                        return checkState.equals(body.getDamageState(player, part));
-                    } else if (this.operator == NumberComparator.NOT) {
-                        return !checkState.equals(body.getDamageState(player, part));
-                    }
+        if (this.checkType.equals("value")) {
+            Object target = this.target.get(dataContext);
+            if (target instanceof Number num2) {
+                return this.operator.compare(partData.getCurrentHealth(), num2);
+            }
+        } else {
+            DamageState checkState = DamageState.fromId(this.state);
+            if (checkState != null) {
+                if (this.operator == NumberComparator.EQUALS) {
+                    return checkState.equals(partData.getDamageState());
+                } else if (this.operator == NumberComparator.NOT) {
+                    return !checkState.equals(partData.getDamageState());
                 }
             }
         }
 
         return false;
+    }
+
+    private static BodyPartData partData(Player player, BodyPart resolved) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            IBodyData body = BodyAttachments.get(serverPlayer);
+            return body.getPartData(serverPlayer, resolved);
+        }
+        if (player.level().isClientSide()) {
+            return ClientBodyState.get(resolved);
+        }
+        return null;
     }
 
     public ConditionSerializer<?> getSerializer() {

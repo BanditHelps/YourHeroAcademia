@@ -1,0 +1,38 @@
+{
+  "id": "yha:vitality_boost_4",
+  "category": "ATTRIBUTE",
+  "rarity": "LEGENDARY",
+  "qualityRange": [100, 100],
+  "ignorePlayerDNA": true,
+  "combinable": true,
+  "attributes": [
+    {
+      "id": "minecraft:max_health",
+      "minModifier": 15.0,
+      "maxModifier": 25.0
+    }
+  ],
+  "description": "The perfected version of the vitality gene, granting extreme max health",
+  "mobs": [
+    "minecraft:wither",
+    "minecraft:warden"
+  ],
+  "combination": {
+    "requires": [
+      {
+        "id": "yha:vitality_boost_1",
+        "minQuality": 70
+      },
+      {
+        "id": "yha:vitality_boost_2",
+        "minQuality": 80
+      }
+    ],
+    "builder": {
+      "count": 2,
+      "minQuality": 50,
+      "rarity": "UNCOMMON"
+    },
+    "successRate": 80
+  }
+}

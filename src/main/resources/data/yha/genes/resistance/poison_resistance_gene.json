@@ -1,0 +1,19 @@
+{
+  "id": "yha:poison_resistance",
+  "category": "RESISTANCE",
+  "rarity": "RARE",
+  "qualityRange": [1, 100],
+  "combinable": false,
+  "resistances": [
+    {
+      "kind": "POISON_DAMAGE_AVOIDANCE",
+      "minValue": 0.15,
+      "maxValue": 0.72
+    }
+  ],
+  "description": "A metabolic adaptation that can shrug off portions of poison damage.",
+  "mobs": [
+    "minecraft:witch",
+    "minecraft:cave_spider"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "type": "palladium:render_layer",
+  "model_layer": "yha:blackwhip/leg_reinforce",
+  "render_type": "minecraft:entity_translucent",
+  "texture": {
+    "base": "yha:textures/models/blackwhip/leg_wrap.png",
+    "transformers": [
+      {
+        "type": "palladium:alpha_mask",
+        "mask": "yha:textures/models/blackwhip/leg_wrap_mask_#TIMER.png"
+      }
+    ],
+    "variables": {
+      "TIMER": {
+        "type": "palladium:ability_animation_timer_value",
+        "ability": "yha:blackwhip#bw_leg_reinforce"
+      }
+    }
+  }
+}

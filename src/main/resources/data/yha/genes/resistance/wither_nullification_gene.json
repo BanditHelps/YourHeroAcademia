@@ -1,0 +1,16 @@
+{
+  "id": "yha:wither_nullification",
+  "category": "RESISTANCE",
+  "rarity": "EPIC",
+  "qualityRange": [1, 100],
+  "combinable": false,
+  "resistances": [
+    {
+      "kind": "WITHER_NULLIFY"
+    }
+  ],
+  "description": "An exotic mutation that nullifies the wither effect entirely.",
+  "mobs": [
+    "minecraft:wither_skeleton"
+  ]
+}

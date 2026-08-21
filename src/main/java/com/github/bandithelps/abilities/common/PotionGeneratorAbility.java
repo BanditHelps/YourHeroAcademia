@@ -8,6 +8,7 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
@@ -34,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public class PotionGeneratorAbility extends Ability {
@@ -44,8 +46,13 @@ public class PotionGeneratorAbility extends Ability {
                     Value.CODEC.optionalFieldOf("duration", new StaticValue(20)).forGetter((ab) -> ab.duration),
                     Value.CODEC.optionalFieldOf("amplifier", new StaticValue(0)).forGetter((ab) -> ab.amplifier),
                     Value.CODEC.optionalFieldOf("radius", new StaticValue(5.0f)).forGetter((ab) -> ab.radius),
+                    Value.CODEC.optionalFieldOf("expiration_ticks").forGetter((ab) -> ab.expirationTicks),
                     Codec.BOOL.optionalFieldOf("effect_visible", true).forGetter((ab) -> ab.effectVisible),
-                    PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("effects", Arrays.asList(Identifier.parse("minecraft:slowness"))).forGetter((ab) -> ab.effects),
+                    Codec.BOOL.optionalFieldOf("generate_particles", false).forGetter((ab) -> ab.generateParticles),
+                    Value.CODEC.optionalFieldOf("particle_size", new StaticValue(0.25f)).forGetter((ab) -> ab.particleSize),
+                    Value.CODEC.optionalFieldOf("particle_density", new StaticValue(1.0f)).forGetter((ab) -> ab.particleDensity),
+                    PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("effects", List.of(Identifier.parse("minecraft:slowness"))).forGetter((ab) -> ab.effects),
+                    PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("particles", Collections.emptyList()).forGetter((ab) -> ab.particles),
                     propertiesCodec(),
                     stateCodec(),
                     energyBarUsagesCodec()
@@ -55,8 +62,13 @@ public class PotionGeneratorAbility extends Ability {
     public final Value duration;
     public final Value amplifier;
     public final Value radius;
+    public final Optional<Value> expirationTicks;
     public final boolean effectVisible;
+    public final boolean generateParticles;
+    public final Value particleSize;
+    public final Value particleDensity;
     public final List<Identifier> effects;
+    public final List<Identifier> particles;
 
     private final Map<UUID, UUID> activeGeneratorsByOwner = new HashMap<>();
 
@@ -65,8 +77,13 @@ public class PotionGeneratorAbility extends Ability {
             Value duration,
             Value amplifier,
             Value radius,
+            Optional<Value> expirationTicks,
             boolean effectVisible,
+            boolean generateParticles,
+            Value particleSize,
+            Value particleDensity,
             List<Identifier> effects,
+            List<Identifier> particles,
             AbilityProperties properties,
             AbilityStateManager conditions,
             List<EnergyBarUsage> energyBarUsages) {
@@ -75,8 +92,13 @@ public class PotionGeneratorAbility extends Ability {
         this.duration = duration;
         this.amplifier = amplifier;
         this.radius = radius;
+        this.expirationTicks = expirationTicks;
         this.effectVisible = effectVisible;
+        this.generateParticles = generateParticles;
+        this.particleSize = particleSize;
+        this.particleDensity = particleDensity;
         this.effects = effects;
+        this.particles = particles;
     }
 
     @Override
@@ -96,6 +118,11 @@ public class PotionGeneratorAbility extends Ability {
         float health = this.health.getAsFloat(DataContext.forEntity(entity));
         int duration = this.duration.getAsInt(DataContext.forEntity(entity));
         int amplifier = this.amplifier.getAsInt(DataContext.forEntity(entity));
+        float particleSize = this.particleSize.getAsFloat(DataContext.forEntity(entity));
+        float particleDensity = this.particleDensity.getAsFloat(DataContext.forEntity(entity));
+        Integer expirationTicks = this.expirationTicks
+                .map(value -> value.getAsInt(DataContext.forEntity(entity)))
+                .orElse(null);
 
         List<Holder<MobEffect>> effectsToApply = new ArrayList<>();
         for (Identifier id : this.effects) {
@@ -103,6 +130,14 @@ public class PotionGeneratorAbility extends Ability {
                     .map(holder -> (Holder<MobEffect>) holder)
                     .orElse(MobEffects.SLOWNESS);
             effectsToApply.add(effect);
+        }
+        List<SimpleParticleType> particlesToSpawn = new ArrayList<>();
+        for (Identifier id : this.particles) {
+            BuiltInRegistries.PARTICLE_TYPE.get(id)
+                    .map(holder -> holder.value())
+                    .filter(SimpleParticleType.class::isInstance)
+                    .map(SimpleParticleType.class::cast)
+                    .ifPresent(particlesToSpawn::add);
         }
 
         PotionEffectGeneratorEntity potionGen = new PotionEffectGeneratorEntity(ModEntities.POTION_GENERATOR.get(), entity.level());
@@ -112,6 +147,11 @@ public class PotionGeneratorAbility extends Ability {
         potionGen.setAmplifier(amplifier);
         potionGen.setEffects(effectsToApply);
         potionGen.setEffectVisible(this.effectVisible);
+        potionGen.setGenerateParticles(this.generateParticles);
+        potionGen.setParticles(particlesToSpawn);
+        potionGen.setParticleSize(particleSize);
+        potionGen.setParticleDensity(particleDensity);
+        potionGen.setExpirationTicks(expirationTicks);
         potionGen.setInvisible(true);
         potionGen.setNoGravity(true);
         potionGen.setPos(new Vec3(entity.getX(), entity.getY(), entity.getZ()));
@@ -128,7 +168,12 @@ public class PotionGeneratorAbility extends Ability {
         if (generatorId == null) return;
 
         Entity generator = serverLevel.getEntity(generatorId);
-        if (generator != null) {
+
+        Integer expirationTicks = this.expirationTicks
+                .map(value -> value.getAsInt(DataContext.forEntity(entity)))
+                .orElse(null);
+
+        if (generator != null && expirationTicks == null) {
             generator.discard();
         }
     }
@@ -149,15 +194,25 @@ public class PotionGeneratorAbility extends Ability {
                     .add("duration", TYPE_VALUE, "Duration (ticks) of each applied effect.")
                     .add("amplifier", TYPE_VALUE, "Amplifier level for each applied effect.")
                     .add("radius", TYPE_VALUE, "Radius around the generator to search for targets.")
+                    .add("expiration_ticks", TYPE_VALUE, "Optional lifetime (ticks) before the generated entity discards itself.")
                     .add("effect_visible", TYPE_BOOLEAN, "Whether particles are shown for the applied potion effects.")
+                    .add("generate_particles", TYPE_BOOLEAN, "Whether to emit configured particles in the generator's area.")
+                    .add("particle_size", TYPE_VALUE, "Randomized spread per spawned particle puff.")
+                    .add("particle_density", TYPE_VALUE, "Multiplier for how many particles spawn per emission tick.")
                     .add("effects", TYPE_IDENTIFIER, "A list of mob effect ids to apply.")
+                    .add("particles", TYPE_IDENTIFIER, "A list of simple particle ids to spawn randomly inside the generator radius.")
                     .addExampleObject(new PotionGeneratorAbility(
                             new StaticValue(20.0f),
                             new StaticValue(20),
                             new StaticValue(0),
                             new StaticValue(5.0f),
+                            Optional.empty(),
                             true,
-                            Arrays.asList(Identifier.fromNamespaceAndPath("minecraft", "slowness")),
+                            false,
+                            new StaticValue(0.25f),
+                            new StaticValue(1.0f),
+                            List.of(Identifier.fromNamespaceAndPath("minecraft", "slowness")),
+                            Collections.emptyList(),
                             AbilityProperties.BASIC,
                             AbilityStateManager.EMPTY,
                             Collections.emptyList()

@@ -41,4 +41,6 @@ public class StaminaConstants {
     public static Identifier EXHAUSTION_ATTACK_SLOW_ATTRIBUTE = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "exhaustion.attack");
     public static Identifier EXHAUSTION_JUMP_ATTRIBUTE = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "exhaustion.jump");
 
+    public static int PHYSICAL_STAT_UPGRADE_COST = 1; // All physical upgrades cost this many points
+
 }

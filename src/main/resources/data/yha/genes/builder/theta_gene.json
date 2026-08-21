@@ -1,0 +1,8 @@
+{
+  "id": "yha:theta",
+  "category": "BUILDER",
+  "rarity": "UNCOMMON",
+  "qualityRange": [20, 100],
+  "combinable": false,
+  "description": "A gene that seems to have no use"
+}

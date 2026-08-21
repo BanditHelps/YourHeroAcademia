@@ -1,0 +1,87 @@
+{
+  "type": "palladium:multi_column",
+  "layouts": [
+    {
+      "width": 100,
+      "height": 200,
+      "padding": 7,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/modal_with_footer"
+      },
+      "widgets": [
+        {
+          "type": "palladium:text_box",
+          "text": "Decay",
+          "properties": {
+            "alignment": "top_center",
+            "width": 86,
+            "height": 20
+          }
+        },
+        {
+          "type": "yha:body_display_bar",
+          "id": "decay_instability",
+          "show_icon": true,
+          "show_label": true,
+          "description": "How unstable your decay has become. Max it out and your power will turn on you.",
+          "properties": {
+            "alignment": "top_center",
+            "x": 3,
+            "y": 36,
+            "width": 72,
+            "height": 8
+          }
+        }
+      ]
+    },
+    {
+      "width": 250,
+      "height": 200,
+      "widgets": [
+        {
+          "type": "palladium:power_tree",
+          "power": "yha:decay",
+          "background": {
+            "type": "palladium:repeating_texture",
+            "texture": "minecraft:textures/block/black_concrete.png"
+          },
+          "properties": {
+            "alignment": "center",
+            "width": 236,
+            "height": 186
+          }
+        }
+      ]
+    },
+    {
+      "width": 70,
+      "height": 25,
+      "padding": 2,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/default"
+      },
+      "widgets": [
+        {
+          "type": "palladium:icon",
+          "icon": "minecraft:command_block",
+          "properties": {
+            "alignment": "middle_left",
+            "x": 4,
+            "width": 16,
+            "height": 16
+          }
+        },
+        {
+          "type": "yha:upgrade_points",
+          "properties": {
+            "alignment": "middle_left",
+            "x": 24,
+            "y": 6
+          }
+        }
+      ]
+    }
+  ]
+}

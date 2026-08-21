@@ -1,6 +1,8 @@
 package com.github.bandithelps.mixin;
 
+import com.github.bandithelps.gui.tree.TreeConnectionPath;
 import com.github.bandithelps.utils.stamina.StaminaProperties;
+import com.github.bandithelps.utils.tree.ConnectionPathProperties;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
@@ -17,13 +19,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * This mixin allows us to add in 3 properties into any and every palladium ability.
- * Adds "activation_stamina", "stamina_interval", and "stamina_interval_cost".
- * Gets a little confusing because we needed to add them into the Codec, but basically just combines the existing codec
- * with the new one. (Used AI to help with the Codec unpacking/repacking logic cause I haven't used them before)
+ * Adds stamina fields and optional {@code gui_connection} waypoints onto every Palladium ability.
+ * Extra keys are wrapped into {@link AbilityProperties#CODEC} because the stock codec drops unknown fields.
  */
 @Mixin(AbilityProperties.class)
-public abstract class AbilityPropertiesMixin implements StaminaProperties {
+public abstract class AbilityPropertiesMixin implements StaminaProperties, ConnectionPathProperties {
 
     @Shadow
     @Final
@@ -48,6 +48,9 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties {
     @Unique
     private int yha$staminaIntervalCost = 0;
 
+    @Unique
+    private TreeConnectionPath yha$guiConnection = TreeConnectionPath.EMPTY;
+
     @Inject(method = "<clinit>", at = @At("TAIL"))
     private static void yha$extendCodec(CallbackInfo ci) {
         final Codec<AbilityProperties> baseCodec = CODEC;
@@ -60,6 +63,7 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties {
                     staminaProperties.yha$setActivationStamina(yha$readInt(ops, input, YHA_ACTIVATION_STAMINA_KEY, 0));
                     staminaProperties.yha$setStaminaInterval(yha$readInt(ops, input, YHA_STAMINA_INTERVAL_KEY, 0));
                     staminaProperties.yha$setStaminaIntervalCost(yha$readInt(ops, input, YHA_STAMINA_INTERVAL_COST_KEY, 0));
+                    ConnectionPathProperties.of(properties).yha$setGuiConnection(yha$readConnection(ops, input));
                     return decoded;
                 });
             }
@@ -67,12 +71,16 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties {
             @Override
             public <T> DataResult<T> encode(AbilityProperties input, DynamicOps<T> ops, T prefix) {
                 StaminaProperties staminaProperties = StaminaProperties.of(input);
+                ConnectionPathProperties connectionProperties = ConnectionPathProperties.of(input);
                 return baseCodec.encode(input, ops, prefix).flatMap((encoded) ->
                         yha$writeInt(ops, encoded, YHA_ACTIVATION_STAMINA_KEY, staminaProperties.yha$getActivationStamina())
                                 .flatMap((withInitial) ->
                                         yha$writeInt(ops, withInitial, YHA_STAMINA_INTERVAL_KEY, staminaProperties.yha$getStaminaInterval())
                                                 .flatMap((withInterval) ->
                                                         yha$writeInt(ops, withInterval, YHA_STAMINA_INTERVAL_COST_KEY, staminaProperties.yha$getStaminaIntervalCost())
+                                                                .flatMap((withCost) ->
+                                                                        yha$writeConnection(ops, withCost, connectionProperties.yha$getGuiConnection())
+                                                                )
                                                 )
                                 )
                 );
@@ -96,6 +104,28 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties {
     @Unique
     private static <T> DataResult<T> yha$writeInt(DynamicOps<T> ops, T input, String key, int value) {
         return ops.mergeToMap(input, ops.createString(key), ops.createInt(value));
+    }
+
+    @Unique
+    private static <T> TreeConnectionPath yha$readConnection(DynamicOps<T> ops, T input) {
+        DataResult<MapLike<T>> mapResult = ops.getMap(input);
+        if (mapResult.isError()) {
+            return TreeConnectionPath.EMPTY;
+        }
+        T value = mapResult.result().map((map) -> map.get(TreeConnectionPath.JSON_KEY)).orElse(null);
+        if (value == null) {
+            return TreeConnectionPath.EMPTY;
+        }
+        return TreeConnectionPath.CODEC.parse(ops, value).result().orElse(TreeConnectionPath.EMPTY);
+    }
+
+    @Unique
+    private static <T> DataResult<T> yha$writeConnection(DynamicOps<T> ops, T input, TreeConnectionPath path) {
+        if (path == null || path.isEmpty()) {
+            return DataResult.success(input);
+        }
+        return TreeConnectionPath.CODEC.encodeStart(ops, path)
+                .flatMap((encoded) -> ops.mergeToMap(input, ops.createString(TreeConnectionPath.JSON_KEY), encoded));
     }
 
     @Override
@@ -126,5 +156,15 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties {
     @Override
     public void yha$setStaminaIntervalCost(int value) {
         this.yha$staminaIntervalCost = Math.max(0, value);
+    }
+
+    @Override
+    public TreeConnectionPath yha$getGuiConnection() {
+        return this.yha$guiConnection == null ? TreeConnectionPath.EMPTY : this.yha$guiConnection;
+    }
+
+    @Override
+    public void yha$setGuiConnection(TreeConnectionPath path) {
+        this.yha$guiConnection = path == null || path.isEmpty() ? TreeConnectionPath.EMPTY : path.copy();
     }
 }

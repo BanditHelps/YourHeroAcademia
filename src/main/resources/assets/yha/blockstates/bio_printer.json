@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "yha:block/bio_printer_base" },
+    "facing=south": { "model": "yha:block/bio_printer_base", "y": 180 },
+    "facing=west": { "model": "yha:block/bio_printer_base", "y": 270 },
+    "facing=east": { "model": "yha:block/bio_printer_base", "y": 90 }
+  }
+}

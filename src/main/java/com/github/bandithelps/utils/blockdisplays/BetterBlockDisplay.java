@@ -1,5 +1,8 @@
 package com.github.bandithelps.utils.blockdisplays;
 
+import com.github.bandithelps.YourHeroAcademia;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
@@ -8,12 +11,42 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 public class BetterBlockDisplay extends Display.BlockDisplay{
+    private static final String[] BRIGHTNESS_ACCESSOR_NAMES = {
+            "DATA_BRIGHTNESS_OVERRIDE_ID",
+            "DATA_BRIGHTNESS_OVERRIDE"
+    };
+    private static final String[] GLOW_COLOR_ACCESSOR_NAMES = {
+            "DATA_GLOW_COLOR_OVERRIDE_ID",
+            "DATA_GLOW_COLOR_OVERRIDE"
+    };
+    private static boolean loggedMissingBrightnessAccessor;
+    private static boolean loggedMissingGlowAccessor;
 
     private int lifetime;
+    private boolean idleRotationEnabled;
+    private int idleRotationStartTick;
+    private int idleRotationMinIntervalTicks;
+    private int idleRotationMaxIntervalTicks;
+    private float idleRotationMinDegrees;
+    private float idleRotationMaxDegrees;
+    private int nextIdleRotationTick;
+    private Quaternionf idleBaseRotation;
+    private float idleAccumulatedYawRadians;
+    private float idleYawDirection;
 
     public BetterBlockDisplay(EntityType<?> type, Level level) {
         super(type, level);
         this.lifetime = -1;
+        this.idleRotationEnabled = false;
+        this.idleRotationStartTick = 0;
+        this.idleRotationMinIntervalTicks = 20;
+        this.idleRotationMaxIntervalTicks = 40;
+        this.idleRotationMinDegrees = 1.5f;
+        this.idleRotationMaxDegrees = 4.0f;
+        this.nextIdleRotationTick = Integer.MAX_VALUE;
+        this.idleBaseRotation = new Quaternionf();
+        this.idleAccumulatedYawRadians = 0.0f;
+        this.idleYawDirection = 1.0f;
     }
 
     public void setBlock(BlockState state) {
@@ -34,11 +67,125 @@ public class BetterBlockDisplay extends Display.BlockDisplay{
 
     public void startInterpolation() { this.getEntityData().set(DATA_TRANSFORMATION_INTERPOLATION_START_DELTA_TICKS_ID, -1, true); }
 
+    /** Vanilla Display teleport lerp. 0 snaps (jitter); 3 matches living-entity interpolation. */
+    public void setTeleportDuration(int ticks) {
+        this.getEntityData().set(DATA_POS_ROT_INTERPOLATION_DURATION_ID, Mth.clamp(ticks, 0, 59));
+    }
+
     public void setLifetime(int lifetime) { this.lifetime = lifetime; }
+
+    public void setGlowingEnabled(boolean enabled) {
+        this.setGlowingTag(enabled);
+    }
+
+    public void setGlowColorOverride(int argbColor) {
+        this.setDisplayIntData(GLOW_COLOR_ACCESSOR_NAMES, argbColor, "glow_color_override");
+    }
+
+    public void setPackedBrightnessOverride(int packedBrightness) {
+        this.setDisplayIntData(BRIGHTNESS_ACCESSOR_NAMES, packedBrightness, "brightness_override");
+    }
+
+    private void setDisplayIntData(String[] accessorCandidates, int value, String fieldLabel) {
+        EntityDataAccessor<Integer> accessor = this.getIntAccessor(accessorCandidates);
+        if (accessor == null) {
+            this.logMissingAccessor(accessorCandidates, fieldLabel);
+            return;
+        }
+        this.getEntityData().set(accessor, value);
+    }
+
+    @SuppressWarnings("unchecked")
+    private EntityDataAccessor<Integer> getIntAccessor(String[] accessorCandidates) {
+        for (String accessorName : accessorCandidates) {
+            try {
+                var field = Display.class.getDeclaredField(accessorName);
+                field.setAccessible(true);
+                Object accessor = field.get(null);
+                if (accessor instanceof EntityDataAccessor<?> typedAccessor) {
+                    return (EntityDataAccessor<Integer>) typedAccessor;
+                }
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private void logMissingAccessor(String[] accessorCandidates, String fieldLabel) {
+        boolean isBrightness = "brightness_override".equals(fieldLabel);
+        if (isBrightness && loggedMissingBrightnessAccessor) {
+            return;
+        }
+        if (!isBrightness && loggedMissingGlowAccessor) {
+            return;
+        }
+
+        if (isBrightness) {
+            loggedMissingBrightnessAccessor = true;
+        } else {
+            loggedMissingGlowAccessor = true;
+        }
+
+        YourHeroAcademia.LOGGER.warn(
+                "Skipping BlockDisplay {} because no matching Display data accessor was found. Tried {}",
+                fieldLabel,
+                String.join(", ", accessorCandidates)
+        );
+    }
+
+    public void enableIdleRotation(
+            int startDelayTicks,
+            int minIntervalTicks,
+            int maxIntervalTicks,
+            float minDegrees,
+            float maxDegrees) {
+        this.idleRotationEnabled = true;
+        this.idleRotationStartTick = Math.max(0, startDelayTicks);
+        this.idleRotationMinIntervalTicks = Math.max(2, minIntervalTicks);
+        this.idleRotationMaxIntervalTicks = Math.max(this.idleRotationMinIntervalTicks, maxIntervalTicks);
+        this.idleRotationMinDegrees = Math.max(0.1f, minDegrees);
+        this.idleRotationMaxDegrees = Math.max(this.idleRotationMinDegrees, maxDegrees);
+        this.idleBaseRotation = new Quaternionf(this.getEntityData().get(DATA_RIGHT_ROTATION_ID));
+        if (this.idleBaseRotation.lengthSquared() < 1.0E-6f) {
+            this.idleBaseRotation.identity();
+        } else {
+            this.idleBaseRotation.normalize();
+        }
+        this.idleAccumulatedYawRadians = 0.0f;
+        this.idleYawDirection = this.random.nextBoolean() ? 1.0f : -1.0f;
+        this.nextIdleRotationTick = this.idleRotationStartTick;
+    }
+
+    private void tickIdleRotation() {
+        if (!this.idleRotationEnabled || this.tickCount < this.nextIdleRotationTick) {
+            return;
+        }
+
+        int intervalRange = this.idleRotationMaxIntervalTicks - this.idleRotationMinIntervalTicks + 1;
+        int interval = this.idleRotationMinIntervalTicks + this.random.nextInt(intervalRange);
+
+        float angleRange = this.idleRotationMaxDegrees - this.idleRotationMinDegrees;
+        float angleDegrees = this.idleRotationMinDegrees + (angleRange <= 0.0f ? 0.0f : this.random.nextFloat() * angleRange);
+        // Keep the idle animation strictly rotational and mist-like: slow yaw drift.
+        if (this.random.nextFloat() < 0.12f) {
+            this.idleYawDirection *= -1.0f;
+        }
+        float angleRadians = (float) Math.toRadians(angleDegrees * this.idleYawDirection);
+        this.idleAccumulatedYawRadians += angleRadians;
+
+        Quaternionf targetRotation = new Quaternionf(this.idleBaseRotation).rotateY(this.idleAccumulatedYawRadians);
+        this.setRightRotation(targetRotation);
+        this.setInterpolation(Math.max(1, interval));
+        this.startInterpolation();
+
+        this.nextIdleRotationTick = this.tickCount + interval;
+    }
 
     @Override
     public void tick() {
         super.tick();
+
+        this.tickIdleRotation();
 
         if (this.lifetime > 0) {
             this.lifetime--;

@@ -3,6 +3,7 @@ package com.github.bandithelps.abilities.blockdisplayanims;
 import com.github.bandithelps.abilities.AbilityRegister;
 import com.github.bandithelps.capabilities.body.BodyPart;
 import com.github.bandithelps.utils.blockdisplays.BlockDisplaySummoner;
+import com.github.bandithelps.utils.blockdisplays.BlockDisplayVisualOptions;
 import com.github.bandithelps.values.ModSettingTypes;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -11,7 +12,6 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
@@ -46,7 +46,7 @@ public class BDBodyPartEmitterAbility extends Ability {
                     Value.CODEC.optionalFieldOf("interpolation_ticks", new StaticValue(5.0f)).forGetter((ab) -> ab.interpolationTicks),
                     Value.CODEC.optionalFieldOf("lifetime", new StaticValue(14.0f)).forGetter((ab) -> ab.lifetime),
                     PalladiumCodecs.listOrPrimitive(Codec.STRING).fieldOf("parts").forGetter((ab) -> ab.parts),
-                    PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("palette", Arrays.asList(Identifier.parse("minecraft:blue_stained_glass"))).forGetter((ab) -> ab.palette),
+                    PalladiumCodecs.listOrPrimitive(Identifier.CODEC).optionalFieldOf("palette", List.of(Identifier.parse("minecraft:blue_stained_glass"))).forGetter((ab) -> ab.palette),
                     PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("location_offset", new Vector3f(0.0f, 0.0f, 0.0f)).forGetter((ab) -> ab.locationOffset),
                     PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("drift_offset", new Vector3f(0.0f, 0.08f, 0.0f)).forGetter((ab) -> ab.driftOffset),
                     PalladiumCodecs.VECTOR_3F_CODEC.optionalFieldOf("initial_scale", new Vector3f(0.22f, 0.22f, 0.22f)).forGetter((ab) -> ab.initialScale),
@@ -54,6 +54,7 @@ public class BDBodyPartEmitterAbility extends Ability {
                     Codec.BOOL.optionalFieldOf("relative_vectors", true).forGetter((ab) -> ab.relativeVectors),
                     Codec.BOOL.optionalFieldOf("random_decay", true).forGetter((ab) -> ab.randomDecay),
                     Codec.BOOL.optionalFieldOf("random_rotation", true).forGetter((ab) -> ab.randomRotation),
+                    BlockDisplayVisualOptions.CODEC.optionalFieldOf("visual_options", BlockDisplayVisualOptions.DEFAULT).forGetter((ab) -> ab.visualOptions),
                     propertiesCodec(),
                     stateCodec(),
                     energyBarUsagesCodec()
@@ -71,6 +72,7 @@ public class BDBodyPartEmitterAbility extends Ability {
     public final boolean relativeVectors;
     public final boolean randomDecay;
     public final boolean randomRotation;
+    public final BlockDisplayVisualOptions visualOptions;
 
     public BDBodyPartEmitterAbility(
             int tickRate,
@@ -85,6 +87,7 @@ public class BDBodyPartEmitterAbility extends Ability {
             boolean relativeVectors,
             boolean randomDecay,
             boolean randomRotation,
+            BlockDisplayVisualOptions visualOptions,
             AbilityProperties properties,
             AbilityStateManager conditions,
             List<EnergyBarUsage> energyBarUsages) {
@@ -101,6 +104,7 @@ public class BDBodyPartEmitterAbility extends Ability {
         this.relativeVectors = relativeVectors;
         this.randomDecay = randomDecay;
         this.randomRotation = randomRotation;
+        this.visualOptions = visualOptions;
     }
 
     @Override
@@ -145,7 +149,8 @@ public class BDBodyPartEmitterAbility extends Ability {
                     rotatedDriftOffset,
                     displayLifetime,
                     this.randomDecay,
-                    this.randomRotation
+                    this.randomRotation,
+                    this.visualOptions
             );
         }
 
@@ -252,6 +257,7 @@ public class BDBodyPartEmitterAbility extends Ability {
                             true,
                             true,
                             true,
+                            BlockDisplayVisualOptions.DEFAULT,
                             AbilityProperties.BASIC,
                             AbilityStateManager.EMPTY,
                             Collections.emptyList()

@@ -49,7 +49,6 @@ public class BodyDebugScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        this.extractBackground(graphics, mouseX, mouseY, partialTick);
         graphics.centeredText(this.font, this.title, this.width / 2, 10, 0xFFFFFF);
 
         int modelX = this.width / 2 - 90;

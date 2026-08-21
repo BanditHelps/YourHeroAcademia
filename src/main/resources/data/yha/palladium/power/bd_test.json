@@ -23,7 +23,7 @@
       "state":{
         "enabling": {
           "type": "palladium:key_bind",
-          "behaviour": "action",
+          "behaviour": "activation",
           "cooldown": 0
         }
       }
@@ -76,12 +76,13 @@
         "title": "Punch Shockwave",
         "icon": "minecraft:wooden_sword",
         "hidden_in_bar": false,
-        "list_index": 2
+        "list_index": 2,
+        "gui_position": [-8, 0]
       },
       "state":{
         "enabling": {
           "type": "palladium:key_bind",
-          "behaviour": "action",
+          "behaviour": "activation",
           "cooldown": 0
         }
       }
@@ -154,7 +155,7 @@
       "state":{
         "enabling": {
           "type": "palladium:key_bind",
-          "behaviour": "action"
+          "behaviour": "activation"
         }
       }
     },
@@ -182,6 +183,49 @@
         "enabling": {
           "type": "palladium:key_bind",
           "behaviour": "toggle"
+        }
+      }
+    },
+    "spray_attack_test": {
+      "type": "yha:spray_attack",
+      "range": 10,
+      "hit_radius": 0.3,
+      "damage": 1.5,
+      "fire_seconds": 1.5,
+      "tick_rate": 1,
+      "max_targets_per_tick": 5,
+      "pass_through_walls": false,
+      "pass_through_entities": false,
+      "particle_config": {
+        "particles": [
+          "minecraft:flame",
+          "minecraft:smoke"
+        ],
+        "density": 2.5,
+        "spread": 0.04,
+        "origin_forward": 1.0,
+        "origin_right": -0.35,
+        "origin_up": -0.25,
+        "growth_per_tick": 0.6,
+        "max_distance": 10
+      },
+      "effects": [
+        "minecraft:weakness"
+      ],
+      "effect_duration": 40,
+      "effect_amplifier": 0,
+      "show_effect_particles": true,
+      "properties": {
+        "title": "Spray Attack",
+        "icon": "minecraft:blaze_powder",
+        "hidden_in_bar": false,
+        "list_index": 6
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "held",
+          "cooldown": 0
         }
       }
     }
