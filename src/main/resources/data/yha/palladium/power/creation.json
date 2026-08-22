@@ -1,0 +1,22 @@
+{
+  "name": "Creation",
+  "parent": "yha:quirk",
+  "icon": "minecraft:crafting_table",
+  "gui_display_type": "tree",
+  "abilities": {
+    "quirk_info": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Creation",
+        "description": "Convert your bodies internal lipids into real world objects. The only limits are your understanding of the world.",
+        "icon": "minecraft:crafting_table",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          0
+        ]
+      }
+    }
+  }
+}
