@@ -53,6 +53,9 @@ public class TreeEditorJsonEditScreen extends TreeEditorPopupScreen {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
+        if (event.hasControlDown() && event.key() == GLFW.GLFW_KEY_BACKSPACE) {
+            return TreeEditorTextInput.deleteWordBefore(this.box);
+        }
         if (event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_KP_ENTER) {
             this.save();
             return true;
