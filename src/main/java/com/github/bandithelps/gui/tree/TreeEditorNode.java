@@ -95,6 +95,32 @@ public final class TreeEditorNode {
         return created(key, DEFAULT_TYPE, title, gridX, gridY);
     }
 
+    public TreeEditorNode copy(String key, float gridX, float gridY) {
+        return new TreeEditorNode(
+                key,
+                this.typeId,
+                this.title,
+                this.description,
+                this.lockedDescription,
+                this.iconId,
+                gridX,
+                gridY,
+                null,
+                this.cost.copy(),
+                this.connectionPaths.copy(),
+                this.hiddenInGui,
+                this.hiddenInBar,
+                this.listIndex,
+                this.activationStamina,
+                this.staminaInterval,
+                this.staminaIntervalCost,
+                this.typeFields.deepCopy(),
+                copy(this.unlocking),
+                copy(this.enabling),
+                true
+        );
+    }
+
     public static TreeEditorNode created(String key, String typeId, String title, float gridX, float gridY) {
         return new TreeEditorNode(
                 key,

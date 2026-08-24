@@ -40,8 +40,9 @@ public final class TreeEditorStateSync {
             } else {
                 list.add(0, buyable);
             }
+            migrateSiblingParentsIntoRequires(list);
         } else if (buyableIndex >= 0) {
-            list.remove(buyableIndex);
+            extractRequiresAsSiblings(list, buyableIndex);
         }
         node.setUnlocking(TreeEditorJson.fromConditionList(list));
     }
@@ -50,12 +51,24 @@ public final class TreeEditorStateSync {
         if (parentKey == null || parentKey.isBlank()) {
             return;
         }
-        List<JsonElement> list = TreeEditorJson.asConditionList(node.getUnlocking());
         if (containsAbilityUnlocked(node.getUnlocking(), parentKey)) {
-            node.setUnlocking(TreeEditorJson.fromConditionList(list));
             applyCost(node, schemas);
             return;
         }
+        if (!node.getCost().isNone()) {
+            applyCost(node, schemas);
+            List<JsonElement> list = TreeEditorJson.asConditionList(node.getUnlocking());
+            int buyableIndex = findBuyableIndex(list);
+            if (buyableIndex >= 0 && list.get(buyableIndex).isJsonObject()) {
+                JsonObject buyable = list.get(buyableIndex).getAsJsonObject();
+                addRequiresParent(buyable, parentKey);
+                list.set(buyableIndex, buyable);
+                node.setUnlocking(TreeEditorJson.fromConditionList(list));
+                applyCost(node, schemas);
+                return;
+            }
+        }
+        List<JsonElement> list = TreeEditorJson.asConditionList(node.getUnlocking());
         list.add(abilityUnlocked(parentKey));
         node.setUnlocking(TreeEditorJson.fromConditionList(list));
         applyCost(node, schemas);
@@ -221,6 +234,72 @@ public final class TreeEditorStateSync {
             object.remove(key);
         } else {
             object.add(key, cleaned);
+        }
+    }
+
+    private static void addRequiresParent(JsonObject buyable, String parentKey) {
+        JsonElement existing = buyable.has("requires") ? buyable.get("requires") : null;
+        if (containsAbilityUnlocked(existing, parentKey)) {
+            return;
+        }
+        JsonObject unlocked = abilityUnlocked(parentKey);
+        if (existing == null || existing.isJsonNull()) {
+            buyable.add("requires", unlocked);
+            return;
+        }
+        if (existing.isJsonObject() && TYPE_AND.equals(readType(existing.getAsJsonObject()))) {
+            JsonObject and = existing.getAsJsonObject();
+            JsonArray conditions = TreeEditorJson.arrayOrNew(and.get("conditions"));
+            conditions.add(unlocked);
+            and.add("conditions", conditions);
+            buyable.add("requires", and);
+            return;
+        }
+        JsonObject and = new JsonObject();
+        and.addProperty("type", TYPE_AND);
+        JsonArray conditions = new JsonArray();
+        conditions.add(existing.deepCopy());
+        conditions.add(unlocked);
+        and.add("conditions", conditions);
+        buyable.add("requires", and);
+    }
+
+    private static void migrateSiblingParentsIntoRequires(List<JsonElement> list) {
+        int buyableIndex = findBuyableIndex(list);
+        if (buyableIndex < 0 || !list.get(buyableIndex).isJsonObject()) {
+            return;
+        }
+        JsonObject buyable = list.get(buyableIndex).getAsJsonObject();
+        List<JsonElement> remaining = new ArrayList<>();
+        for (int index = 0; index < list.size(); index++) {
+            if (index == buyableIndex) {
+                continue;
+            }
+            JsonObject object = TreeEditorJson.asObject(list.get(index));
+            if (object != null && TYPE_ABILITY_UNLOCKED.equals(readType(object))) {
+                String key = readAbilityKey(object);
+                if (key != null) {
+                    addRequiresParent(buyable, key);
+                    continue;
+                }
+            }
+            remaining.add(list.get(index));
+        }
+        list.clear();
+        list.add(buyable);
+        list.addAll(remaining);
+    }
+
+    private static void extractRequiresAsSiblings(List<JsonElement> list, int buyableIndex) {
+        JsonObject buyable = list.get(buyableIndex).isJsonObject() ? list.get(buyableIndex).getAsJsonObject() : null;
+        List<String> required = buyable == null || !buyable.has("requires")
+                ? List.of()
+                : parentKeysFromUnlocking(buyable.get("requires"));
+        list.remove(buyableIndex);
+        for (String key : required) {
+            if (!containsAbilityUnlocked(TreeEditorJson.fromConditionList(list), key)) {
+                list.add(abilityUnlocked(key));
+            }
         }
     }
 

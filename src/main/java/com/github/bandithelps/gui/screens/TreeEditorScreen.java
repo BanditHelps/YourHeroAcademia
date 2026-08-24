@@ -3,8 +3,8 @@ package com.github.bandithelps.gui.screens;
 import com.github.bandithelps.gui.tree.TreeEditorCostSchema;
 import com.github.bandithelps.gui.tree.TreeEditorDraft;
 import com.github.bandithelps.gui.tree.TreeEditorExporter;
-import com.github.bandithelps.gui.tree.TreeEditorLayoutBackground;
 import com.github.bandithelps.gui.tree.TreeEditorNode;
+import com.github.bandithelps.gui.tree.TreeEditorSettings;
 import com.github.bandithelps.gui.tree.TreeEditorStateSync;
 import com.github.bandithelps.gui.tree.TreeConnectionPath;
 import com.github.bandithelps.gui.tree.TreeConnectionRenderer;
@@ -23,14 +23,13 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.Vec2;
+import net.threetag.palladium.client.gui.ui.background.RepeatingTextureBackground;
 import net.threetag.palladium.client.renderer.icon.IconRenderer;
+import net.threetag.palladium.client.texture.TextureReference;
 import net.threetag.palladium.logic.context.DataContext;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -70,7 +69,7 @@ public class TreeEditorScreen extends Screen {
     private List<TreeEditorCostSchema> costSchemas = List.of();
     private final TreeEditorInspector inspector = new TreeEditorInspector(this);
     @Nullable
-    private TextureAtlasSprite treeBackgroundSprite;
+    private RepeatingTextureBackground treeBackground;
     private int treeX;
     private int treeY;
     private int treeW;
@@ -119,10 +118,7 @@ public class TreeEditorScreen extends Screen {
                 this.catalog = PalladiumDocCatalog.load(this.minecraft);
                 this.costSchemas = this.catalog.costs();
             }
-            if (this.draft.getBackgroundTexture().equals(TreeEditorLayoutBackground.FALLBACK)) {
-                this.draft.setBackgroundTexture(TreeEditorLayoutBackground.resolve(this.minecraft, this.draft.getPowerId()));
-            }
-            this.applyBackground(this.draft.getBackgroundTexture());
+            this.applyBackground(TreeEditorSettings.background(this.minecraft), false);
         }
         if (!this.viewReady) {
             this.panX = 0;
@@ -140,7 +136,7 @@ public class TreeEditorScreen extends Screen {
         graphics.fill(0, 0, this.width, this.height, TreeEditorTheme.BG);
         this.drawMenuBar(graphics);
         this.drawTreeBackground(graphics);
-        TreeEditorTheme.rect(graphics, this.treeX, this.treeY, this.treeW, this.treeH, 0x00000000, TreeEditorTheme.BORDER);
+        TreeEditorTheme.border(graphics, this.treeX, this.treeY, this.treeW, this.treeH, TreeEditorTheme.BORDER);
 
         graphics.enableScissor(this.treeX, this.treeY, this.treeX + this.treeW, this.treeY + this.treeH);
         if (this.showGrid) {
@@ -401,6 +397,12 @@ public class TreeEditorScreen extends Screen {
             this.minecraft.setScreen(this);
             this.init(this.width, this.height);
         }
+    }
+
+    public void duplicateNode(TreeEditorNode node) {
+        TreeEditorNode copy = this.draft.duplicate(node);
+        this.selectNode(copy);
+        this.status = "Duplicated " + node.getKey() + " as " + copy.getKey();
     }
 
     public void deleteNode(TreeEditorNode node) {
@@ -925,7 +927,7 @@ public class TreeEditorScreen extends Screen {
         if (this.minecraft == null) {
             return;
         }
-        this.minecraft.setScreen(new TreeEditorPickerScreen(this, "Select Power Icon", TreeEditorPickerScreen.Mode.ITEMS, id -> {
+        this.minecraft.setScreen(TreeEditorPickerScreen.forIcons(this, "Select Power Icon", id -> {
             this.draft.setPowerIcon(id.toString());
             this.refreshWidgets();
         }));
@@ -935,7 +937,7 @@ public class TreeEditorScreen extends Screen {
         if (this.minecraft == null) {
             return;
         }
-        this.minecraft.setScreen(new TreeEditorPickerScreen(this, "Select Icon", TreeEditorPickerScreen.Mode.ITEMS, id -> {
+        this.minecraft.setScreen(TreeEditorPickerScreen.forIcons(this, "Select Icon", id -> {
             node.setIconId(id.toString());
             this.draft.markDirty();
             this.refreshWidgets();
@@ -1377,9 +1379,17 @@ public class TreeEditorScreen extends Screen {
     }
 
     public void applyBackground(Identifier textureOrBlock) {
+        this.applyBackground(textureOrBlock, true);
+    }
+
+    private void applyBackground(Identifier textureOrBlock, boolean persist) {
         Identifier blockId = TreeEditorPickerScreen.blockIdFromTexture(textureOrBlock);
-        this.draft.setBackgroundTexture(TreeEditorPickerScreen.blockTexture(blockId));
-        this.treeBackgroundSprite = this.resolveBlockSprite(blockId);
+        Identifier texture = TreeEditorPickerScreen.blockTexture(blockId);
+        this.draft.setBackgroundTexture(texture);
+        this.treeBackground = new RepeatingTextureBackground(TextureReference.normal(texture), 16, 16);
+        if (persist && this.minecraft != null) {
+            TreeEditorSettings.setBackground(this.minecraft, texture);
+        }
     }
 
     private void openBackgroundPicker() {
@@ -1390,32 +1400,18 @@ public class TreeEditorScreen extends Screen {
     }
 
     private void drawTreeBackground(GuiGraphicsExtractor graphics) {
-        if (this.treeBackgroundSprite == null) {
+        if (this.treeBackground == null && this.draft.getBackgroundTexture() != null) {
+            this.treeBackground = new RepeatingTextureBackground(
+                    TextureReference.normal(this.draft.getBackgroundTexture()),
+                    16,
+                    16
+            );
+        }
+        if (this.treeBackground == null) {
             graphics.fill(this.treeX, this.treeY, this.treeX + this.treeW, this.treeY + this.treeH, 0xFF2A6F7A);
             return;
         }
-        graphics.enableScissor(this.treeX, this.treeY, this.treeX + this.treeW, this.treeY + this.treeH);
-        for (int x = 0; x < this.treeW; x += 16) {
-            for (int y = 0; y < this.treeH; y += 16) {
-                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, this.treeBackgroundSprite, this.treeX + x, this.treeY + y, 16, 16);
-            }
-        }
-        graphics.disableScissor();
-    }
-
-    @Nullable
-    private TextureAtlasSprite resolveBlockSprite(Identifier blockId) {
-        if (this.minecraft == null) {
-            return null;
-        }
-        Block block = BuiltInRegistries.BLOCK.get(blockId).map(holder -> holder.value()).orElse(null);
-        if (block == null) {
-            return null;
-        }
-        return this.minecraft.getModelManager()
-                .getBlockStateModelSet()
-                .getParticleMaterial(block.defaultBlockState())
-                .sprite();
+        this.treeBackground.render(graphics, this.treeX, this.treeY, this.treeW, this.treeH);
     }
 
     private void drawGrid(GuiGraphicsExtractor graphics) {
@@ -1488,6 +1484,7 @@ public class TreeEditorScreen extends Screen {
             List<Item> items = new ArrayList<>();
             items.add(new Item("Add parent...", () -> screen.beginParentLink(node)));
             items.add(new Item("Unparent", () -> screen.unparent(node)));
+            items.add(new Item("Duplicate", () -> screen.duplicateNode(node)));
             items.add(new Item("Edit...", () -> screen.openEdit(node)));
             items.add(new Item(node.isHiddenInGui() ? "Show in tree" : "Hide in tree", () -> screen.toggleHidden(node)));
             items.add(new Item("Delete", () -> screen.deleteNode(node)));
