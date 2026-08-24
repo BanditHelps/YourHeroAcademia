@@ -27,7 +27,10 @@ public final class TreeEditorExports {
     }
 
     public static List<Path> listJsonFiles(Minecraft minecraft) {
-        Path directory = directory(minecraft);
+        return listJsonFiles(directory(minecraft));
+    }
+
+    public static List<Path> listJsonFiles(Path directory) {
         if (!Files.isDirectory(directory)) {
             return List.of();
         }
@@ -43,6 +46,28 @@ public final class TreeEditorExports {
         }
         files.sort(Comparator.comparing(path -> path.getFileName().toString().toLowerCase()));
         return files;
+    }
+
+    public static List<String> listJsonNames(Path directory) {
+        List<String> names = new ArrayList<>();
+        for (Path file : listJsonFiles(directory)) {
+            names.add(file.getFileName().toString());
+        }
+        return names;
+    }
+
+    @Nullable
+    public static Path resolve(Minecraft minecraft, String fileName) {
+        return resolve(directory(minecraft), fileName);
+    }
+
+    @Nullable
+    public static Path resolve(Path directory, String fileName) {
+        String name = TreeEditorDraft.sanitizeFileName(fileName);
+        if (name.isBlank()) {
+            return null;
+        }
+        return directory.resolve(name + ".json");
     }
 
     public static TreeEditorDraft read(Minecraft minecraft, Path file) throws IOException {

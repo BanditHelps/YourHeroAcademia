@@ -15,6 +15,7 @@ import com.github.bandithelps.gui.tree.schema.PalladiumDocCatalog;
 import com.github.bandithelps.gui.tree.TreeEditorJson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSliderButton;
@@ -36,6 +37,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -91,13 +93,27 @@ public class TreeEditorScreen extends Screen {
     private boolean panning;
     @Nullable
     private TreeEditorNode dragging;
+    private final List<TreeEditorNode> dragGroup = new ArrayList<>();
+    private final List<Float> dragStartX = new ArrayList<>();
+    private final List<Float> dragStartY = new ArrayList<>();
+    private float dragAnchorX;
+    private float dragAnchorY;
+    private boolean dragMoved;
+    private boolean pendingSelectionCollapse;
+    @Nullable
+    private TreeEditorNode pendingCollapseNode;
     @Nullable
     private TreeEditorNode draggingWaypointNode;
     @Nullable
     private String draggingWaypointParentKey;
     private int draggingWaypointIndex;
-    @Nullable
-    private TreeEditorNode selected;
+    private final LinkedHashSet<TreeEditorNode> selection = new LinkedHashSet<>();
+    private boolean boxing;
+    private int boxStartX;
+    private int boxStartY;
+    private int boxEndX;
+    private int boxEndY;
+    private final LinkedHashSet<TreeEditorNode> boxBase = new LinkedHashSet<>();
     @Nullable
     private TreeEditorNode parentLinkSource;
     @Nullable
@@ -119,6 +135,9 @@ public class TreeEditorScreen extends Screen {
                 this.costSchemas = this.catalog.costs();
             }
             this.applyBackground(TreeEditorSettings.background(this.minecraft), false);
+            if (!this.viewReady) {
+                this.stepSize = TreeEditorSettings.step(this.minecraft);
+            }
         }
         if (!this.viewReady) {
             this.panX = 0;
@@ -149,6 +168,9 @@ public class TreeEditorScreen extends Screen {
             this.drawNode(graphics, node);
         }
         this.drawWaypointHandles(graphics, hoveredVertex);
+        if (this.boxing) {
+            this.drawSelectionBox(graphics);
+        }
         graphics.disableScissor();
 
         this.blitSprite(graphics, VIGNETTE, this.treeX, this.treeY, this.treeW, this.treeH);
@@ -211,9 +233,14 @@ public class TreeEditorScreen extends Screen {
             this.draggingWaypointNode = null;
             this.draggingWaypointParentKey = null;
             this.panning = false;
+            this.boxing = false;
+            this.boxBase.clear();
             if (vertex != null) {
                 this.contextMenu = ContextMenu.forVertex(this, vertex.child(), vertex.parentKey(), vertex.index(), mouseX, mouseY);
             } else if (hit != null) {
+                if (!this.selection.contains(hit)) {
+                    this.selectNode(hit);
+                }
                 this.contextMenu = ContextMenu.forNode(this, hit, mouseX, mouseY);
             } else if (segment != null) {
                 this.contextMenu = ContextMenu.forSegment(this, segment.child(), segment.parentKey(), segment.segmentIndex(), mouseX, mouseY);
@@ -245,14 +272,30 @@ public class TreeEditorScreen extends Screen {
             return true;
         }
         if (hit != null) {
-            this.selectNode(hit);
-            this.dragging = hit;
+            boolean ctrl = event.hasControlDown();
+            if (ctrl) {
+                this.toggleSelect(hit);
+                if (this.selection.contains(hit)) {
+                    this.beginNodeDrag(hit);
+                }
+            } else if (this.selection.contains(hit) && this.selection.size() > 1) {
+                this.pendingSelectionCollapse = true;
+                this.pendingCollapseNode = hit;
+                this.beginNodeDrag(hit);
+            } else {
+                this.selectNode(hit);
+                this.beginNodeDrag(hit);
+            }
             return true;
         }
-        if (segment != null) {
+        if (segment != null && !event.hasControlDown()) {
             if (doubleClick) {
                 this.insertVertex(segment.child(), segment.parentKey(), segment.segmentIndex(), this.screenToGridX(mouseX), this.screenToGridY(mouseY));
             }
+            return true;
+        }
+        if (event.hasControlDown()) {
+            this.beginBoxSelect(mouseX, mouseY);
             return true;
         }
         this.selectNode(null);
@@ -274,10 +317,20 @@ public class TreeEditorScreen extends Screen {
             return true;
         }
         if (this.dragging != null && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            this.dragMoved = true;
+            this.pendingSelectionCollapse = false;
             float gridX = this.snap(this.screenToGridX((int) event.x()));
             float gridY = this.snap(this.screenToGridY((int) event.y()));
-            this.dragging.setGrid(gridX, gridY);
+            float dx = gridX - this.dragAnchorX;
+            float dy = gridY - this.dragAnchorY;
+            for (int index = 0; index < this.dragGroup.size(); index++) {
+                this.dragGroup.get(index).setGrid(this.dragStartX.get(index) + dx, this.dragStartY.get(index) + dy);
+            }
             this.draft.markDirty();
+            return true;
+        }
+        if (this.boxing && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            this.updateBoxSelect((int) event.x(), (int) event.y());
             return true;
         }
         if (this.panning && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
@@ -290,7 +343,19 @@ public class TreeEditorScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
+        if (this.pendingSelectionCollapse && !this.dragMoved && this.pendingCollapseNode != null) {
+            this.selectNode(this.pendingCollapseNode);
+        }
+        if (this.boxing) {
+            this.finishBoxSelect();
+        }
         this.dragging = null;
+        this.dragGroup.clear();
+        this.dragStartX.clear();
+        this.dragStartY.clear();
+        this.dragMoved = false;
+        this.pendingSelectionCollapse = false;
+        this.pendingCollapseNode = null;
         this.draggingWaypointNode = null;
         this.draggingWaypointParentKey = null;
         this.panning = false;
@@ -329,8 +394,8 @@ public class TreeEditorScreen extends Screen {
             this.openNew();
             return true;
         }
-        if (event.key() == GLFW.GLFW_KEY_DELETE && this.selected != null && !(this.getFocused() instanceof TreeEditorFieldBox)) {
-            this.deleteNode(this.selected);
+        if (event.key() == GLFW.GLFW_KEY_DELETE && !this.selection.isEmpty() && !(this.getFocused() instanceof TreeEditorFieldBox)) {
+            this.deleteNode(this.selectedNode());
             return true;
         }
         return super.keyPressed(event);
@@ -342,14 +407,19 @@ public class TreeEditorScreen extends Screen {
     }
 
     public void beginParentLink(TreeEditorNode node) {
+        this.selectNode(node);
         this.parentLinkSource = node;
-        this.selected = node;
         this.status = "Click a node to add as a parent of '" + node.getKey() + "'.";
     }
 
     public void unparent(TreeEditorNode node) {
-        this.draft.clearParents(node, this.costSchemas);
-        this.status = "Removed parents from " + node.getKey();
+        List<TreeEditorNode> targets = this.actionTargets(node);
+        for (TreeEditorNode target : targets) {
+            this.draft.clearParents(target, this.costSchemas);
+        }
+        this.status = targets.size() == 1
+                ? "Removed parents from " + node.getKey()
+                : "Removed parents from " + targets.size() + " nodes";
     }
 
     public void addNodeAt(int mouseX, int mouseY) {
@@ -376,19 +446,40 @@ public class TreeEditorScreen extends Screen {
     }
 
     public void toggleHidden(TreeEditorNode node) {
-        node.setHiddenInGui(!node.isHiddenInGui());
-        this.draft.markDirty();
-        this.status = node.isHiddenInGui() ? "Hidden " + node.getKey() : "Showing " + node.getKey();
-        if (node.isHiddenInGui() && !this.showHidden) {
-            this.selected = null;
+        List<TreeEditorNode> targets = this.actionTargets(node);
+        boolean hide = !node.isHiddenInGui();
+        this.setNodesHiddenInTree(targets, hide);
+        this.status = hide
+                ? (targets.size() == 1 ? "Hidden " + node.getKey() : "Hidden " + targets.size() + " nodes")
+                : (targets.size() == 1 ? "Showing " + node.getKey() : "Showing " + targets.size() + " nodes");
+    }
+
+    public void setNodesHiddenInTree(List<TreeEditorNode> nodes, boolean hidden) {
+        for (TreeEditorNode node : nodes) {
+            node.setHiddenInGui(hidden);
+            if (hidden && !this.showHidden) {
+                this.selection.remove(node);
+            }
         }
+        this.draft.markDirty();
+        this.refreshWidgets();
+    }
+
+    public void setNodesHiddenInBar(List<TreeEditorNode> nodes, boolean hidden) {
+        for (TreeEditorNode node : nodes) {
+            node.setHiddenInBar(hidden);
+        }
+        this.draft.markDirty();
         this.refreshWidgets();
     }
 
     public void replaceDraft(TreeEditorDraft draft) {
         this.draft = draft;
-        this.selected = null;
+        this.selection.clear();
         this.dragging = null;
+        this.dragGroup.clear();
+        this.boxing = false;
+        this.boxBase.clear();
         this.draggingWaypointNode = null;
         this.parentLinkSource = null;
         this.viewReady = false;
@@ -400,30 +491,51 @@ public class TreeEditorScreen extends Screen {
     }
 
     public void duplicateNode(TreeEditorNode node) {
-        TreeEditorNode copy = this.draft.duplicate(node);
-        this.selectNode(copy);
-        this.status = "Duplicated " + node.getKey() + " as " + copy.getKey();
+        List<TreeEditorNode> targets = this.actionTargets(node);
+        this.selection.clear();
+        TreeEditorNode last = null;
+        for (TreeEditorNode target : targets) {
+            last = this.draft.duplicate(target);
+            this.selection.add(last);
+        }
+        this.status = targets.size() == 1
+                ? "Duplicated " + node.getKey() + " as " + (last == null ? "" : last.getKey())
+                : "Duplicated " + targets.size() + " nodes";
+        this.inspector.resetScroll();
+        this.refreshWidgets();
     }
 
     public void deleteNode(TreeEditorNode node) {
-        this.removeNode(node, "Deleted " + node.getKey());
+        if (node == null) {
+            return;
+        }
+        List<TreeEditorNode> targets = this.actionTargets(node);
+        int count = targets.size();
+        String key = node.getKey();
+        for (TreeEditorNode target : List.copyOf(targets)) {
+            this.removeNodeQuiet(target);
+        }
+        this.status = count == 1 ? "Deleted " + key : "Deleted " + count + " nodes";
+        this.refreshWidgets();
     }
 
     public void discardCreatedNode(TreeEditorNode node) {
-        this.removeNode(node, "Cancelled new node.");
+        this.removeNodeQuiet(node);
+        this.status = "Cancelled new node.";
+        this.refreshWidgets();
     }
 
-    private void removeNode(TreeEditorNode node, String successStatus) {
+    private void removeNodeQuiet(TreeEditorNode node) {
         this.draft.remove(node);
-        if (this.selected == node) {
-            this.selected = null;
-        }
+        this.selection.remove(node);
         if (this.draggingWaypointNode == node) {
             this.draggingWaypointNode = null;
             this.draggingWaypointParentKey = null;
         }
-        this.status = successStatus;
-        this.refreshWidgets();
+        if (this.dragging == node) {
+            this.dragging = null;
+        }
+        this.dragGroup.remove(node);
     }
 
     public void insertVertex(TreeEditorNode child, String parentKey, int segmentIndex, float gridX, float gridY) {
@@ -573,7 +685,7 @@ public class TreeEditorScreen extends Screen {
         if (hit >= 10 && node.getIcon() != null && this.minecraft != null && this.minecraft.player != null) {
             IconRenderer.drawIcon(node.getIcon(), this.minecraft, graphics, DataContext.forEntity(this.minecraft.player), x - 8, y - 8);
         }
-        if (this.selected == node) {
+        if (this.selection.contains(node) || this.isBoxSelecting(node)) {
             graphics.fill(x - hit - 2, y - hit - 2, x + hit + 2, y - hit, TreeEditorTheme.ACCENT);
             graphics.fill(x - hit - 2, y + hit, x + hit + 2, y + hit + 2, TreeEditorTheme.ACCENT);
             graphics.fill(x - hit - 2, y - hit, x - hit, y + hit, TreeEditorTheme.ACCENT);
@@ -862,7 +974,19 @@ public class TreeEditorScreen extends Screen {
 
     @Nullable
     public TreeEditorNode selectedNode() {
-        return this.selected;
+        TreeEditorNode last = null;
+        for (TreeEditorNode node : this.selection) {
+            last = node;
+        }
+        return last;
+    }
+
+    public List<TreeEditorNode> selectedNodes() {
+        return List.copyOf(this.selection);
+    }
+
+    public int selectionSize() {
+        return this.selection.size();
     }
 
     public Font getFont() {
@@ -900,12 +1024,124 @@ public class TreeEditorScreen extends Screen {
     }
 
     public void selectNode(@Nullable TreeEditorNode node) {
-        boolean changed = this.selected != node;
-        this.selected = node;
+        boolean changed;
+        if (node == null) {
+            changed = !this.selection.isEmpty();
+            this.selection.clear();
+        } else if (this.selection.size() == 1 && this.selection.contains(node)) {
+            changed = false;
+        } else {
+            changed = true;
+            this.selection.clear();
+            this.selection.add(node);
+        }
         if (changed) {
             this.inspector.resetScroll();
             this.refreshWidgets();
         }
+    }
+
+    private void toggleSelect(TreeEditorNode node) {
+        if (this.selection.contains(node)) {
+            this.selection.remove(node);
+        } else {
+            this.selection.add(node);
+        }
+        this.inspector.resetScroll();
+        this.refreshWidgets();
+    }
+
+    private void beginNodeDrag(TreeEditorNode grabbed) {
+        this.dragging = grabbed;
+        this.dragMoved = false;
+        this.dragGroup.clear();
+        this.dragStartX.clear();
+        this.dragStartY.clear();
+        List<TreeEditorNode> group = this.selection.contains(grabbed) ? List.copyOf(this.selection) : List.of(grabbed);
+        for (TreeEditorNode node : group) {
+            this.dragGroup.add(node);
+            this.dragStartX.add(node.getGridX());
+            this.dragStartY.add(node.getGridY());
+        }
+        this.dragAnchorX = grabbed.getGridX();
+        this.dragAnchorY = grabbed.getGridY();
+    }
+
+    private void beginBoxSelect(int mouseX, int mouseY) {
+        this.boxing = true;
+        this.panning = false;
+        this.boxStartX = this.boxEndX = this.clampTreeX(mouseX);
+        this.boxStartY = this.boxEndY = this.clampTreeY(mouseY);
+        this.boxBase.clear();
+        this.boxBase.addAll(this.selection);
+    }
+
+    private void updateBoxSelect(int mouseX, int mouseY) {
+        this.boxEndX = this.clampTreeX(mouseX);
+        this.boxEndY = this.clampTreeY(mouseY);
+    }
+
+    private void finishBoxSelect() {
+        if (!this.boxing) {
+            return;
+        }
+        this.boxing = false;
+        LinkedHashSet<TreeEditorNode> next = new LinkedHashSet<>(this.boxBase);
+        for (TreeEditorNode node : this.displayedNodes()) {
+            if (this.nodeIntersectsBox(node)) {
+                next.add(node);
+            }
+        }
+        this.boxBase.clear();
+        boolean changed = next.size() != this.selection.size() || !this.selection.containsAll(next);
+        if (changed) {
+            this.selection.clear();
+            this.selection.addAll(next);
+            this.inspector.resetScroll();
+            this.refreshWidgets();
+        }
+    }
+
+    private boolean isBoxSelecting(TreeEditorNode node) {
+        return this.boxing && (this.boxBase.contains(node) || this.nodeIntersectsBox(node));
+    }
+
+    private boolean nodeIntersectsBox(TreeEditorNode node) {
+        int x0 = Math.min(this.boxStartX, this.boxEndX);
+        int y0 = Math.min(this.boxStartY, this.boxEndY);
+        int x1 = Math.max(this.boxStartX, this.boxEndX);
+        int y1 = Math.max(this.boxStartY, this.boxEndY);
+        int x = this.nodeScreenX(node);
+        int y = this.nodeScreenY(node);
+        int hit = this.nodeHit();
+        return x + hit >= x0 && x - hit <= x1 && y + hit >= y0 && y - hit <= y1;
+    }
+
+    private void drawSelectionBox(GuiGraphicsExtractor graphics) {
+        int x0 = Math.min(this.boxStartX, this.boxEndX);
+        int y0 = Math.min(this.boxStartY, this.boxEndY);
+        int x1 = Math.max(this.boxStartX, this.boxEndX);
+        int y1 = Math.max(this.boxStartY, this.boxEndY);
+        if (x1 <= x0 && y1 <= y0) {
+            return;
+        }
+        graphics.fill(x0, y0, x1 + 1, y1 + 1, 0x40D4A25A);
+        TreeEditorTheme.border(graphics, x0, y0, Math.max(1, x1 - x0 + 1), Math.max(1, y1 - y0 + 1), TreeEditorTheme.ACCENT);
+    }
+
+    private int clampTreeX(int x) {
+        return Math.max(this.treeX, Math.min(this.treeX + this.treeW - 1, x));
+    }
+
+    private int clampTreeY(int y) {
+        return Math.max(this.treeY, Math.min(this.treeY + this.treeH - 1, y));
+    }
+
+    List<TreeEditorNode> actionTargets(TreeEditorNode node) {
+        if (node != null && this.selection.contains(node) && this.selection.size() > 1) {
+            return List.copyOf(this.selection);
+        }
+        return node == null ? List.of() : List.of(node);
     }
 
     public void refreshWidgets() {
@@ -938,7 +1174,9 @@ public class TreeEditorScreen extends Screen {
             return;
         }
         this.minecraft.setScreen(TreeEditorPickerScreen.forIcons(this, "Select Icon", id -> {
-            node.setIconId(id.toString());
+            for (TreeEditorNode target : this.actionTargets(node)) {
+                target.setIconId(id.toString());
+            }
             this.draft.markDirty();
             this.refreshWidgets();
         }));
@@ -949,8 +1187,11 @@ public class TreeEditorScreen extends Screen {
             return;
         }
         this.minecraft.setScreen(new TreeEditorTypePickerScreen(this, this.catalog.abilities(), typeId -> {
-            node.setTypeId(typeId);
-            node.setTypeFields(fieldsFromExample(typeId));
+            JsonObject fields = fieldsFromExample(typeId);
+            for (TreeEditorNode target : this.actionTargets(node)) {
+                target.setTypeId(typeId);
+                target.setTypeFields(fields.deepCopy());
+            }
             this.draft.markDirty();
             this.refreshWidgets();
         }));
@@ -962,7 +1203,10 @@ public class TreeEditorScreen extends Screen {
         }
         this.minecraft.setScreen(new TreeEditorJsonEditScreen(this, "Type fields", node.getTypeFields(), value -> {
             if (value != null && value.isJsonObject()) {
-                node.setTypeFields(value.getAsJsonObject());
+                JsonObject object = value.getAsJsonObject();
+                for (TreeEditorNode target : this.actionTargets(node)) {
+                    target.setTypeFields(object.deepCopy());
+                }
                 this.draft.markDirty();
             }
             this.refreshWidgets();
@@ -1137,13 +1381,7 @@ public class TreeEditorScreen extends Screen {
         }
         if (kind == DocFieldKind.STRING_LIST) {
             this.minecraft.setScreen(new TreeEditorStringListScreen(this, field.key(), node.getTypeFields().get(field.key()), value -> {
-                if (value == null) {
-                    node.getTypeFields().remove(field.key());
-                } else {
-                    node.getTypeFields().add(field.key(), value);
-                }
-                this.draft.markDirty();
-                this.refreshWidgets();
+                this.writeTypeField(node, field.key(), value);
             }));
             return;
         }
@@ -1154,24 +1392,12 @@ public class TreeEditorScreen extends Screen {
                     ? TreeEditorTypedObjectScreen.Kind.ACTION
                     : TreeEditorTypedObjectScreen.Kind.VALUE;
             this.minecraft.setScreen(new TreeEditorTypedObjectScreen(this, typed, this.catalog, this.costSchemas, node.getTypeFields().get(field.key()), value -> {
-                if (value == null) {
-                    node.getTypeFields().remove(field.key());
-                } else {
-                    node.getTypeFields().add(field.key(), value);
-                }
-                this.draft.markDirty();
-                this.refreshWidgets();
+                this.writeTypeField(node, field.key(), value);
             }));
             return;
         }
         this.minecraft.setScreen(new TreeEditorJsonEditScreen(this, field.key(), node.getTypeFields().get(field.key()), value -> {
-            if (value == null) {
-                node.getTypeFields().remove(field.key());
-            } else {
-                node.getTypeFields().add(field.key(), value);
-            }
-            this.draft.markDirty();
-            this.refreshWidgets();
+            this.writeTypeField(node, field.key(), value);
         }));
     }
 
@@ -1180,10 +1406,20 @@ public class TreeEditorScreen extends Screen {
             return;
         }
         this.minecraft.setScreen(new TreeEditorPickerScreen(this, "Select Item", TreeEditorPickerScreen.Mode.ITEMS, id -> {
-            node.getTypeFields().addProperty(key, id.toString());
-            this.draft.markDirty();
-            this.refreshWidgets();
+            this.writeTypeField(node, key, new JsonPrimitive(id.toString()));
         }));
+    }
+
+    private void writeTypeField(TreeEditorNode node, String key, @Nullable JsonElement value) {
+        for (TreeEditorNode target : this.actionTargets(node)) {
+            if (value == null) {
+                target.getTypeFields().remove(key);
+            } else {
+                target.getTypeFields().add(key, value.deepCopy());
+            }
+        }
+        this.draft.markDirty();
+        this.refreshWidgets();
     }
 
     private JsonObject fieldsFromExample(String typeId) {
@@ -1214,7 +1450,8 @@ public class TreeEditorScreen extends Screen {
         TreeEditorTheme.fill(graphics, 0, y, this.width, 1, TreeEditorTheme.BORDER);
         String help = this.parentLinkSource != null
                 ? "Parent mode: click a node to parent '" + this.parentLinkSource.getKey() + "'. Esc cancels."
-                : this.status + "  ·  Zoom " + Math.round(this.zoom * 100) + "%";
+                : (this.selection.size() > 1 ? this.selection.size() + " selected  ·  " : "")
+                + this.status + "  ·  Zoom " + Math.round(this.zoom * 100) + "%";
         int maxW = Math.max(40, this.width - 170);
         String clipped = help;
         while (this.font.width(clipped) > maxW && clipped.length() > 4) {
@@ -1374,6 +1611,9 @@ public class TreeEditorScreen extends Screen {
         @Override
         protected void applyValue() {
             TreeEditorScreen.this.stepSize = stepFromProgress(this.value);
+            if (TreeEditorScreen.this.minecraft != null) {
+                TreeEditorSettings.setStep(TreeEditorScreen.this.minecraft, TreeEditorScreen.this.stepSize);
+            }
             this.updateMessage();
         }
     }
@@ -1482,12 +1722,14 @@ public class TreeEditorScreen extends Screen {
 
         static ContextMenu forNode(TreeEditorScreen screen, TreeEditorNode node, int mouseX, int mouseY) {
             List<Item> items = new ArrayList<>();
+            int count = screen.actionTargets(node).size();
+            String suffix = count > 1 ? " (" + count + ")" : "";
             items.add(new Item("Add parent...", () -> screen.beginParentLink(node)));
-            items.add(new Item("Unparent", () -> screen.unparent(node)));
-            items.add(new Item("Duplicate", () -> screen.duplicateNode(node)));
+            items.add(new Item("Unparent" + suffix, () -> screen.unparent(node)));
+            items.add(new Item("Duplicate" + suffix, () -> screen.duplicateNode(node)));
             items.add(new Item("Edit...", () -> screen.openEdit(node)));
-            items.add(new Item(node.isHiddenInGui() ? "Show in tree" : "Hide in tree", () -> screen.toggleHidden(node)));
-            items.add(new Item("Delete", () -> screen.deleteNode(node)));
+            items.add(new Item((node.isHiddenInGui() ? "Show in tree" : "Hide in tree") + suffix, () -> screen.toggleHidden(node)));
+            items.add(new Item("Delete" + suffix, () -> screen.deleteNode(node)));
             return clamped(screen, mouseX, mouseY, items);
         }
 

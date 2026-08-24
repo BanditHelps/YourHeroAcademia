@@ -22,6 +22,8 @@ public class TreeEditorTextEditScreen extends Screen {
     private final int maxLength;
     private final StringBuilder text;
     private int caret;
+    private int selectionAnchor = -1;
+    private boolean draggingSelect;
     private int scroll;
     private int panelX;
     private int panelY;
@@ -54,7 +56,7 @@ public class TreeEditorTextEditScreen extends Screen {
         this.parent.extractRenderState(graphics, Integer.MIN_VALUE, Integer.MIN_VALUE, partialTick);
         graphics.fill(0, 0, this.width, this.height, TreeEditorTheme.OVERLAY);
         TreeEditorTheme.dialog(graphics, this.font, this.panelX, this.panelY, this.panelW, this.panelH, this.heading);
-        graphics.text(this.font, "Enter for a new line. Save when finished.", this.panelX + 12, this.panelY + 28, TreeEditorTheme.TEXT_MUTED, false);
+        graphics.text(this.font, "Ctrl+A selects all. Ctrl+Backspace deletes a word.", this.panelX + 12, this.panelY + 28, TreeEditorTheme.TEXT_MUTED, false);
 
         int left = this.panelX + 10;
         int top = this.panelY + 42;
@@ -67,11 +69,15 @@ public class TreeEditorTextEditScreen extends Screen {
         this.scroll = Math.max(0, Math.min(this.scroll, Math.max(0, lines.size() - visible)));
         this.ensureCaretVisible(lines, visible);
 
+        int selStart = this.hasSelection() ? this.selectionStart() : -1;
+        int selEnd = this.hasSelection() ? this.selectionEnd() : -1;
+
         graphics.enableScissor(left + 1, top + 1, right - 1, bottom - 1);
         int y = top + 5 - this.scroll * LINE;
         for (int index = 0; index < lines.size(); index++) {
             VisualLine line = lines.get(index);
             if (y + LINE >= top && y <= bottom) {
+                this.drawSelection(graphics, line, left, y, selStart, selEnd);
                 graphics.text(this.font, line.text, left + 6, y, TreeEditorTheme.TEXT, false);
                 if (this.caret >= line.start && this.caret <= line.end) {
                     int caretX = left + 6 + this.font.width(this.text.substring(line.start, this.caret));
@@ -98,17 +104,30 @@ public class TreeEditorTextEditScreen extends Screen {
         if (mouseX < left || mouseX >= right || mouseY < top || mouseY >= bottom) {
             return true;
         }
-        List<VisualLine> lines = this.visualLines(right - left - 10);
-        int index = this.scroll + (mouseY - top - 5) / LINE;
-        if (index < 0) {
-            this.caret = 0;
-        } else if (index >= lines.size()) {
-            this.caret = this.text.length();
+        int pos = this.indexAt(mouseX, mouseY);
+        if (event.hasShiftDown()) {
+            this.moveCaretTo(pos, true);
         } else {
-            VisualLine line = lines.get(index);
-            this.caret = this.indexAt(line, mouseX - left - 6);
+            this.caret = pos;
+            this.selectionAnchor = pos;
+            this.draggingSelect = true;
         }
         return true;
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        if (this.draggingSelect && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            this.moveCaretTo(this.indexAt((int) event.x(), (int) event.y()), true);
+            return true;
+        }
+        return super.mouseDragged(event, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        this.draggingSelect = false;
+        return super.mouseReleased(event);
     }
 
     @Override
@@ -127,15 +146,32 @@ public class TreeEditorTextEditScreen extends Screen {
             this.save();
             return true;
         }
+        if (event.hasControlDown() && event.key() == GLFW.GLFW_KEY_A) {
+            this.selectionAnchor = 0;
+            this.caret = this.text.length();
+            return true;
+        }
+        if (event.hasControlDown() && event.key() == GLFW.GLFW_KEY_BACKSPACE) {
+            if (this.hasSelection()) {
+                this.deleteSelection();
+            } else {
+                this.deleteWordBefore();
+            }
+            return true;
+        }
         if (event.key() == GLFW.GLFW_KEY_BACKSPACE) {
-            if (this.caret > 0) {
+            if (this.hasSelection()) {
+                this.deleteSelection();
+            } else if (this.caret > 0) {
                 this.text.deleteCharAt(this.caret - 1);
                 this.caret--;
             }
             return true;
         }
         if (event.key() == GLFW.GLFW_KEY_DELETE) {
-            if (this.caret < this.text.length()) {
+            if (this.hasSelection()) {
+                this.deleteSelection();
+            } else if (this.caret < this.text.length()) {
                 this.text.deleteCharAt(this.caret);
             }
             return true;
@@ -145,23 +181,23 @@ public class TreeEditorTextEditScreen extends Screen {
             return true;
         }
         if (event.key() == GLFW.GLFW_KEY_LEFT) {
-            this.caret = Math.max(0, this.caret - 1);
+            this.moveCaretTo(this.caret - 1, event.hasShiftDown());
             return true;
         }
         if (event.key() == GLFW.GLFW_KEY_RIGHT) {
-            this.caret = Math.min(this.text.length(), this.caret + 1);
+            this.moveCaretTo(this.caret + 1, event.hasShiftDown());
             return true;
         }
         if (event.key() == GLFW.GLFW_KEY_HOME) {
-            this.caret = this.lineStart(this.caret);
+            this.moveCaretTo(this.lineStart(this.caret), event.hasShiftDown());
             return true;
         }
         if (event.key() == GLFW.GLFW_KEY_END) {
-            this.caret = this.lineEnd(this.caret);
+            this.moveCaretTo(this.lineEnd(this.caret), event.hasShiftDown());
             return true;
         }
         if (event.key() == GLFW.GLFW_KEY_UP || event.key() == GLFW.GLFW_KEY_DOWN) {
-            this.moveCaretVertical(event.key() == GLFW.GLFW_KEY_UP ? -1 : 1);
+            this.moveCaretVertical(event.key() == GLFW.GLFW_KEY_UP ? -1 : 1, event.hasShiftDown());
             return true;
         }
         return super.keyPressed(event);
@@ -195,14 +231,63 @@ public class TreeEditorTextEditScreen extends Screen {
     }
 
     private void insert(String value) {
+        if (this.hasSelection()) {
+            this.deleteSelection();
+        }
         if (this.text.length() + value.length() > this.maxLength) {
             return;
         }
         this.text.insert(this.caret, value);
         this.caret += value.length();
+        this.selectionAnchor = -1;
     }
 
-    private void moveCaretVertical(int direction) {
+    private boolean hasSelection() {
+        return this.selectionAnchor >= 0 && this.selectionAnchor != this.caret;
+    }
+
+    private int selectionStart() {
+        return Math.min(this.caret, this.selectionAnchor);
+    }
+
+    private int selectionEnd() {
+        return Math.max(this.caret, this.selectionAnchor);
+    }
+
+    private void deleteSelection() {
+        if (!this.hasSelection()) {
+            return;
+        }
+        int start = this.selectionStart();
+        int end = this.selectionEnd();
+        this.text.delete(start, end);
+        this.caret = start;
+        this.selectionAnchor = -1;
+    }
+
+    private void deleteWordBefore() {
+        if (this.caret <= 0) {
+            return;
+        }
+        int start = TreeEditorTextInput.previousWord(this.text.toString(), this.caret);
+        this.text.delete(start, this.caret);
+        this.caret = start;
+        this.selectionAnchor = -1;
+    }
+
+    private void moveCaretTo(int pos, boolean extend) {
+        pos = Math.max(0, Math.min(this.text.length(), pos));
+        if (extend) {
+            if (this.selectionAnchor < 0) {
+                this.selectionAnchor = this.caret;
+            }
+        } else {
+            this.selectionAnchor = -1;
+        }
+        this.caret = pos;
+    }
+
+    private void moveCaretVertical(int direction, boolean extend) {
         int width = this.panelW - 30;
         List<VisualLine> lines = this.visualLines(width);
         int current = this.visualIndex(lines, this.caret);
@@ -211,8 +296,41 @@ public class TreeEditorTextEditScreen extends Screen {
             VisualLine from = lines.get(current);
             int offset = this.caret - from.start;
             VisualLine to = lines.get(next);
-            this.caret = Math.min(to.end, to.start + offset);
+            this.moveCaretTo(Math.min(to.end, to.start + offset), extend);
         }
+    }
+
+    private void drawSelection(GuiGraphicsExtractor graphics, VisualLine line, int left, int y, int selStart, int selEnd) {
+        if (selStart < 0 || selEnd < 0 || selEnd <= selStart) {
+            return;
+        }
+        int from = Math.max(selStart, line.start);
+        int to = Math.min(selEnd, line.end);
+        if (from < to) {
+            int x1 = left + 6 + this.font.width(this.text.substring(line.start, from));
+            int x2 = left + 6 + this.font.width(this.text.substring(line.start, to));
+            graphics.fill(x1, y - 1, Math.max(x1 + 1, x2), y + 9, TreeEditorTheme.ACCENT_DIM);
+            return;
+        }
+        if (line.start == line.end && selStart <= line.start && selEnd > line.start) {
+            int x1 = left + 6;
+            graphics.fill(x1, y - 1, x1 + 4, y + 9, TreeEditorTheme.ACCENT_DIM);
+        }
+    }
+
+    private int indexAt(int mouseX, int mouseY) {
+        int left = this.panelX + 10;
+        int top = this.panelY + 42;
+        int right = this.panelX + this.panelW - 10;
+        List<VisualLine> lines = this.visualLines(right - left - 10);
+        int index = this.scroll + (mouseY - top - 5) / LINE;
+        if (index < 0 || lines.isEmpty()) {
+            return 0;
+        }
+        if (index >= lines.size()) {
+            return this.text.length();
+        }
+        return this.indexAt(lines.get(index), mouseX - left - 6);
     }
 
     private void ensureCaretVisible(List<VisualLine> lines, int visible) {

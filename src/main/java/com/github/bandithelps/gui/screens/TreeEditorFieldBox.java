@@ -2,8 +2,10 @@ package com.github.bandithelps.gui.screens;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
 
 public class TreeEditorFieldBox extends EditBox {
     private Runnable onExpand = () -> {
@@ -29,6 +31,14 @@ public class TreeEditorFieldBox extends EditBox {
         if (!focused) {
             this.showStart();
         }
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        if (this.active && this.isFocused() && event.hasControlDown() && event.key() == GLFW.GLFW_KEY_BACKSPACE) {
+            return TreeEditorTextInput.deleteWordBefore(this);
+        }
+        return super.keyPressed(event);
     }
 
     @Override

@@ -19,7 +19,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 public final class TreeEditorInspector {
     private static final int PAD = 10;
@@ -40,11 +42,13 @@ public final class TreeEditorInspector {
 
     public void rebuild() {
         this.rows.clear();
-        TreeEditorNode node = this.screen.selectedNode();
-        if (node == null) {
+        List<TreeEditorNode> selected = this.screen.selectedNodes();
+        if (selected.isEmpty()) {
             this.buildPower();
+        } else if (selected.size() == 1) {
+            this.buildNode(selected.getFirst());
         } else {
-            this.buildNode(node);
+            this.buildNodes(selected);
         }
         this.layout();
     }
@@ -57,7 +61,9 @@ public final class TreeEditorInspector {
         TreeEditorTheme.panel(graphics, x, y, w, h);
         TreeEditorTheme.fill(graphics, x + 1, y + 1, w - 2, 22, TreeEditorTheme.HEADER);
         TreeEditorTheme.fill(graphics, x + 1, y + 22, w - 2, 1, TreeEditorTheme.ACCENT_DIM);
-        String title = this.screen.selectedNode() == null ? "Power" : "Inspector";
+        String title = this.screen.selectedNode() == null
+                ? "Power"
+                : this.screen.selectionSize() > 1 ? "Inspector (" + this.screen.selectionSize() + ")" : "Inspector";
         graphics.text(this.screen.getFont(), title, x + PAD, y + 8, TreeEditorTheme.TEXT, false);
 
         int clipLeft = this.clipLeft();
@@ -197,7 +203,7 @@ public final class TreeEditorInspector {
             this.button("Fields", "Edit raw JSON", () -> this.screen.openTypeFieldsJson(node));
         } else {
             for (DocField field : schema.fields()) {
-                this.addAbilityField(node, field);
+                this.addAbilityField(List.of(node), field);
             }
         }
 
@@ -230,30 +236,85 @@ public final class TreeEditorInspector {
         }
     }
 
-    private void addAbilityField(TreeEditorNode node, DocField field) {
+    private void buildNodes(List<TreeEditorNode> nodes) {
+        TreeEditorNode primary = nodes.getFirst();
+        this.section("PROPERTIES");
+        this.sharedTextField("Title", nodes, TreeEditorNode::getTitle, 64, (node, value) -> node.setTitle(value));
+        this.sharedTextField("Description", nodes, TreeEditorNode::getDescription, 1024, (node, value) -> node.setDescription(value));
+        this.sharedTextField("Locked text", nodes, TreeEditorNode::getLockedDescription, 1024, (node, value) -> node.setLockedDescription(value));
+        SharedValue<String> icon = SharedValue.of(nodes, TreeEditorNode::getIconId);
+        this.iconField("Icon", icon.mixed ? "" : icon.value, () -> this.screen.openNodeIconPicker(primary));
+        this.sharedToggle("Hidden in tree", nodes, TreeEditorNode::isHiddenInGui, value -> this.screen.setNodesHiddenInTree(nodes, value));
+        this.sharedToggle("Hidden in bar", nodes, TreeEditorNode::isHiddenInBar, value -> this.screen.setNodesHiddenInBar(nodes, value));
+        this.sharedTextField("List index", nodes, node -> Integer.toString(node.getListIndex()), 8, (node, value) -> node.setListIndex(parseInt(value, 0)));
+        this.sharedTextField("Activation stamina", nodes, node -> Integer.toString(node.getActivationStamina()), 8, (node, value) -> node.setActivationStamina(parseInt(value, 0)));
+        this.sharedTextField("Stamina interval", nodes, node -> Integer.toString(node.getStaminaInterval()), 8, (node, value) -> node.setStaminaInterval(parseInt(value, 0)));
+        this.sharedTextField("Interval cost", nodes, node -> Integer.toString(node.getStaminaIntervalCost()), 8, (node, value) -> node.setStaminaIntervalCost(parseInt(value, 0)));
+        this.note(nodes.size() + " nodes selected");
+
+        this.section("ABILITY");
+        String typeId = primary.getTypeId();
+        boolean sameType = true;
+        for (TreeEditorNode node : nodes) {
+            if (!typeId.equals(node.getTypeId())) {
+                sameType = false;
+                break;
+            }
+        }
+        if (!sameType) {
+            this.note("Multiple ability types");
+            return;
+        }
+        DocSchema schema = this.screen.catalog().findAbility(typeId);
+        String typeLabel = schema == null ? typeId : schema.name();
+        this.button("Type", typeLabel, () -> this.screen.openAbilityTypePicker(primary));
+        if (schema != null && !schema.description().isBlank()) {
+            this.note(schema.description());
+        }
+        if (schema == null || schema.fields().isEmpty()) {
+            this.button("Fields", "Edit raw JSON", () -> this.screen.openTypeFieldsJson(primary));
+        } else {
+            for (DocField field : schema.fields()) {
+                this.addAbilityField(nodes, field);
+            }
+        }
+    }
+
+    @FunctionalInterface
+    private interface NodeStringSetter {
+        void accept(TreeEditorNode node, String value);
+    }
+
+    private void addAbilityField(List<TreeEditorNode> nodes, DocField field) {
         DocFieldKind kind = field.kind() == DocFieldKind.COMBINED ? combinedKind(field) : field.kind();
-        JsonObject typeFields = node.getTypeFields();
+        TreeEditorNode primary = nodes.getFirst();
         if (kind == DocFieldKind.BOOLEAN) {
-            boolean value = typeFields.has(field.key())
-                    && typeFields.get(field.key()).isJsonPrimitive()
-                    && typeFields.get(field.key()).getAsBoolean();
-            this.toggle(field.label(), value, () -> {
-                typeFields.addProperty(field.key(), !value);
+            this.sharedToggle(field.label(), nodes, node -> sharedForNodeBoolean(node, field.key()), value -> {
+                for (TreeEditorNode node : nodes) {
+                    node.getTypeFields().addProperty(field.key(), value);
+                }
                 this.screen.draft().markDirty();
                 this.screen.refreshWidgets();
             });
             return;
         }
         if (kind == DocFieldKind.ENUM && !field.enumValues().isEmpty()) {
-            String current = TreeEditorJson.asText(typeFields.get(field.key()));
-            if (current.isBlank()) {
-                current = field.enumValues().getFirst();
-                typeFields.addProperty(field.key(), current);
+            SharedValue<String> shared = SharedValue.of(nodes, node -> TreeEditorJson.asText(node.getTypeFields().get(field.key())));
+            if (!shared.mixed && (shared.value == null || shared.value.isBlank()) && nodes.size() == 1) {
+                String first = field.enumValues().getFirst();
+                primary.getTypeFields().addProperty(field.key(), first);
+                shared = new SharedValue<>(false, first);
             }
-            String shown = current;
+            String shown = shared.mixed ? "Mixed" : (shared.value == null || shared.value.isBlank() ? field.enumValues().getFirst() : shared.value);
+            boolean mixed = shared.mixed;
             this.button(field.label(), shown, () -> {
                 int index = field.enumValues().indexOf(shown);
-                typeFields.addProperty(field.key(), field.enumValues().get((Math.max(index, 0) + 1) % field.enumValues().size()));
+                String next = mixed
+                        ? field.enumValues().getFirst()
+                        : field.enumValues().get((Math.max(index, 0) + 1) % field.enumValues().size());
+                for (TreeEditorNode node : nodes) {
+                    node.getTypeFields().addProperty(field.key(), next);
+                }
                 this.screen.draft().markDirty();
                 this.screen.refreshWidgets();
             });
@@ -261,27 +322,40 @@ public final class TreeEditorInspector {
         }
         if (kind == DocFieldKind.VALUE || kind == DocFieldKind.CONDITION || kind == DocFieldKind.ACTION || kind == DocFieldKind.RAW_JSON
                 || kind == DocFieldKind.VEC2 || kind == DocFieldKind.VEC3 || kind == DocFieldKind.STRING_LIST) {
-            this.button(field.label(), TreeEditorJson.summary(typeFields.get(field.key())), () ->
-                    this.screen.openTypeFieldEditor(node, field, kind));
+            SharedValue<JsonElement> shared = SharedValue.of(nodes, node -> node.getTypeFields().get(field.key()));
+            this.button(field.label(), shared.mixed ? "Mixed" : TreeEditorJson.summary(shared.value), () ->
+                    this.screen.openTypeFieldEditor(primary, field, kind));
             return;
         }
         if (kind == DocFieldKind.ITEM || kind == DocFieldKind.ICON) {
-            this.iconField(field.label(), TreeEditorJson.asText(typeFields.get(field.key())), () ->
-                    this.screen.openTypeFieldItemPicker(node, field.key()));
+            SharedValue<String> shared = SharedValue.of(nodes, node -> TreeEditorJson.asText(node.getTypeFields().get(field.key())));
+            this.iconField(field.label(), shared.mixed ? "" : shared.value, () ->
+                    this.screen.openTypeFieldItemPicker(primary, field.key()));
             return;
         }
-        this.textField(field.label(), TreeEditorJson.asText(typeFields.get(field.key())), 512, value -> {
-            if (kind == DocFieldKind.INTEGER) {
-                TreeEditorJson.putNumber(typeFields, field.key(), value, true);
-            } else if (kind == DocFieldKind.FLOAT) {
-                TreeEditorJson.putNumber(typeFields, field.key(), value, false);
-            } else if (value.isBlank()) {
-                typeFields.remove(field.key());
-            } else {
-                typeFields.addProperty(field.key(), value);
+        SharedValue<String> shared = SharedValue.of(nodes, node -> TreeEditorJson.asText(node.getTypeFields().get(field.key())));
+        this.textField(field.label(), shared.mixed ? "" : shared.value, 512, value -> {
+            for (TreeEditorNode node : nodes) {
+                JsonObject typeFields = node.getTypeFields();
+                if (kind == DocFieldKind.INTEGER) {
+                    TreeEditorJson.putNumber(typeFields, field.key(), value, true);
+                } else if (kind == DocFieldKind.FLOAT) {
+                    TreeEditorJson.putNumber(typeFields, field.key(), value, false);
+                } else if (value.isBlank()) {
+                    typeFields.remove(field.key());
+                } else {
+                    typeFields.addProperty(field.key(), value);
+                }
             }
             this.screen.draft().markDirty();
-        });
+        }, shared.mixed);
+    }
+
+    private static boolean sharedForNodeBoolean(TreeEditorNode node, String key) {
+        JsonObject typeFields = node.getTypeFields();
+        return typeFields.has(key)
+                && typeFields.get(key).isJsonPrimitive()
+                && typeFields.get(key).getAsBoolean();
     }
 
     private void section(String title) {
@@ -294,9 +368,16 @@ public final class TreeEditorInspector {
     }
 
     private void textField(String label, String value, int maxLength, java.util.function.Consumer<String> setter) {
+        this.textField(label, value, maxLength, setter, false);
+    }
+
+    private void textField(String label, String value, int maxLength, java.util.function.Consumer<String> setter, boolean mixed) {
         TreeEditorFieldBox box = new TreeEditorFieldBox(this.screen.getFont(), this.fieldWidth(), TreeEditorTheme.FIELD_H, label);
         box.setMaxLength(maxLength);
-        box.setValue(value == null ? "" : value);
+        box.setValue(mixed || value == null ? "" : value);
+        if (mixed) {
+            box.setHint(Component.literal("Mixed"));
+        }
         box.setResponder(setter);
         box.showStart();
         box.setExpand(() -> this.screen.openTextEditor(label, box.getValue(), maxLength, next -> {
@@ -305,6 +386,28 @@ public final class TreeEditorInspector {
             box.showStart();
         }));
         this.rows.add(new Row(RowKind.WIDGET, label, this.currentSection, this.screen.addEditorWidget(box), null, TreeEditorTheme.FIELD_H));
+    }
+
+    private void sharedTextField(String label, List<TreeEditorNode> nodes, Function<TreeEditorNode, String> getter, int maxLength, NodeStringSetter setter) {
+        SharedValue<String> shared = SharedValue.of(nodes, getter);
+        this.textField(label, shared.mixed ? "" : shared.value, maxLength, value -> {
+            for (TreeEditorNode node : nodes) {
+                setter.accept(node, value);
+            }
+            this.screen.draft().markDirty();
+        }, shared.mixed);
+    }
+
+    private void sharedToggle(String label, List<TreeEditorNode> nodes, Function<TreeEditorNode, Boolean> getter, java.util.function.Consumer<Boolean> setter) {
+        SharedValue<Boolean> shared = SharedValue.of(nodes, getter);
+        String text = shared.mixed ? "Mixed" : (Boolean.TRUE.equals(shared.value) ? "On" : "Off");
+        TreeEditorFlatButton button = this.screen.addEditorWidget(
+                new TreeEditorFlatButton(0, 0, 56, TreeEditorTheme.FIELD_H, text, TreeEditorFlatButton.Style.TOGGLE, () -> {
+                    boolean next = shared.mixed || !Boolean.TRUE.equals(shared.value);
+                    setter.accept(next);
+                })
+        );
+        this.rows.add(new Row(RowKind.TOGGLE, label, this.currentSection, button, null, TreeEditorTheme.FIELD_H));
     }
 
     private void iconField(String label, String iconId, Runnable onPress) {
@@ -505,6 +608,18 @@ public final class TreeEditorInspector {
     private record Row(RowKind kind, String label, String section, @Nullable AbstractWidget widget, @Nullable AbstractWidget trailing, int height) {
         private Row(RowKind kind, String label, String section, @Nullable AbstractWidget widget, int height) {
             this(kind, label, section, widget, null, height);
+        }
+    }
+
+    private record SharedValue<T>(boolean mixed, @Nullable T value) {
+        static <T> SharedValue<T> of(List<TreeEditorNode> nodes, Function<TreeEditorNode, T> getter) {
+            T first = getter.apply(nodes.getFirst());
+            for (int index = 1; index < nodes.size(); index++) {
+                if (!Objects.equals(first, getter.apply(nodes.get(index)))) {
+                    return new SharedValue<>(true, null);
+                }
+            }
+            return new SharedValue<>(false, first);
         }
     }
 
