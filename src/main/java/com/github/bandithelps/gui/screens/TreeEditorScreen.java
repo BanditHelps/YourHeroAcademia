@@ -108,6 +108,12 @@ public class TreeEditorScreen extends Screen {
     private String draggingWaypointParentKey;
     private int draggingWaypointIndex;
     private final LinkedHashSet<TreeEditorNode> selection = new LinkedHashSet<>();
+    private boolean boxing;
+    private int boxStartX;
+    private int boxStartY;
+    private int boxEndX;
+    private int boxEndY;
+    private final LinkedHashSet<TreeEditorNode> boxBase = new LinkedHashSet<>();
     @Nullable
     private TreeEditorNode parentLinkSource;
     @Nullable
@@ -162,6 +168,9 @@ public class TreeEditorScreen extends Screen {
             this.drawNode(graphics, node);
         }
         this.drawWaypointHandles(graphics, hoveredVertex);
+        if (this.boxing) {
+            this.drawSelectionBox(graphics);
+        }
         graphics.disableScissor();
 
         this.blitSprite(graphics, VIGNETTE, this.treeX, this.treeY, this.treeW, this.treeH);
@@ -224,6 +233,8 @@ public class TreeEditorScreen extends Screen {
             this.draggingWaypointNode = null;
             this.draggingWaypointParentKey = null;
             this.panning = false;
+            this.boxing = false;
+            this.boxBase.clear();
             if (vertex != null) {
                 this.contextMenu = ContextMenu.forVertex(this, vertex.child(), vertex.parentKey(), vertex.index(), mouseX, mouseY);
             } else if (hit != null) {
@@ -277,10 +288,14 @@ public class TreeEditorScreen extends Screen {
             }
             return true;
         }
-        if (segment != null) {
+        if (segment != null && !event.hasControlDown()) {
             if (doubleClick) {
                 this.insertVertex(segment.child(), segment.parentKey(), segment.segmentIndex(), this.screenToGridX(mouseX), this.screenToGridY(mouseY));
             }
+            return true;
+        }
+        if (event.hasControlDown()) {
+            this.beginBoxSelect(mouseX, mouseY);
             return true;
         }
         this.selectNode(null);
@@ -314,6 +329,10 @@ public class TreeEditorScreen extends Screen {
             this.draft.markDirty();
             return true;
         }
+        if (this.boxing && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            this.updateBoxSelect((int) event.x(), (int) event.y());
+            return true;
+        }
         if (this.panning && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             this.panX -= (int) dragX;
             this.panY -= (int) dragY;
@@ -326,6 +345,9 @@ public class TreeEditorScreen extends Screen {
     public boolean mouseReleased(MouseButtonEvent event) {
         if (this.pendingSelectionCollapse && !this.dragMoved && this.pendingCollapseNode != null) {
             this.selectNode(this.pendingCollapseNode);
+        }
+        if (this.boxing) {
+            this.finishBoxSelect();
         }
         this.dragging = null;
         this.dragGroup.clear();
@@ -456,6 +478,8 @@ public class TreeEditorScreen extends Screen {
         this.selection.clear();
         this.dragging = null;
         this.dragGroup.clear();
+        this.boxing = false;
+        this.boxBase.clear();
         this.draggingWaypointNode = null;
         this.parentLinkSource = null;
         this.viewReady = false;
@@ -661,7 +685,7 @@ public class TreeEditorScreen extends Screen {
         if (hit >= 10 && node.getIcon() != null && this.minecraft != null && this.minecraft.player != null) {
             IconRenderer.drawIcon(node.getIcon(), this.minecraft, graphics, DataContext.forEntity(this.minecraft.player), x - 8, y - 8);
         }
-        if (this.selection.contains(node)) {
+        if (this.selection.contains(node) || this.isBoxSelecting(node)) {
             graphics.fill(x - hit - 2, y - hit - 2, x + hit + 2, y - hit, TreeEditorTheme.ACCENT);
             graphics.fill(x - hit - 2, y + hit, x + hit + 2, y + hit + 2, TreeEditorTheme.ACCENT);
             graphics.fill(x - hit - 2, y - hit, x - hit, y + hit, TreeEditorTheme.ACCENT);
@@ -1041,6 +1065,76 @@ public class TreeEditorScreen extends Screen {
         }
         this.dragAnchorX = grabbed.getGridX();
         this.dragAnchorY = grabbed.getGridY();
+    }
+
+    private void beginBoxSelect(int mouseX, int mouseY) {
+        this.boxing = true;
+        this.panning = false;
+        this.boxStartX = this.boxEndX = this.clampTreeX(mouseX);
+        this.boxStartY = this.boxEndY = this.clampTreeY(mouseY);
+        this.boxBase.clear();
+        this.boxBase.addAll(this.selection);
+    }
+
+    private void updateBoxSelect(int mouseX, int mouseY) {
+        this.boxEndX = this.clampTreeX(mouseX);
+        this.boxEndY = this.clampTreeY(mouseY);
+    }
+
+    private void finishBoxSelect() {
+        if (!this.boxing) {
+            return;
+        }
+        this.boxing = false;
+        LinkedHashSet<TreeEditorNode> next = new LinkedHashSet<>(this.boxBase);
+        for (TreeEditorNode node : this.displayedNodes()) {
+            if (this.nodeIntersectsBox(node)) {
+                next.add(node);
+            }
+        }
+        this.boxBase.clear();
+        boolean changed = next.size() != this.selection.size() || !this.selection.containsAll(next);
+        if (changed) {
+            this.selection.clear();
+            this.selection.addAll(next);
+            this.inspector.resetScroll();
+            this.refreshWidgets();
+        }
+    }
+
+    private boolean isBoxSelecting(TreeEditorNode node) {
+        return this.boxing && (this.boxBase.contains(node) || this.nodeIntersectsBox(node));
+    }
+
+    private boolean nodeIntersectsBox(TreeEditorNode node) {
+        int x0 = Math.min(this.boxStartX, this.boxEndX);
+        int y0 = Math.min(this.boxStartY, this.boxEndY);
+        int x1 = Math.max(this.boxStartX, this.boxEndX);
+        int y1 = Math.max(this.boxStartY, this.boxEndY);
+        int x = this.nodeScreenX(node);
+        int y = this.nodeScreenY(node);
+        int hit = this.nodeHit();
+        return x + hit >= x0 && x - hit <= x1 && y + hit >= y0 && y - hit <= y1;
+    }
+
+    private void drawSelectionBox(GuiGraphicsExtractor graphics) {
+        int x0 = Math.min(this.boxStartX, this.boxEndX);
+        int y0 = Math.min(this.boxStartY, this.boxEndY);
+        int x1 = Math.max(this.boxStartX, this.boxEndX);
+        int y1 = Math.max(this.boxStartY, this.boxEndY);
+        if (x1 <= x0 && y1 <= y0) {
+            return;
+        }
+        graphics.fill(x0, y0, x1 + 1, y1 + 1, 0x40D4A25A);
+        TreeEditorTheme.border(graphics, x0, y0, Math.max(1, x1 - x0 + 1), Math.max(1, y1 - y0 + 1), TreeEditorTheme.ACCENT);
+    }
+
+    private int clampTreeX(int x) {
+        return Math.max(this.treeX, Math.min(this.treeX + this.treeW - 1, x));
+    }
+
+    private int clampTreeY(int y) {
+        return Math.max(this.treeY, Math.min(this.treeY + this.treeH - 1, y));
     }
 
     List<TreeEditorNode> actionTargets(TreeEditorNode node) {
