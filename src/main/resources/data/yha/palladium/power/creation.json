@@ -17,6 +17,79 @@
           0
         ]
       }
+    },
+    "cr_open_menu": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Open Creation Menu",
+        "description": "Opens your notebook to manage all of your known recipes, quick slots, and lipid count",
+        "icon": "minecraft:writable_book",
+        "hidden_in_gui": false,
+        "hidden_in_bar": false,
+        "gui_position": [
+          0,
+          1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "quirk_info"
+        },
+        "enabling": {
+          "type": "palladium:key_bind"
+        }
+      }
+    },
+    "cr_know_armor_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Armor Knowledge - I",
+        "description": "Unlocks the ability to study different armor compositions.",
+        "icon": "minecraft:leather_chestplate",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          1.8,
+          0
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          }
+        }
+      }
+    },
+    "cr_know_armor_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Armor Knowledge - II",
+        "description": "Unlocks the knowledge required to create copper based armor.",
+        "icon": "minecraft:copper_chestplate",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          1.8,
+          0.9
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_armor_1"
+          }
+        }
+      }
     }
   }
 }
