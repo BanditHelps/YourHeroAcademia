@@ -41,6 +41,13 @@ public final class TreeEditorTheme {
         fill(graphics, x + 1, y + 1, width - 2, height - 2, fill);
     }
 
+    public static void border(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {
+        fill(graphics, x, y, width, 1, color);
+        fill(graphics, x, y + height - 1, width, 1, color);
+        fill(graphics, x, y, 1, height, color);
+        fill(graphics, x + width - 1, y, 1, height, color);
+    }
+
     public static void panel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
         rect(graphics, x, y, width, height, PANEL, BORDER);
     }

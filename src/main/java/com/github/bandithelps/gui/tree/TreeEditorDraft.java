@@ -189,7 +189,9 @@ public final class TreeEditorDraft {
     }
 
     public TreeEditorNode addDummy(float gridX, float gridY) {
-        return this.addAbility(TreeEditorNode.DEFAULT_TYPE, gridX, gridY);
+        TreeEditorNode node = this.addAbility(TreeEditorNode.DEFAULT_TYPE, gridX, gridY);
+        node.setHiddenInBar(true);
+        return node;
     }
 
     public TreeEditorNode addAbility(String typeId, float gridX, float gridY) {
@@ -198,6 +200,16 @@ public final class TreeEditorDraft {
         this.nodes.add(node);
         this.markDirty();
         return node;
+    }
+
+    public TreeEditorNode duplicate(TreeEditorNode node) {
+        String key = uniqueKey(node.getKey());
+        float gridX = snap(node.getGridX() + 1.0F);
+        float gridY = snap(node.getGridY() + 1.0F);
+        TreeEditorNode copy = node.copy(key, gridX, gridY);
+        this.nodes.add(copy);
+        this.markDirty();
+        return copy;
     }
 
     public boolean rename(TreeEditorNode node, String newKey) {

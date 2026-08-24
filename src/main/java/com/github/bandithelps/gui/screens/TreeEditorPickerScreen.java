@@ -5,6 +5,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -12,9 +13,11 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -28,45 +31,40 @@ public class TreeEditorPickerScreen extends Screen {
 
     public enum Mode {
         BLOCKS,
-        ITEMS
+        ITEMS,
+        ICONS
     }
 
     private final Screen parent;
-    private final Mode mode;
+    private final List<Mode> modes;
     private final Consumer<Identifier> onSelect;
     private final List<Entry> all = new ArrayList<>();
     private final List<Entry> filtered = new ArrayList<>();
+    private Mode mode;
     private EditBox searchBox;
     private int scroll;
     private String hoverLabel = "";
+    private String lastHoverLabel = "";
 
     public TreeEditorPickerScreen(Screen parent, String title, Mode mode, Consumer<Identifier> onSelect) {
+        this(parent, title, List.of(mode), onSelect);
+    }
+
+    public TreeEditorPickerScreen(Screen parent, String title, List<Mode> modes, Consumer<Identifier> onSelect) {
         super(Component.literal(title));
         this.parent = parent;
-        this.mode = mode;
+        this.modes = modes == null || modes.isEmpty() ? List.of(Mode.ITEMS) : List.copyOf(modes);
+        this.mode = this.modes.getFirst();
         this.onSelect = onSelect;
+    }
+
+    public static TreeEditorPickerScreen forIcons(Screen parent, String title, Consumer<Identifier> onSelect) {
+        return new TreeEditorPickerScreen(parent, title, List.of(Mode.ITEMS, Mode.ICONS), onSelect);
     }
 
     @Override
     protected void init() {
         super.init();
-        this.all.clear();
-        if (this.mode == Mode.BLOCKS) {
-            for (Block block : BuiltInRegistries.BLOCK) {
-                if (block == Blocks.AIR) {
-                    continue;
-                }
-                Identifier id = BuiltInRegistries.BLOCK.getKey(block);
-                Item item = block.asItem();
-                this.all.add(new Entry(id, new ItemStack(item), block.getName().getString()));
-            }
-        } else {
-            for (Item item : BuiltInRegistries.ITEM) {
-                Identifier id = BuiltInRegistries.ITEM.getKey(item);
-                ItemStack stack = new ItemStack(item);
-                this.all.add(new Entry(id, stack, stack.getHoverName().getString()));
-            }
-        }
         int x = this.panelX();
         int y = this.panelY();
         this.searchBox = new EditBox(this.font, x + 10, y + 28, this.panelW() - 20, 20, Component.literal("Search"));
@@ -75,8 +73,18 @@ public class TreeEditorPickerScreen extends Screen {
             this.applyFilter();
         });
         this.addRenderableWidget(this.searchBox);
+        if (this.modes.size() > 1) {
+            int tabX = x + 10;
+            for (Mode tab : this.modes) {
+                String label = tab == Mode.ICONS ? "Icons" : tab == Mode.ITEMS ? "Items" : "Blocks";
+                this.addRenderableWidget(new TreeEditorFlatButton(tabX, y + this.panelH() - 30, 58, 22, label, TreeEditorFlatButton.Style.TOGGLE, () -> this.setActiveMode(tab))
+                        .highlightWhen(() -> this.mode == tab));
+                tabX += 62;
+            }
+        }
         this.addRenderableWidget(new TreeEditorFlatButton(x + this.panelW() - 90, y + this.panelH() - 30, 80, 22, "Cancel", this::onClose));
         this.setInitialFocus(this.searchBox);
+        this.reloadEntries();
         this.applyFilter();
     }
 
@@ -112,7 +120,7 @@ public class TreeEditorPickerScreen extends Screen {
             Entry entry = this.filtered.get(index);
             boolean hovered = mouseX >= slotX && mouseX < slotX + SLOT && mouseY >= slotY && mouseY < slotY + SLOT;
             graphics.fill(slotX, slotY, slotX + SLOT, slotY + SLOT, hovered ? TreeEditorTheme.SELECT : TreeEditorTheme.INPUT);
-            graphics.item(entry.stack(), slotX + 1, slotY + 1);
+            this.drawEntry(graphics, entry, slotX + 2, slotY + 2);
             if (hovered) {
                 this.hoverLabel = entry.label() + " (" + entry.id() + ")";
             }
@@ -120,7 +128,20 @@ public class TreeEditorPickerScreen extends Screen {
         graphics.disableScissor();
 
         if (!this.hoverLabel.isEmpty()) {
-            graphics.text(this.font, this.hoverLabel, x + 8, y + panelH - 20, TEXT_LIGHT, false);
+            this.lastHoverLabel = this.hoverLabel;
+        }
+        if (!this.lastHoverLabel.isEmpty()) {
+            int labelX = x + 8;
+            int labelY = gridY + gridH + 4;
+            int labelW = panelW - 16;
+            String clipped = this.ellipsize(this.lastHoverLabel, labelW);
+            graphics.text(this.font, clipped, labelX, labelY, TEXT_LIGHT, false);
+            int clippedW = Math.min(labelW, this.font.width(clipped));
+            boolean overLabel = mouseX >= labelX && mouseX < labelX + clippedW
+                    && mouseY >= labelY - 2 && mouseY < labelY + 12;
+            if (overLabel) {
+                graphics.setTooltipForNextFrame(this.font, Component.literal(this.lastHoverLabel), mouseX, mouseY);
+            }
         }
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
@@ -198,6 +219,60 @@ public class TreeEditorPickerScreen extends Screen {
         return textureOrBlock;
     }
 
+    private void setActiveMode(Mode mode) {
+        if (this.mode == mode) {
+            return;
+        }
+        this.mode = mode;
+        this.scroll = 0;
+        this.reloadEntries();
+        this.applyFilter();
+    }
+
+    private void reloadEntries() {
+        this.all.clear();
+        if (this.mode == Mode.BLOCKS) {
+            for (Block block : BuiltInRegistries.BLOCK) {
+                if (block == Blocks.AIR) {
+                    continue;
+                }
+                Identifier id = BuiltInRegistries.BLOCK.getKey(block);
+                Item item = block.asItem();
+                this.all.add(Entry.item(id, new ItemStack(item), block.getName().getString()));
+            }
+            return;
+        }
+        if (this.mode == Mode.ICONS) {
+            if (this.minecraft != null) {
+                this.minecraft.getResourceManager()
+                        .listResources("textures/icons", id -> id.getPath().endsWith(".png"))
+                        .keySet()
+                        .stream()
+                        .sorted(Comparator.comparing(Identifier::toString))
+                        .forEach(id -> this.all.add(Entry.icon(id)));
+            }
+            return;
+        }
+        for (Item item : BuiltInRegistries.ITEM) {
+            Identifier id = BuiltInRegistries.ITEM.getKey(item);
+            ItemStack stack = new ItemStack(item);
+            this.all.add(Entry.item(id, stack, stack.getHoverName().getString()));
+        }
+    }
+
+    private void drawEntry(GuiGraphicsExtractor graphics, Entry entry, int x, int y) {
+        if (entry.texture() != null) {
+            try {
+                graphics.blit(RenderPipelines.GUI_TEXTURED, entry.texture(), x, y, 0.0F, 0.0F, 16, 16, 16, 16);
+                return;
+            } catch (RuntimeException ignored) {
+                TreeEditorTheme.rect(graphics, x, y, 16, 16, TreeEditorTheme.INPUT, TreeEditorTheme.BORDER);
+                return;
+            }
+        }
+        graphics.item(entry.stack(), x, y);
+    }
+
     private int panelW() {
         return Math.min(PANEL_WIDTH, Math.max(180, this.width - 16));
     }
@@ -222,6 +297,19 @@ public class TreeEditorPickerScreen extends Screen {
         return Math.max(3, Math.min(7, (this.panelH() - 86) / SLOT));
     }
 
+    private String ellipsize(String text, int maxWidth) {
+        if (text == null || text.isEmpty() || this.font.width(text) <= maxWidth) {
+            return text == null ? "" : text;
+        }
+        String ellipsis = "...";
+        int budget = Math.max(0, maxWidth - this.font.width(ellipsis));
+        String trimmed = text;
+        while (!trimmed.isEmpty() && this.font.width(trimmed) > budget) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + ellipsis;
+    }
+
     private void applyFilter() {
         String query = this.searchBox == null ? "" : this.searchBox.getValue().trim().toLowerCase(Locale.ROOT);
         this.filtered.clear();
@@ -234,6 +322,18 @@ public class TreeEditorPickerScreen extends Screen {
         }
     }
 
-    private record Entry(Identifier id, ItemStack stack, String label) {
+    private record Entry(Identifier id, ItemStack stack, @Nullable Identifier texture, String label) {
+        static Entry item(Identifier id, ItemStack stack, String label) {
+            return new Entry(id, stack, null, label);
+        }
+
+        static Entry icon(Identifier texture) {
+            String path = texture.getPath();
+            String label = path;
+            if (path.startsWith("textures/icons/") && path.endsWith(".png")) {
+                label = path.substring("textures/icons/".length(), path.length() - ".png".length());
+            }
+            return new Entry(texture, ItemStack.EMPTY, texture, label);
+        }
     }
 }
