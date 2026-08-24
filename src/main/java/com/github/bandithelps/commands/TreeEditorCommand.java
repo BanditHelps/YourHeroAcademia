@@ -20,6 +20,8 @@ import net.threetag.palladium.power.Power;
 import net.threetag.palladium.registry.PalladiumRegistryKeys;
 
 public final class TreeEditorCommand {
+    public static final String NEW_TOKEN = "__new__";
+
     private static final DynamicCommandExceptionType UNKNOWN_POWER = new DynamicCommandExceptionType(value ->
             Component.literal("Unknown power '" + value + "'.")
     );
@@ -39,9 +41,18 @@ public final class TreeEditorCommand {
         builder.then(Commands.literal("tree")
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(Commands.literal("editor")
+                        .then(Commands.literal("new")
+                                .executes(c -> openNew(c.getSource())))
                         .then(Commands.argument("power", StringArgumentType.greedyString())
                                 .suggests(POWER_SUGGESTIONS)
                                 .executes(c -> openEditor(c.getSource(), StringArgumentType.getString(c, "power"))))));
+    }
+
+    private static int openNew(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        PacketDistributor.sendToPlayer(player, new OpenTreeEditorScreenPayload(NEW_TOKEN));
+        source.sendSuccess(() -> Component.literal("Opened a blank tree editor."), false);
+        return 1;
     }
 
     private static int openEditor(CommandSourceStack source, String rawId) throws CommandSyntaxException {

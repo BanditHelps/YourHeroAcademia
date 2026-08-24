@@ -4,69 +4,91 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.phys.Vec2;
-import net.threetag.palladium.icon.Icon;
 import net.threetag.palladium.power.Power;
-import net.threetag.palladium.power.ability.Ability;
-import net.threetag.palladium.power.ability.AbilityDescription;
-import net.threetag.palladium.power.ability.AbilityReference;
-import net.threetag.palladium.power.ability.unlocking.UnlockingHandler;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public final class TreeEditorDraft {
     public static final float GRID_SNAP = 0.25F;
+    public static final Identifier NEW_POWER_ID = Identifier.fromNamespaceAndPath("yha", "new_power");
     private static final float STEP_MIN_SNAP = 0.05F;
 
-    private final Identifier powerId;
-    private final String powerName;
-    private Identifier backgroundTexture = TreeEditorLayoutBackground.FALLBACK;
+    private Identifier powerId;
+    private String powerName;
+    private String powerIcon = "minecraft:paper";
     @Nullable
-    private JsonObject sourceJson;
+    private String parentPower;
+    private String guiDisplayType = "tree";
+    private String exportFileName;
+    private Identifier backgroundTexture = TreeEditorLayoutBackground.FALLBACK;
+    private JsonObject extraRoot = new JsonObject();
     private final List<TreeEditorNode> nodes = new ArrayList<>();
+    private boolean dirty;
 
     public TreeEditorDraft(Identifier powerId, String powerName) {
         this.powerId = powerId;
         this.powerName = powerName;
+        this.exportFileName = powerId.getPath();
+    }
+
+    public static TreeEditorDraft blank() {
+        return blank(NEW_POWER_ID, "New Power");
+    }
+
+    public static TreeEditorDraft blank(Identifier powerId, String powerName) {
+        TreeEditorDraft draft = new TreeEditorDraft(powerId, powerName);
+        draft.powerIcon = "minecraft:paper";
+        draft.guiDisplayType = "tree";
+        draft.dirty = false;
+        return draft;
     }
 
     public static TreeEditorDraft fromPower(Identifier powerId, Power power, @Nullable String sourceJson) {
-        TreeEditorDraft draft = new TreeEditorDraft(powerId, power.getName().getString());
-        draft.sourceJson = parseSourceJson(sourceJson);
-        for (var entry : power.getAbilities().entrySet()) {
-            Ability ability = entry.getValue();
-            if (ability.getProperties().isHiddenInGUI()) {
-                continue;
-            }
-            Vec2 position = ability.getProperties().getGuiPosition();
-            float gridX = position == null ? 0.0F : position.x;
-            float gridY = position == null ? 0.0F : position.y;
-            String parentKey = firstParentKey(ability);
-            if (parentKey == null) {
-                parentKey = parentKeyFromSource(draft.sourceJson, entry.getKey());
-            }
-            Icon icon = ability.getProperties().getIcon();
-            String title = ability.getDisplayName().getString();
-            DescriptionText description = readDescription(ability);
-            draft.nodes.add(new TreeEditorNode(
-                    entry.getKey(),
-                    title,
-                    description.unlocked(),
-                    description.locked(),
-                    icon,
-                    gridX,
-                    gridY,
-                    parentKey,
-                    TreeEditorCostDraft.fromUnlocking(ability.getStateManager().getUnlockingHandler()),
-                    TreeConnectionPath.fromProperties(ability.getProperties()),
-                    false
-            ));
+        JsonObject json = parseSourceJson(sourceJson);
+        if (json != null) {
+            return fromJson(powerId, json);
         }
+        TreeEditorDraft draft = new TreeEditorDraft(powerId, power.getName().getString());
+        draft.dirty = false;
+        return draft;
+    }
+
+    public static TreeEditorDraft fromJson(Identifier powerId, JsonObject root) {
+        String name = root.has("name") && root.get("name").isJsonPrimitive()
+                ? root.get("name").getAsString()
+                : powerId.getPath();
+        TreeEditorDraft draft = new TreeEditorDraft(powerId, name);
+        draft.powerIcon = root.has("icon") && root.get("icon").isJsonPrimitive()
+                ? root.get("icon").getAsString()
+                : "minecraft:paper";
+        draft.parentPower = root.has("parent") && root.get("parent").isJsonPrimitive()
+                ? root.get("parent").getAsString()
+                : null;
+        draft.guiDisplayType = root.has("gui_display_type") && root.get("gui_display_type").isJsonPrimitive()
+                ? root.get("gui_display_type").getAsString()
+                : "tree";
+        JsonObject extra = root.deepCopy();
+        extra.remove("name");
+        extra.remove("icon");
+        extra.remove("parent");
+        extra.remove("gui_display_type");
+        extra.remove("abilities");
+        draft.extraRoot = extra;
+        if (root.has("abilities") && root.get("abilities").isJsonObject()) {
+            for (var entry : root.getAsJsonObject("abilities").entrySet()) {
+                if (entry.getValue().isJsonObject()) {
+                    draft.nodes.add(TreeEditorNode.fromAbilityJson(entry.getKey(), entry.getValue().getAsJsonObject()));
+                }
+            }
+        }
+        draft.dirty = false;
         return draft;
     }
 
@@ -74,8 +96,55 @@ public final class TreeEditorDraft {
         return this.powerId;
     }
 
+    public void setPowerId(Identifier powerId) {
+        this.powerId = powerId;
+        this.markDirty();
+    }
+
     public String getPowerName() {
         return this.powerName;
+    }
+
+    public void setPowerName(String powerName) {
+        this.powerName = powerName == null ? "" : powerName;
+        this.markDirty();
+    }
+
+    public String getPowerIcon() {
+        return this.powerIcon;
+    }
+
+    public void setPowerIcon(String powerIcon) {
+        this.powerIcon = powerIcon == null || powerIcon.isBlank() ? "minecraft:paper" : powerIcon;
+        this.markDirty();
+    }
+
+    @Nullable
+    public String getParentPower() {
+        return this.parentPower;
+    }
+
+    public void setParentPower(@Nullable String parentPower) {
+        this.parentPower = parentPower == null || parentPower.isBlank() ? null : parentPower;
+        this.markDirty();
+    }
+
+    public String getGuiDisplayType() {
+        return this.guiDisplayType;
+    }
+
+    public void setGuiDisplayType(String guiDisplayType) {
+        this.guiDisplayType = guiDisplayType == null || guiDisplayType.isBlank() ? "tree" : guiDisplayType;
+        this.markDirty();
+    }
+
+    public String getExportFileName() {
+        return this.exportFileName;
+    }
+
+    public void setExportFileName(String exportFileName) {
+        this.exportFileName = sanitizeFileName(exportFileName);
+        this.markDirty();
     }
 
     public Identifier getBackgroundTexture() {
@@ -86,13 +155,24 @@ public final class TreeEditorDraft {
         this.backgroundTexture = backgroundTexture == null ? TreeEditorLayoutBackground.FALLBACK : backgroundTexture;
     }
 
-    @Nullable
-    public JsonObject getSourceJson() {
-        return this.sourceJson;
+    public JsonObject getExtraRoot() {
+        return this.extraRoot;
     }
 
     public List<TreeEditorNode> getNodes() {
         return this.nodes;
+    }
+
+    public boolean isDirty() {
+        return this.dirty;
+    }
+
+    public void markDirty() {
+        this.dirty = true;
+    }
+
+    public void markClean() {
+        this.dirty = false;
     }
 
     @Nullable
@@ -109,9 +189,14 @@ public final class TreeEditorDraft {
     }
 
     public TreeEditorNode addDummy(float gridX, float gridY) {
+        return this.addAbility(TreeEditorNode.DEFAULT_TYPE, gridX, gridY);
+    }
+
+    public TreeEditorNode addAbility(String typeId, float gridX, float gridY) {
         String key = uniqueKey("new_node");
-        TreeEditorNode node = TreeEditorNode.created(key, "New Node", gridX, gridY);
+        TreeEditorNode node = TreeEditorNode.created(key, typeId, "New Node", gridX, gridY);
         this.nodes.add(node);
+        this.markDirty();
         return node;
     }
 
@@ -120,63 +205,91 @@ public final class TreeEditorDraft {
         if (trimmed.isEmpty()) {
             return false;
         }
-        if (!node.isCreated()) {
-            return false;
-        }
         if (trimmed.equals(node.getKey())) {
             return true;
         }
-        if (find(trimmed) != null || hasSourceAbility(trimmed)) {
+        if (find(trimmed) != null) {
             return false;
         }
         String oldKey = node.getKey();
         node.setKey(trimmed);
         for (TreeEditorNode other : this.nodes) {
-            if (oldKey.equals(other.getParentKey())) {
-                other.setParentKey(trimmed);
+            if (other.hasParent(oldKey)) {
+                other.replaceParentKey(oldKey, trimmed);
             }
+            other.setConnectionPaths(other.getConnectionPaths().replaceParentKey(oldKey, trimmed));
+            TreeEditorStateSync.replaceAbilityRefs(other.getUnlocking(), oldKey, trimmed);
+            TreeEditorStateSync.replaceAbilityRefs(other.getEnabling(), oldKey, trimmed);
+            TreeEditorStateSync.replaceAbilityRefs(other.getTypeFields(), oldKey, trimmed);
+            other.setParentKeys(TreeEditorStateSync.parentKeysFromUnlocking(other.getUnlocking()));
         }
+        this.markDirty();
         return true;
     }
 
-    public boolean setParent(TreeEditorNode child, @Nullable TreeEditorNode parent) {
+    public boolean setParent(TreeEditorNode child, @Nullable TreeEditorNode parent, List<TreeEditorCostSchema> schemas) {
         if (parent == null) {
-            child.setParentKey(null);
-            child.setConnectionPath(TreeConnectionPath.EMPTY);
-            return true;
+            return this.clearParents(child, schemas);
         }
-        if (child == parent || wouldCycle(child, parent)) {
+        return this.addParent(child, parent, schemas);
+    }
+
+    public boolean addParent(TreeEditorNode child, TreeEditorNode parent, List<TreeEditorCostSchema> schemas) {
+        if (child == parent || child.hasParent(parent.getKey()) || wouldCycle(child, parent)) {
             return false;
         }
-        if (!parent.getKey().equals(child.getParentKey())) {
-            child.setConnectionPath(TreeConnectionPath.EMPTY);
-        }
-        child.setParentKey(parent.getKey());
+        TreeEditorStateSync.addParent(child, parent.getKey(), schemas);
+        this.markDirty();
+        return true;
+    }
+
+    public boolean clearParents(TreeEditorNode child, List<TreeEditorCostSchema> schemas) {
+        TreeEditorStateSync.removeAllParents(child);
+        child.clearConnectionPaths();
+        this.markDirty();
+        return true;
+    }
+
+    public boolean removeParent(TreeEditorNode child, String parentKey, List<TreeEditorCostSchema> schemas) {
+        TreeEditorStateSync.removeParent(child, parentKey);
+        child.removeConnectionPath(parentKey);
+        this.markDirty();
         return true;
     }
 
     public boolean remove(TreeEditorNode node) {
-        if (!node.isCreated()) {
-            return false;
-        }
         this.nodes.remove(node);
         for (TreeEditorNode other : this.nodes) {
-            if (node.getKey().equals(other.getParentKey())) {
-                other.setParentKey(null);
-                other.setConnectionPath(TreeConnectionPath.EMPTY);
+            if (other.hasParent(node.getKey())) {
+                TreeEditorStateSync.removeParent(other, node.getKey());
+                other.removeConnectionPath(node.getKey());
             }
         }
+        this.markDirty();
         return true;
     }
 
     public List<TreeEditorNode> childrenOf(TreeEditorNode parent) {
         List<TreeEditorNode> children = new ArrayList<>();
         for (TreeEditorNode node : this.nodes) {
-            if (parent.getKey().equals(node.getParentKey())) {
+            if (node.hasParent(parent.getKey())) {
                 children.add(node);
             }
         }
         return children;
+    }
+
+    public List<TreeEditorNode> visibleNodes(boolean showHidden) {
+        if (showHidden) {
+            return List.copyOf(this.nodes);
+        }
+        List<TreeEditorNode> visible = new ArrayList<>();
+        for (TreeEditorNode node : this.nodes) {
+            if (!node.isHiddenInGui()) {
+                visible.add(node);
+            }
+        }
+        return visible;
     }
 
     public static float snap(float value) {
@@ -210,35 +323,48 @@ public final class TreeEditorDraft {
         return sanitizeKey(title);
     }
 
+    public static String sanitizeFileName(String name) {
+        String trimmed = name == null ? "" : name.trim();
+        trimmed = trimmed.replace('\\', '_').replace('/', '_');
+        if (trimmed.toLowerCase(Locale.ROOT).endsWith(".json")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 5);
+        }
+        return trimmed.replaceAll("[^a-zA-Z0-9._-]", "_");
+    }
+
     private boolean wouldCycle(TreeEditorNode child, TreeEditorNode parent) {
-        TreeEditorNode current = parent;
+        ArrayDeque<TreeEditorNode> queue = new ArrayDeque<>();
+        queue.add(parent);
+        Set<String> seen = new HashSet<>();
         int guard = 0;
-        while (current != null && guard++ < 256) {
+        while (!queue.isEmpty() && guard++ < 256) {
+            TreeEditorNode current = queue.poll();
+            if (current == null || !seen.add(current.getKey())) {
+                continue;
+            }
             if (current == child) {
                 return true;
             }
-            current = find(current.getParentKey());
+            for (String key : current.getParentKeys()) {
+                TreeEditorNode next = find(key);
+                if (next != null) {
+                    queue.add(next);
+                }
+            }
         }
         return false;
     }
 
     private String uniqueKey(String base) {
         String sanitized = sanitizeKey(base);
-        if (find(sanitized) == null && !hasSourceAbility(sanitized)) {
+        if (find(sanitized) == null) {
             return sanitized;
         }
         int index = 2;
-        while (find(sanitized + "_" + index) != null || hasSourceAbility(sanitized + "_" + index)) {
+        while (find(sanitized + "_" + index) != null) {
             index++;
         }
         return sanitized + "_" + index;
-    }
-
-    private boolean hasSourceAbility(String key) {
-        if (this.sourceJson == null || !this.sourceJson.has("abilities") || !this.sourceJson.get("abilities").isJsonObject()) {
-            return false;
-        }
-        return this.sourceJson.getAsJsonObject("abilities").has(key);
     }
 
     private static String sanitizeKey(String key) {
@@ -253,112 +379,6 @@ public final class TreeEditorDraft {
     }
 
     @Nullable
-    private static String firstParentKey(Ability ability) {
-        UnlockingHandler handler = ability.getStateManager().getUnlockingHandler();
-        List<AbilityReference> parents = handler.getParentAbilities();
-        if (parents == null || parents.isEmpty()) {
-            return null;
-        }
-        return localAbilityKey(parents.getFirst().abilityKey());
-    }
-
-    @Nullable
-    private static String parentKeyFromSource(@Nullable JsonObject sourceJson, String abilityKey) {
-        if (sourceJson == null || !sourceJson.has("abilities") || !sourceJson.get("abilities").isJsonObject()) {
-            return null;
-        }
-        JsonObject abilities = sourceJson.getAsJsonObject("abilities");
-        if (!abilities.has(abilityKey) || !abilities.get(abilityKey).isJsonObject()) {
-            return null;
-        }
-        JsonObject ability = abilities.getAsJsonObject(abilityKey);
-        JsonObject state = ability.has("state") && ability.get("state").isJsonObject()
-                ? ability.getAsJsonObject("state")
-                : null;
-        JsonObject unlocking = state != null && state.has("unlocking") && state.get("unlocking").isJsonObject()
-                ? state.getAsJsonObject("unlocking")
-                : null;
-        if (unlocking == null) {
-            return null;
-        }
-        String direct = readAbilityField(unlocking);
-        if (direct != null) {
-            return direct;
-        }
-        String fromRequires = firstAbilityFromListOrObject(unlocking.get("requires"));
-        if (fromRequires != null) {
-            return fromRequires;
-        }
-        return firstAbilityFromListOrObject(unlocking.get("conditions"));
-    }
-
-    @Nullable
-    private static String firstAbilityFromListOrObject(@Nullable JsonElement element) {
-        if (element == null) {
-            return null;
-        }
-        if (element.isJsonObject()) {
-            return readAbilityField(element.getAsJsonObject());
-        }
-        if (!element.isJsonArray()) {
-            return null;
-        }
-        for (JsonElement entry : element.getAsJsonArray()) {
-            if (entry.isJsonObject()) {
-                String nested = readAbilityField(entry.getAsJsonObject());
-                if (nested != null) {
-                    return nested;
-                }
-            }
-        }
-        return null;
-    }
-
-    @Nullable
-    private static String readAbilityField(JsonObject object) {
-        if (!object.has("ability") || !object.get("ability").isJsonPrimitive()) {
-            return null;
-        }
-        return localAbilityKey(object.get("ability").getAsString());
-    }
-
-    @Nullable
-    private static String localAbilityKey(@Nullable String raw) {
-        if (raw == null || raw.isBlank()) {
-            return null;
-        }
-        int hash = raw.indexOf('#');
-        return hash >= 0 ? raw.substring(hash + 1) : raw;
-    }
-
-    private static DescriptionText readDescription(Ability ability) {
-        AbilityDescription description = ability.getProperties().getDescription();
-        if (description == null) {
-            return DescriptionText.EMPTY;
-        }
-        String unlocked = componentText(description.getUnlockedDescription());
-        if (unlocked.isBlank()) {
-            unlocked = componentText(description.get(true));
-        }
-        String locked = description.isSimple() ? "" : componentText(description.getLockedDescription());
-        if (locked.isBlank() && !description.isSimple()) {
-            locked = componentText(description.get(false));
-        }
-        if (unlocked.isBlank() && !locked.isBlank()) {
-            unlocked = locked;
-        }
-        return new DescriptionText(unlocked, locked);
-    }
-
-    private static String componentText(@Nullable Component component) {
-        if (component == null) {
-            return "";
-        }
-        String text = component.getString();
-        return text == null ? "" : text;
-    }
-
-    @Nullable
     private static JsonObject parseSourceJson(@Nullable String sourceJson) {
         if (sourceJson == null || sourceJson.isBlank()) {
             return null;
@@ -369,9 +389,5 @@ public final class TreeEditorDraft {
         } catch (RuntimeException ignored) {
             return null;
         }
-    }
-
-    private record DescriptionText(String unlocked, String locked) {
-        private static final DescriptionText EMPTY = new DescriptionText("", "");
     }
 }

@@ -1,6 +1,6 @@
 package com.github.bandithelps.mixin;
 
-import com.github.bandithelps.gui.tree.TreeConnectionPath;
+import com.github.bandithelps.gui.tree.TreeConnectionPaths;
 import com.github.bandithelps.utils.stamina.StaminaProperties;
 import com.github.bandithelps.utils.tree.ConnectionPathProperties;
 import com.mojang.datafixers.util.Pair;
@@ -49,7 +49,7 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties, Conne
     private int yha$staminaIntervalCost = 0;
 
     @Unique
-    private TreeConnectionPath yha$guiConnection = TreeConnectionPath.EMPTY;
+    private TreeConnectionPaths yha$guiConnections = TreeConnectionPaths.EMPTY;
 
     @Inject(method = "<clinit>", at = @At("TAIL"))
     private static void yha$extendCodec(CallbackInfo ci) {
@@ -63,7 +63,7 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties, Conne
                     staminaProperties.yha$setActivationStamina(yha$readInt(ops, input, YHA_ACTIVATION_STAMINA_KEY, 0));
                     staminaProperties.yha$setStaminaInterval(yha$readInt(ops, input, YHA_STAMINA_INTERVAL_KEY, 0));
                     staminaProperties.yha$setStaminaIntervalCost(yha$readInt(ops, input, YHA_STAMINA_INTERVAL_COST_KEY, 0));
-                    ConnectionPathProperties.of(properties).yha$setGuiConnection(yha$readConnection(ops, input));
+                    ConnectionPathProperties.of(properties).yha$setGuiConnections(yha$readConnections(ops, input));
                     return decoded;
                 });
             }
@@ -79,7 +79,7 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties, Conne
                                                 .flatMap((withInterval) ->
                                                         yha$writeInt(ops, withInterval, YHA_STAMINA_INTERVAL_COST_KEY, staminaProperties.yha$getStaminaIntervalCost())
                                                                 .flatMap((withCost) ->
-                                                                        yha$writeConnection(ops, withCost, connectionProperties.yha$getGuiConnection())
+                                                                        yha$writeConnections(ops, withCost, connectionProperties.yha$getGuiConnections())
                                                                 )
                                                 )
                                 )
@@ -107,25 +107,25 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties, Conne
     }
 
     @Unique
-    private static <T> TreeConnectionPath yha$readConnection(DynamicOps<T> ops, T input) {
+    private static <T> TreeConnectionPaths yha$readConnections(DynamicOps<T> ops, T input) {
         DataResult<MapLike<T>> mapResult = ops.getMap(input);
         if (mapResult.isError()) {
-            return TreeConnectionPath.EMPTY;
+            return TreeConnectionPaths.EMPTY;
         }
-        T value = mapResult.result().map((map) -> map.get(TreeConnectionPath.JSON_KEY)).orElse(null);
+        T value = mapResult.result().map((map) -> map.get(TreeConnectionPaths.JSON_KEY)).orElse(null);
         if (value == null) {
-            return TreeConnectionPath.EMPTY;
+            return TreeConnectionPaths.EMPTY;
         }
-        return TreeConnectionPath.CODEC.parse(ops, value).result().orElse(TreeConnectionPath.EMPTY);
+        return TreeConnectionPaths.CODEC.parse(ops, value).result().orElse(TreeConnectionPaths.EMPTY);
     }
 
     @Unique
-    private static <T> DataResult<T> yha$writeConnection(DynamicOps<T> ops, T input, TreeConnectionPath path) {
-        if (path == null || path.isEmpty()) {
+    private static <T> DataResult<T> yha$writeConnections(DynamicOps<T> ops, T input, TreeConnectionPaths paths) {
+        if (paths == null || paths.isEmpty()) {
             return DataResult.success(input);
         }
-        return TreeConnectionPath.CODEC.encodeStart(ops, path)
-                .flatMap((encoded) -> ops.mergeToMap(input, ops.createString(TreeConnectionPath.JSON_KEY), encoded));
+        return TreeConnectionPaths.CODEC.encodeStart(ops, paths)
+                .flatMap((encoded) -> ops.mergeToMap(input, ops.createString(TreeConnectionPaths.JSON_KEY), encoded));
     }
 
     @Override
@@ -159,12 +159,12 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties, Conne
     }
 
     @Override
-    public TreeConnectionPath yha$getGuiConnection() {
-        return this.yha$guiConnection == null ? TreeConnectionPath.EMPTY : this.yha$guiConnection;
+    public TreeConnectionPaths yha$getGuiConnections() {
+        return this.yha$guiConnections == null ? TreeConnectionPaths.EMPTY : this.yha$guiConnections;
     }
 
     @Override
-    public void yha$setGuiConnection(TreeConnectionPath path) {
-        this.yha$guiConnection = path == null || path.isEmpty() ? TreeConnectionPath.EMPTY : path.copy();
+    public void yha$setGuiConnections(TreeConnectionPaths paths) {
+        this.yha$guiConnections = paths == null || paths.isEmpty() ? TreeConnectionPaths.EMPTY : paths.copy();
     }
 }

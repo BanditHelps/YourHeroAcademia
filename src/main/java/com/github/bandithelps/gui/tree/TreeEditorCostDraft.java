@@ -1,5 +1,6 @@
 package com.github.bandithelps.gui.tree;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.github.bandithelps.conditions.cost.UpgradePointCost;
 import net.threetag.palladium.logic.cost.Cost;
@@ -37,6 +38,37 @@ public final class TreeEditorCostDraft {
             return false;
         }
         return Objects.equals(this.typeId, other.typeId) && this.values.equals(other.values);
+    }
+
+    public static TreeEditorCostDraft fromUnlocking(@Nullable JsonElement unlocking) {
+        for (JsonElement element : TreeEditorJson.asConditionList(unlocking)) {
+            JsonObject object = TreeEditorJson.asObject(element);
+            if (object != null && "palladium:buyable".equals(readType(object))) {
+                return fromJson(object);
+            }
+        }
+        return none();
+    }
+
+    public static TreeEditorCostDraft fromJson(@Nullable JsonObject unlocking) {
+        if (unlocking == null || !unlocking.has("cost") || !unlocking.get("cost").isJsonObject()) {
+            return none();
+        }
+        if (!"palladium:buyable".equals(readType(unlocking))) {
+            return none();
+        }
+        JsonObject cost = unlocking.getAsJsonObject("cost");
+        String type = cost.has("type") && cost.get("type").isJsonPrimitive()
+                ? cost.get("type").getAsString()
+                : DEFAULT_TYPE;
+        TreeEditorCostDraft draft = new TreeEditorCostDraft(type);
+        for (var entry : cost.entrySet()) {
+            if ("type".equals(entry.getKey())) {
+                continue;
+            }
+            draft.set(entry.getKey(), stringify(entry.getValue()));
+        }
+        return draft;
     }
 
     public static TreeEditorCostDraft fromUnlocking(UnlockingHandler handler) {
@@ -142,6 +174,20 @@ public final class TreeEditorCostDraft {
             }
         }
         return null;
+    }
+
+    private static String readType(JsonObject object) {
+        return object.has("type") && object.get("type").isJsonPrimitive() ? object.get("type").getAsString() : "";
+    }
+
+    private static String stringify(com.google.gson.JsonElement element) {
+        if (element == null || element.isJsonNull()) {
+            return "";
+        }
+        if (element.isJsonPrimitive()) {
+            return element.getAsString();
+        }
+        return element.toString();
     }
 
     private static int parsePositiveInt(String value, int fallback) {
