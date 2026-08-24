@@ -1,5 +1,6 @@
 package com.github.bandithelps.client;
 
+import com.github.bandithelps.commands.TreeEditorCommand;
 import com.github.bandithelps.gui.screens.BodyDebugScreen;
 import com.github.bandithelps.gui.screens.TreeEditorScreen;
 import com.github.bandithelps.gui.tree.PowerSourceJson;
@@ -24,6 +25,10 @@ public final class ClientScreenOpener {
     public static void openTreeEditorScreen(String rawPowerId) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
+            return;
+        }
+        if (TreeEditorCommand.NEW_TOKEN.equals(rawPowerId)) {
+            minecraft.setScreen(new TreeEditorScreen(TreeEditorDraft.blank()));
             return;
         }
         Identifier powerId;
