@@ -64,6 +64,7 @@ public record CreationSyncPayload(
             ByteBufCodecs.VAR_INT.encode(buf, enchant.researchCost());
             ByteBufCodecs.VAR_INT.encode(buf, enchant.progress());
             ByteBufCodecs.BOOL.encode(buf, enchant.unlocked());
+            ByteBufCodecs.BOOL.encode(buf, enchant.researchable());
         }
         ByteBufCodecs.VAR_INT.encode(buf, payload.unlockedQuickSlots());
         ByteBufCodecs.BOOL.encode(buf, payload.gearTabUnlocked());
@@ -104,6 +105,7 @@ public record CreationSyncPayload(
                     ByteBufCodecs.VAR_INT.decode(buf),
                     ByteBufCodecs.VAR_INT.decode(buf),
                     ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.BOOL.decode(buf),
                     ByteBufCodecs.BOOL.decode(buf)
             ));
         }
@@ -177,7 +179,8 @@ public record CreationSyncPayload(
             int maxLevel,
             int researchCost,
             int progress,
-            boolean unlocked
+            boolean unlocked,
+            boolean researchable
     ) {
         public int costForLevel(int level) {
             if (level <= 0) {

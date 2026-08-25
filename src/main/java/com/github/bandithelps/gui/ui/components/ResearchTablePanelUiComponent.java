@@ -560,6 +560,9 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             List<CreationSyncPayload.ClientEnchantEntry> result = new ArrayList<>();
             String query = this.searchQuery.trim().toLowerCase(Locale.ROOT);
             for (CreationSyncPayload.ClientEnchantEntry entry : ClientCreationState.enchants()) {
+                if (!entry.researchable()) {
+                    continue;
+                }
                 if (hideLearned && entry.unlocked()) {
                     continue;
                 }

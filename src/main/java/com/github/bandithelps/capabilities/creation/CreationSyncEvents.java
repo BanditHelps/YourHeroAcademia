@@ -57,7 +57,7 @@ public final class CreationSyncEvents {
             ));
         }
         List<CreationSyncPayload.ClientEnchantEntry> enchants = new ArrayList<>();
-        for (CreationEnchantEntry entry : CreationUtil.researchableEnchantEntries(player)) {
+        for (CreationEnchantEntry entry : CreationEnchantCatalog.getInstance().allEntries()) {
             int vanillaMax = CreationEnchantments.vanillaMaxLevel(player.registryAccess(), entry.enchantId());
             int maxLevel = entry.resolvedMaxLevel(vanillaMax);
             int scaledPerLevel = Math.max(1, Mth.ceil(entry.lipidCostPerLevel() / efficiency));
@@ -74,7 +74,8 @@ public final class CreationSyncEvents {
                     maxLevel,
                     entry.researchCost(),
                     data.getEnchantProgress(entry.enchantId()),
-                    data.isEnchantUnlocked(entry.enchantId())
+                    data.isEnchantUnlocked(entry.enchantId()),
+                    CreationUtil.isEnchantResearchable(player, entry)
             ));
         }
         PacketDistributor.sendToPlayer(player, new CreationSyncPayload(

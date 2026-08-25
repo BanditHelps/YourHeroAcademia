@@ -187,6 +187,12 @@
               2.2,
               2.65
             ]
+          ],
+          "cr_know_armor_3": [
+            [
+              1.85,
+              2.35
+            ]
           ]
         }
       },
@@ -1769,6 +1775,12 @@
         "gui_position": [
           0,
           4.3
+        ],
+        "gui_connection": [
+          [
+            0,
+            3.9
+          ]
         ]
       },
       "state": {
@@ -1796,6 +1808,12 @@
         "gui_position": [
           0,
           5.1
+        ],
+        "gui_connection": [
+          [
+            0,
+            4.7
+          ]
         ]
       },
       "state": {
@@ -1872,6 +1890,12 @@
         "gui_position": [
           0,
           5.8
+        ],
+        "gui_connection": [
+          [
+            0,
+            5.5
+          ]
         ]
       },
       "state": {

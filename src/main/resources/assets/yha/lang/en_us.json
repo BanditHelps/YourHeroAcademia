@@ -113,6 +113,7 @@
   "gui.yha.creation.tab.gear": "Gear",
   "gui.yha.creation.tab.enchants": "Enchants",
   "gui.yha.creation.choose_form": "Right-click to switch between nugget, item, and block.",
+  "gui.yha.creation.choose_variant": "Right-click to switch materials or variants.",
   "gui.yha.creation.missing_enchant_book": "You need an enchanted book with that enchantment.",
   "gui.yha.creation.enchant_incompatible": "Those enchantments cannot be combined.",
   "gui.yha.creation.gear.armor": "Armor",
