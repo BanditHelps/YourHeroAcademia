@@ -2,7 +2,7 @@
   "ability": "cr_know_fletcher_1",
   "tab": "gear",
   "entries": [
-    { "item": "minecraft:bow", "lipid_cost": 18 },
-    { "item": "minecraft:arrow", "lipid_cost": 4 }
+    { "item": "minecraft:bow", "lipid_cost": 24, "research_cost": 5 },
+    { "item": "minecraft:arrow", "lipid_cost": 10, "research_cost": 64 }
   ]
 }

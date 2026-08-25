@@ -2,6 +2,6 @@
   "ability": "cr_know_fletcher_2",
   "tab": "gear",
   "entries": [
-    { "item": "minecraft:crossbow", "lipid_cost": 28 }
+    { "item": "minecraft:crossbow", "lipid_cost": 131, "research_cost": 5 }
   ]
 }

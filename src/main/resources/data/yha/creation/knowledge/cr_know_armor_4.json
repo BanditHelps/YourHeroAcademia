@@ -2,9 +2,9 @@
   "ability": "cr_know_armor_4",
   "tab": "gear",
   "entries": [
-    { "item": "minecraft:iron_helmet", "lipid_cost": 30 },
-    { "item": "minecraft:iron_chestplate", "lipid_cost": 44 },
-    { "item": "minecraft:iron_leggings", "lipid_cost": 38 },
-    { "item": "minecraft:iron_boots", "lipid_cost": 26 }
+    { "item": "minecraft:iron_helmet", "lipid_cost": 30, "research_cost": 3 },
+    { "item": "minecraft:iron_chestplate", "lipid_cost": 416, "research_cost": 3 },
+    { "item": "minecraft:iron_leggings", "lipid_cost": 364, "research_cost": 3 },
+    { "item": "minecraft:iron_boots", "lipid_cost": 208, "research_cost": 3 }
   ]
 }

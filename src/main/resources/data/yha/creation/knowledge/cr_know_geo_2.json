@@ -2,9 +2,8 @@
   "ability": "cr_know_geo_2",
   "tab": "materials",
   "entries": [
-    { "item": "minecraft:raw_iron", "lipid_cost": 16 },
-    { "item": "minecraft:iron_ingot", "lipid_cost": 20 },
-    { "item": "minecraft:redstone", "lipid_cost": 14 },
+    { "item": "minecraft:iron_ingot", "lipid_cost": 52, "research_cost": 64 },
+    { "item": "minecraft:redstone", "lipid_cost": 3, "research_cost": 64 },
     { "item": "minecraft:iron_block", "tab": "blocks", "lipid_cost": 80 },
     { "item": "minecraft:redstone_block", "tab": "blocks", "lipid_cost": 50 }
   ]

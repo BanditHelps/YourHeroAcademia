@@ -2,9 +2,8 @@
   "ability": "cr_know_geo_3",
   "tab": "materials",
   "entries": [
-    { "item": "minecraft:raw_gold", "lipid_cost": 18 },
-    { "item": "minecraft:gold_ingot", "lipid_cost": 24 },
-    { "item": "minecraft:lapis_lazuli", "lipid_cost": 16 },
+    { "item": "minecraft:gold_ingot", "lipid_cost": 52, "research_cost": 64 },
+    { "item": "minecraft:lapis_lazuli", "lipid_cost": 3, "research_cost": 64 },
     { "item": "minecraft:gold_block", "tab": "blocks", "lipid_cost": 90 },
     { "item": "minecraft:lapis_block", "tab": "blocks", "lipid_cost": 60 }
   ]

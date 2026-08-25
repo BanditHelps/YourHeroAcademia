@@ -1545,7 +1545,7 @@
     "cr_know_geo_1": {
       "type": "palladium:dummy",
       "properties": {
-        "title": "Geology Knowlodge - I",
+        "title": "Geology knowledge - I",
         "description": "You are able to obtain knowledge of basic minerals found in the world. (copper, coal)",
         "icon": "yha:textures/icons/creation/creation_basic_knowledge.png",
         "hidden_in_gui": false,
@@ -1617,7 +1617,7 @@
     "cr_know_geo_2": {
       "type": "palladium:dummy",
       "properties": {
-        "title": "Geology Knowlodge - II",
+        "title": "Geology knowledge - II",
         "description": "You are able to obtain knowledge of rare minerals found in the world. (Iron, Redstone)",
         "icon": "yha:textures/icons/creation/creation_advanced_knowledge.png",
         "hidden_in_gui": false,
@@ -1744,7 +1744,7 @@
     "cr_know_geo_3": {
       "type": "palladium:dummy",
       "properties": {
-        "title": "Geology Knowlodge - III",
+        "title": "Geology knowledge - III",
         "description": "You are able to obtain knowledge of slightly more rare minerals found in the world. (Gold, Lapis)",
         "icon": "yha:textures/icons/creation/creation_basic_knowledge.png",
         "hidden_in_gui": false,
@@ -1771,7 +1771,7 @@
     "cr_know_geo_4": {
       "type": "palladium:dummy",
       "properties": {
-        "title": "Geology Knowlodge - IV",
+        "title": "Geology knowledge - IV",
         "description": "You are able to obtain knowledge of precious minerals found in the world. (Diamond, Emeralds)",
         "icon": "yha:textures/icons/creation/creation_expert_knowledge.png",
         "hidden_in_gui": false,
@@ -1847,7 +1847,7 @@
     "cr_know_geo_5": {
       "type": "palladium:dummy",
       "properties": {
-        "title": "Geology Knowlodge - V",
+        "title": "Geology knowledge - V",
         "description": "You are able to obtain knowledge of extremely rare minerals found in the world. (Netherite, Vibranium)",
         "icon": "minecraft:netherite_scrap",
         "hidden_in_gui": false,
