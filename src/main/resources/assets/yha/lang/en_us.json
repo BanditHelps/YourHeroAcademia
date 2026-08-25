@@ -105,6 +105,8 @@
   "gui.yha.creation.sacrifice": "Sacrifice",
   "gui.yha.creation.inventory_count": "In inventory: %s",
   "gui.yha.creation.search": "Search...",
+  "gui.yha.creation.hide_learned": "Hide learned",
+  "gui.yha.creation.hide_learned.tooltip": "Hide items you already understand",
   "gui.yha.creation.tab.all": "All",
   "gui.yha.creation.tab.materials": "Materials",
   "gui.yha.creation.tab.blocks": "Blocks",

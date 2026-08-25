@@ -45,6 +45,9 @@ public class ResearchTablePanelUiComponent extends UiWidget {
     private static final int TAB_HEIGHT = 14;
     private static final int SEARCH_HEIGHT = 14;
     private static final int HEADER_HEIGHT = 16;
+    private static final int CHECK_BOX = 10;
+    private static final int CHECK_GREEN = 0xFF55FF55;
+    private static final int CHECK_OUTLINE = 0xFF0E3A14;
 
     public static final MapCodec<ResearchTablePanelUiComponent> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Codec.INT.optionalFieldOf("frame_color", 0xFF79B8FF).forGetter(ResearchTablePanelUiComponent::getFrameColor),
@@ -97,6 +100,7 @@ public class ResearchTablePanelUiComponent extends UiWidget {
         private FilterTab filterTab = FilterTab.ALL;
         private String searchQuery = "";
         private boolean searchFocused;
+        private static boolean hideLearned;
 
         private ResearchWidget(ResearchTablePanelUiComponent owner, int x, int y, int width, int height) {
             super(x, y, width, height, Component.literal("Research Table"));
@@ -172,6 +176,7 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             int height = this.getHeight();
             drawFrame(gui, x, y, width, height, this.owner.panelColor, this.owner.frameColor);
             gui.text(minecraft.font, "Research", x + 8, y + 5, this.owner.textColor, false);
+            drawHideLearnedCheckbox(gui, minecraft, mouseX, mouseY);
 
             List<CreationSyncPayload.ClientEntry> entries = filteredEntries();
             int maxScroll = Math.max(0, ceilDiv(entries.size(), COLS) - VISIBLE_ROWS);
@@ -202,7 +207,7 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                     int iconY = slotY + (SLOT - GRID_ICON) / 2;
                     drawItem(gui, stack, iconX, iconY, GRID_ICON);
                     if (entry.unlocked()) {
-                        gui.fill(slotX + SLOT - 7, slotY + 2, slotX + SLOT - 3, slotY + 6, 0xFF55FF55);
+                        drawCheckmark(gui, slotX + SLOT - 9, slotY + 2, CHECK_GREEN, CHECK_OUTLINE);
                     }
                     if (entry.itemId().equals(this.selectedId)) {
                         drawFrame(gui, slotX + 1, slotY + 1, SLOT - 2, SLOT - 2, 0x00000000, 0xFFFFD27A);
@@ -268,7 +273,14 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                 }
             }
 
-            if (contains(mouseX, mouseY, gridX, gridY, gridW, gridH)) {
+            if (hitHideLearned(minecraft, mouseX, mouseY)) {
+                gui.setTooltipForNextFrame(
+                        minecraft.font,
+                        Component.translatable("gui.yha.creation.hide_learned.tooltip"),
+                        mouseX,
+                        mouseY
+                );
+            } else if (contains(mouseX, mouseY, gridX, gridY, gridW, gridH)) {
                 int col = (mouseX - gridX) / SLOT;
                 int row = (mouseY - gridY) / SLOT;
                 int index = (this.scrollOffset + row) * COLS + col;
@@ -326,6 +338,58 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             }
         }
 
+        private void drawHideLearnedCheckbox(GuiGraphicsExtractor gui, Minecraft minecraft, int mouseX, int mouseY) {
+            String label = hideLearnedLabel();
+            int boxX = hideLearnedBoxX(minecraft);
+            int boxY = hideLearnedBoxY();
+            boolean hovered = hitHideLearned(minecraft, mouseX, mouseY);
+            int fill = hideLearned ? 0xAA2A5A78 : (hovered ? 0xAA24384C : 0xAA0E1622);
+            int border = hideLearned || hovered ? 0xFF9AD1FF : 0xFF3B5A78;
+            drawFrame(gui, boxX, boxY, CHECK_BOX, CHECK_BOX, fill, border);
+            if (hideLearned) {
+                drawCheckmark(gui, boxX + 1, boxY + 2, CHECK_GREEN, CHECK_OUTLINE);
+            }
+            gui.text(minecraft.font, label, boxX + CHECK_BOX + 4, this.getY() + 5, hovered || hideLearned ? this.owner.textColor : 0xFF9AAFC5, false);
+        }
+
+        private boolean hitHideLearned(Minecraft minecraft, int mouseX, int mouseY) {
+            int boxX = hideLearnedBoxX(minecraft);
+            int boxY = hideLearnedBoxY();
+            int width = CHECK_BOX + 4 + minecraft.font.width(hideLearnedLabel());
+            return contains(mouseX, mouseY, boxX, boxY, width, CHECK_BOX);
+        }
+
+        private int hideLearnedBoxX(Minecraft minecraft) {
+            int titleEnd = this.getX() + 8 + minecraft.font.width("Research") + 8;
+            int groupW = CHECK_BOX + 4 + minecraft.font.width(hideLearnedLabel());
+            return Math.max(titleEnd, gridX() + gridW() - groupW);
+        }
+
+        private int hideLearnedBoxY() {
+            return this.getY() + 3;
+        }
+
+        private static String hideLearnedLabel() {
+            return Component.translatable("gui.yha.creation.hide_learned").getString();
+        }
+
+        private static void drawCheckmark(GuiGraphicsExtractor gui, int x, int y, int color, int outline) {
+            drawCheckmarkShape(gui, x - 1, y, outline);
+            drawCheckmarkShape(gui, x + 1, y, outline);
+            drawCheckmarkShape(gui, x, y - 1, outline);
+            drawCheckmarkShape(gui, x, y + 1, outline);
+            drawCheckmarkShape(gui, x, y, color);
+        }
+
+        private static void drawCheckmarkShape(GuiGraphicsExtractor gui, int x, int y, int color) {
+            gui.fill(x, y + 3, x + 2, y + 5, color);
+            gui.fill(x + 1, y + 4, x + 3, y + 6, color);
+            gui.fill(x + 2, y + 3, x + 4, y + 5, color);
+            gui.fill(x + 3, y + 2, x + 5, y + 4, color);
+            gui.fill(x + 4, y + 1, x + 6, y + 3, color);
+            gui.fill(x + 5, y, x + 7, y + 2, color);
+        }
+
         @Override
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
             if (event.button() != 0) {
@@ -333,6 +397,16 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             }
             int mouseX = (int) event.x();
             int mouseY = (int) event.y();
+
+            Minecraft minecraft = Minecraft.getInstance();
+            if (hitHideLearned(minecraft, mouseX, mouseY)) {
+                hideLearned = !hideLearned;
+                this.scrollOffset = 0;
+                this.searchFocused = false;
+                this.setFocused(false);
+                clickSound();
+                return true;
+            }
 
             this.searchFocused = contains(mouseX, mouseY, searchX(), searchY(), gridW(), SEARCH_HEIGHT);
             this.setFocused(this.searchFocused);
@@ -457,6 +531,9 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             String query = this.searchQuery.trim().toLowerCase(Locale.ROOT);
             for (CreationSyncPayload.ClientEntry entry : ClientCreationState.get().entries()) {
                 if (this.filterTab.tab != null && CreationTab.fromId(entry.tab()) != this.filterTab.tab) {
+                    continue;
+                }
+                if (hideLearned && entry.unlocked()) {
                     continue;
                 }
                 if (!query.isEmpty() && !matchesQuery(entry, query)) {
