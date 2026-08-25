@@ -108,8 +108,14 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int ENCHANT_ROW_STRIDE = 21;
     private static final int ENCHANT_PANEL_X = 66;
     private static final int ENCHANT_PANEL_Y = 39;
-    private static final int ENCHANT_LIST_Y = 66;
+    private static final int ENCHANT_LIST_X = GEAR_X;
+    private static final int ENCHANT_LIST_Y = GEAR_Y + GEAR_ROWS * GEAR_SLOT + 8;
+    private static final int ENCHANT_COLS = 2;
+    private static final int ENCHANT_COL_GAP = 4;
     private static final int ENCHANT_VISIBLE_ROWS = 5;
+    private static final int ENCHANT_SCROLLBAR_W = 4;
+    private static final int ENCHANT_SCROLLBAR_TRACK = 0xFF8A6A48;
+    private static final int ENCHANT_SCROLLBAR_THUMB = 0xFFFFD27A;
     private static final int SLIDER_PAD_X = 4;
     private static final int SLIDER_Y = 12;
     private static final int SLIDER_H = 6;
@@ -451,11 +457,10 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
             int x = this.getX();
             int y = this.getY();
-            int listH = ENCHANT_VISIBLE_ROWS * ENCHANT_ROW_STRIDE;
-            if (!contains((int) mouseX, (int) mouseY, x + ENCHANT_PANEL_X, y + ENCHANT_LIST_Y, ENCHANT_ROW_W, listH)) {
+            if (!contains((int) mouseX, (int) mouseY, x + ENCHANT_LIST_X, y + ENCHANT_LIST_Y, enchantListWidth(), enchantListHeight())) {
                 return false;
             }
-            int maxScroll = Math.max(0, compatibleEnchants().size() - ENCHANT_VISIBLE_ROWS);
+            int maxScroll = enchantMaxScroll(compatibleEnchants().size());
             if (scrollY > 0) {
                 this.enchantScroll = Math.max(0, this.enchantScroll - 1);
             } else if (scrollY < 0) {
@@ -767,7 +772,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (chosen != null && variants.contains(chosen)) {
                 return chosen;
             }
-            return variants.getFirst();
+            return variants.getLast();
         }
 
         private List<CreationSyncPayload.ClientEnchantEntry> compatibleEnchants() {
@@ -818,6 +823,55 @@ public class CreationNotebookUiComponent extends UiWidget {
             };
         }
 
+        private int enchantIndex(int row, int col) {
+            return (this.enchantScroll + row) * ENCHANT_COLS + col;
+        }
+
+        private int enchantColumnOf(CreationSyncPayload.ClientEnchantEntry entry) {
+            List<CreationSyncPayload.ClientEnchantEntry> enchants = compatibleEnchants();
+            for (int i = 0; i < enchants.size(); i++) {
+                if (enchants.get(i).enchantId().equals(entry.enchantId())) {
+                    return i % ENCHANT_COLS;
+                }
+            }
+            return 0;
+        }
+
+        private static int enchantMaxScroll(int total) {
+            return Math.max(0, ceilDiv(total, ENCHANT_COLS) - ENCHANT_VISIBLE_ROWS);
+        }
+
+        private static int enchantListWidth() {
+            return ENCHANT_COLS * ENCHANT_ROW_W + (ENCHANT_COLS - 1) * ENCHANT_COL_GAP;
+        }
+
+        private static int enchantListHeight() {
+            return ENCHANT_VISIBLE_ROWS * ENCHANT_ROW_STRIDE;
+        }
+
+        private static int enchantCellX(int originX, int col) {
+            return originX + ENCHANT_LIST_X + col * (ENCHANT_ROW_W + ENCHANT_COL_GAP);
+        }
+
+        private static int enchantCellY(int originY, int row) {
+            return originY + ENCHANT_LIST_Y + row * ENCHANT_ROW_STRIDE;
+        }
+
+        private void drawEnchantScrollbar(GuiGraphicsExtractor gui, int x, int y, int total, int maxScroll) {
+            if (maxScroll <= 0) {
+                return;
+            }
+            int barX = enchantCellX(x, ENCHANT_COLS - 1) + ENCHANT_ROW_W - ENCHANT_SCROLLBAR_W;
+            int barY = y + ENCHANT_LIST_Y;
+            int barH = enchantListHeight();
+            int visibleCells = ENCHANT_VISIBLE_ROWS * ENCHANT_COLS;
+            gui.fill(barX, barY, barX + ENCHANT_SCROLLBAR_W, barY + barH, ENCHANT_SCROLLBAR_TRACK);
+            int thumbHeight = Math.max(10, (barH * visibleCells) / Math.max(1, total));
+            int track = Math.max(1, barH - thumbHeight);
+            int thumbY = barY + (track * this.enchantScroll / maxScroll);
+            gui.fill(barX, thumbY, barX + ENCHANT_SCROLLBAR_W, thumbY + thumbHeight, ENCHANT_SCROLLBAR_THUMB);
+        }
+
         private boolean handleEnchantClick(int mouseX, int mouseY, int x, int y) {
             CreationSyncPayload.ClientEnchantEntry entry = hitEnchantRow(mouseX, mouseY, x, y);
             if (entry == null || !entry.unlocked()) {
@@ -832,15 +886,17 @@ public class CreationNotebookUiComponent extends UiWidget {
 
         private CreationSyncPayload.ClientEnchantEntry hitEnchantRow(int mouseX, int mouseY, int x, int y) {
             List<CreationSyncPayload.ClientEnchantEntry> enchants = compatibleEnchants();
-            for (int i = 0; i < ENCHANT_VISIBLE_ROWS; i++) {
-                int index = this.enchantScroll + i;
-                if (index >= enchants.size()) {
-                    break;
-                }
-                int rowX = x + ENCHANT_PANEL_X;
-                int rowY = y + ENCHANT_LIST_Y + i * ENCHANT_ROW_STRIDE;
-                if (contains(mouseX, mouseY, rowX, rowY, ENCHANT_ROW_W, ENCHANT_ROW_H)) {
-                    return enchants.get(index);
+            for (int row = 0; row < ENCHANT_VISIBLE_ROWS; row++) {
+                for (int col = 0; col < ENCHANT_COLS; col++) {
+                    int index = enchantIndex(row, col);
+                    if (index >= enchants.size()) {
+                        return null;
+                    }
+                    int cellX = enchantCellX(x, col);
+                    int cellY = enchantCellY(y, row);
+                    if (contains(mouseX, mouseY, cellX, cellY, ENCHANT_ROW_W, ENCHANT_ROW_H)) {
+                        return enchants.get(index);
+                    }
                 }
             }
             return null;
@@ -858,30 +914,37 @@ public class CreationNotebookUiComponent extends UiWidget {
             blit(gui, atlas, previewX, previewY, 0, 0, ENCHANT_SLOT_SIZE, ENCHANT_SLOT_SIZE, ENCHANT_ATLAS_W, texH);
             ItemStack preview = previewStack(true);
             drawItem(gui, preview, previewX + 4, previewY + 4, 16);
+            boolean hoveringPreview = contains(mouseX, mouseY, previewX, previewY, ENCHANT_SLOT_SIZE, ENCHANT_SLOT_SIZE);
+            if (hoveringPreview && !preview.isEmpty()) {
+                gui.setTooltipForNextFrame(minecraft.font, preview, mouseX, mouseY);
+            }
 
             List<CreationSyncPayload.ClientEnchantEntry> enchants = compatibleEnchants();
-            int maxScroll = Math.max(0, enchants.size() - ENCHANT_VISIBLE_ROWS);
+            int maxScroll = enchantMaxScroll(enchants.size());
             this.enchantScroll = Mth.clamp(this.enchantScroll, 0, maxScroll);
-            for (int i = 0; i < ENCHANT_VISIBLE_ROWS; i++) {
-                int index = this.enchantScroll + i;
-                if (index >= enchants.size()) {
-                    break;
-                }
-                CreationSyncPayload.ClientEnchantEntry entry = enchants.get(index);
-                int rowX = x + ENCHANT_PANEL_X;
-                int rowY = y + ENCHANT_LIST_Y + i * ENCHANT_ROW_STRIDE;
-                if (entry.unlocked()) {
-                    int level = this.enchantLevels.getOrDefault(entry.enchantId(), 0);
-                    String name = trim(minecraft, enchantName(entry), ENCHANT_ROW_W - 8);
-                    gui.text(minecraft.font, name, rowX + 4, rowY + 2, 0xFF3A2A18, false);
-                    drawEnchantSlider(gui, rowX, rowY, entry.maxLevel(), level);
-                    if (contains(mouseX, mouseY, rowX, rowY, ENCHANT_ROW_W, ENCHANT_ROW_H)) {
-                        gui.setTooltipForNextFrame(minecraft.font, enchantTooltip(entry, level), mouseX, mouseY);
+            for (int row = 0; row < ENCHANT_VISIBLE_ROWS; row++) {
+                for (int col = 0; col < ENCHANT_COLS; col++) {
+                    int index = enchantIndex(row, col);
+                    if (index >= enchants.size()) {
+                        break;
                     }
-                } else {
-                    blit(gui, atlas, rowX, rowY, ENCHANT_ROW_U, ENCHANT_ROW_V, ENCHANT_ROW_W, ENCHANT_ROW_H, ENCHANT_ATLAS_W, texH);
+                    CreationSyncPayload.ClientEnchantEntry entry = enchants.get(index);
+                    int cellX = enchantCellX(x, col);
+                    int cellY = enchantCellY(y, row);
+                    if (entry.unlocked()) {
+                        int level = this.enchantLevels.getOrDefault(entry.enchantId(), 0);
+                        String name = trim(minecraft, enchantName(entry), ENCHANT_ROW_W - 8);
+                        gui.text(minecraft.font, name, cellX + 4, cellY + 2, 0xFF3A2A18, false);
+                        drawEnchantSlider(gui, cellX, cellY, entry.maxLevel(), level);
+                        if (!hoveringPreview && contains(mouseX, mouseY, cellX, cellY, ENCHANT_ROW_W, ENCHANT_ROW_H)) {
+                            gui.setTooltipForNextFrame(minecraft.font, enchantTooltip(entry, level), mouseX, mouseY);
+                        }
+                    } else {
+                        blit(gui, atlas, cellX, cellY, ENCHANT_ROW_U, ENCHANT_ROW_V, ENCHANT_ROW_W, ENCHANT_ROW_H, ENCHANT_ATLAS_W, texH);
+                    }
                 }
             }
+            drawEnchantScrollbar(gui, x, y, enchants.size(), maxScroll);
         }
 
         private void drawEnchantSlider(GuiGraphicsExtractor gui, int rowX, int rowY, int maxLevel, int level) {
@@ -898,7 +961,8 @@ public class CreationNotebookUiComponent extends UiWidget {
         }
 
         private void setEnchantFromMouse(CreationSyncPayload.ClientEnchantEntry entry, int mouseX, int originX) {
-            int trackX = originX + ENCHANT_PANEL_X + SLIDER_PAD_X;
+            int col = enchantColumnOf(entry);
+            int trackX = enchantCellX(originX, col) + SLIDER_PAD_X;
             int trackW = ENCHANT_ROW_W - SLIDER_PAD_X * 2;
             float ratio = trackW <= 0 ? 0.0f : (mouseX - trackX) / (float) trackW;
             int level = Mth.clamp(Math.round(ratio * entry.maxLevel()), 0, entry.maxLevel());

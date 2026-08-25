@@ -50,6 +50,9 @@ public class ResearchTablePanelUiComponent extends UiWidget {
     private static final int CHECK_BOX = 10;
     private static final int CHECK_GREEN = 0xFF55FF55;
     private static final int CHECK_OUTLINE = 0xFF0E3A14;
+    private static final int SCROLLBAR_W = 4;
+    private static final int SCROLLBAR_TRACK = 0xFF1E3348;
+    private static final int SCROLLBAR_THUMB = 0xFF84C0EE;
 
     public static final MapCodec<ResearchTablePanelUiComponent> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Codec.INT.optionalFieldOf("frame_color", 0xFF79B8FF).forGetter(ResearchTablePanelUiComponent::getFrameColor),
@@ -230,6 +233,7 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                     }
                 }
             }
+            drawGridScrollbar(gui, maxScroll, totalEntries);
 
             int detailX = detailX();
             int detailY = detailY();
@@ -465,7 +469,7 @@ public class ResearchTablePanelUiComponent extends UiWidget {
 
         @Override
         public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-            if (!contains((int) mouseX, (int) mouseY, gridX(), gridY(), gridW(), gridH())) {
+            if (!contains((int) mouseX, (int) mouseY, gridX(), gridY(), gridW() + 3 + SCROLLBAR_W, gridH())) {
                 return false;
             }
             int size = this.filterTab.isEnchants() ? filteredEnchantEntries().size() : filteredEntries().size();
@@ -789,6 +793,20 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             gui.fill(x, y + height - 1, x + width, y + height, border);
             gui.fill(x, y, x + 1, y + height, border);
             gui.fill(x + width - 1, y, x + width, y + height, border);
+        }
+
+        private void drawGridScrollbar(GuiGraphicsExtractor gui, int maxScroll, int totalEntries) {
+            if (maxScroll <= 0) {
+                return;
+            }
+            int barX = gridX() + gridW() + 3;
+            int barY = gridY();
+            int barH = gridH();
+            gui.fill(barX, barY, barX + SCROLLBAR_W, barY + barH, SCROLLBAR_TRACK);
+            int thumbHeight = Math.max(10, (barH * VISIBLE_ROWS) / Math.max(1, ceilDiv(totalEntries, COLS)));
+            int track = Math.max(1, barH - thumbHeight);
+            int thumbY = barY + (track * this.scrollOffset / maxScroll);
+            gui.fill(barX, thumbY, barX + SCROLLBAR_W, thumbY + thumbHeight, SCROLLBAR_THUMB);
         }
 
         private static boolean contains(int mouseX, int mouseY, int x, int y, int width, int height) {
