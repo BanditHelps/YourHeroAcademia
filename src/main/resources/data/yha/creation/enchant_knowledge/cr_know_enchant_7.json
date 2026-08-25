@@ -1,0 +1,11 @@
+{
+  "ability": "cr_know_enchant_7",
+  "research_cost": 6,
+  "entries": [
+    { "enchant": "minecraft:mending", "lipid_cost_per_level": 80 },
+    { "enchant": "minecraft:protection", "lipid_cost_per_level": 28 },
+    { "enchant": "minecraft:sharpness", "lipid_cost_per_level": 30 },
+    { "enchant": "minecraft:thorns", "lipid_cost_per_level": 30 },
+    { "enchant": "minecraft:lunger", "lipid_cost_per_level": 36 }
+  ]
+}

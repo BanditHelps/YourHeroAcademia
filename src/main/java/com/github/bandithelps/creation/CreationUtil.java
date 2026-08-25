@@ -9,8 +9,11 @@ import com.github.bandithelps.capabilities.creation.CreationAttachments;
 import com.github.bandithelps.capabilities.creation.CreationData;
 import com.github.bandithelps.capabilities.creation.CreationSyncEvents;
 import com.github.bandithelps.entities.CreationProductEntity;
+import com.github.bandithelps.network.CreationCreatePayload;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -153,6 +156,10 @@ public final class CreationUtil {
         return entry != null && isAbilityUnlocked(entity, entry.abilityKey());
     }
 
+    public static boolean isEnchantResearchable(LivingEntity entity, CreationEnchantEntry entry) {
+        return entry != null && isAbilityUnlocked(entity, entry.abilityKey());
+    }
+
     public static List<CreationEntry> researchableEntries(LivingEntity entity) {
         List<CreationEntry> result = new ArrayList<>();
         for (CreationEntry entry : CreationCatalog.getInstance().allEntries()) {
@@ -161,6 +168,23 @@ public final class CreationUtil {
             }
         }
         return result;
+    }
+
+    public static List<CreationEnchantEntry> researchableEnchantEntries(LivingEntity entity) {
+        List<CreationEnchantEntry> result = new ArrayList<>();
+        for (CreationEnchantEntry entry : CreationEnchantCatalog.getInstance().allEntries()) {
+            if (isEnchantResearchable(entity, entry)) {
+                result.add(entry);
+            }
+        }
+        return result;
+    }
+
+    public static int enchantCost(LivingEntity entity, CreationEnchantEntry entry, int level) {
+        if (entry == null || level <= 0) {
+            return 0;
+        }
+        return Math.max(1, Mth.ceil(entry.lipidCostForLevel(level) / efficiencyMultiplier(entity)));
     }
 
     public static List<CreationEntry> unlockedEntries(Player player, CreationTab tab) {
@@ -208,7 +232,60 @@ public final class CreationUtil {
         return true;
     }
 
+    public static boolean trySacrificeEnchant(ServerPlayer player, Identifier enchantId) {
+        if (!hasCreation(player) || enchantId == null) {
+            return false;
+        }
+        CreationEnchantEntry selected = CreationEnchantCatalog.getInstance().get(enchantId).orElse(null);
+        if (!isEnchantResearchable(player, selected)) {
+            return false;
+        }
+        CreationData data = CreationAttachments.get(player);
+        if (data.isEnchantUnlocked(enchantId)) {
+            return false;
+        }
+        ItemStack book = CreationEnchantments.consumeBookContaining(player, enchantId);
+        if (book.isEmpty()) {
+            player.sendSystemMessage(Component.translatable("gui.yha.creation.missing_enchant_book"));
+            return false;
+        }
+        int gained = 1;
+        if (player.getRandom().nextFloat() < knowledgeBoostChance(player)) {
+            gained++;
+        }
+        boolean learnedAny = false;
+        boolean progressed = false;
+        for (Identifier id : CreationEnchantments.storedEnchantIds(book)) {
+            CreationEnchantEntry entry = CreationEnchantCatalog.getInstance().get(id).orElse(null);
+            if (!isEnchantResearchable(player, entry) || data.isEnchantUnlocked(id)) {
+                continue;
+            }
+            int next = data.getEnchantProgress(id) + gained;
+            if (next >= entry.researchCost()) {
+                data.unlockEnchant(id);
+                learnedAny = true;
+                player.sendSystemMessage(Component.translatable(
+                        "gui.yha.creation.researched",
+                        CreationEnchantments.displayName(player.registryAccess(), id)));
+            } else {
+                data.setEnchantProgress(id, next);
+                progressed = true;
+            }
+        }
+        if (learnedAny) {
+            player.level().playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.8f, 1.2f);
+        } else if (progressed) {
+            player.level().playSound(null, player.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.4f, 0.7f);
+        }
+        CreationSyncEvents.syncNow(player);
+        return learnedAny || progressed;
+    }
+
     public static boolean tryCreate(ServerPlayer player, Identifier itemId) {
+        return tryCreate(player, itemId, List.of());
+    }
+
+    public static boolean tryCreate(ServerPlayer player, Identifier itemId, List<CreationCreatePayload.EnchantChoice> requested) {
         if (!hasCreation(player) || itemId == null || !(player.level() instanceof ServerLevel serverLevel)) {
             return false;
         }
@@ -221,14 +298,52 @@ public final class CreationUtil {
         if (created.isEmpty()) {
             return false;
         }
+        created = created.copy();
+        created.setCount(1);
+
+        LinkedHashMap<Identifier, Integer> levels = new LinkedHashMap<>();
+        if (requested != null) {
+            for (CreationCreatePayload.EnchantChoice choice : requested) {
+                if (choice == null || choice.enchantId() == null || choice.enchantId().isBlank() || choice.level() <= 0) {
+                    continue;
+                }
+                Identifier enchantId;
+                try {
+                    enchantId = Identifier.parse(choice.enchantId());
+                } catch (RuntimeException ignored) {
+                    return false;
+                }
+                CreationEnchantEntry entry = CreationEnchantCatalog.getInstance().get(enchantId).orElse(null);
+                if (!isEnchantResearchable(player, entry) || !data.isEnchantUnlocked(enchantId)) {
+                    return false;
+                }
+                int maxLevel = entry.resolvedMaxLevel(
+                        CreationEnchantments.vanillaMaxLevel(player.registryAccess(), enchantId));
+                if (choice.level() > maxLevel) {
+                    return false;
+                }
+                if (!CreationEnchantments.canEnchant(player.registryAccess(), enchantId, created)) {
+                    return false;
+                }
+                if (!CreationEnchantments.compatibleWith(player.registryAccess(), enchantId, levels)) {
+                    player.sendSystemMessage(Component.translatable("gui.yha.creation.enchant_incompatible"));
+                    return false;
+                }
+                levels.put(enchantId, choice.level());
+            }
+        }
+
         int cost = creationCost(player, parent, CreationForm.of(parent, itemId));
+        for (Map.Entry<Identifier, Integer> entry : levels.entrySet()) {
+            CreationEnchantEntry enchant = CreationEnchantCatalog.getInstance().get(entry.getKey()).orElse(null);
+            cost += enchantCost(player, enchant, entry.getValue());
+        }
         if (getLipids(player) + 0.0001f < cost) {
             player.sendSystemMessage(Component.translatable("gui.yha.creation.not_enough_lipids"));
             return false;
         }
         setLipids(player, getLipids(player) - cost);
-        created = created.copy();
-        created.setCount(1);
+        CreationEnchantments.apply(created, player.registryAccess(), levels);
         spawnCreatedItem(serverLevel, player, created);
         CreationSyncEvents.syncNow(player);
         return true;

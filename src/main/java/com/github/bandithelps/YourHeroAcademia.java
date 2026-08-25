@@ -26,6 +26,7 @@ import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
 import com.github.bandithelps.creation.CreationCatalog;
+import com.github.bandithelps.creation.CreationEnchantCatalog;
 import com.github.bandithelps.gene.GeneRegistry;
 import com.github.bandithelps.gene.combination.CombinationManager;
 import com.github.bandithelps.gui.menu.ModMenus;
@@ -191,6 +192,7 @@ public final class YourHeroAcademia {
         LOGGER.info("Server Starting...");
         GeneRegistry.getInstance().reload(event.getServer().getResourceManager());
         CreationCatalog.getInstance().reload(event.getServer().getResourceManager());
+        CreationEnchantCatalog.getInstance().reload(event.getServer().getResourceManager());
         CombinationManager.rebuildForServer(event.getServer());
     }
 

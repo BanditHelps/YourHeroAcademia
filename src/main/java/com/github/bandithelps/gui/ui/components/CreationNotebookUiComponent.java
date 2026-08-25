@@ -4,6 +4,8 @@ import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.capabilities.body.BodyPart;
 import com.github.bandithelps.client.body.ClientBodyState;
 import com.github.bandithelps.client.creation.ClientCreationState;
+import com.github.bandithelps.creation.CreationEnchantments;
+import com.github.bandithelps.creation.CreationGearKind;
 import com.github.bandithelps.creation.CreationTab;
 import com.github.bandithelps.creation.CreationUtil;
 import com.github.bandithelps.network.CreationAssignSlotPayload;
@@ -11,6 +13,7 @@ import com.github.bandithelps.network.CreationCreatePayload;
 import com.github.bandithelps.network.CreationSyncPayload;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +53,10 @@ public class CreationNotebookUiComponent extends UiWidget {
             Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_tool_gui_slots_2.png"),
             Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_tool_gui_slots_3.png")
     };
+    private static final Identifier TEX_ENCHANT_ARMOR = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_armor_enchant.png");
+    private static final Identifier TEX_ENCHANT_SWORD = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_sword_enchant.png");
+    private static final Identifier TEX_ENCHANT_TOOLS = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_tools_enchant.png");
+    private static final Identifier TEX_ENCHANT_UTILITY = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_utility_enchant.png");
 
     private static final int TEX_W = 240;
     private static final int TEX_H = 193;
@@ -84,6 +91,24 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int FORM_SLOT = 16;
     private static final int FORM_PAD = 3;
     private static final int FORM_ICON = 14;
+    private static final int CHIP_X = 15;
+    private static final int CHIP_Y = 23;
+    private static final int CHIP_SIZE = 12;
+    private static final int CHIP_GAP = 2;
+    private static final int ENCHANT_ATLAS_W = 155;
+    private static final int ENCHANT_SLOT_SIZE = 24;
+    private static final int ENCHANT_ROW_U = 0;
+    private static final int ENCHANT_ROW_V = 25;
+    private static final int ENCHANT_ROW_W = 75;
+    private static final int ENCHANT_ROW_H = 20;
+    private static final int ENCHANT_ROW_STRIDE = 21;
+    private static final int ENCHANT_PANEL_X = 66;
+    private static final int ENCHANT_PANEL_Y = 39;
+    private static final int ENCHANT_LIST_Y = 66;
+    private static final int ENCHANT_VISIBLE_ROWS = 5;
+    private static final int SLIDER_PAD_X = 4;
+    private static final int SLIDER_Y = 12;
+    private static final int SLIDER_H = 6;
 
     public static final MapCodec<CreationNotebookUiComponent> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             propertiesCodec(TEX_W, TEX_H)
@@ -111,6 +136,10 @@ public class CreationNotebookUiComponent extends UiWidget {
         private int materialsPage;
         private int blocksPage;
         private int gearPage;
+        private CreationGearKind gearKindFilter;
+        private final Map<String, Integer> enchantLevels = new HashMap<>();
+        private int enchantScroll;
+        private String draggingEnchantId;
         private final Map<String, String> selectedForms = new HashMap<>();
         private String formMenuParent;
         private int formMenuX;
@@ -148,7 +177,9 @@ public class CreationNotebookUiComponent extends UiWidget {
                 drawGrid(gui, x, y, ClientCreationState.entriesForTab(CreationTab.MATERIALS, true), MAT_X, MAT_Y2, 3, 3, SLOT, this.materialsPage + 1);
                 drawGrid(gui, x, y, ClientCreationState.entriesForTab(CreationTab.BLOCKS, true), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, SLOT, this.blocksPage, BLOCKS_LAST_ROW);
             } else {
-                drawGrid(gui, x, y, ClientCreationState.entriesForTab(CreationTab.GEAR, true), GEAR_X, GEAR_Y, GEAR_COLS, GEAR_ROWS, GEAR_SLOT, this.gearPage);
+                drawGearChips(gui, minecraft, x, y, mouseX, mouseY);
+                drawGrid(gui, x, y, gearEntries(), GEAR_X, GEAR_Y, GEAR_COLS, GEAR_ROWS, GEAR_SLOT, this.gearPage);
+                drawEnchantPanel(gui, minecraft, x, y, mouseX, mouseY);
             }
 
             for (int i = 0; i < 3; i++) {
@@ -163,7 +194,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
 
             CreationSyncPayload.ClientEntry selected = ClientCreationState.find(this.selectedId);
-            int selectedCost = selected == null ? 0 : selected.formCost(displayedFormId(this.selectedId));
+            int selectedCost = selected == null ? 0 : selected.formCost(displayedFormId(this.selectedId)) + selectedEnchantCost();
             boolean canCreate = selected != null && selected.unlocked() && lipids >= selectedCost;
             boolean createHovered = contains(mouseX, mouseY, x + CREATE_X, y + CREATE_Y, CREATE_W, CREATE_H);
             blit(gui, createHovered && canCreate ? TEX_CREATE_HOVER : TEX_CREATE, x + CREATE_X, y + CREATE_Y, 0, 0, CREATE_W, CREATE_H, CREATE_W, CREATE_H);
@@ -306,11 +337,19 @@ public class CreationNotebookUiComponent extends UiWidget {
                 return true;
             }
 
+            if (this.page == Page.GEAR && handleChipClick(mouseX, mouseY, x, y)) {
+                clickSound();
+                return true;
+            }
+            if (this.page == Page.GEAR && handleEnchantClick(mouseX, mouseY, x, y)) {
+                return true;
+            }
+
             if (contains(mouseX, mouseY, x + CREATE_X, y + CREATE_Y, CREATE_W, CREATE_H)) {
                 closeFormMenu();
                 String createId = displayedFormId(this.selectedId);
                 if (createId != null) {
-                    ClientPacketDistributor.sendToServer(new CreationCreatePayload(createId));
+                    ClientPacketDistributor.sendToServer(new CreationCreatePayload(createId, selectedEnchantChoices()));
                     clickSound();
                 }
                 return true;
@@ -351,6 +390,11 @@ public class CreationNotebookUiComponent extends UiWidget {
             SlotHit clicked = findClickedSlot(mouseX, mouseY, x, y);
             if (clicked != null) {
                 CreationSyncPayload.ClientEntry entry = ClientCreationState.find(clicked.itemId());
+                if (!clicked.itemId().equals(this.selectedId)) {
+                    this.enchantLevels.clear();
+                    this.enchantScroll = 0;
+                    this.draggingEnchantId = null;
+                }
                 this.selectedId = clicked.itemId();
                 if (event.button() == 1 && entry != null && entry.hasForms()) {
                     if (!entry.itemId().equals(openFormParent)) {
@@ -364,6 +408,45 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
             closeFormMenu();
             return false;
+        }
+
+        @Override
+        public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+            if (this.page != Page.GEAR || this.draggingEnchantId == null) {
+                return super.mouseDragged(event, dragX, dragY);
+            }
+            CreationSyncPayload.ClientEnchantEntry entry = ClientCreationState.findEnchant(this.draggingEnchantId);
+            if (entry == null) {
+                return true;
+            }
+            setEnchantFromMouse(entry, (int) event.x(), this.getX());
+            return true;
+        }
+
+        @Override
+        public boolean mouseReleased(MouseButtonEvent event) {
+            this.draggingEnchantId = null;
+            return super.mouseReleased(event);
+        }
+
+        @Override
+        public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+            if (this.page != Page.GEAR) {
+                return false;
+            }
+            int x = this.getX();
+            int y = this.getY();
+            int listH = ENCHANT_VISIBLE_ROWS * ENCHANT_ROW_STRIDE;
+            if (!contains((int) mouseX, (int) mouseY, x + ENCHANT_PANEL_X, y + ENCHANT_LIST_Y, ENCHANT_ROW_W, listH)) {
+                return false;
+            }
+            int maxScroll = Math.max(0, visibleEnchants().size() - ENCHANT_VISIBLE_ROWS);
+            if (scrollY > 0) {
+                this.enchantScroll = Math.max(0, this.enchantScroll - 1);
+            } else if (scrollY < 0) {
+                this.enchantScroll = Math.min(maxScroll, this.enchantScroll + 1);
+            }
+            return true;
         }
 
         private boolean handleFormMenuClick(int mouseX, int mouseY) {
@@ -434,6 +517,11 @@ public class CreationNotebookUiComponent extends UiWidget {
 
         private void selectAssigned(String assignedId) {
             CreationSyncPayload.ClientEntry parent = ClientCreationState.findParent(assignedId);
+            String nextId = parent != null ? parent.itemId() : assignedId;
+            if (nextId == null || !nextId.equals(this.selectedId)) {
+                this.enchantLevels.clear();
+                this.enchantScroll = 0;
+            }
             if (parent != null) {
                 this.selectedId = parent.itemId();
                 this.selectedForms.put(parent.itemId(), assignedId);
@@ -451,7 +539,7 @@ public class CreationNotebookUiComponent extends UiWidget {
 
         private void turnPage() {
             if (this.page == Page.GEAR) {
-                int size = ClientCreationState.entriesForTab(CreationTab.GEAR, true).size();
+                int size = gearEntries().size();
                 int perPage = GEAR_COLS * GEAR_ROWS;
                 int pages = Math.max(1, ceilDiv(size, perPage));
                 this.gearPage = (this.gearPage + 1) % pages;
@@ -467,7 +555,7 @@ public class CreationNotebookUiComponent extends UiWidget {
 
         private SlotHit findClickedSlot(int mouseX, int mouseY, int x, int y) {
             if (this.page == Page.GEAR) {
-                return hitGrid(mouseX, mouseY, x, y, ClientCreationState.entriesForTab(CreationTab.GEAR, true), GEAR_X, GEAR_Y, GEAR_COLS, GEAR_ROWS, GEAR_SLOT, this.gearPage, GEAR_COLS);
+                return hitGrid(mouseX, mouseY, x, y, gearEntries(), GEAR_X, GEAR_Y, GEAR_COLS, GEAR_ROWS, GEAR_SLOT, this.gearPage, GEAR_COLS);
             }
             SlotHit materials = hitGrid(mouseX, mouseY, x, y, ClientCreationState.entriesForTab(CreationTab.MATERIALS, true), MAT_X, MAT_Y1, 3, 3, SLOT, this.materialsPage, 3);
             if (materials != null) {
@@ -584,6 +672,299 @@ public class CreationNotebookUiComponent extends UiWidget {
         }
 
         private record SlotHit(String itemId, int slotX, int slotY, int slotSize) {
+        }
+
+        private List<CreationSyncPayload.ClientEntry> gearEntries() {
+            return ClientCreationState.entriesForTab(CreationTab.GEAR, true, this.gearKindFilter);
+        }
+
+        private List<CreationSyncPayload.ClientEnchantEntry> visibleEnchants() {
+            List<CreationSyncPayload.ClientEnchantEntry> result = new ArrayList<>();
+            if (this.selectedId == null) {
+                return result;
+            }
+            ItemStack stack = previewStack(false);
+            HolderLookup.Provider access = clientAccess();
+            if (stack.isEmpty() || access == null) {
+                return result;
+            }
+            for (CreationSyncPayload.ClientEnchantEntry entry : ClientCreationState.enchants()) {
+                if (!entry.unlocked()) {
+                    continue;
+                }
+                try {
+                    Identifier enchantId = Identifier.parse(entry.enchantId());
+                    if (CreationEnchantments.canEnchant(access, enchantId, stack)) {
+                        result.add(entry);
+                    }
+                } catch (RuntimeException ignored) {
+                }
+            }
+            return result;
+        }
+
+        private CreationGearKind selectedGearKind() {
+            if (this.gearKindFilter != null) {
+                return this.gearKindFilter;
+            }
+            if (this.selectedId != null) {
+                return CreationGearKind.of(ClientCreationState.stackOf(displayedFormId(this.selectedId)));
+            }
+            return CreationGearKind.WEAPON;
+        }
+
+        private Identifier atlasFor(CreationGearKind kind) {
+            return switch (kind) {
+                case ARMOR -> TEX_ENCHANT_ARMOR;
+                case TOOL -> TEX_ENCHANT_TOOLS;
+                case WEAPON -> TEX_ENCHANT_SWORD;
+                case UTILITY -> TEX_ENCHANT_UTILITY;
+            };
+        }
+
+        private int atlasHeight(CreationGearKind kind) {
+            return switch (kind) {
+                case ARMOR -> 129;
+                case TOOL -> 87;
+                case WEAPON -> 108;
+                case UTILITY -> 45;
+            };
+        }
+
+        private void drawGearChips(GuiGraphicsExtractor gui, Minecraft minecraft, int x, int y, int mouseX, int mouseY) {
+            CreationGearKind[] kinds = CreationGearKind.values();
+            for (int i = 0; i < kinds.length; i++) {
+                int chipX = x + CHIP_X + i * (CHIP_SIZE + CHIP_GAP);
+                int chipY = y + CHIP_Y;
+                CreationGearKind kind = kinds[i];
+                boolean selected = this.gearKindFilter == kind;
+                blit(gui, atlasFor(kind), chipX, chipY, 0, 0, CHIP_SIZE, CHIP_SIZE, ENCHANT_ATLAS_W, atlasHeight(kind));
+                if (selected) {
+                    drawFrame(gui, chipX - 1, chipY - 1, CHIP_SIZE + 2, CHIP_SIZE + 2, 0xFFFFD27A);
+                } else if (contains(mouseX, mouseY, chipX, chipY, CHIP_SIZE, CHIP_SIZE)) {
+                    gui.fill(chipX, chipY, chipX + CHIP_SIZE, chipY + CHIP_SIZE, 0x44FFD27A);
+                }
+                if (contains(mouseX, mouseY, chipX, chipY, CHIP_SIZE, CHIP_SIZE)) {
+                    gui.setTooltipForNextFrame(minecraft.font, Component.translatable("gui.yha.creation.gear." + kind.id()), mouseX, mouseY);
+                }
+            }
+        }
+
+        private void drawEnchantPanel(GuiGraphicsExtractor gui, Minecraft minecraft, int x, int y, int mouseX, int mouseY) {
+            if (this.selectedId == null) {
+                return;
+            }
+            CreationGearKind kind = selectedGearKind();
+            Identifier atlas = atlasFor(kind);
+            int texH = atlasHeight(kind);
+            int previewX = x + ENCHANT_PANEL_X;
+            int previewY = y + ENCHANT_PANEL_Y;
+            blit(gui, atlas, previewX, previewY, 0, 0, ENCHANT_SLOT_SIZE, ENCHANT_SLOT_SIZE, ENCHANT_ATLAS_W, texH);
+            ItemStack preview = previewStack(true);
+            drawItem(gui, preview, previewX + 4, previewY + 4, 16);
+
+            List<CreationSyncPayload.ClientEnchantEntry> enchants = visibleEnchants();
+            int maxScroll = Math.max(0, enchants.size() - ENCHANT_VISIBLE_ROWS);
+            this.enchantScroll = Mth.clamp(this.enchantScroll, 0, maxScroll);
+            for (int i = 0; i < ENCHANT_VISIBLE_ROWS; i++) {
+                int index = this.enchantScroll + i;
+                if (index >= enchants.size()) {
+                    break;
+                }
+                CreationSyncPayload.ClientEnchantEntry entry = enchants.get(index);
+                int rowX = x + ENCHANT_PANEL_X;
+                int rowY = y + ENCHANT_LIST_Y + i * ENCHANT_ROW_STRIDE;
+                blit(gui, atlas, rowX, rowY, ENCHANT_ROW_U, ENCHANT_ROW_V, ENCHANT_ROW_W, ENCHANT_ROW_H, ENCHANT_ATLAS_W, texH);
+                int level = this.enchantLevels.getOrDefault(entry.enchantId(), 0);
+                String name = trim(minecraft, enchantName(entry), ENCHANT_ROW_W - 8);
+                gui.text(minecraft.font, name, rowX + 4, rowY + 2, 0xFF3A2A18, false);
+                drawEnchantSlider(gui, rowX, rowY, entry.maxLevel(), level);
+                if (contains(mouseX, mouseY, rowX, rowY, ENCHANT_ROW_W, ENCHANT_ROW_H)) {
+                    gui.setTooltipForNextFrame(minecraft.font, enchantTooltip(entry, level), mouseX, mouseY);
+                }
+            }
+        }
+
+        private void drawEnchantSlider(GuiGraphicsExtractor gui, int rowX, int rowY, int maxLevel, int level) {
+            int trackX = rowX + SLIDER_PAD_X;
+            int trackY = rowY + SLIDER_Y;
+            int trackW = ENCHANT_ROW_W - SLIDER_PAD_X * 2;
+            gui.fill(trackX, trackY + 2, trackX + trackW, trackY + 4, 0xFF8A6A48);
+            float ratio = maxLevel <= 0 ? 0.0f : level / (float) maxLevel;
+            int knobX = trackX + Math.round(ratio * (trackW - 4));
+            gui.fill(knobX, trackY, knobX + 4, trackY + SLIDER_H, 0xFFFFD27A);
+            if (level > 0) {
+                gui.fill(trackX, trackY + 2, knobX + 2, trackY + 4, 0xFFFFD27A);
+            }
+        }
+
+        private boolean handleChipClick(int mouseX, int mouseY, int x, int y) {
+            CreationGearKind[] kinds = CreationGearKind.values();
+            for (int i = 0; i < kinds.length; i++) {
+                int chipX = x + CHIP_X + i * (CHIP_SIZE + CHIP_GAP);
+                int chipY = y + CHIP_Y;
+                if (!contains(mouseX, mouseY, chipX, chipY, CHIP_SIZE, CHIP_SIZE)) {
+                    continue;
+                }
+                CreationGearKind kind = kinds[i];
+                this.gearKindFilter = this.gearKindFilter == kind ? null : kind;
+                this.gearPage = 0;
+                return true;
+            }
+            return false;
+        }
+
+        private boolean handleEnchantClick(int mouseX, int mouseY, int x, int y) {
+            CreationSyncPayload.ClientEnchantEntry entry = hitEnchantRow(mouseX, mouseY, x, y);
+            if (entry == null) {
+                this.draggingEnchantId = null;
+                return false;
+            }
+            setEnchantFromMouse(entry, mouseX, x);
+            this.draggingEnchantId = entry.enchantId();
+            clickSound();
+            return true;
+        }
+
+        private CreationSyncPayload.ClientEnchantEntry hitEnchantRow(int mouseX, int mouseY, int x, int y) {
+            List<CreationSyncPayload.ClientEnchantEntry> enchants = visibleEnchants();
+            for (int i = 0; i < ENCHANT_VISIBLE_ROWS; i++) {
+                int index = this.enchantScroll + i;
+                if (index >= enchants.size()) {
+                    break;
+                }
+                int rowX = x + ENCHANT_PANEL_X;
+                int rowY = y + ENCHANT_LIST_Y + i * ENCHANT_ROW_STRIDE;
+                if (contains(mouseX, mouseY, rowX, rowY, ENCHANT_ROW_W, ENCHANT_ROW_H)) {
+                    return enchants.get(index);
+                }
+            }
+            return null;
+        }
+
+        private void setEnchantFromMouse(CreationSyncPayload.ClientEnchantEntry entry, int mouseX, int originX) {
+            int trackX = originX + ENCHANT_PANEL_X + SLIDER_PAD_X;
+            int trackW = ENCHANT_ROW_W - SLIDER_PAD_X * 2;
+            float ratio = trackW <= 0 ? 0.0f : (mouseX - trackX) / (float) trackW;
+            int level = Mth.clamp(Math.round(ratio * entry.maxLevel()), 0, entry.maxLevel());
+            setEnchantLevel(entry.enchantId(), level);
+        }
+
+        private void setEnchantLevel(String enchantId, int level) {
+            if (level <= 0) {
+                this.enchantLevels.remove(enchantId);
+                return;
+            }
+            HolderLookup.Provider access = clientAccess();
+            Identifier candidate;
+            try {
+                candidate = Identifier.parse(enchantId);
+            } catch (RuntimeException ignored) {
+                return;
+            }
+            if (access != null) {
+                List<String> toClear = new ArrayList<>();
+                for (Map.Entry<String, Integer> current : this.enchantLevels.entrySet()) {
+                    if (current.getValue() == null || current.getValue() <= 0 || current.getKey().equals(enchantId)) {
+                        continue;
+                    }
+                    try {
+                        if (!CreationEnchantments.compatible(access, candidate, Identifier.parse(current.getKey()))) {
+                            toClear.add(current.getKey());
+                        }
+                    } catch (RuntimeException ignored) {
+                    }
+                }
+                for (String id : toClear) {
+                    this.enchantLevels.remove(id);
+                }
+            }
+            this.enchantLevels.put(enchantId, level);
+        }
+
+        private int selectedEnchantCost() {
+            int total = 0;
+            for (Map.Entry<String, Integer> entry : this.enchantLevels.entrySet()) {
+                if (entry.getValue() == null || entry.getValue() <= 0) {
+                    continue;
+                }
+                CreationSyncPayload.ClientEnchantEntry catalog = ClientCreationState.findEnchant(entry.getKey());
+                if (catalog != null) {
+                    total += catalog.costForLevel(entry.getValue());
+                }
+            }
+            return total;
+        }
+
+        private List<CreationCreatePayload.EnchantChoice> selectedEnchantChoices() {
+            if (this.page != Page.GEAR) {
+                return List.of();
+            }
+            List<CreationCreatePayload.EnchantChoice> choices = new ArrayList<>();
+            for (Map.Entry<String, Integer> entry : this.enchantLevels.entrySet()) {
+                if (entry.getValue() == null || entry.getValue() <= 0) {
+                    continue;
+                }
+                choices.add(new CreationCreatePayload.EnchantChoice(entry.getKey(), entry.getValue()));
+            }
+            return choices;
+        }
+
+        private ItemStack previewStack(boolean applyEnchants) {
+            String formId = displayedFormId(this.selectedId);
+            ItemStack stack = ClientCreationState.stackOf(formId);
+            if (!applyEnchants || stack.isEmpty()) {
+                return stack;
+            }
+            stack = stack.copy();
+            HolderLookup.Provider access = clientAccess();
+            Map<Identifier, Integer> levels = new HashMap<>();
+            for (Map.Entry<String, Integer> entry : this.enchantLevels.entrySet()) {
+                if (entry.getValue() == null || entry.getValue() <= 0) {
+                    continue;
+                }
+                try {
+                    levels.put(Identifier.parse(entry.getKey()), entry.getValue());
+                } catch (RuntimeException ignored) {
+                }
+            }
+            CreationEnchantments.apply(stack, access, levels);
+            return stack;
+        }
+
+        private static String enchantName(CreationSyncPayload.ClientEnchantEntry entry) {
+            try {
+                return CreationEnchantments.displayName(clientAccess(), Identifier.parse(entry.enchantId())).getString();
+            } catch (RuntimeException ignored) {
+                return entry.enchantId();
+            }
+        }
+
+        private static Component enchantTooltip(CreationSyncPayload.ClientEnchantEntry entry, int level) {
+            String name = enchantName(entry);
+            String levelText = level <= 0 ? "0" : String.valueOf(level);
+            return Component.literal(name + " " + levelText + " - " + Component.translatable("gui.yha.creation.enchant_cost", entry.costForLevel(level)).getString());
+        }
+
+        private static HolderLookup.Provider clientAccess() {
+            Minecraft minecraft = Minecraft.getInstance();
+            return minecraft.level == null ? null : minecraft.level.registryAccess();
+        }
+
+        private static String trim(Minecraft minecraft, String text, int maxWidth) {
+            if (minecraft.font.width(text) <= maxWidth) {
+                return text;
+            }
+            String ellipsis = "..";
+            int budget = maxWidth - minecraft.font.width(ellipsis);
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < text.length(); i++) {
+                if (minecraft.font.width(builder.toString() + text.charAt(i)) > budget) {
+                    break;
+                }
+                builder.append(text.charAt(i));
+            }
+            return builder + ellipsis;
         }
     }
 

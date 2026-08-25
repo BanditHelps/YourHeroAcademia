@@ -1,0 +1,12 @@
+{
+  "ability": "cr_know_enchant_3",
+  "research_cost": 3,
+  "entries": [
+    { "enchant": "minecraft:efficiency", "lipid_cost_per_level": 22 },
+    { "enchant": "minecraft:feather_falling", "lipid_cost_per_level": 22 },
+    { "enchant": "minecraft:luck_of_the_sea", "lipid_cost_per_level": 14 },
+    { "enchant": "minecraft:power", "lipid_cost_per_level": 18 },
+    { "enchant": "minecraft:projectile_protection", "lipid_cost_per_level": 16 },
+    { "enchant": "minecraft:quick_charge", "lipid_cost_per_level": 16 }
+  ]
+}

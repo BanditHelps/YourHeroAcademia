@@ -16,6 +16,7 @@ public record CreationSyncPayload(
         List<String> unlocked,
         List<String> quickSlots,
         List<ClientEntry> entries,
+        List<ClientEnchantEntry> enchants,
         int unlockedQuickSlots,
         boolean gearTabUnlocked,
         int sacrificesRequired
@@ -51,6 +52,19 @@ public record CreationSyncPayload(
             ByteBufCodecs.STRING_UTF8.encode(buf, blankToEmpty(entry.nuggetId()));
             ByteBufCodecs.STRING_UTF8.encode(buf, blankToEmpty(entry.blockId()));
         }
+        ByteBufCodecs.VAR_INT.encode(buf, payload.enchants().size());
+        for (ClientEnchantEntry enchant : payload.enchants()) {
+            ByteBufCodecs.STRING_UTF8.encode(buf, enchant.enchantId());
+            ByteBufCodecs.VAR_INT.encode(buf, enchant.lipidCostPerLevel());
+            ByteBufCodecs.VAR_INT.encode(buf, enchant.lipidCosts().size());
+            for (int cost : enchant.lipidCosts()) {
+                ByteBufCodecs.VAR_INT.encode(buf, cost);
+            }
+            ByteBufCodecs.VAR_INT.encode(buf, enchant.maxLevel());
+            ByteBufCodecs.VAR_INT.encode(buf, enchant.researchCost());
+            ByteBufCodecs.VAR_INT.encode(buf, enchant.progress());
+            ByteBufCodecs.BOOL.encode(buf, enchant.unlocked());
+        }
         ByteBufCodecs.VAR_INT.encode(buf, payload.unlockedQuickSlots());
         ByteBufCodecs.BOOL.encode(buf, payload.gearTabUnlocked());
         ByteBufCodecs.VAR_INT.encode(buf, payload.sacrificesRequired());
@@ -73,10 +87,31 @@ public record CreationSyncPayload(
                     ByteBufCodecs.STRING_UTF8.decode(buf)
             ));
         }
+        int enchantCount = ByteBufCodecs.VAR_INT.decode(buf);
+        List<ClientEnchantEntry> enchants = new ArrayList<>(enchantCount);
+        for (int i = 0; i < enchantCount; i++) {
+            String enchantId = ByteBufCodecs.STRING_UTF8.decode(buf);
+            int lipidCostPerLevel = ByteBufCodecs.VAR_INT.decode(buf);
+            int costCount = ByteBufCodecs.VAR_INT.decode(buf);
+            List<Integer> lipidCosts = new ArrayList<>(costCount);
+            for (int c = 0; c < costCount; c++) {
+                lipidCosts.add(ByteBufCodecs.VAR_INT.decode(buf));
+            }
+            enchants.add(new ClientEnchantEntry(
+                    enchantId,
+                    lipidCostPerLevel,
+                    lipidCosts,
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.BOOL.decode(buf)
+            ));
+        }
         return new CreationSyncPayload(
                 unlocked,
                 quickSlots,
                 entries,
+                enchants,
                 ByteBufCodecs.VAR_INT.decode(buf),
                 ByteBufCodecs.BOOL.decode(buf),
                 ByteBufCodecs.VAR_INT.decode(buf)
@@ -132,6 +167,27 @@ public record CreationSyncPayload(
 
         public int formCost(String formId) {
             return CreationForm.of(itemId, nuggetId, blockId, formId).scaledCost(lipidCost);
+        }
+    }
+
+    public record ClientEnchantEntry(
+            String enchantId,
+            int lipidCostPerLevel,
+            List<Integer> lipidCosts,
+            int maxLevel,
+            int researchCost,
+            int progress,
+            boolean unlocked
+    ) {
+        public int costForLevel(int level) {
+            if (level <= 0) {
+                return 0;
+            }
+            if (lipidCosts != null && !lipidCosts.isEmpty()) {
+                int index = Math.min(level, lipidCosts.size()) - 1;
+                return Math.max(1, lipidCosts.get(index));
+            }
+            return Math.max(1, lipidCostPerLevel * level);
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.github.bandithelps.client.creation;
 
 import com.github.bandithelps.creation.CreationCatalog;
+import com.github.bandithelps.creation.CreationGearKind;
 import com.github.bandithelps.creation.CreationTab;
 import com.github.bandithelps.network.CreationSyncPayload;
 import java.util.ArrayList;
@@ -11,7 +12,7 @@ import net.minecraft.world.item.ItemStack;
 
 public final class ClientCreationState {
     private static CreationSyncPayload latest = new CreationSyncPayload(
-            List.of(), List.of(), List.of(), 0, false, 8
+            List.of(), List.of(), List.of(), List.of(), 0, false, 8
     );
 
     private ClientCreationState() {
@@ -26,12 +27,19 @@ public final class ClientCreationState {
     }
 
     public static List<CreationSyncPayload.ClientEntry> entriesForTab(CreationTab tab, boolean unlockedOnly) {
+        return entriesForTab(tab, unlockedOnly, null);
+    }
+
+    public static List<CreationSyncPayload.ClientEntry> entriesForTab(CreationTab tab, boolean unlockedOnly, CreationGearKind kind) {
         List<CreationSyncPayload.ClientEntry> result = new ArrayList<>();
         for (CreationSyncPayload.ClientEntry entry : latest.entries()) {
             if (CreationTab.fromId(entry.tab()) != tab) {
                 continue;
             }
             if (unlockedOnly && !entry.unlocked()) {
+                continue;
+            }
+            if (kind != null && CreationGearKind.of(stackOf(entry.itemId())) != kind) {
                 continue;
             }
             result.add(entry);
@@ -61,6 +69,22 @@ public final class ClientCreationState {
         }
         for (CreationSyncPayload.ClientEntry entry : latest.entries()) {
             if (entry.matches(itemId)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    public static List<CreationSyncPayload.ClientEnchantEntry> enchants() {
+        return latest.enchants();
+    }
+
+    public static CreationSyncPayload.ClientEnchantEntry findEnchant(String enchantId) {
+        if (enchantId == null) {
+            return null;
+        }
+        for (CreationSyncPayload.ClientEnchantEntry entry : latest.enchants()) {
+            if (enchantId.equals(entry.enchantId())) {
                 return entry;
             }
         }

@@ -10,15 +10,21 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public record CreationResearchPayload(String itemId) implements CustomPacketPayload {
+public record CreationResearchPayload(String id, boolean enchant) implements CustomPacketPayload {
     public static final Type<CreationResearchPayload> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "creation_research"));
 
     public static final StreamCodec<ByteBuf, CreationResearchPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.STRING_UTF8,
-            CreationResearchPayload::itemId,
+            CreationResearchPayload::id,
+            ByteBufCodecs.BOOL,
+            CreationResearchPayload::enchant,
             CreationResearchPayload::new
     );
+
+    public CreationResearchPayload(String id) {
+        this(id, false);
+    }
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -31,7 +37,12 @@ public record CreationResearchPayload(String itemId) implements CustomPacketPayl
                 return;
             }
             try {
-                CreationUtil.trySacrifice(player, Identifier.parse(payload.itemId()));
+                Identifier parsed = Identifier.parse(payload.id());
+                if (payload.enchant()) {
+                    CreationUtil.trySacrificeEnchant(player, parsed);
+                } else {
+                    CreationUtil.trySacrifice(player, parsed);
+                }
             } catch (RuntimeException ignored) {
             }
         });

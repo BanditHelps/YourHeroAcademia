@@ -638,7 +638,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Enchant Knowledge - I",
-        "description": "Unlocks the capacity to understand new enchantments.",
+        "description": "Unlocks Unbreaking, Protection, Sharpness, Efficiency, Power, and Feather Falling for research.",
         "icon": "yha:textures/icons/creation/creation_enchant_knowledge_1.png",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -705,7 +705,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Enchant Knowledge - II",
-        "description": "Unlocks the capacity to understand new enchantments.",
+        "description": "Unlocks Knockback, Punch, Fire Protection, Projectile Protection, Fire Aspect, and Flame for research.",
         "icon": "yha:textures/icons/creation/creation_enchant_knowledge_2.png",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -732,7 +732,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Enchant Knowledge - III",
-        "description": "Unlocks the capacity to understand new enchantments.",
+        "description": "Unlocks Fortune, Looting, Respiration, Aqua Affinity, Depth Strider, and Quick Charge for research.",
         "icon": "yha:textures/icons/creation/creation_enchant_knowledge_3.png",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -759,7 +759,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Enchant Knowledge - IV",
-        "description": "Unlocks the capacity to understand new enchantments.",
+        "description": "Unlocks Silk Touch, Smite, Bane of Arthropods, Blast Protection, Sweeping Edge, and Impaling for research.",
         "icon": "yha:textures/icons/creation/creation_enchant_knowledge_4.png",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -785,8 +785,8 @@
     "cr_know_enchant_5": {
       "type": "palladium:dummy",
       "properties": {
-        "title": "Enchant Knowledge - IV",
-        "description": "Unlocks the capacity to understand new enchantments.",
+        "title": "Enchant Knowledge - V",
+        "description": "Unlocks Thorns, Piercing, Multishot, Loyalty, Infinity, and Luck of the Sea for research.",
         "icon": "yha:textures/icons/creation/creation_enchant_knowledge_5.png",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -813,7 +813,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Enchant Knowledge - VI",
-        "description": "Unlocks the capacity to understand new enchantments.",
+        "description": "Unlocks Channeling, Riptide, Density, Breach, and Lure for research.",
         "icon": "yha:textures/icons/creation/creation_enchant_knowledge_6.png",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -840,7 +840,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Master Enchant Knowledge",
-        "description": "Unlocks the capacity to understand new enchantments.",
+        "description": "Unlocks Mending, Frost Walker, Soul Speed, Swift Sneak, and Wind Burst for research.",
         "icon": "minecraft:enchanted_book",
         "hidden_in_gui": false,
         "hidden_in_bar": true,

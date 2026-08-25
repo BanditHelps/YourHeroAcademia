@@ -18,35 +18,33 @@ public class CreationData {
     public static final MapCodec<CreationData> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("progress", Map.of()).forGetter(CreationData::encodedProgress),
             Codec.STRING.listOf().optionalFieldOf("unlocked", List.of()).forGetter(CreationData::encodedUnlocked),
-            Codec.STRING.listOf().optionalFieldOf("quickSlots", List.of()).forGetter(CreationData::encodedQuickSlots)
+            Codec.STRING.listOf().optionalFieldOf("quickSlots", List.of()).forGetter(CreationData::encodedQuickSlots),
+            Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("enchantProgress", Map.of()).forGetter(CreationData::encodedEnchantProgress),
+            Codec.STRING.listOf().optionalFieldOf("enchantUnlocked", List.of()).forGetter(CreationData::encodedEnchantUnlocked)
     ).apply(instance, CreationData::fromCodec));
 
     private final Map<Identifier, Integer> progress = new LinkedHashMap<>();
     private final Set<Identifier> unlocked = new LinkedHashSet<>();
     private final Identifier[] quickSlots = new Identifier[QUICK_SLOT_COUNT];
+    private final Map<Identifier, Integer> enchantProgress = new LinkedHashMap<>();
+    private final Set<Identifier> enchantUnlocked = new LinkedHashSet<>();
 
     public CreationData() {
     }
 
-    private static CreationData fromCodec(Map<String, Integer> progress, List<String> unlocked, List<String> slots) {
+    private static CreationData fromCodec(
+            Map<String, Integer> progress,
+            List<String> unlocked,
+            List<String> slots,
+            Map<String, Integer> enchantProgress,
+            List<String> enchantUnlocked
+    ) {
         CreationData data = new CreationData();
-        if (progress != null) {
-            progress.forEach((key, value) -> {
-                Identifier id = parseId(key);
-                if (id != null && value != null && value > 0) {
-                    data.progress.put(id, value);
-                }
-            });
-        }
-        if (unlocked != null) {
-            for (String key : unlocked) {
-                Identifier id = parseId(key);
-                if (id != null) {
-                    data.unlocked.add(id);
-                }
-            }
-        }
+        data.setEncodedProgress(progress);
+        data.setEncodedUnlocked(unlocked);
         data.setEncodedQuickSlots(slots);
+        data.setEncodedEnchantProgress(enchantProgress);
+        data.setEncodedEnchantUnlocked(enchantUnlocked);
         return data;
     }
 
@@ -80,6 +78,36 @@ public class CreationData {
         progress.remove(itemId);
     }
 
+    public int getEnchantProgress(Identifier enchantId) {
+        if (enchantId == null) {
+            return 0;
+        }
+        return enchantProgress.getOrDefault(enchantId, 0);
+    }
+
+    public void setEnchantProgress(Identifier enchantId, int value) {
+        if (enchantId == null) {
+            return;
+        }
+        if (value <= 0) {
+            enchantProgress.remove(enchantId);
+        } else {
+            enchantProgress.put(enchantId, value);
+        }
+    }
+
+    public boolean isEnchantUnlocked(Identifier enchantId) {
+        return enchantId != null && enchantUnlocked.contains(enchantId);
+    }
+
+    public void unlockEnchant(Identifier enchantId) {
+        if (enchantId == null) {
+            return;
+        }
+        enchantUnlocked.add(enchantId);
+        enchantProgress.remove(enchantId);
+    }
+
     public Identifier getQuickSlot(int index) {
         if (index < 0 || index >= QUICK_SLOT_COUNT) {
             return null;
@@ -102,17 +130,11 @@ public class CreationData {
     }
 
     public Map<String, Integer> encodedProgress() {
-        Map<String, Integer> encoded = new LinkedHashMap<>();
-        progress.forEach((id, value) -> encoded.put(id.toString(), value));
-        return encoded;
+        return encodeMap(progress);
     }
 
     public List<String> encodedUnlocked() {
-        List<String> encoded = new ArrayList<>();
-        for (Identifier id : unlocked) {
-            encoded.add(id.toString());
-        }
-        return encoded;
+        return encodeSet(unlocked);
     }
 
     public List<String> encodedQuickSlots() {
@@ -123,30 +145,20 @@ public class CreationData {
         return encoded;
     }
 
+    public Map<String, Integer> encodedEnchantProgress() {
+        return encodeMap(enchantProgress);
+    }
+
+    public List<String> encodedEnchantUnlocked() {
+        return encodeSet(enchantUnlocked);
+    }
+
     public void setEncodedProgress(Map<String, Integer> encoded) {
-        progress.clear();
-        if (encoded == null) {
-            return;
-        }
-        encoded.forEach((key, value) -> {
-            Identifier id = parseId(key);
-            if (id != null && value != null && value > 0) {
-                progress.put(id, value);
-            }
-        });
+        decodeMap(encoded, progress);
     }
 
     public void setEncodedUnlocked(List<String> encoded) {
-        unlocked.clear();
-        if (encoded == null) {
-            return;
-        }
-        for (String key : encoded) {
-            Identifier id = parseId(key);
-            if (id != null) {
-                unlocked.add(id);
-            }
-        }
+        decodeSet(encoded, unlocked);
     }
 
     public void setEncodedQuickSlots(List<String> encoded) {
@@ -162,8 +174,56 @@ public class CreationData {
         }
     }
 
+    public void setEncodedEnchantProgress(Map<String, Integer> encoded) {
+        decodeMap(encoded, enchantProgress);
+    }
+
+    public void setEncodedEnchantUnlocked(List<String> encoded) {
+        decodeSet(encoded, enchantUnlocked);
+    }
+
     public Set<Identifier> unlockedView() {
         return Collections.unmodifiableSet(unlocked);
+    }
+
+    private static Map<String, Integer> encodeMap(Map<Identifier, Integer> source) {
+        Map<String, Integer> encoded = new LinkedHashMap<>();
+        source.forEach((id, value) -> encoded.put(id.toString(), value));
+        return encoded;
+    }
+
+    private static List<String> encodeSet(Set<Identifier> source) {
+        List<String> encoded = new ArrayList<>();
+        for (Identifier id : source) {
+            encoded.add(id.toString());
+        }
+        return encoded;
+    }
+
+    private static void decodeMap(Map<String, Integer> encoded, Map<Identifier, Integer> target) {
+        target.clear();
+        if (encoded == null) {
+            return;
+        }
+        encoded.forEach((key, value) -> {
+            Identifier id = parseId(key);
+            if (id != null && value != null && value > 0) {
+                target.put(id, value);
+            }
+        });
+    }
+
+    private static void decodeSet(List<String> encoded, Set<Identifier> target) {
+        target.clear();
+        if (encoded == null) {
+            return;
+        }
+        for (String key : encoded) {
+            Identifier id = parseId(key);
+            if (id != null) {
+                target.add(id);
+            }
+        }
     }
 
     private static Identifier parseId(String raw) {

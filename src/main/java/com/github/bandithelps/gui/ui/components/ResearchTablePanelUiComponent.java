@@ -1,6 +1,7 @@
 package com.github.bandithelps.gui.ui.components;
 
 import com.github.bandithelps.client.creation.ClientCreationState;
+import com.github.bandithelps.creation.CreationEnchantments;
 import com.github.bandithelps.creation.CreationTab;
 import com.github.bandithelps.network.CreationResearchPayload;
 import com.github.bandithelps.network.CreationSyncPayload;
@@ -23,6 +24,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
@@ -178,8 +180,10 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             gui.text(minecraft.font, "Research", x + 8, y + 5, this.owner.textColor, false);
             drawHideLearnedCheckbox(gui, minecraft, mouseX, mouseY);
 
-            List<CreationSyncPayload.ClientEntry> entries = filteredEntries();
-            int maxScroll = Math.max(0, ceilDiv(entries.size(), COLS) - VISIBLE_ROWS);
+            List<CreationSyncPayload.ClientEntry> entries = this.filterTab.isEnchants() ? List.of() : filteredEntries();
+            List<CreationSyncPayload.ClientEnchantEntry> enchantEntries = this.filterTab.isEnchants() ? filteredEnchantEntries() : List.of();
+            int totalEntries = this.filterTab.isEnchants() ? enchantEntries.size() : entries.size();
+            int maxScroll = Math.max(0, ceilDiv(totalEntries, COLS) - VISIBLE_ROWS);
             this.scrollOffset = Mth.clamp(this.scrollOffset, 0, maxScroll);
 
             drawTabs(gui, minecraft, mouseX, mouseY);
@@ -198,18 +202,30 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                     int slotY = gridY + row * SLOT;
                     boolean hovered = contains(mouseX, mouseY, slotX, slotY, SLOT, SLOT);
                     drawFrame(gui, slotX + 1, slotY + 1, SLOT - 2, SLOT - 2, hovered ? 0xAA2A3F54 : 0xAA182533, 0xFF3B5A78);
-                    if (index < 0 || index >= entries.size()) {
+                    if (index < 0 || index >= totalEntries) {
                         continue;
                     }
-                    CreationSyncPayload.ClientEntry entry = entries.get(index);
-                    ItemStack stack = ClientCreationState.stackOf(entry.itemId());
+                    ItemStack stack;
+                    boolean unlocked;
+                    boolean selected;
+                    if (this.filterTab.isEnchants()) {
+                        CreationSyncPayload.ClientEnchantEntry entry = enchantEntries.get(index);
+                        stack = enchantBookStack(entry);
+                        unlocked = entry.unlocked();
+                        selected = entry.enchantId().equals(this.selectedId);
+                    } else {
+                        CreationSyncPayload.ClientEntry entry = entries.get(index);
+                        stack = ClientCreationState.stackOf(entry.itemId());
+                        unlocked = entry.unlocked();
+                        selected = entry.itemId().equals(this.selectedId);
+                    }
                     int iconX = slotX + (SLOT - GRID_ICON) / 2;
                     int iconY = slotY + (SLOT - GRID_ICON) / 2;
                     drawItem(gui, stack, iconX, iconY, GRID_ICON);
-                    if (entry.unlocked()) {
+                    if (unlocked) {
                         drawCheckmark(gui, slotX + SLOT - 9, slotY + 2, CHECK_GREEN, CHECK_OUTLINE);
                     }
-                    if (entry.itemId().equals(this.selectedId)) {
+                    if (selected) {
                         drawFrame(gui, slotX + 1, slotY + 1, SLOT - 2, SLOT - 2, 0x00000000, 0xFFFFD27A);
                     }
                 }
@@ -221,55 +237,19 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             int detailH = detailH();
             drawFrame(gui, detailX, detailY, detailW, detailH, 0xAA111A26, this.owner.frameColor);
 
-            CreationSyncPayload.ClientEntry selected = ClientCreationState.find(this.selectedId);
-            if (selected == null) {
-                gui.text(minecraft.font, "Select an item", detailX + 8, detailY + 16, 0xFF9AAFC5, false);
-                gui.text(minecraft.font, "to study.", detailX + 8, detailY + 28, 0xFF9AAFC5, false);
+            if (this.filterTab.isEnchants()) {
+                CreationSyncPayload.ClientEnchantEntry selectedEnchant = ClientCreationState.findEnchant(this.selectedId);
+                if (selectedEnchant == null) {
+                    gui.text(minecraft.font, Component.translatable("gui.yha.creation.select_enchant").getString(), detailX + 8, detailY + 16, 0xFF9AAFC5, false);
+                } else {
+                    drawEnchantDetail(gui, minecraft, selectedEnchant, mouseX, mouseY, detailX, detailY, detailW);
+                }
             } else {
-                ItemStack stack = ClientCreationState.stackOf(selected.itemId());
-                int cx = detailX + detailW / 2;
-                int cy = detailY + 36;
-                int required = Math.max(1, selected.researchCost());
-                float progress = selected.unlocked()
-                        ? 1.0f
-                        : selected.progress() / (float) required;
-                int fill = selected.unlocked() ? 0xFF55FF55 : 0xFFFFC14A;
-                drawCircularProgress(gui, cx, cy, 13, 17, progress, fill, 0xFF3B5A78, required);
-                drawItem(gui, stack, cx - DETAIL_ICON / 2, cy - DETAIL_ICON / 2, DETAIL_ICON);
-
-                String name = stack.isEmpty() ? selected.itemId() : stack.getHoverName().getString();
-                gui.text(minecraft.font, trim(minecraft, name, detailW - 12), detailX + 6, detailY + 60, this.owner.textColor, false);
-                String status = selected.unlocked()
-                        ? "Understood"
-                        : selected.progress() + " / " + required;
-                gui.text(minecraft.font, status, detailX + 6, detailY + 72, selected.unlocked() ? 0xFF8BD9A7 : 0xFFFFC14A, false);
-
-                int owned = countInInventory(stack);
-                gui.text(
-                        minecraft.font,
-                        Component.translatable("gui.yha.creation.inventory_count", owned).getString(),
-                        detailX + 6,
-                        detailY + 88,
-                        owned > 0 ? 0xFFC5DCF0 : 0xFFFF9E9E,
-                        false
-                );
-
-                if (!selected.unlocked()) {
-                    boolean hovered = contains(mouseX, mouseY, sacrificeX(), sacrificeY(), sacrificeW(), sacrificeH());
-                    boolean canSacrifice = owned > 0;
-                    int fillColor = !canSacrifice ? 0xAA1C222B : (hovered ? 0xAA2A5A78 : 0xAA1C3D54);
-                    int border = !canSacrifice ? 0xFF44596E : (hovered ? 0xFF9AD1FF : 0xFF79B8FF);
-                    drawFrame(gui, sacrificeX(), sacrificeY(), sacrificeW(), sacrificeH(), fillColor, border);
-                    String label = Component.translatable("gui.yha.creation.sacrifice").getString();
-                    int labelColor = canSacrifice ? this.owner.textColor : 0xFF7A8A9D;
-                    gui.text(
-                            minecraft.font,
-                            label,
-                            sacrificeX() + (sacrificeW() - minecraft.font.width(label)) / 2,
-                            sacrificeY() + 4,
-                            labelColor,
-                            false
-                    );
+                CreationSyncPayload.ClientEntry selected = ClientCreationState.find(this.selectedId);
+                if (selected == null) {
+                    gui.text(minecraft.font, Component.translatable("gui.yha.creation.select_item").getString(), detailX + 8, detailY + 16, 0xFF9AAFC5, false);
+                } else {
+                    drawItemDetail(gui, minecraft, selected, mouseX, mouseY, detailX, detailY, detailW);
                 }
             }
 
@@ -284,13 +264,21 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                 int col = (mouseX - gridX) / SLOT;
                 int row = (mouseY - gridY) / SLOT;
                 int index = (this.scrollOffset + row) * COLS + col;
-                if (col >= 0 && col < COLS && row >= 0 && row < VISIBLE_ROWS && index >= 0 && index < entries.size()) {
-                    CreationSyncPayload.ClientEntry entry = entries.get(index);
-                    ItemStack stack = ClientCreationState.stackOf(entry.itemId());
-                    gui.setTooltipForNextFrame(minecraft.font, Component.literal(
-                            (stack.isEmpty() ? entry.itemId() : stack.getHoverName().getString())
-                                    + (entry.unlocked() ? " (unlocked)" : " (" + entry.progress() + "/" + Math.max(1, entry.researchCost()) + ")")
-                    ).withStyle(ChatFormatting.AQUA), mouseX, mouseY);
+                if (col >= 0 && col < COLS && row >= 0 && row < VISIBLE_ROWS && index >= 0 && index < totalEntries) {
+                    if (this.filterTab.isEnchants()) {
+                        CreationSyncPayload.ClientEnchantEntry entry = enchantEntries.get(index);
+                        String name = enchantDisplayName(entry);
+                        gui.setTooltipForNextFrame(minecraft.font, Component.literal(
+                                name + (entry.unlocked() ? " (unlocked)" : " (" + entry.progress() + "/" + Math.max(1, entry.researchCost()) + ")")
+                        ).withStyle(ChatFormatting.AQUA), mouseX, mouseY);
+                    } else {
+                        CreationSyncPayload.ClientEntry entry = entries.get(index);
+                        ItemStack stack = ClientCreationState.stackOf(entry.itemId());
+                        gui.setTooltipForNextFrame(minecraft.font, Component.literal(
+                                (stack.isEmpty() ? entry.itemId() : stack.getHoverName().getString())
+                                        + (entry.unlocked() ? " (unlocked)" : " (" + entry.progress() + "/" + Math.max(1, entry.researchCost()) + ")")
+                        ).withStyle(ChatFormatting.AQUA), mouseX, mouseY);
+                    }
                 }
             }
         }
@@ -419,20 +407,34 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                 if (this.filterTab != clickedTab) {
                     this.filterTab = clickedTab;
                     this.scrollOffset = 0;
+                    this.selectedId = null;
                 }
                 clickSound();
                 return true;
             }
 
-            CreationSyncPayload.ClientEntry selected = ClientCreationState.find(this.selectedId);
-            if (selected != null
-                    && !selected.unlocked()
-                    && contains(mouseX, mouseY, sacrificeX(), sacrificeY(), sacrificeW(), sacrificeH())) {
-                if (countInInventory(ClientCreationState.stackOf(selected.itemId())) > 0) {
-                    ClientPacketDistributor.sendToServer(new CreationResearchPayload(selected.itemId()));
+            if (this.filterTab.isEnchants()) {
+                CreationSyncPayload.ClientEnchantEntry selectedEnchant = ClientCreationState.findEnchant(this.selectedId);
+                if (selectedEnchant != null
+                        && !selectedEnchant.unlocked()
+                        && contains(mouseX, mouseY, sacrificeX(), sacrificeY(), sacrificeW(), sacrificeH())) {
+                    if (countEnchantBooks(selectedEnchant.enchantId()) > 0) {
+                        ClientPacketDistributor.sendToServer(new CreationResearchPayload(selectedEnchant.enchantId(), true));
+                    }
+                    clickSound();
+                    return true;
                 }
-                clickSound();
-                return true;
+            } else {
+                CreationSyncPayload.ClientEntry selected = ClientCreationState.find(this.selectedId);
+                if (selected != null
+                        && !selected.unlocked()
+                        && contains(mouseX, mouseY, sacrificeX(), sacrificeY(), sacrificeW(), sacrificeH())) {
+                    if (countInInventory(ClientCreationState.stackOf(selected.itemId())) > 0) {
+                        ClientPacketDistributor.sendToServer(new CreationResearchPayload(selected.itemId()));
+                    }
+                    clickSound();
+                    return true;
+                }
             }
 
             int gridX = gridX();
@@ -442,12 +444,21 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             }
             int col = (mouseX - gridX) / SLOT;
             int row = (mouseY - gridY) / SLOT;
-            List<CreationSyncPayload.ClientEntry> entries = filteredEntries();
-            int index = (this.scrollOffset + row) * COLS + col;
-            if (col < 0 || col >= COLS || row < 0 || row >= VISIBLE_ROWS || index < 0 || index >= entries.size()) {
-                return false;
+            if (this.filterTab.isEnchants()) {
+                List<CreationSyncPayload.ClientEnchantEntry> enchantEntries = filteredEnchantEntries();
+                int index = (this.scrollOffset + row) * COLS + col;
+                if (col < 0 || col >= COLS || row < 0 || row >= VISIBLE_ROWS || index < 0 || index >= enchantEntries.size()) {
+                    return false;
+                }
+                this.selectedId = enchantEntries.get(index).enchantId();
+            } else {
+                List<CreationSyncPayload.ClientEntry> entries = filteredEntries();
+                int index = (this.scrollOffset + row) * COLS + col;
+                if (col < 0 || col >= COLS || row < 0 || row >= VISIBLE_ROWS || index < 0 || index >= entries.size()) {
+                    return false;
+                }
+                this.selectedId = entries.get(index).itemId();
             }
-            this.selectedId = entries.get(index).itemId();
             clickSound();
             return true;
         }
@@ -457,7 +468,8 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             if (!contains((int) mouseX, (int) mouseY, gridX(), gridY(), gridW(), gridH())) {
                 return false;
             }
-            int maxScroll = Math.max(0, ceilDiv(filteredEntries().size(), COLS) - VISIBLE_ROWS);
+            int size = this.filterTab.isEnchants() ? filteredEnchantEntries().size() : filteredEntries().size();
+            int maxScroll = Math.max(0, ceilDiv(size, COLS) - VISIBLE_ROWS);
             if (scrollY > 0) {
                 this.scrollOffset = Math.max(0, this.scrollOffset - 1);
             } else if (scrollY < 0) {
@@ -544,12 +556,175 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             return result;
         }
 
+        private List<CreationSyncPayload.ClientEnchantEntry> filteredEnchantEntries() {
+            List<CreationSyncPayload.ClientEnchantEntry> result = new ArrayList<>();
+            String query = this.searchQuery.trim().toLowerCase(Locale.ROOT);
+            for (CreationSyncPayload.ClientEnchantEntry entry : ClientCreationState.enchants()) {
+                if (hideLearned && entry.unlocked()) {
+                    continue;
+                }
+                if (!query.isEmpty() && !matchesEnchantQuery(entry, query)) {
+                    continue;
+                }
+                result.add(entry);
+            }
+            return result;
+        }
+
         private static boolean matchesQuery(CreationSyncPayload.ClientEntry entry, String query) {
             if (entry.itemId().toLowerCase(Locale.ROOT).contains(query)) {
                 return true;
             }
             ItemStack stack = ClientCreationState.stackOf(entry.itemId());
             return !stack.isEmpty() && stack.getHoverName().getString().toLowerCase(Locale.ROOT).contains(query);
+        }
+
+        private static boolean matchesEnchantQuery(CreationSyncPayload.ClientEnchantEntry entry, String query) {
+            if (entry.enchantId().toLowerCase(Locale.ROOT).contains(query)) {
+                return true;
+            }
+            return enchantDisplayName(entry).toLowerCase(Locale.ROOT).contains(query);
+        }
+
+        private void drawItemDetail(
+                GuiGraphicsExtractor gui,
+                Minecraft minecraft,
+                CreationSyncPayload.ClientEntry selected,
+                int mouseX,
+                int mouseY,
+                int detailX,
+                int detailY,
+                int detailW
+        ) {
+            ItemStack stack = ClientCreationState.stackOf(selected.itemId());
+            int owned = countInInventory(stack);
+            drawStudyDetail(
+                    gui,
+                    minecraft,
+                    stack,
+                    stack.isEmpty() ? selected.itemId() : stack.getHoverName().getString(),
+                    selected.unlocked(),
+                    selected.progress(),
+                    selected.researchCost(),
+                    Component.translatable("gui.yha.creation.inventory_count", owned).getString(),
+                    owned,
+                    mouseX,
+                    mouseY,
+                    detailX,
+                    detailY,
+                    detailW
+            );
+        }
+
+        private void drawEnchantDetail(
+                GuiGraphicsExtractor gui,
+                Minecraft minecraft,
+                CreationSyncPayload.ClientEnchantEntry selected,
+                int mouseX,
+                int mouseY,
+                int detailX,
+                int detailY,
+                int detailW
+        ) {
+            ItemStack stack = enchantBookStack(selected);
+            int owned = countEnchantBooks(selected.enchantId());
+            drawStudyDetail(
+                    gui,
+                    minecraft,
+                    stack,
+                    enchantDisplayName(selected),
+                    selected.unlocked(),
+                    selected.progress(),
+                    selected.researchCost(),
+                    Component.translatable("gui.yha.creation.inventory_count_books", owned).getString(),
+                    owned,
+                    mouseX,
+                    mouseY,
+                    detailX,
+                    detailY,
+                    detailW
+            );
+        }
+
+        private void drawStudyDetail(
+                GuiGraphicsExtractor gui,
+                Minecraft minecraft,
+                ItemStack stack,
+                String name,
+                boolean unlocked,
+                int progress,
+                int researchCost,
+                String ownedLabel,
+                int owned,
+                int mouseX,
+                int mouseY,
+                int detailX,
+                int detailY,
+                int detailW
+        ) {
+            int cx = detailX + detailW / 2;
+            int cy = detailY + 36;
+            int required = Math.max(1, researchCost);
+            float ratio = unlocked ? 1.0f : progress / (float) required;
+            int fill = unlocked ? 0xFF55FF55 : 0xFFFFC14A;
+            drawCircularProgress(gui, cx, cy, 13, 17, ratio, fill, 0xFF3B5A78, required);
+            drawItem(gui, stack, cx - DETAIL_ICON / 2, cy - DETAIL_ICON / 2, DETAIL_ICON);
+            gui.text(minecraft.font, trim(minecraft, name, detailW - 12), detailX + 6, detailY + 60, this.owner.textColor, false);
+            String status = unlocked ? "Understood" : progress + " / " + required;
+            gui.text(minecraft.font, status, detailX + 6, detailY + 72, unlocked ? 0xFF8BD9A7 : 0xFFFFC14A, false);
+            gui.text(minecraft.font, ownedLabel, detailX + 6, detailY + 88, owned > 0 ? 0xFFC5DCF0 : 0xFFFF9E9E, false);
+            if (unlocked) {
+                return;
+            }
+            boolean hovered = contains(mouseX, mouseY, sacrificeX(), sacrificeY(), sacrificeW(), sacrificeH());
+            boolean canSacrifice = owned > 0;
+            int fillColor = !canSacrifice ? 0xAA1C222B : (hovered ? 0xAA2A5A78 : 0xAA1C3D54);
+            int border = !canSacrifice ? 0xFF44596E : (hovered ? 0xFF9AD1FF : 0xFF79B8FF);
+            drawFrame(gui, sacrificeX(), sacrificeY(), sacrificeW(), sacrificeH(), fillColor, border);
+            String label = Component.translatable("gui.yha.creation.sacrifice").getString();
+            gui.text(
+                    minecraft.font,
+                    label,
+                    sacrificeX() + (sacrificeW() - minecraft.font.width(label)) / 2,
+                    sacrificeY() + 4,
+                    canSacrifice ? this.owner.textColor : 0xFF7A8A9D,
+                    false
+            );
+        }
+
+        private static ItemStack enchantBookStack(CreationSyncPayload.ClientEnchantEntry entry) {
+            try {
+                Identifier id = Identifier.parse(entry.enchantId());
+                HolderLookup.Provider access = clientAccess();
+                return CreationEnchantments.bookPreview(access, id, Math.max(1, entry.maxLevel()));
+            } catch (RuntimeException ignored) {
+                return ItemStack.EMPTY;
+            }
+        }
+
+        private static String enchantDisplayName(CreationSyncPayload.ClientEnchantEntry entry) {
+            try {
+                return CreationEnchantments.displayName(clientAccess(), Identifier.parse(entry.enchantId())).getString();
+            } catch (RuntimeException ignored) {
+                return entry.enchantId();
+            }
+        }
+
+        private static HolderLookup.Provider clientAccess() {
+            Minecraft minecraft = Minecraft.getInstance();
+            return minecraft.level == null ? null : minecraft.level.registryAccess();
+        }
+
+        private static int countEnchantBooks(String enchantId) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.player == null || enchantId == null) {
+                return 0;
+            }
+            try {
+                return CreationEnchantments.countBooksContaining(minecraft.player, Identifier.parse(enchantId));
+            } catch (RuntimeException ignored) {
+                return 0;
+            }
         }
 
         private static int countInInventory(ItemStack match) {
@@ -646,7 +821,8 @@ public class ResearchTablePanelUiComponent extends UiWidget {
         ALL(null, "gui.yha.creation.tab.all"),
         MATERIALS(CreationTab.MATERIALS, "gui.yha.creation.tab.materials"),
         BLOCKS(CreationTab.BLOCKS, "gui.yha.creation.tab.blocks"),
-        GEAR(CreationTab.GEAR, "gui.yha.creation.tab.gear");
+        GEAR(CreationTab.GEAR, "gui.yha.creation.tab.gear"),
+        ENCHANTS(null, "gui.yha.creation.tab.enchants");
 
         private final CreationTab tab;
         private final String langKey;
@@ -654,6 +830,10 @@ public class ResearchTablePanelUiComponent extends UiWidget {
         FilterTab(CreationTab tab, String langKey) {
             this.tab = tab;
             this.langKey = langKey;
+        }
+
+        boolean isEnchants() {
+            return this == ENCHANTS;
         }
 
         String label() {

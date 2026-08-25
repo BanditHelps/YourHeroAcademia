@@ -1,0 +1,11 @@
+{
+  "ability": "cr_know_enchant_5",
+  "research_cost": 4,
+  "entries": [
+    { "enchant": "minecraft:channeling", "lipid_cost_per_level": 20 },
+    { "enchant": "minecraft:infinity", "lipid_cost_per_level": 16 },
+    { "enchant": "minecraft:looting", "lipid_cost_per_level": 36 },
+    { "enchant": "minecraft:riptide", "lipid_cost_per_level": 16 },
+    { "enchant": "minecraft:soul_speed", "lipid_cost_per_level": 50 }
+  ]
+}

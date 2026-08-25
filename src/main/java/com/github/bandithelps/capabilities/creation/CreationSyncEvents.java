@@ -2,6 +2,9 @@ package com.github.bandithelps.capabilities.creation;
 
 import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.creation.CreationCatalog;
+import com.github.bandithelps.creation.CreationEnchantCatalog;
+import com.github.bandithelps.creation.CreationEnchantEntry;
+import com.github.bandithelps.creation.CreationEnchantments;
 import com.github.bandithelps.creation.CreationEntry;
 import com.github.bandithelps.creation.CreationUtil;
 import com.github.bandithelps.network.CreationSyncPayload;
@@ -10,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -38,6 +42,7 @@ public final class CreationSyncEvents {
     public static void syncNow(ServerPlayer player) {
         CreationData data = CreationAttachments.get(player);
         CreationUtil.migrateFormUnlocks(data);
+        float efficiency = CreationUtil.efficiencyMultiplier(player);
         List<CreationSyncPayload.ClientEntry> entries = new ArrayList<>();
         for (CreationEntry entry : CreationUtil.researchableEntries(player)) {
             entries.add(new CreationSyncPayload.ClientEntry(
@@ -51,10 +56,32 @@ public final class CreationSyncEvents {
                     entry.blockId() == null ? "" : entry.blockId().toString()
             ));
         }
+        List<CreationSyncPayload.ClientEnchantEntry> enchants = new ArrayList<>();
+        for (CreationEnchantEntry entry : CreationUtil.researchableEnchantEntries(player)) {
+            int vanillaMax = CreationEnchantments.vanillaMaxLevel(player.registryAccess(), entry.enchantId());
+            int maxLevel = entry.resolvedMaxLevel(vanillaMax);
+            int scaledPerLevel = Math.max(1, Mth.ceil(entry.lipidCostPerLevel() / efficiency));
+            List<Integer> scaledCosts = new ArrayList<>();
+            if (entry.lipidCosts() != null) {
+                for (int cost : entry.lipidCosts()) {
+                    scaledCosts.add(Math.max(1, Mth.ceil(cost / efficiency)));
+                }
+            }
+            enchants.add(new CreationSyncPayload.ClientEnchantEntry(
+                    entry.enchantId().toString(),
+                    scaledPerLevel,
+                    scaledCosts,
+                    maxLevel,
+                    entry.researchCost(),
+                    data.getEnchantProgress(entry.enchantId()),
+                    data.isEnchantUnlocked(entry.enchantId())
+            ));
+        }
         PacketDistributor.sendToPlayer(player, new CreationSyncPayload(
                 data.encodedUnlocked(),
                 data.encodedQuickSlots(),
                 entries,
+                enchants,
                 CreationUtil.unlockedQuickSlotCount(player),
                 CreationUtil.isGearTabUnlocked(player),
                 CreationUtil.sacrificesRequired()
