@@ -41,6 +41,7 @@ public final class TreeEditorStateSync {
                 list.add(0, buyable);
             }
             migrateSiblingParentsIntoRequires(list);
+            normalizeBuyableInList(list);
         } else if (buyableIndex >= 0) {
             extractRequiresAsSiblings(list, buyableIndex);
         }
@@ -86,6 +87,7 @@ public final class TreeEditorStateSync {
                 cleaned.add(next);
             }
         }
+        normalizeBuyableInList(cleaned);
         node.setUnlocking(TreeEditorJson.fromConditionList(cleaned));
     }
 
@@ -238,30 +240,59 @@ public final class TreeEditorStateSync {
     }
 
     private static void addRequiresParent(JsonObject buyable, String parentKey) {
-        JsonElement existing = buyable.has("requires") ? buyable.get("requires") : null;
-        if (containsAbilityUnlocked(existing, parentKey)) {
+        List<JsonElement> requires = asRequiresList(buyable.has("requires") ? buyable.get("requires") : null);
+        if (containsAbilityUnlocked(TreeEditorJson.fromConditionList(requires), parentKey)) {
+            writeRequires(buyable, requires);
             return;
         }
-        JsonObject unlocked = abilityUnlocked(parentKey);
-        if (existing == null || existing.isJsonNull()) {
-            buyable.add("requires", unlocked);
+        requires.add(abilityUnlocked(parentKey));
+        writeRequires(buyable, requires);
+    }
+
+    private static List<JsonElement> asRequiresList(@Nullable JsonElement requires) {
+        if (requires == null || requires.isJsonNull()) {
+            return new ArrayList<>();
+        }
+        JsonObject object = TreeEditorJson.asObject(requires);
+        List<JsonElement> source = object != null && TYPE_AND.equals(readType(object))
+                ? TreeEditorJson.asConditionList(object.get("conditions"))
+                : TreeEditorJson.asConditionList(requires);
+        List<JsonElement> flattened = new ArrayList<>();
+        for (JsonElement element : source) {
+            JsonObject nested = TreeEditorJson.asObject(element);
+            if (nested != null && TYPE_AND.equals(readType(nested))) {
+                flattened.addAll(TreeEditorJson.asConditionList(nested.get("conditions")));
+            } else if (element != null && !element.isJsonNull()) {
+                flattened.add(element);
+            }
+        }
+        return flattened;
+    }
+
+    private static void writeRequires(JsonObject buyable, List<JsonElement> requires) {
+        JsonElement written = TreeEditorJson.fromConditionList(requires);
+        if (written == null) {
+            buyable.remove("requires");
+        } else {
+            buyable.add("requires", written);
+        }
+    }
+
+    private static void normalizeBuyableRequires(JsonObject buyable) {
+        if (!TYPE_BUYABLE.equals(readType(buyable))) {
             return;
         }
-        if (existing.isJsonObject() && TYPE_AND.equals(readType(existing.getAsJsonObject()))) {
-            JsonObject and = existing.getAsJsonObject();
-            JsonArray conditions = TreeEditorJson.arrayOrNew(and.get("conditions"));
-            conditions.add(unlocked);
-            and.add("conditions", conditions);
-            buyable.add("requires", and);
+        if (!buyable.has("requires")) {
             return;
         }
-        JsonObject and = new JsonObject();
-        and.addProperty("type", TYPE_AND);
-        JsonArray conditions = new JsonArray();
-        conditions.add(existing.deepCopy());
-        conditions.add(unlocked);
-        and.add("conditions", conditions);
-        buyable.add("requires", and);
+        writeRequires(buyable, asRequiresList(buyable.get("requires")));
+    }
+
+    private static void normalizeBuyableInList(List<JsonElement> list) {
+        int buyableIndex = findBuyableIndex(list);
+        if (buyableIndex >= 0 && list.get(buyableIndex).isJsonObject()) {
+            normalizeBuyableRequires(list.get(buyableIndex).getAsJsonObject());
+        }
     }
 
     private static void migrateSiblingParentsIntoRequires(List<JsonElement> list) {

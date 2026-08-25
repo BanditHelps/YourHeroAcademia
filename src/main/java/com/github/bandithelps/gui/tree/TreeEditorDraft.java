@@ -27,6 +27,7 @@ public final class TreeEditorDraft {
     private String parentPower;
     private String guiDisplayType = "tree";
     private String exportFileName;
+    private boolean saveNamed;
     private Identifier backgroundTexture = TreeEditorLayoutBackground.FALLBACK;
     private JsonObject extraRoot = new JsonObject();
     private final List<TreeEditorNode> nodes = new ArrayList<>();
@@ -56,6 +57,7 @@ public final class TreeEditorDraft {
             return fromJson(powerId, json);
         }
         TreeEditorDraft draft = new TreeEditorDraft(powerId, power.getName().getString());
+        draft.saveNamed = true;
         draft.dirty = false;
         return draft;
     }
@@ -88,6 +90,7 @@ public final class TreeEditorDraft {
                 }
             }
         }
+        draft.saveNamed = true;
         draft.dirty = false;
         return draft;
     }
@@ -140,6 +143,14 @@ public final class TreeEditorDraft {
 
     public String getExportFileName() {
         return this.exportFileName;
+    }
+
+    public boolean hasSaveName() {
+        return this.saveNamed && this.exportFileName != null && !this.exportFileName.isBlank();
+    }
+
+    public void markSaveNamed() {
+        this.saveNamed = true;
     }
 
     public void setExportFileName(String exportFileName) {
@@ -257,6 +268,7 @@ public final class TreeEditorDraft {
 
     public boolean clearParents(TreeEditorNode child, List<TreeEditorCostSchema> schemas) {
         TreeEditorStateSync.removeAllParents(child);
+        TreeEditorStateSync.applyCost(child, schemas);
         child.clearConnectionPaths();
         this.markDirty();
         return true;
