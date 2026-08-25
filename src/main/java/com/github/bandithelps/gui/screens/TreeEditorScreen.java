@@ -54,8 +54,11 @@ public class TreeEditorScreen extends Screen {
     private static final float ZOOM_MIN = 0.35F;
     private static final float ZOOM_MAX = 2.5F;
     private static final int LINE_CYAN = 0xFF79C8D6;
+    private static final int LINE_HOVER = 0xFFB8EAF2;
     private static final int LINE_OUTLINE = 0xFF0A0B0D;
     private static final int TEXT_LIGHT = TreeEditorTheme.TEXT;
+    private static final int HANDLE_HOVER = 0xFFFFFF66;
+    private static final int HANDLE_DEFAULT = 0xFF00FFFF;
 
     private enum Menu {
         NONE,
@@ -102,18 +105,20 @@ public class TreeEditorScreen extends Screen {
     private boolean pendingSelectionCollapse;
     @Nullable
     private TreeEditorNode pendingCollapseNode;
-    @Nullable
-    private TreeEditorNode draggingWaypointNode;
-    @Nullable
-    private String draggingWaypointParentKey;
-    private int draggingWaypointIndex;
+    private final List<VertexPick> dragVertexGroup = new ArrayList<>();
+    private final List<Float> dragVertexStartX = new ArrayList<>();
+    private final List<Float> dragVertexStartY = new ArrayList<>();
     private final LinkedHashSet<TreeEditorNode> selection = new LinkedHashSet<>();
+    private final LinkedHashSet<VertexPick> selectedVertices = new LinkedHashSet<>();
     private boolean boxing;
     private int boxStartX;
     private int boxStartY;
     private int boxEndX;
     private int boxEndY;
     private final LinkedHashSet<TreeEditorNode> boxBase = new LinkedHashSet<>();
+    private final LinkedHashSet<VertexPick> boxBaseVertices = new LinkedHashSet<>();
+    @Nullable
+    private SegmentPick selectedConnection;
     @Nullable
     private TreeEditorNode parentLinkSource;
     @Nullable
@@ -161,13 +166,14 @@ public class TreeEditorScreen extends Screen {
         if (this.showGrid) {
             this.drawGrid(graphics);
         }
-        this.drawConnections(graphics);
         TreeEditorNode hovered = this.nodeAt(mouseX, mouseY);
         VertexPick hoveredVertex = this.hoveredVertex(mouseX, mouseY);
+        SegmentPick hoveredSegment = hoveredVertex == null && hovered == null ? this.hoveredSegment(mouseX, mouseY) : null;
+        this.drawConnections(graphics, hoveredSegment);
         for (TreeEditorNode node : this.displayedNodes()) {
             this.drawNode(graphics, node);
         }
-        this.drawWaypointHandles(graphics, hoveredVertex);
+        this.drawWaypointHandles(graphics, hoveredVertex, hoveredSegment);
         if (this.boxing) {
             this.drawSelectionBox(graphics);
         }
@@ -183,25 +189,23 @@ public class TreeEditorScreen extends Screen {
         if (this.openMenu != Menu.NONE) {
             this.drawMenuDropdown(graphics, mouseX, mouseY);
         }
+        this.renderWidgetsClipped(graphics, mouseX, mouseY, partialTick);
         if (this.contextMenu != null) {
             this.contextMenu.draw(graphics, this.font);
         }
-        this.renderWidgetsClipped(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        if (super.mouseClicked(event, doubleClick)) {
-            return true;
-        }
         int mouseX = (int) event.x();
         int mouseY = (int) event.y();
         if (this.contextMenu != null) {
-            if (this.contextMenu.click(mouseX, mouseY)) {
-                this.contextMenu = null;
-                return true;
-            }
+            this.contextMenu.click(mouseX, mouseY);
             this.contextMenu = null;
+            return true;
+        }
+        if (super.mouseClicked(event, doubleClick)) {
+            return true;
         }
         if (this.openMenu != Menu.NONE) {
             if (this.clickMenuDropdown(mouseX, mouseY)) {
@@ -230,11 +234,11 @@ public class TreeEditorScreen extends Screen {
 
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             this.dragging = null;
-            this.draggingWaypointNode = null;
-            this.draggingWaypointParentKey = null;
+            this.clearVertexDrag();
             this.panning = false;
             this.boxing = false;
             this.boxBase.clear();
+            this.boxBaseVertices.clear();
             if (vertex != null) {
                 this.contextMenu = ContextMenu.forVertex(this, vertex.child(), vertex.parentKey(), vertex.index(), mouseX, mouseY);
             } else if (hit != null) {
@@ -266,13 +270,13 @@ public class TreeEditorScreen extends Screen {
             return true;
         }
         if (vertex != null) {
-            this.draggingWaypointNode = vertex.child();
-            this.draggingWaypointParentKey = vertex.parentKey();
-            this.draggingWaypointIndex = vertex.index();
+            this.selectedConnection = null;
+            this.beginVertexDrag(vertex);
             return true;
         }
         if (hit != null) {
             boolean ctrl = event.hasControlDown();
+            this.selectedConnection = null;
             if (ctrl) {
                 this.toggleSelect(hit);
                 if (this.selection.contains(hit)) {
@@ -291,6 +295,9 @@ public class TreeEditorScreen extends Screen {
         if (segment != null && !event.hasControlDown()) {
             if (doubleClick) {
                 this.insertVertex(segment.child(), segment.parentKey(), segment.segmentIndex(), this.screenToGridX(mouseX), this.screenToGridY(mouseY));
+            } else {
+                this.selectedVertices.clear();
+                this.selectedConnection = segment;
             }
             return true;
         }
@@ -305,18 +312,7 @@ public class TreeEditorScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
-        if (this.draggingWaypointNode != null && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            float gridX = this.snap(this.screenToGridX((int) event.x()));
-            float gridY = this.snap(this.screenToGridY((int) event.y()));
-            this.draggingWaypointNode.setConnectionPath(
-                    this.draggingWaypointParentKey,
-                    this.draggingWaypointNode.getConnectionPath(this.draggingWaypointParentKey)
-                            .withReplaced(this.draggingWaypointIndex, gridX, gridY)
-            );
-            this.draft.markDirty();
-            return true;
-        }
-        if (this.dragging != null && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+        if ((this.dragging != null || !this.dragVertexGroup.isEmpty()) && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             this.dragMoved = true;
             this.pendingSelectionCollapse = false;
             float gridX = this.snap(this.screenToGridX((int) event.x()));
@@ -326,6 +322,7 @@ public class TreeEditorScreen extends Screen {
             for (int index = 0; index < this.dragGroup.size(); index++) {
                 this.dragGroup.get(index).setGrid(this.dragStartX.get(index) + dx, this.dragStartY.get(index) + dy);
             }
+            this.applyVertexDrag(dx, dy);
             this.draft.markDirty();
             return true;
         }
@@ -353,11 +350,10 @@ public class TreeEditorScreen extends Screen {
         this.dragGroup.clear();
         this.dragStartX.clear();
         this.dragStartY.clear();
+        this.clearVertexDrag();
         this.dragMoved = false;
         this.pendingSelectionCollapse = false;
         this.pendingCollapseNode = null;
-        this.draggingWaypointNode = null;
-        this.draggingWaypointParentKey = null;
         this.panning = false;
         return super.mouseReleased(event);
     }
@@ -394,6 +390,10 @@ public class TreeEditorScreen extends Screen {
             this.openNew();
             return true;
         }
+        if (ctrl && event.key() == GLFW.GLFW_KEY_D && !this.selection.isEmpty() && !(this.getFocused() instanceof TreeEditorFieldBox)) {
+            this.duplicateNode(this.selectedNode());
+            return true;
+        }
         if (event.key() == GLFW.GLFW_KEY_DELETE && !this.selection.isEmpty() && !(this.getFocused() instanceof TreeEditorFieldBox)) {
             this.deleteNode(this.selectedNode());
             return true;
@@ -416,6 +416,10 @@ public class TreeEditorScreen extends Screen {
         List<TreeEditorNode> targets = this.actionTargets(node);
         for (TreeEditorNode target : targets) {
             this.draft.clearParents(target, this.costSchemas);
+            this.selectedVertices.removeIf(vertex -> vertex.child() == target);
+            if (this.selectedConnection != null && this.selectedConnection.child() == target) {
+                this.selectedConnection = null;
+            }
         }
         this.status = targets.size() == 1
                 ? "Removed parents from " + node.getKey()
@@ -426,10 +430,6 @@ public class TreeEditorScreen extends Screen {
         TreeEditorNode node = this.draft.addDummy(this.snap(this.screenToGridX(mouseX)), this.snap(this.screenToGridY(mouseY)));
         this.selectNode(node);
         this.status = "Added dummy. Edit it in the inspector.";
-    }
-
-    public void openEdit(TreeEditorNode node) {
-        this.selectNode(node);
     }
 
     public void addAbilityAt(int mouseX, int mouseY) {
@@ -476,11 +476,14 @@ public class TreeEditorScreen extends Screen {
     public void replaceDraft(TreeEditorDraft draft) {
         this.draft = draft;
         this.selection.clear();
+        this.selectedVertices.clear();
+        this.selectedConnection = null;
         this.dragging = null;
         this.dragGroup.clear();
+        this.clearVertexDrag();
         this.boxing = false;
         this.boxBase.clear();
-        this.draggingWaypointNode = null;
+        this.boxBaseVertices.clear();
         this.parentLinkSource = null;
         this.viewReady = false;
         this.status = "Loaded " + draft.getPowerName();
@@ -493,6 +496,8 @@ public class TreeEditorScreen extends Screen {
     public void duplicateNode(TreeEditorNode node) {
         List<TreeEditorNode> targets = this.actionTargets(node);
         this.selection.clear();
+        this.selectedVertices.clear();
+        this.selectedConnection = null;
         TreeEditorNode last = null;
         for (TreeEditorNode target : targets) {
             last = this.draft.duplicate(target);
@@ -528,9 +533,11 @@ public class TreeEditorScreen extends Screen {
     private void removeNodeQuiet(TreeEditorNode node) {
         this.draft.remove(node);
         this.selection.remove(node);
-        if (this.draggingWaypointNode == node) {
-            this.draggingWaypointNode = null;
-            this.draggingWaypointParentKey = null;
+        this.selectedVertices.removeIf(vertex -> vertex.child() == node || node.getKey().equals(vertex.parentKey()));
+        this.dragVertexGroup.removeIf(vertex -> vertex.child() == node || node.getKey().equals(vertex.parentKey()));
+        if (this.selectedConnection != null
+                && (this.selectedConnection.child() == node || node.getKey().equals(this.selectedConnection.parentKey()))) {
+            this.selectedConnection = null;
         }
         if (this.dragging == node) {
             this.dragging = null;
@@ -547,17 +554,16 @@ public class TreeEditorScreen extends Screen {
         int insertAt = Math.max(1, Math.min(segmentIndex + 1, points.size() - 1));
         points.add(insertAt, new Vec2(this.snap(gridX), this.snap(gridY)));
         child.setConnectionPath(parentKey, this.waypointsFromFullPath(points));
+        this.clearVerticesOnPath(child, parentKey);
         this.draft.markDirty();
         this.status = "Added vertex on " + child.getKey() + " → " + parentKey;
     }
 
     public void deleteVertex(TreeEditorNode child, String parentKey, int index) {
         child.setConnectionPath(parentKey, child.getConnectionPath(parentKey).withRemoved(index));
+        this.clearVerticesOnPath(child, parentKey);
+        this.clearVertexDrag();
         this.draft.markDirty();
-        if (this.draggingWaypointNode == child && parentKey.equals(this.draggingWaypointParentKey)) {
-            this.draggingWaypointNode = null;
-            this.draggingWaypointParentKey = null;
-        }
         this.status = child.getConnectionPath(parentKey).isEmpty()
                 ? "Removed path from " + child.getKey() + " → " + parentKey + "; using default bus."
                 : "Deleted vertex on " + child.getKey() + " → " + parentKey;
@@ -568,6 +574,14 @@ public class TreeEditorScreen extends Screen {
     }
 
     public void openSave() {
+        if (this.draft.hasSaveName()) {
+            this.saveToFile(this.draft.getExportFileName());
+            return;
+        }
+        this.openSaveAs();
+    }
+
+    public void openSaveAs() {
         if (this.minecraft != null) {
             this.minecraft.setScreen(new TreeEditorSavePopupScreen(this, this.draft, this.costSchemas));
         }
@@ -585,12 +599,15 @@ public class TreeEditorScreen extends Screen {
         }
         try {
             this.draft.setExportFileName(fileName);
+            this.draft.markSaveNamed();
             String json = TreeEditorExporter.toJson(this.draft, this.costSchemas);
             Path file = TreeEditorExporter.writeToGameDir(this.minecraft, this.draft, json);
             this.draft.markClean();
             String path = file.toAbsolutePath().toString();
             this.status = "Saved to " + path;
-            this.minecraft.setScreen(new TreeEditorExportPopupScreen(this, path));
+            if (this.minecraft.screen != this) {
+                this.minecraft.setScreen(this);
+            }
         } catch (Exception exception) {
             this.status = "Save failed: " + exception.getMessage();
         }
@@ -611,7 +628,7 @@ public class TreeEditorScreen extends Screen {
         }
     }
 
-    private void drawConnections(GuiGraphicsExtractor graphics) {
+    private void drawConnections(GuiGraphicsExtractor graphics, @Nullable SegmentPick hovered) {
         for (TreeEditorNode parent : this.displayedNodes()) {
             List<TreeEditorNode> defaultChildren = this.defaultChildrenOf(parent);
             if (!defaultChildren.isEmpty()) {
@@ -649,31 +666,63 @@ public class TreeEditorScreen extends Screen {
                 TreeConnectionRenderer.drawPolyline(graphics, pixels, false, LINE_CYAN);
             }
         }
+        if (hovered != null && !this.sameConnection(hovered, this.selectedConnection)) {
+            this.drawHighlightedConnection(graphics, hovered.child(), hovered.parentKey(), LINE_HOVER);
+        }
+        if (this.selectedConnection != null) {
+            this.drawHighlightedConnection(graphics, this.selectedConnection.child(), this.selectedConnection.parentKey(), TreeEditorTheme.ACCENT);
+        }
     }
 
-    private void drawWaypointHandles(GuiGraphicsExtractor graphics, @Nullable VertexPick hovered) {
+    private void drawHighlightedConnection(GuiGraphicsExtractor graphics, TreeEditorNode child, String parentKey, int fill) {
+        TreeEditorNode parent = this.draft.find(parentKey);
+        if (parent == null || !this.isDisplayed(parent) || !this.isDisplayed(child)) {
+            return;
+        }
+        List<TreeConnectionRenderer.Pixel> pixels = this.usesCustomPath(parent, child)
+                ? this.toScreenPixels(this.fullGridPoints(parent, child))
+                : this.defaultBusPixels(parent, child);
+        TreeConnectionRenderer.drawPolyline(graphics, pixels, true, LINE_OUTLINE);
+        TreeConnectionRenderer.drawPolyline(graphics, pixels, false, fill);
+    }
+
+    private boolean sameConnection(@Nullable SegmentPick left, @Nullable SegmentPick right) {
+        return left != null && right != null && left.child() == right.child() && left.parentKey().equals(right.parentKey());
+    }
+
+    private void drawWaypointHandles(GuiGraphicsExtractor graphics, @Nullable VertexPick hovered, @Nullable SegmentPick hoveredSegment) {
         for (TreeEditorNode child : this.displayedNodes()) {
             for (String parentKey : child.getParentKeys()) {
                 TreeConnectionPath path = child.getConnectionPath(parentKey);
                 if (path.isEmpty()) {
                     continue;
                 }
+                boolean lineSelected = this.connectionMatches(this.selectedConnection, child, parentKey);
+                boolean lineHover = this.connectionMatches(hoveredSegment, child, parentKey)
+                        && !this.sameConnection(hoveredSegment, this.selectedConnection);
                 List<Vec2> waypoints = path.waypoints();
                 for (int index = 0; index < waypoints.size(); index++) {
                     Vec2 point = waypoints.get(index);
-                    boolean highlighted = hovered != null
-                            && hovered.child() == child
-                            && parentKey.equals(hovered.parentKey())
-                            && hovered.index() == index;
+                    VertexPick pick = new VertexPick(child, parentKey, index);
+                    boolean highlighted = hovered != null && hovered.equals(pick);
+                    boolean selected = this.selectedVertices.contains(pick) || this.isBoxSelectingVertex(pick);
+                    int fill = highlighted ? HANDLE_HOVER
+                            : (selected || lineSelected) ? TreeEditorTheme.ACCENT
+                            : lineHover ? LINE_HOVER
+                            : HANDLE_DEFAULT;
                     TreeConnectionRenderer.drawHandle(
                             graphics,
                             this.gridToScreenX(point.x),
                             this.gridToScreenY(point.y),
-                            highlighted
+                            fill
                     );
                 }
             }
         }
+    }
+
+    private boolean connectionMatches(@Nullable SegmentPick pick, TreeEditorNode child, String parentKey) {
+        return pick != null && pick.child() == child && parentKey.equals(pick.parentKey());
     }
 
     private void drawNode(GuiGraphicsExtractor graphics, TreeEditorNode node) {
@@ -1028,12 +1077,17 @@ public class TreeEditorScreen extends Screen {
         if (node == null) {
             changed = !this.selection.isEmpty();
             this.selection.clear();
+            this.selectedVertices.clear();
+            this.selectedConnection = null;
         } else if (this.selection.size() == 1 && this.selection.contains(node)) {
             changed = false;
+            this.selectedConnection = null;
         } else {
             changed = true;
             this.selection.clear();
             this.selection.add(node);
+            this.selectedVertices.clear();
+            this.selectedConnection = null;
         }
         if (changed) {
             this.inspector.resetScroll();
@@ -1063,8 +1117,75 @@ public class TreeEditorScreen extends Screen {
             this.dragStartX.add(node.getGridX());
             this.dragStartY.add(node.getGridY());
         }
+        this.snapshotSelectedVertices();
         this.dragAnchorX = grabbed.getGridX();
         this.dragAnchorY = grabbed.getGridY();
+    }
+
+    private void beginVertexDrag(VertexPick vertex) {
+        this.dragging = null;
+        this.dragMoved = false;
+        this.dragGroup.clear();
+        this.dragStartX.clear();
+        this.dragStartY.clear();
+        if (this.selectedVertices.contains(vertex)) {
+            for (TreeEditorNode node : this.selection) {
+                this.dragGroup.add(node);
+                this.dragStartX.add(node.getGridX());
+                this.dragStartY.add(node.getGridY());
+            }
+            this.snapshotSelectedVertices();
+        } else {
+            this.selectedVertices.clear();
+            this.selectedVertices.add(vertex);
+            this.snapshotSelectedVertices();
+        }
+        TreeConnectionPath path = vertex.child().getConnectionPath(vertex.parentKey());
+        if (vertex.index() < 0 || vertex.index() >= path.size()) {
+            this.clearVertexDrag();
+            return;
+        }
+        Vec2 point = path.get(vertex.index());
+        this.dragAnchorX = point.x;
+        this.dragAnchorY = point.y;
+    }
+
+    private void snapshotSelectedVertices() {
+        this.dragVertexGroup.clear();
+        this.dragVertexStartX.clear();
+        this.dragVertexStartY.clear();
+        for (VertexPick vertex : this.selectedVertices) {
+            TreeConnectionPath path = vertex.child().getConnectionPath(vertex.parentKey());
+            if (vertex.index() < 0 || vertex.index() >= path.size()) {
+                continue;
+            }
+            Vec2 point = path.get(vertex.index());
+            this.dragVertexGroup.add(vertex);
+            this.dragVertexStartX.add(point.x);
+            this.dragVertexStartY.add(point.y);
+        }
+    }
+
+    private void applyVertexDrag(float dx, float dy) {
+        for (int index = 0; index < this.dragVertexGroup.size(); index++) {
+            VertexPick vertex = this.dragVertexGroup.get(index);
+            vertex.child().setConnectionPath(
+                    vertex.parentKey(),
+                    vertex.child().getConnectionPath(vertex.parentKey())
+                            .withReplaced(vertex.index(), this.dragVertexStartX.get(index) + dx, this.dragVertexStartY.get(index) + dy)
+            );
+        }
+    }
+
+    private void clearVertexDrag() {
+        this.dragVertexGroup.clear();
+        this.dragVertexStartX.clear();
+        this.dragVertexStartY.clear();
+    }
+
+    private void clearVerticesOnPath(TreeEditorNode child, String parentKey) {
+        this.selectedVertices.removeIf(vertex -> vertex.child() == child && parentKey.equals(vertex.parentKey()));
+        this.dragVertexGroup.removeIf(vertex -> vertex.child() == child && parentKey.equals(vertex.parentKey()));
     }
 
     private void beginBoxSelect(int mouseX, int mouseY) {
@@ -1074,6 +1195,8 @@ public class TreeEditorScreen extends Screen {
         this.boxStartY = this.boxEndY = this.clampTreeY(mouseY);
         this.boxBase.clear();
         this.boxBase.addAll(this.selection);
+        this.boxBaseVertices.clear();
+        this.boxBaseVertices.addAll(this.selectedVertices);
     }
 
     private void updateBoxSelect(int mouseX, int mouseY) {
@@ -1092,8 +1215,13 @@ public class TreeEditorScreen extends Screen {
                 next.add(node);
             }
         }
+        LinkedHashSet<VertexPick> nextVertices = new LinkedHashSet<>(this.boxBaseVertices);
+        this.collectVerticesInBox(nextVertices);
         this.boxBase.clear();
+        this.boxBaseVertices.clear();
         boolean changed = next.size() != this.selection.size() || !this.selection.containsAll(next);
+        this.selectedVertices.clear();
+        this.selectedVertices.addAll(nextVertices);
         if (changed) {
             this.selection.clear();
             this.selection.addAll(next);
@@ -1115,6 +1243,48 @@ public class TreeEditorScreen extends Screen {
         int y = this.nodeScreenY(node);
         int hit = this.nodeHit();
         return x + hit >= x0 && x - hit <= x1 && y + hit >= y0 && y - hit <= y1;
+    }
+
+    private boolean isBoxSelectingVertex(VertexPick vertex) {
+        if (!this.boxing) {
+            return false;
+        }
+        if (this.boxBaseVertices.contains(vertex)) {
+            return true;
+        }
+        TreeConnectionPath path = vertex.child().getConnectionPath(vertex.parentKey());
+        if (vertex.index() < 0 || vertex.index() >= path.size()) {
+            return false;
+        }
+        Vec2 point = path.get(vertex.index());
+        return this.handleIntersectsBox(this.gridToScreenX(point.x), this.gridToScreenY(point.y));
+    }
+
+    private void collectVerticesInBox(LinkedHashSet<VertexPick> into) {
+        for (TreeEditorNode child : this.displayedNodes()) {
+            for (String parentKey : child.getParentKeys()) {
+                TreeConnectionPath path = child.getConnectionPath(parentKey);
+                if (path.isEmpty()) {
+                    continue;
+                }
+                List<Vec2> waypoints = path.waypoints();
+                for (int index = 0; index < waypoints.size(); index++) {
+                    Vec2 point = waypoints.get(index);
+                    if (this.handleIntersectsBox(this.gridToScreenX(point.x), this.gridToScreenY(point.y))) {
+                        into.add(new VertexPick(child, parentKey, index));
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean handleIntersectsBox(int handleX, int handleY) {
+        int x0 = Math.min(this.boxStartX, this.boxEndX);
+        int y0 = Math.min(this.boxStartY, this.boxEndY);
+        int x1 = Math.max(this.boxStartX, this.boxEndX);
+        int y1 = Math.max(this.boxStartY, this.boxEndY);
+        int hit = TreeConnectionRenderer.HANDLE_HIT;
+        return handleX + hit >= x0 && handleX - hit <= x1 && handleY + hit >= y0 && handleY - hit <= y1;
     }
 
     private void drawSelectionBox(GuiGraphicsExtractor graphics) {
@@ -1466,7 +1636,7 @@ public class TreeEditorScreen extends Screen {
                     new MenuItem("New Power", "Ctrl+N", this::openNew),
                     new MenuItem("Open...", "Ctrl+O", this::openLoad),
                     new MenuItem("Save", "Ctrl+S", this::openSave),
-                    new MenuItem("Save As...", "", this::openSave),
+                    new MenuItem("Save As...", "", this::openSaveAs),
                     new MenuItem("Close Editor", "", this::onClose)
             );
         }
@@ -1727,7 +1897,6 @@ public class TreeEditorScreen extends Screen {
             items.add(new Item("Add parent...", () -> screen.beginParentLink(node)));
             items.add(new Item("Unparent" + suffix, () -> screen.unparent(node)));
             items.add(new Item("Duplicate" + suffix, () -> screen.duplicateNode(node)));
-            items.add(new Item("Edit...", () -> screen.openEdit(node)));
             items.add(new Item((node.isHiddenInGui() ? "Show in tree" : "Hide in tree") + suffix, () -> screen.toggleHidden(node)));
             items.add(new Item("Delete" + suffix, () -> screen.deleteNode(node)));
             return clamped(screen, mouseX, mouseY, items);
@@ -1736,9 +1905,17 @@ public class TreeEditorScreen extends Screen {
         private static ContextMenu clamped(TreeEditorScreen screen, int mouseX, int mouseY, List<Item> items) {
             int width = 148;
             int height = 8 + items.size() * 20;
-            int x = Math.min(mouseX, screen.width - width - 2);
-            int y = Math.min(mouseY, screen.height - height - 2);
-            return new ContextMenu(Math.max(2, x), Math.max(2, y), items);
+            int x = mouseX;
+            if (x + width > screen.inspectorX) {
+                x = mouseX - width;
+            }
+            int treeRight = screen.treeX + screen.treeW;
+            int treeBottom = screen.treeY + screen.treeH;
+            x = Math.max(screen.treeX + 2, Math.min(x, treeRight - width - 2));
+            int y = Math.max(screen.treeY + 2, Math.min(mouseY, treeBottom - height - 2));
+            x = Math.max(2, Math.min(x, screen.width - width - 2));
+            y = Math.max(2, Math.min(y, screen.height - height - 2));
+            return new ContextMenu(x, y, items);
         }
 
         void draw(GuiGraphicsExtractor graphics, net.minecraft.client.gui.Font font) {
