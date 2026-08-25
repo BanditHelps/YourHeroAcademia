@@ -27,6 +27,7 @@ public final class CreationCatalog {
     private static final CreationCatalog INSTANCE = new CreationCatalog();
 
     private final Map<Identifier, CreationEntry> entriesByItem = new LinkedHashMap<>();
+    private final Map<Identifier, Identifier> formToParent = new LinkedHashMap<>();
     private final List<RawSpec> rawSpecs = new ArrayList<>();
 
     private CreationCatalog() {
@@ -39,6 +40,7 @@ public final class CreationCatalog {
     public void reload(ResourceManager resourceManager) {
         rawSpecs.clear();
         entriesByItem.clear();
+        formToParent.clear();
         if (resourceManager == null) {
             return;
         }
@@ -63,13 +65,18 @@ public final class CreationCatalog {
 
     public void rebuildResolved() {
         entriesByItem.clear();
+        formToParent.clear();
         for (RawSpec spec : rawSpecs) {
             for (Identifier itemId : resolveSpec(spec)) {
                 if (stackOf(itemId).isEmpty()) {
                     continue;
                 }
+                Identifier nuggetId = usable(spec.nuggetId());
+                Identifier blockId = usable(spec.blockId());
                 entriesByItem.putIfAbsent(itemId, new CreationEntry(
-                        itemId, spec.tab(), spec.abilityKey(), spec.lipidCost(), spec.researchCost()));
+                        itemId, spec.tab(), spec.abilityKey(), spec.lipidCost(), spec.researchCost(), nuggetId, blockId));
+                registerForm(nuggetId, itemId);
+                registerForm(blockId, itemId);
             }
         }
     }
@@ -84,6 +91,29 @@ public final class CreationCatalog {
         }
         rebuildResolved();
         return Optional.ofNullable(entriesByItem.get(itemId));
+    }
+
+    public Optional<CreationEntry> parentOf(Identifier itemId) {
+        if (itemId == null) {
+            return Optional.empty();
+        }
+        if (entriesByItem.isEmpty() && !rawSpecs.isEmpty()) {
+            rebuildResolved();
+        }
+        CreationEntry direct = entriesByItem.get(itemId);
+        if (direct != null) {
+            return Optional.of(direct);
+        }
+        Identifier parentId = formToParent.get(itemId);
+        if (parentId == null) {
+            rebuildResolved();
+            direct = entriesByItem.get(itemId);
+            if (direct != null) {
+                return Optional.of(direct);
+            }
+            parentId = formToParent.get(itemId);
+        }
+        return parentId == null ? Optional.empty() : Optional.ofNullable(entriesByItem.get(parentId));
     }
 
     public List<CreationEntry> allEntries() {
@@ -134,12 +164,14 @@ public final class CreationCatalog {
             int researchCost = entry.has("research_cost")
                     ? clampResearchCost(entry.get("research_cost").getAsInt())
                     : defaultResearchCost;
+            Identifier nuggetId = optionalId(entry, "nugget");
+            Identifier blockId = optionalId(entry, "block");
             if (entry.has("item")) {
                 Identifier itemId = Identifier.parse(entry.get("item").getAsString());
-                rawSpecs.add(new RawSpec(ability, tab, cost, researchCost, itemId, null));
+                rawSpecs.add(new RawSpec(ability, tab, cost, researchCost, itemId, null, nuggetId, blockId));
             } else if (entry.has("tag")) {
                 Identifier tagId = Identifier.parse(entry.get("tag").getAsString());
-                rawSpecs.add(new RawSpec(ability, tab, cost, researchCost, null, tagId));
+                rawSpecs.add(new RawSpec(ability, tab, cost, researchCost, null, tagId, null, null));
             }
         }
     }
@@ -166,6 +198,31 @@ public final class CreationCatalog {
         return ids;
     }
 
+    private void registerForm(Identifier formId, Identifier parentId) {
+        if (formId == null || parentId == null || formId.equals(parentId)) {
+            return;
+        }
+        formToParent.putIfAbsent(formId, parentId);
+    }
+
+    private static Identifier usable(Identifier itemId) {
+        if (itemId == null || stackOf(itemId).isEmpty()) {
+            return null;
+        }
+        return itemId;
+    }
+
+    private static Identifier optionalId(JsonObject json, String key) {
+        if (!json.has(key) || json.get(key).isJsonNull()) {
+            return null;
+        }
+        String raw = json.get(key).getAsString();
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        return Identifier.parse(raw);
+    }
+
     private static int clampResearchCost(int cost) {
         return Math.max(1, Math.min(64, cost));
     }
@@ -177,6 +234,15 @@ public final class CreationCatalog {
         return json.get(key).getAsString();
     }
 
-    private record RawSpec(String abilityKey, CreationTab tab, int lipidCost, int researchCost, Identifier itemId, Identifier tagId) {
+    private record RawSpec(
+            String abilityKey,
+            CreationTab tab,
+            int lipidCost,
+            int researchCost,
+            Identifier itemId,
+            Identifier tagId,
+            Identifier nuggetId,
+            Identifier blockId
+    ) {
     }
 }

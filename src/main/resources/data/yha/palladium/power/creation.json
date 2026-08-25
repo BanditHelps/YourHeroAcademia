@@ -41,6 +41,23 @@
         }
       }
     },
+    "cr_max_lipids_default": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "max_lipids",
+      "value": 1000,
+      "properties": {
+        "title": "Default Lipid Capacity",
+        "description": "Your body can store up to 1000 lipids.",
+        "icon": "yha:textures/gui/creation/lipid_icon.png",
+        "hidden_in_gui": true,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          0
+        ]
+      }
+    },
     "cr_know_armor_1": {
       "type": "palladium:dummy",
       "properties": {

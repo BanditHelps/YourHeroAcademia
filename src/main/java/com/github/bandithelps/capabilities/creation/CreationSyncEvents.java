@@ -37,6 +37,7 @@ public final class CreationSyncEvents {
 
     public static void syncNow(ServerPlayer player) {
         CreationData data = CreationAttachments.get(player);
+        CreationUtil.migrateFormUnlocks(data);
         List<CreationSyncPayload.ClientEntry> entries = new ArrayList<>();
         for (CreationEntry entry : CreationUtil.researchableEntries(player)) {
             entries.add(new CreationSyncPayload.ClientEntry(
@@ -45,7 +46,9 @@ public final class CreationSyncEvents {
                     CreationUtil.creationCost(player, entry),
                     entry.researchCost(),
                     data.getProgress(entry.itemId()),
-                    data.isUnlocked(entry.itemId())
+                    data.isUnlocked(entry.itemId()),
+                    entry.nuggetId() == null ? "" : entry.nuggetId().toString(),
+                    entry.blockId() == null ? "" : entry.blockId().toString()
             ));
         }
         PacketDistributor.sendToPlayer(player, new CreationSyncPayload(

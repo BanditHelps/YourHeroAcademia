@@ -11,7 +11,9 @@ import com.github.bandithelps.network.CreationCreatePayload;
 import com.github.bandithelps.network.CreationSyncPayload;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -79,6 +81,9 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int DOG_Y = 178;
     private static final int DOG_W = 20;
     private static final int DOG_H = 14;
+    private static final int FORM_SLOT = 16;
+    private static final int FORM_PAD = 3;
+    private static final int FORM_ICON = 14;
 
     public static final MapCodec<CreationNotebookUiComponent> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             propertiesCodec(TEX_W, TEX_H)
@@ -106,6 +111,10 @@ public class CreationNotebookUiComponent extends UiWidget {
         private int materialsPage;
         private int blocksPage;
         private int gearPage;
+        private final Map<String, String> selectedForms = new HashMap<>();
+        private String formMenuParent;
+        private int formMenuX;
+        private int formMenuY;
 
         private NotebookWidget(int x, int y, int width, int height) {
             super(x, y, width, height, Component.literal("Creation"));
@@ -154,7 +163,8 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
 
             CreationSyncPayload.ClientEntry selected = ClientCreationState.find(this.selectedId);
-            boolean canCreate = selected != null && selected.unlocked() && lipids >= selected.lipidCost();
+            int selectedCost = selected == null ? 0 : selected.formCost(displayedFormId(this.selectedId));
+            boolean canCreate = selected != null && selected.unlocked() && lipids >= selectedCost;
             boolean createHovered = contains(mouseX, mouseY, x + CREATE_X, y + CREATE_Y, CREATE_W, CREATE_H);
             blit(gui, createHovered && canCreate ? TEX_CREATE_HOVER : TEX_CREATE, x + CREATE_X, y + CREATE_Y, 0, 0, CREATE_W, CREATE_H, CREATE_W, CREATE_H);
             if (!canCreate) {
@@ -162,8 +172,10 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
 
             if (selected != null) {
-                gui.text(minecraft.font, String.valueOf(selected.lipidCost()), x + CREATE_X, y + CREATE_Y + CREATE_H + 2, 0xFF3A2A18, false);
+                gui.text(minecraft.font, String.valueOf(selectedCost), x + CREATE_X, y + CREATE_Y + CREATE_H + 2, 0xFF3A2A18, false);
             }
+
+            drawFormMenu(gui, mouseX, mouseY);
         }
 
         private void drawGrid(
@@ -211,14 +223,44 @@ public class CreationNotebookUiComponent extends UiWidget {
                     int iconSize = iconSizeForSlot(slotSize);
                     int iconX = slotX + Math.max(0, (slotSize - iconSize) / 2);
                     int iconY = slotY + Math.max(0, (slotSize - iconSize) / 2);
-                    ItemStack stack = ClientCreationState.stackOf(entry.itemId());
+                    ItemStack stack = ClientCreationState.stackOf(displayedFormId(entry.itemId()));
                     drawItem(gui, stack, iconX, iconY, iconSize);
+                    if (entry.hasForms()) {
+                        gui.fill(slotX + slotSize - 4, slotY + 1, slotX + slotSize - 1, slotY + 4, 0xFFFFD27A);
+                    }
                     if (entry.itemId().equals(this.selectedId)) {
                         gui.fill(iconX - 1, iconY - 1, iconX + iconSize + 1, iconY, 0xFFFFD27A);
                         gui.fill(iconX - 1, iconY + iconSize, iconX + iconSize + 1, iconY + iconSize + 1, 0xFFFFD27A);
                         gui.fill(iconX - 1, iconY - 1, iconX, iconY + iconSize + 1, 0xFFFFD27A);
                         gui.fill(iconX + iconSize, iconY - 1, iconX + iconSize + 1, iconY + iconSize + 1, 0xFFFFD27A);
                     }
+                }
+            }
+        }
+
+        private void drawFormMenu(GuiGraphicsExtractor gui, int mouseX, int mouseY) {
+            CreationSyncPayload.ClientEntry entry = formMenuEntry();
+            if (entry == null) {
+                return;
+            }
+            List<String> choices = entry.formChoices();
+            int width = formMenuWidth(choices.size());
+            int height = formMenuHeight();
+            gui.fill(this.formMenuX, this.formMenuY, this.formMenuX + width, this.formMenuY + height, 0xF21A1410);
+            drawFrame(gui, this.formMenuX, this.formMenuY, width, height, 0xFFFFD27A);
+            String current = displayedFormId(this.formMenuParent);
+            for (int i = 0; i < choices.size(); i++) {
+                int slotX = this.formMenuX + FORM_PAD + i * FORM_SLOT;
+                int slotY = this.formMenuY + FORM_PAD;
+                boolean hovered = contains(mouseX, mouseY, slotX, slotY, FORM_SLOT, FORM_SLOT);
+                if (hovered) {
+                    gui.fill(slotX, slotY, slotX + FORM_SLOT, slotY + FORM_SLOT, 0x44FFD27A);
+                }
+                int iconX = slotX + (FORM_SLOT - FORM_ICON) / 2;
+                int iconY = slotY + (FORM_SLOT - FORM_ICON) / 2;
+                drawItem(gui, ClientCreationState.stackOf(choices.get(i)), iconX, iconY, FORM_ICON);
+                if (choices.get(i).equals(current)) {
+                    drawFrame(gui, slotX, slotY, FORM_SLOT, FORM_SLOT, 0xFFFFD27A);
                 }
             }
         }
@@ -235,12 +277,20 @@ public class CreationNotebookUiComponent extends UiWidget {
             int y = this.getY();
             boolean shift = event.hasShiftDown();
 
+            String openFormParent = this.formMenuParent;
+            if (handleFormMenuClick(mouseX, mouseY)) {
+                clickSound();
+                return true;
+            }
+
             if (contains(mouseX, mouseY, x + 164, y, 18, 16) || contains(mouseX, mouseY, x + 184, y, 18, 16)) {
+                closeFormMenu();
                 minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
                 clickSound();
                 return true;
             }
             if (contains(mouseX, mouseY, x + 204, y, 18, 16)) {
+                closeFormMenu();
                 if (!ClientCreationState.get().gearTabUnlocked()) {
                     minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
                 } else {
@@ -250,14 +300,17 @@ public class CreationNotebookUiComponent extends UiWidget {
                 return true;
             }
             if (contains(mouseX, mouseY, x + 202, y + 1, 24, 20) || contains(mouseX, mouseY, x + 220, y, 16, 16)) {
+                closeFormMenu();
                 this.page = Page.BLOCKS;
                 clickSound();
                 return true;
             }
 
             if (contains(mouseX, mouseY, x + CREATE_X, y + CREATE_Y, CREATE_W, CREATE_H)) {
-                if (this.selectedId != null) {
-                    ClientPacketDistributor.sendToServer(new CreationCreatePayload(this.selectedId));
+                closeFormMenu();
+                String createId = displayedFormId(this.selectedId);
+                if (createId != null) {
+                    ClientPacketDistributor.sendToServer(new CreationCreatePayload(createId));
                     clickSound();
                 }
                 return true;
@@ -268,16 +321,17 @@ public class CreationNotebookUiComponent extends UiWidget {
                 if (!contains(mouseX, mouseY, x + QUICK_X, y + QUICK_Y[i], QUICK_SIZE, QUICK_SIZE)) {
                     continue;
                 }
+                closeFormMenu();
                 if (i >= quickSlots) {
                     clickSound();
                     return true;
                 }
                 if (shift && this.selectedId != null) {
-                    ClientPacketDistributor.sendToServer(new CreationAssignSlotPayload(i, this.selectedId));
+                    ClientPacketDistributor.sendToServer(new CreationAssignSlotPayload(i, displayedFormId(this.selectedId)));
                 } else {
                     Identifier assigned = ClientCreationState.quickSlot(i);
                     if (assigned != null) {
-                        this.selectedId = assigned.toString();
+                        selectAssigned(assigned.toString());
                         if (event.button() == 1) {
                             ClientPacketDistributor.sendToServer(new CreationAssignSlotPayload(i, ""));
                         }
@@ -288,18 +342,111 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
 
             if (contains(mouseX, mouseY, x + DOG_X, y + DOG_Y, DOG_W, DOG_H)) {
+                closeFormMenu();
                 turnPage();
                 clickSound();
                 return true;
             }
 
-            String clicked = findClickedEntry(mouseX, mouseY, x, y);
+            SlotHit clicked = findClickedSlot(mouseX, mouseY, x, y);
             if (clicked != null) {
-                this.selectedId = clicked;
+                CreationSyncPayload.ClientEntry entry = ClientCreationState.find(clicked.itemId());
+                this.selectedId = clicked.itemId();
+                if (event.button() == 1 && entry != null && entry.hasForms()) {
+                    if (!entry.itemId().equals(openFormParent)) {
+                        toggleFormMenu(entry, clicked);
+                    }
+                } else {
+                    closeFormMenu();
+                }
                 clickSound();
                 return true;
             }
+            closeFormMenu();
             return false;
+        }
+
+        private boolean handleFormMenuClick(int mouseX, int mouseY) {
+            CreationSyncPayload.ClientEntry entry = formMenuEntry();
+            if (entry == null) {
+                return false;
+            }
+            List<String> choices = entry.formChoices();
+            int width = formMenuWidth(choices.size());
+            int height = formMenuHeight();
+            if (!contains(mouseX, mouseY, this.formMenuX, this.formMenuY, width, height)) {
+                closeFormMenu();
+                return false;
+            }
+            for (int i = 0; i < choices.size(); i++) {
+                int slotX = this.formMenuX + FORM_PAD + i * FORM_SLOT;
+                int slotY = this.formMenuY + FORM_PAD;
+                if (contains(mouseX, mouseY, slotX, slotY, FORM_SLOT, FORM_SLOT)) {
+                    this.selectedForms.put(this.formMenuParent, choices.get(i));
+                    this.selectedId = this.formMenuParent;
+                    closeFormMenu();
+                    return true;
+                }
+            }
+            return true;
+        }
+
+        private void toggleFormMenu(CreationSyncPayload.ClientEntry entry, SlotHit hit) {
+            if (entry.itemId().equals(this.formMenuParent)) {
+                closeFormMenu();
+                return;
+            }
+            List<String> choices = entry.formChoices();
+            int width = formMenuWidth(choices.size());
+            int height = formMenuHeight();
+            int menuX = hit.slotX() + hit.slotSize() + 2;
+            int menuY = hit.slotY() - FORM_PAD;
+            if (menuX + width > this.getX() + this.getWidth()) {
+                menuX = hit.slotX() - width - 2;
+            }
+            if (menuY < this.getY()) {
+                menuY = this.getY();
+            }
+            if (menuY + height > this.getY() + this.getHeight()) {
+                menuY = this.getY() + this.getHeight() - height;
+            }
+            this.formMenuParent = entry.itemId();
+            this.formMenuX = menuX;
+            this.formMenuY = menuY;
+            Minecraft.getInstance().gui.setOverlayMessage(Component.translatable("gui.yha.creation.choose_form"), false);
+        }
+
+        private void closeFormMenu() {
+            this.formMenuParent = null;
+        }
+
+        private CreationSyncPayload.ClientEntry formMenuEntry() {
+            if (this.formMenuParent == null) {
+                return null;
+            }
+            CreationSyncPayload.ClientEntry entry = ClientCreationState.find(this.formMenuParent);
+            if (entry == null || !entry.hasForms()) {
+                closeFormMenu();
+                return null;
+            }
+            return entry;
+        }
+
+        private void selectAssigned(String assignedId) {
+            CreationSyncPayload.ClientEntry parent = ClientCreationState.findParent(assignedId);
+            if (parent != null) {
+                this.selectedId = parent.itemId();
+                this.selectedForms.put(parent.itemId(), assignedId);
+            } else {
+                this.selectedId = assignedId;
+            }
+        }
+
+        private String displayedFormId(String parentId) {
+            if (parentId == null) {
+                return null;
+            }
+            return this.selectedForms.getOrDefault(parentId, parentId);
         }
 
         private void turnPage() {
@@ -318,11 +465,11 @@ public class CreationNotebookUiComponent extends UiWidget {
             this.blocksPage = (this.blocksPage + 1) % blockPages;
         }
 
-        private String findClickedEntry(int mouseX, int mouseY, int x, int y) {
+        private SlotHit findClickedSlot(int mouseX, int mouseY, int x, int y) {
             if (this.page == Page.GEAR) {
                 return hitGrid(mouseX, mouseY, x, y, ClientCreationState.entriesForTab(CreationTab.GEAR, true), GEAR_X, GEAR_Y, GEAR_COLS, GEAR_ROWS, GEAR_SLOT, this.gearPage, GEAR_COLS);
             }
-            String materials = hitGrid(mouseX, mouseY, x, y, ClientCreationState.entriesForTab(CreationTab.MATERIALS, true), MAT_X, MAT_Y1, 3, 3, SLOT, this.materialsPage, 3);
+            SlotHit materials = hitGrid(mouseX, mouseY, x, y, ClientCreationState.entriesForTab(CreationTab.MATERIALS, true), MAT_X, MAT_Y1, 3, 3, SLOT, this.materialsPage, 3);
             if (materials != null) {
                 return materials;
             }
@@ -333,7 +480,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             return hitGrid(mouseX, mouseY, x, y, ClientCreationState.entriesForTab(CreationTab.BLOCKS, true), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, SLOT, this.blocksPage, BLOCKS_LAST_ROW);
         }
 
-        private String hitGrid(
+        private SlotHit hitGrid(
                 int mouseX,
                 int mouseY,
                 int originX,
@@ -363,7 +510,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                     if (entryIndex < 0 || entryIndex >= entries.size()) {
                         return null;
                     }
-                    return entries.get(entryIndex).itemId();
+                    return new SlotHit(entries.get(entryIndex).itemId(), slotX, slotY, slotSize);
                 }
             }
             return null;
@@ -372,6 +519,21 @@ public class CreationNotebookUiComponent extends UiWidget {
         @Override
         protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
             narrationElementOutput.add(NarratedElementType.TITLE, this.getMessage());
+        }
+
+        private static int formMenuWidth(int choiceCount) {
+            return Math.max(1, choiceCount) * FORM_SLOT + FORM_PAD * 2;
+        }
+
+        private static int formMenuHeight() {
+            return FORM_SLOT + FORM_PAD * 2;
+        }
+
+        private static void drawFrame(GuiGraphicsExtractor gui, int x, int y, int width, int height, int color) {
+            gui.fill(x, y, x + width, y + 1, color);
+            gui.fill(x, y + height - 1, x + width, y + height, color);
+            gui.fill(x, y, x + 1, y + height, color);
+            gui.fill(x + width - 1, y, x + width, y + height, color);
         }
 
         private static int iconSizeForSlot(int slotSize) {
@@ -419,6 +581,9 @@ public class CreationNotebookUiComponent extends UiWidget {
 
         private static void clickSound() {
             Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        }
+
+        private record SlotHit(String itemId, int slotX, int slotY, int slotSize) {
         }
     }
 

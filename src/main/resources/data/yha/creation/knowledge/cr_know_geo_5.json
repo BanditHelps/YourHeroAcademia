@@ -2,7 +2,6 @@
   "ability": "cr_know_geo_5",
   "tab": "materials",
   "entries": [
-    { "item": "minecraft:netherite_ingot", "lipid_cost": 260, "research_cost": 8 },
-    { "item": "minecraft:netherite_block", "tab": "blocks", "lipid_cost": 400 }
+    { "item": "minecraft:netherite_ingot", "lipid_cost": 260, "research_cost": 8, "block": "minecraft:netherite_block" }
   ]
 }

@@ -9,7 +9,9 @@ public record CreationEntry(
         CreationTab tab,
         String abilityKey,
         int lipidCost,
-        int researchCost
+        int researchCost,
+        Identifier nuggetId,
+        Identifier blockId
 ) {
     public ItemStack stack() {
         return CreationCatalog.stackOf(itemId);
@@ -17,5 +19,18 @@ public record CreationEntry(
 
     public Item item() {
         return stack().getItem();
+    }
+
+    public boolean hasForms() {
+        return nuggetId != null || blockId != null;
+    }
+
+    public boolean isKnownForm(Identifier requested) {
+        if (requested == null) {
+            return false;
+        }
+        return requested.equals(itemId)
+                || requested.equals(nuggetId)
+                || requested.equals(blockId);
     }
 }

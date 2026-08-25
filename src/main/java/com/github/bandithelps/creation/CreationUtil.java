@@ -30,6 +30,7 @@ import net.threetag.palladium.power.ability.AbilityUtil;
 public final class CreationUtil {
     public static final Identifier POWER_ID = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "creation");
     public static final String LIPIDS_KEY = "lipids";
+    public static final String MAX_LIPIDS_KEY = "max_lipids";
     public static final String[] GEAR_UNLOCK_ABILITIES = {
             "cr_know_tool_1", "cr_know_armor_1", "cr_know_weapon_1", "cr_know_fletcher_1"
     };
@@ -104,8 +105,19 @@ public final class CreationUtil {
         return BodyAttachments.get(player).getCustomFloat(player, BodyPart.CHEST, LIPIDS_KEY, 0.0f);
     }
 
+    public static float getMaxLipids(Player player) {
+        if (player == null) {
+            return Config.CREATION_MAX_LIPIDS.get();
+        }
+        Float stored = BodyAttachments.get(player).getCustomFloats(player, BodyPart.CHEST).get(MAX_LIPIDS_KEY);
+        if (stored == null || stored <= 0.0f) {
+            return Config.CREATION_MAX_LIPIDS.get();
+        }
+        return stored;
+    }
+
     public static void setLipids(ServerPlayer player, float value) {
-        float clamped = Mth.clamp(value, 0.0f, Config.CREATION_MAX_LIPIDS.get());
+        float clamped = Mth.clamp(value, 0.0f, getMaxLipids(player));
         BodyAttachments.get(player).setCustomFloat(player, BodyPart.CHEST, LIPIDS_KEY, clamped);
         BodySyncEvents.syncNow(player);
     }
@@ -118,9 +130,15 @@ public final class CreationUtil {
     }
 
     public static int creationCost(LivingEntity entity, CreationEntry entry) {
+        return creationCost(entity, entry, CreationForm.BASE);
+    }
+
+    public static int creationCost(LivingEntity entity, CreationEntry entry, CreationForm form) {
         int base = entry != null ? entry.lipidCost() : Config.CREATION_DEFAULT_LIPID_COST.get();
         float efficiency = efficiencyMultiplier(entity);
-        return Math.max(1, Mth.ceil(base / efficiency));
+        int ingotCost = Math.max(1, Mth.ceil(base / efficiency));
+        CreationForm resolved = form != null ? form : CreationForm.BASE;
+        return resolved.scaledCost(ingotCost);
     }
 
     public static int sacrificesRequired() {
@@ -194,18 +212,22 @@ public final class CreationUtil {
         if (!hasCreation(player) || itemId == null || !(player.level() instanceof ServerLevel serverLevel)) {
             return false;
         }
-        CreationEntry entry = CreationCatalog.getInstance().get(itemId).orElse(null);
+        CreationEntry parent = CreationCatalog.getInstance().parentOf(itemId).orElse(null);
         CreationData data = CreationAttachments.get(player);
-        if (entry == null || !data.isUnlocked(itemId)) {
+        if (parent == null || !parent.isKnownForm(itemId) || !data.isUnlocked(parent.itemId())) {
             return false;
         }
-        int cost = creationCost(player, entry);
+        ItemStack created = CreationCatalog.stackOf(itemId);
+        if (created.isEmpty()) {
+            return false;
+        }
+        int cost = creationCost(player, parent, CreationForm.of(parent, itemId));
         if (getLipids(player) + 0.0001f < cost) {
             player.sendSystemMessage(Component.translatable("gui.yha.creation.not_enough_lipids"));
             return false;
         }
         setLipids(player, getLipids(player) - cost);
-        ItemStack created = entry.stack().copy();
+        created = created.copy();
         created.setCount(1);
         spawnCreatedItem(serverLevel, player, created);
         CreationSyncEvents.syncNow(player);
@@ -218,12 +240,31 @@ public final class CreationUtil {
             return false;
         }
         CreationData data = CreationAttachments.get(player);
-        if (itemId != null && !data.isUnlocked(itemId)) {
-            return false;
+        if (itemId != null) {
+            CreationEntry parent = CreationCatalog.getInstance().parentOf(itemId).orElse(null);
+            if (parent == null || !parent.isKnownForm(itemId) || !data.isUnlocked(parent.itemId())) {
+                return false;
+            }
         }
         data.setQuickSlot(slot, itemId);
         CreationSyncEvents.syncNow(player);
         return true;
+    }
+
+    public static void migrateFormUnlocks(CreationData data) {
+        if (data == null) {
+            return;
+        }
+        for (CreationEntry entry : CreationCatalog.getInstance().allEntries()) {
+            if (data.isUnlocked(entry.itemId())) {
+                continue;
+            }
+            if (entry.nuggetId() != null && data.isUnlocked(entry.nuggetId())) {
+                data.unlock(entry.itemId());
+            } else if (entry.blockId() != null && data.isUnlocked(entry.blockId())) {
+                data.unlock(entry.itemId());
+            }
+        }
     }
 
     public static void spawnCreatedItem(ServerLevel level, ServerPlayer player, ItemStack stack) {

@@ -64,7 +64,7 @@ public class Config {
             .defineInRange("creationDefaultLipidCost", 10, 1, 10000);
 
     public static final ModConfigSpec.IntValue CREATION_MAX_LIPIDS = BUILDER
-            .comment("Maximum lipids stored on a Creation user's chest")
+            .comment("Fallback lipid cap if creation.json has not written max_lipids to the player's chest yet")
             .defineInRange("creationMaxLipids", 1000, 1, 100000);
 
     public static final ModConfigSpec.IntValue CREATION_GROW_TICKS = BUILDER

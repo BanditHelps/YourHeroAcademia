@@ -51,6 +51,22 @@ public final class ClientCreationState {
         return null;
     }
 
+    public static CreationSyncPayload.ClientEntry findParent(String itemId) {
+        if (itemId == null) {
+            return null;
+        }
+        CreationSyncPayload.ClientEntry direct = find(itemId);
+        if (direct != null) {
+            return direct;
+        }
+        for (CreationSyncPayload.ClientEntry entry : latest.entries()) {
+            if (entry.matches(itemId)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
     public static Identifier quickSlot(int index) {
         List<String> slots = latest.quickSlots();
         if (index < 0 || index >= slots.size()) {

@@ -2,9 +2,7 @@
   "ability": "cr_know_geo_4",
   "tab": "materials",
   "entries": [
-    { "item": "minecraft:diamond", "lipid_cost": 130, "research_cost": 64 },
-    { "item": "minecraft:emerald", "lipid_cost": 130, "research_cost": 64 },
-    { "item": "minecraft:diamond_block", "tab": "blocks", "lipid_cost": 200 },
-    { "item": "minecraft:emerald_block", "tab": "blocks", "lipid_cost": 180 }
+    { "item": "minecraft:diamond", "lipid_cost": 130, "research_cost": 64, "block": "minecraft:diamond_block" },
+    { "item": "minecraft:emerald", "lipid_cost": 130, "research_cost": 64, "block": "minecraft:emerald_block" }
   ]
 }

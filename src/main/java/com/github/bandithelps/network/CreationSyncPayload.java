@@ -2,6 +2,7 @@ package com.github.bandithelps.network;
 
 import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.client.creation.ClientCreationState;
+import com.github.bandithelps.creation.CreationForm;
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,8 @@ public record CreationSyncPayload(
             ByteBufCodecs.VAR_INT.encode(buf, entry.researchCost());
             ByteBufCodecs.VAR_INT.encode(buf, entry.progress());
             ByteBufCodecs.BOOL.encode(buf, entry.unlocked());
+            ByteBufCodecs.STRING_UTF8.encode(buf, blankToEmpty(entry.nuggetId()));
+            ByteBufCodecs.STRING_UTF8.encode(buf, blankToEmpty(entry.blockId()));
         }
         ByteBufCodecs.VAR_INT.encode(buf, payload.unlockedQuickSlots());
         ByteBufCodecs.BOOL.encode(buf, payload.gearTabUnlocked());
@@ -65,7 +68,9 @@ public record CreationSyncPayload(
                     ByteBufCodecs.VAR_INT.decode(buf),
                     ByteBufCodecs.VAR_INT.decode(buf),
                     ByteBufCodecs.VAR_INT.decode(buf),
-                    ByteBufCodecs.BOOL.decode(buf)
+                    ByteBufCodecs.BOOL.decode(buf),
+                    ByteBufCodecs.STRING_UTF8.decode(buf),
+                    ByteBufCodecs.STRING_UTF8.decode(buf)
             ));
         }
         return new CreationSyncPayload(
@@ -78,6 +83,55 @@ public record CreationSyncPayload(
         );
     }
 
-    public record ClientEntry(String itemId, String tab, int lipidCost, int researchCost, int progress, boolean unlocked) {
+    private static String blankToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    public record ClientEntry(
+            String itemId,
+            String tab,
+            int lipidCost,
+            int researchCost,
+            int progress,
+            boolean unlocked,
+            String nuggetId,
+            String blockId
+    ) {
+        public boolean hasNugget() {
+            return nuggetId != null && !nuggetId.isBlank();
+        }
+
+        public boolean hasBlock() {
+            return blockId != null && !blockId.isBlank();
+        }
+
+        public boolean hasForms() {
+            return hasNugget() || hasBlock();
+        }
+
+        public boolean matches(String requested) {
+            if (requested == null) {
+                return false;
+            }
+            return requested.equals(itemId)
+                    || (hasNugget() && requested.equals(nuggetId))
+                    || (hasBlock() && requested.equals(blockId));
+        }
+
+        public List<String> formChoices() {
+            List<String> ids = new ArrayList<>();
+            if (hasNugget()) {
+                ids.add(nuggetId);
+            }
+            ids.add(itemId);
+            if (hasBlock()) {
+                ids.add(blockId);
+            }
+            return ids;
+        }
+
+        public int formCost(String formId) {
+            return CreationForm.of(itemId, nuggetId, blockId, formId).scaledCost(lipidCost);
+        }
     }
 }
