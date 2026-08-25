@@ -8,7 +8,8 @@ public record CreationEntry(
         Identifier itemId,
         CreationTab tab,
         String abilityKey,
-        int lipidCost
+        int lipidCost,
+        int researchCost
 ) {
     public ItemStack stack() {
         return CreationCatalog.stackOf(itemId);

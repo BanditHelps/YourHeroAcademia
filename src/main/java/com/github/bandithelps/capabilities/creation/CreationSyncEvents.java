@@ -43,6 +43,7 @@ public final class CreationSyncEvents {
                     entry.itemId().toString(),
                     entry.tab().id(),
                     CreationUtil.creationCost(player, entry),
+                    entry.researchCost(),
                     data.getProgress(entry.itemId()),
                     data.isUnlocked(entry.itemId())
             ));

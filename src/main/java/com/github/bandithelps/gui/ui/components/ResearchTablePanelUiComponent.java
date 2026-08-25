@@ -224,18 +224,19 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                 ItemStack stack = ClientCreationState.stackOf(selected.itemId());
                 int cx = detailX + detailW / 2;
                 int cy = detailY + 36;
+                int required = Math.max(1, selected.researchCost());
                 float progress = selected.unlocked()
                         ? 1.0f
-                        : selected.progress() / (float) Math.max(1, ClientCreationState.get().sacrificesRequired());
+                        : selected.progress() / (float) required;
                 int fill = selected.unlocked() ? 0xFF55FF55 : 0xFFFFC14A;
-                drawCircularProgress(gui, cx, cy, 13, 17, progress, fill, 0xFF3B5A78);
+                drawCircularProgress(gui, cx, cy, 13, 17, progress, fill, 0xFF3B5A78, required);
                 drawItem(gui, stack, cx - DETAIL_ICON / 2, cy - DETAIL_ICON / 2, DETAIL_ICON);
 
                 String name = stack.isEmpty() ? selected.itemId() : stack.getHoverName().getString();
                 gui.text(minecraft.font, trim(minecraft, name, detailW - 12), detailX + 6, detailY + 60, this.owner.textColor, false);
                 String status = selected.unlocked()
                         ? "Understood"
-                        : selected.progress() + " / " + ClientCreationState.get().sacrificesRequired();
+                        : selected.progress() + " / " + required;
                 gui.text(minecraft.font, status, detailX + 6, detailY + 72, selected.unlocked() ? 0xFF8BD9A7 : 0xFFFFC14A, false);
 
                 int owned = countInInventory(stack);
@@ -276,7 +277,7 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                     ItemStack stack = ClientCreationState.stackOf(entry.itemId());
                     gui.setTooltipForNextFrame(minecraft.font, Component.literal(
                             (stack.isEmpty() ? entry.itemId() : stack.getHoverName().getString())
-                                    + (entry.unlocked() ? " (unlocked)" : " (" + entry.progress() + "/" + ClientCreationState.get().sacrificesRequired() + ")")
+                                    + (entry.unlocked() ? " (unlocked)" : " (" + entry.progress() + "/" + Math.max(1, entry.researchCost()) + ")")
                     ).withStyle(ChatFormatting.AQUA), mouseX, mouseY);
                 }
             }
@@ -489,8 +490,8 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             return count;
         }
 
-        private static void drawCircularProgress(GuiGraphicsExtractor gui, int cx, int cy, int innerR, int outerR, float progress, int fill, int empty) {
-            int segments = Math.max(8, ClientCreationState.get().sacrificesRequired());
+        private static void drawCircularProgress(GuiGraphicsExtractor gui, int cx, int cy, int innerR, int outerR, float progress, int fill, int empty, int required) {
+            int segments = Math.max(1, required);
             int filled = Math.round(segments * Mth.clamp(progress, 0.0f, 1.0f));
             double full = Math.PI * 2.0;
             double gap = full / segments * 0.18;

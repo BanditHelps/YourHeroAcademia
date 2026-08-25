@@ -127,6 +127,10 @@ public final class CreationUtil {
         return Config.CREATION_RESEARCH_SACRIFICES.get();
     }
 
+    public static int sacrificesRequired(CreationEntry entry) {
+        return entry != null ? entry.researchCost() : sacrificesRequired();
+    }
+
     public static boolean isResearchable(LivingEntity entity, CreationEntry entry) {
         return entry != null && isAbilityUnlocked(entity, entry.abilityKey());
     }
@@ -173,7 +177,7 @@ public final class CreationUtil {
             gained++;
         }
         int next = data.getProgress(itemId) + gained;
-        int required = sacrificesRequired();
+        int required = sacrificesRequired(entry);
         if (next >= required) {
             data.unlock(itemId);
             player.level().playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.8f, 1.2f);

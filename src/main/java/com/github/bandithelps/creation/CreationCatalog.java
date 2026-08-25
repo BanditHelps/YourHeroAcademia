@@ -68,7 +68,8 @@ public final class CreationCatalog {
                 if (stackOf(itemId).isEmpty()) {
                     continue;
                 }
-                entriesByItem.putIfAbsent(itemId, new CreationEntry(itemId, spec.tab(), spec.abilityKey(), spec.lipidCost()));
+                entriesByItem.putIfAbsent(itemId, new CreationEntry(
+                        itemId, spec.tab(), spec.abilityKey(), spec.lipidCost(), spec.researchCost()));
             }
         }
     }
@@ -114,6 +115,9 @@ public final class CreationCatalog {
             ability = ability.substring(ability.indexOf('#') + 1);
         }
         CreationTab defaultTab = CreationTab.fromId(json.has("tab") ? json.get("tab").getAsString() : "materials");
+        int defaultResearchCost = json.has("research_cost")
+                ? clampResearchCost(json.get("research_cost").getAsInt())
+                : Config.CREATION_RESEARCH_SACRIFICES.get();
         if (!json.has("entries") || !json.get("entries").isJsonArray()) {
             throw new JsonParseException("Missing entries array");
         }
@@ -127,12 +131,15 @@ public final class CreationCatalog {
             int cost = entry.has("lipid_cost")
                     ? Math.max(1, entry.get("lipid_cost").getAsInt())
                     : Config.CREATION_DEFAULT_LIPID_COST.get();
+            int researchCost = entry.has("research_cost")
+                    ? clampResearchCost(entry.get("research_cost").getAsInt())
+                    : defaultResearchCost;
             if (entry.has("item")) {
                 Identifier itemId = Identifier.parse(entry.get("item").getAsString());
-                rawSpecs.add(new RawSpec(ability, tab, cost, itemId, null));
+                rawSpecs.add(new RawSpec(ability, tab, cost, researchCost, itemId, null));
             } else if (entry.has("tag")) {
                 Identifier tagId = Identifier.parse(entry.get("tag").getAsString());
-                rawSpecs.add(new RawSpec(ability, tab, cost, null, tagId));
+                rawSpecs.add(new RawSpec(ability, tab, cost, researchCost, null, tagId));
             }
         }
     }
@@ -159,6 +166,10 @@ public final class CreationCatalog {
         return ids;
     }
 
+    private static int clampResearchCost(int cost) {
+        return Math.max(1, Math.min(64, cost));
+    }
+
     private static String requireString(JsonObject json, String key) {
         if (!json.has(key)) {
             throw new JsonParseException("Missing required key: " + key);
@@ -166,6 +177,6 @@ public final class CreationCatalog {
         return json.get(key).getAsString();
     }
 
-    private record RawSpec(String abilityKey, CreationTab tab, int lipidCost, Identifier itemId, Identifier tagId) {
+    private record RawSpec(String abilityKey, CreationTab tab, int lipidCost, int researchCost, Identifier itemId, Identifier tagId) {
     }
 }

@@ -44,6 +44,7 @@ public record CreationSyncPayload(
             ByteBufCodecs.STRING_UTF8.encode(buf, entry.itemId());
             ByteBufCodecs.STRING_UTF8.encode(buf, entry.tab());
             ByteBufCodecs.VAR_INT.encode(buf, entry.lipidCost());
+            ByteBufCodecs.VAR_INT.encode(buf, entry.researchCost());
             ByteBufCodecs.VAR_INT.encode(buf, entry.progress());
             ByteBufCodecs.BOOL.encode(buf, entry.unlocked());
         }
@@ -63,6 +64,7 @@ public record CreationSyncPayload(
                     ByteBufCodecs.STRING_UTF8.decode(buf),
                     ByteBufCodecs.VAR_INT.decode(buf),
                     ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
                     ByteBufCodecs.BOOL.decode(buf)
             ));
         }
@@ -76,6 +78,6 @@ public record CreationSyncPayload(
         );
     }
 
-    public record ClientEntry(String itemId, String tab, int lipidCost, int progress, boolean unlocked) {
+    public record ClientEntry(String itemId, String tab, int lipidCost, int researchCost, int progress, boolean unlocked) {
     }
 }

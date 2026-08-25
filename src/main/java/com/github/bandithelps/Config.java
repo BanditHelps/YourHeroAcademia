@@ -52,7 +52,7 @@ public class Config {
             .defineInRange("bioPrinterProcessTicks", 240, 20, 72000);
 
     public static final ModConfigSpec.IntValue CREATION_RESEARCH_SACRIFICES = BUILDER
-            .comment("How many matching items must be sacrificed at the research table to unlock a recipe")
+            .comment("Default research sacrifices when a knowledge entry omits research_cost")
             .defineInRange("creationResearchSacrifices", 8, 1, 64);
 
     public static final ModConfigSpec.DoubleValue CREATION_SATURATION_TO_LIPIDS = BUILDER
