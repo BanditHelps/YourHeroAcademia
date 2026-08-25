@@ -31,7 +31,7 @@
           "default_zoom": 1.0,
           "background": {
             "type": "palladium:repeating_texture",
-            "texture": "minecraft:textures/block/bookshelf.png"
+            "texture": "minecraft:textures/block/gray_concrete.png"
           },
           "properties": {
             "alignment": "center",

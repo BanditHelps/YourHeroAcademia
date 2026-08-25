@@ -27,8 +27,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": false,
         "gui_position": [
-          0.6,
-          -2.1
+          0,
+          -2.8
         ]
       },
       "state": {
@@ -78,7 +78,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           0.8,
-          2.1
+          2.35
         ]
       },
       "state": {
@@ -105,21 +105,21 @@
         "hidden_in_bar": true,
         "gui_position": [
           1.5,
-          2.1
+          2.35
         ],
         "gui_connection": {
           "cr_know_geo_2": [
             [
               0.2,
-              3.2
+              3.4
             ],
             [
               1.5,
-              3.2
+              3.4
             ],
             [
               1.5,
-              2.3
+              2.55
             ]
           ]
         }
@@ -131,19 +131,16 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "requires": {
-            "type": "palladium:and",
-            "conditions": [
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_armor_2"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_geo_2"
-              }
-            ]
-          }
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_armor_2"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_2"
+            }
+          ]
         }
       }
     },
@@ -157,21 +154,21 @@
         "hidden_in_bar": true,
         "gui_position": [
           2.2,
-          2.1
+          2.35
         ],
         "gui_connection": {
           "cr_know_geo_3": [
             [
               0.2,
-              4
+              4.2
             ],
             [
               2.2,
-              4
+              4.2
             ],
             [
               2.2,
-              2.4
+              2.65
             ]
           ]
         }
@@ -183,19 +180,16 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "requires": {
-            "type": "palladium:and",
-            "conditions": [
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_armor_3"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_geo_3"
-              }
-            ]
-          }
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_armor_3"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_3"
+            }
+          ]
         }
       }
     },
@@ -209,21 +203,21 @@
         "hidden_in_bar": true,
         "gui_position": [
           2.9,
-          2.1
+          2.35
         ],
         "gui_connection": {
           "cr_know_geo_4": [
             [
               0.2,
-              4.8
+              5
             ],
             [
               2.9,
-              4.8
+              5
             ],
             [
               2.9,
-              2.3
+              2.55
             ]
           ]
         }
@@ -235,19 +229,16 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "requires": {
-            "type": "palladium:and",
-            "conditions": [
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_armor_4"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_geo_4"
-              }
-            ]
-          }
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_armor_4"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_4"
+            }
+          ]
         }
       }
     },
@@ -261,21 +252,21 @@
         "hidden_in_bar": true,
         "gui_position": [
           3.6,
-          2.1
+          2.35
         ],
         "gui_connection": {
           "cr_know_geo_5": [
             [
               0.2,
-              5.5
+              5.7
             ],
             [
               3.6,
-              5.5
+              5.7
             ],
             [
               3.6,
-              2.5
+              2.75
             ]
           ]
         }
@@ -287,19 +278,16 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "requires": {
-            "type": "palladium:and",
-            "conditions": [
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_armor_5"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_geo_5"
-              }
-            ]
-          }
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_armor_5"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_5"
+            }
+          ]
         }
       }
     },
@@ -360,11 +348,11 @@
           "cr_know_geo_1": [
             [
               0.2,
-              1.6
+              2.2
             ],
             [
               0.4,
-              1.6
+              2.2
             ],
             [
               0.4,
@@ -384,19 +372,16 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "requires": {
-            "type": "palladium:and",
-            "conditions": [
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_chemical_1"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_geo_1"
-              }
-            ]
-          }
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_chemical_1"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_1"
+            }
+          ]
         }
       }
     },
@@ -414,12 +399,12 @@
         ],
         "gui_connection": [
           [
-            3.1,
-            1.15
+            2.9,
+            1.1
           ],
           [
-            3.2,
-            1.15
+            2.9,
+            1.4
           ],
           [
             3.2,
@@ -455,12 +440,12 @@
         ],
         "gui_connection": [
           [
-            3.1,
-            0.85
+            2.9,
+            0.8
           ],
           [
-            3.2,
-            0.85
+            2.9,
+            0.6
           ],
           [
             3.2,
@@ -497,11 +482,11 @@
         "gui_connection": [
           [
             3.1,
-            1.05
+            1.1
           ],
           [
             4.05,
-            1.05
+            1.1
           ],
           [
             4.05,
@@ -538,11 +523,11 @@
         "gui_connection": [
           [
             3.1,
-            0.95
+            0.9
           ],
           [
             4.05,
-            0.95
+            0.9
           ],
           [
             4.05,
@@ -619,19 +604,16 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "requires": {
-            "type": "palladium:and",
-            "conditions": [
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_fletcher_2"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_chemical_1"
-              }
-            ]
-          }
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_fletcher_2"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_chemical_1"
+            }
+          ]
         }
       }
     },
@@ -644,19 +626,43 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          1.5,
-          -2.6
+          4.7,
+          2.35
         ],
-        "gui_connection": [
-          [
-            0.9,
-            -2
+        "gui_connection": {
+          "cr_know_armor_2": [
+            [
+              0.8,
+              1.9
+            ],
+            [
+              4.2,
+              1.9
+            ],
+            [
+              4.2,
+              2.2
+            ],
+            [
+              4.5,
+              2.2
+            ]
           ],
-          [
-            0.9,
-            -2.6
+          "cr_know_tool_1": [
+            [
+              1.15,
+              2.05
+            ],
+            [
+              4,
+              2.05
+            ],
+            [
+              4,
+              2.35
+            ]
           ]
-        ]
+        }
       },
       "state": {
         "unlocking": {
@@ -664,7 +670,17 @@
           "cost": {
             "type": "yha:upgrade_point",
             "points": 2
-          }
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_armor_2"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_tool_1"
+            }
+          ]
         }
       }
     },
@@ -677,8 +693,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          2.2,
-          -2.6
+          4.7,
+          2.95
         ]
       },
       "state": {
@@ -704,8 +720,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          2.9,
-          -2.6
+          4.7,
+          3.55
         ]
       },
       "state": {
@@ -731,8 +747,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          3.5,
-          -2.6
+          4.7,
+          4.15
         ]
       },
       "state": {
@@ -758,8 +774,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          4.1,
-          -2.6
+          4.7,
+          4.75
         ]
       },
       "state": {
@@ -786,7 +802,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           4.7,
-          -2.6
+          5.35
         ]
       },
       "state": {
@@ -812,8 +828,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          5.3,
-          -2.6
+          4.7,
+          5.95
         ]
       },
       "state": {
@@ -866,21 +882,25 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -0.9,
-          -1
+          -2.1,
+          -1.3
         ],
         "gui_connection": [
           [
             -0.2,
-            -0.45
+            -0.7
           ],
           [
-            -0.4,
-            -0.45
+            -1.2,
+            -0.7
           ],
           [
-            -0.4,
-            -1
+            -1.6,
+            -0.7
+          ],
+          [
+            -1.6,
+            -1.3
           ]
         ]
       },
@@ -907,8 +927,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -1.5,
-          -1
+          -2.7,
+          -1.3
         ]
       },
       "state": {
@@ -934,8 +954,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -2.1,
-          -1
+          -3.3,
+          -1.3
         ]
       },
       "state": {
@@ -964,21 +984,25 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -0.9,
-          0.4
+          -2.1,
+          0.1
         ],
         "gui_connection": [
           [
             -0.2,
-            -0.3
+            -0.5
           ],
           [
-            -0.4,
-            -0.3
+            -1.2,
+            -0.5
           ],
           [
-            -0.4,
-            0.4
+            -1.6,
+            -0.5
+          ],
+          [
+            -1.6,
+            0.1
           ]
         ]
       },
@@ -1005,8 +1029,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -1.5,
-          0.4
+          -2.7,
+          0.1
         ]
       },
       "state": {
@@ -1032,8 +1056,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -2.1,
-          0.4
+          -3.3,
+          0.1
         ]
       },
       "state": {
@@ -1060,13 +1084,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           0,
-          -0.3
-        ],
-        "gui_connection": [
-          [
-            0,
-            -1.1
-          ]
+          -0.6
         ]
       },
       "state": {
@@ -1085,36 +1103,36 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -1.5,
-          -0.3
+          -2.7,
+          -0.6
         ],
         "gui_connection": {
           "cr_know_wood_1": [
             [
-              -0.9,
-              0.2
+              -2.1,
+              -0.1
             ],
             [
-              -0.9,
-              -0.2
+              -2.1,
+              -0.5
             ],
             [
-              -1.3,
-              -0.2
+              -2.5,
+              -0.5
             ]
           ],
           "cr_know_mason_1": [
             [
-              -0.9,
-              -0.8
+              -2.1,
+              -1.1
             ],
             [
-              -0.9,
-              -0.4
+              -2.1,
+              -0.7
             ],
             [
-              -1.3,
-              -0.4
+              -2.5,
+              -0.7
             ]
           ]
         }
@@ -1126,19 +1144,16 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "requires": {
-            "type": "palladium:and",
-            "conditions": [
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_mason_1"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_wood_1"
-              }
-            ]
-          }
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_mason_1"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_wood_1"
+            }
+          ]
         }
       }
     },
@@ -1151,8 +1166,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -2.7,
-          -0.3
+          -3.9,
+          -0.6
         ]
       },
       "state": {
@@ -1178,8 +1193,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -2.1,
-          -0.3
+          -3.3,
+          -0.6
         ]
       },
       "state": {
@@ -1205,21 +1220,21 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -0.9,
-          1.1
+          -2.7,
+          1.3
         ],
         "gui_connection": [
           [
             -0.2,
-            -0.15
+            0.8
           ],
           [
-            -0.3,
-            -0.15
+            -0.7,
+            0.8
           ],
           [
-            -0.3,
-            1.1
+            -0.7,
+            1.3
           ]
         ]
       },
@@ -1232,7 +1247,7 @@
           },
           "requires": {
             "type": "palladium:ability_unlocked",
-            "ability": "cr_know_dirt"
+            "ability": "cr_know_item_1"
           }
         }
       }
@@ -1246,8 +1261,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -1.5,
-          1.1
+          -3.3,
+          1.3
         ]
       },
       "state": {
@@ -1273,13 +1288,13 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -0.9,
-          1.7
+          -2.7,
+          1.9
         ],
         "gui_connection": [
           [
-            -0.9,
-            1.5
+            -2.7,
+            1.7
           ]
         ]
       },
@@ -1414,8 +1429,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          5.9,
-          -2.6
+          4.7,
+          6.6
         ]
       },
       "state": {
@@ -1441,39 +1456,9 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -3.5,
-          -0.3
-        ],
-        "gui_connection": {
-          "cr_know_wood_3": [
-            [
-              -3.1,
-              0.4
-            ],
-            [
-              -3.1,
-              -0.2
-            ],
-            [
-              -3.3,
-              -0.2
-            ]
-          ],
-          "cr_know_mason_3": [
-            [
-              -3.1,
-              -1
-            ],
-            [
-              -3.1,
-              -0.4
-            ],
-            [
-              -3.3,
-              -0.4
-            ]
-          ]
-        }
+          -4.6,
+          -0.6
+        ]
       },
       "state": {
         "unlocking": {
@@ -1483,21 +1468,8 @@
             "points": 3
           },
           "requires": {
-            "type": "palladium:and",
-            "conditions": [
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_nether_3"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_mason_3"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_wood_3"
-              }
-            ]
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_nether_3"
           }
         }
       }
@@ -1573,7 +1545,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           0,
-          1.7
+          2.3
         ]
       },
       "state": {
@@ -1593,24 +1565,24 @@
         "hidden_in_bar": true,
         "gui_position": [
           1.15,
-          2.7
+          2.95
         ],
         "gui_connection": [
           [
             0.2,
-            1.8
+            2.4
           ],
           [
             0.3,
-            1.8
+            2.4
           ],
           [
             0.3,
-            2.3
+            2.6
           ],
           [
             0.3,
-            2.7
+            2.95
           ]
         ]
       },
@@ -1638,12 +1610,12 @@
         "hidden_in_bar": true,
         "gui_position": [
           0,
-          3.3
+          3.5
         ],
         "gui_connection": [
           [
             0,
-            2.4
+            2.9
           ]
         ]
       },
@@ -1671,21 +1643,21 @@
         "hidden_in_bar": true,
         "gui_position": [
           1.85,
-          2.7
+          2.95
         ],
         "gui_connection": {
           "cr_know_geo_2": [
             [
               0.2,
-              3.4
+              3.6
             ],
             [
               1.85,
-              3.4
+              3.6
             ],
             [
               1.85,
-              2.9
+              3.15
             ]
           ]
         }
@@ -1697,19 +1669,16 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "requires": {
-            "type": "palladium:and",
-            "conditions": [
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_geo_2"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_tool_1"
-              }
-            ]
-          }
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_2"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_tool_1"
+            }
+          ]
         }
       }
     },
@@ -1723,17 +1692,17 @@
         "hidden_in_bar": true,
         "gui_position": [
           2.55,
-          2.7
+          2.95
         ],
         "gui_connection": {
           "cr_know_geo_3": [
             [
               0.2,
-              4.2
+              4.4
             ],
             [
               2.55,
-              4.2
+              4.4
             ]
           ]
         }
@@ -1745,19 +1714,16 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "requires": {
-            "type": "palladium:and",
-            "conditions": [
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_tool_2"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_geo_3"
-              }
-            ]
-          }
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_tool_2"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_3"
+            }
+          ]
         }
       }
     },
@@ -1771,7 +1737,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           0,
-          4.1
+          4.3
         ]
       },
       "state": {
@@ -1798,7 +1764,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           0,
-          4.9
+          5.1
         ]
       },
       "state": {
@@ -1825,21 +1791,21 @@
         "hidden_in_bar": true,
         "gui_position": [
           3.25,
-          2.7
+          2.95
         ],
         "gui_connection": {
           "cr_know_geo_4": [
             [
               0.2,
-              5
+              5.2
             ],
             [
               1.8,
-              5
+              5.2
             ],
             [
               3.25,
-              5
+              5.2
             ]
           ]
         }
@@ -1851,19 +1817,16 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
-          "requires": {
-            "type": "palladium:and",
-            "conditions": [
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_tool_3"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_geo_4"
-              }
-            ]
-          }
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_tool_3"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_4"
+            }
+          ]
         }
       }
     },
@@ -1877,7 +1840,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           0,
-          5.6
+          5.8
         ]
       },
       "state": {
@@ -1904,21 +1867,21 @@
         "hidden_in_bar": true,
         "gui_position": [
           3.95,
-          2.7
+          2.95
         ],
         "gui_connection": {
           "cr_know_geo_5": [
             [
               0.2,
-              5.7
+              5.9
             ],
             [
               3.95,
-              5.7
+              5.9
             ],
             [
               3.95,
-              3.05
+              3.3
             ]
           ]
         }
@@ -1930,18 +1893,437 @@
             "type": "yha:upgrade_point",
             "points": 2
           },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_tool_4"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_5"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_weapon_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - I",
+        "description": "Gain the starting knowledge of weapons. ",
+        "icon": "minecraft:stone_pickaxe",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.7,
+          0
+        ],
+        "gui_connection": [
+          [
+            -0.2,
+            0.6
+          ],
+          [
+            -0.3,
+            0.6
+          ],
+          [
+            -0.3,
+            0
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
           "requires": {
-            "type": "palladium:and",
-            "conditions": [
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_tool_4"
-              },
-              {
-                "type": "palladium:ability_unlocked",
-                "ability": "cr_know_geo_5"
-              }
-            ]
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_item_1"
+          }
+        }
+      }
+    },
+    "cr_quick_slot_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Quick Slot - I",
+        "description": "Adds a quick craft slot that allows you to save an item and quickly recal it.",
+        "icon": "yha:textures/icons/creation/creation_slot_1.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0.8,
+          -2.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "quirk_info"
+          }
+        }
+      }
+    },
+    "cr_quick_slot_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Quick Slot - II",
+        "description": "Adds a secondary quick craft slot that allows you to save an item and quickly recall it.",
+        "icon": "yha:textures/icons/creation/creation_slot_2.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          1.5,
+          -2.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_quick_slot_1"
+          }
+        }
+      }
+    },
+    "cr_quick_slot_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Quick Slot - III",
+        "description": "Adds a third quick craft slot that allows you to save an item and quickly recall it.",
+        "icon": "yha:textures/icons/creation/creation_slot_3.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.2,
+          -2.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_quick_slot_2"
+          }
+        }
+      }
+    },
+    "cr_know_weapon_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - II",
+        "description": "Gain the knowledge to make stronger weapons. (copper) ",
+        "icon": "minecraft:copper_sword",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.7,
+          2.3
+        ],
+        "gui_connection": [
+          [
+            -0.2,
+            2.3
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_geo_1"
+          }
+        }
+      }
+    },
+    "cr_know_weapon_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - III",
+        "description": "Gain the knowledge to make stronger weapons. (gold) ",
+        "icon": "minecraft:golden_sword",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.7,
+          3.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_2"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_weapon_2"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_weapon_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - IV",
+        "description": "Gain the knowledge to make stronger weapons. (iron) ",
+        "icon": "minecraft:iron_sword",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.7,
+          4.3
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_3"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_weapon_3"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_weapon_5": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - V",
+        "description": "Gain the knowledge to make stronger weapons. (diamond) ",
+        "icon": "minecraft:diamond_sword",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.7,
+          5.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_4"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_weapon_4"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_weapon_6": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - VI",
+        "description": "Gain the knowledge to make stronger weapons. (netherite) ",
+        "icon": "minecraft:netherite_sword",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.7,
+          5.8
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_weapon_5"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_5"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_weapon_spear": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - Spears",
+        "description": "Unlocks the knowledge required to make spears.",
+        "icon": "minecraft:copper_spear",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -1.7,
+          2.3
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_weapon_2"
+          }
+        }
+      }
+    },
+    "cr_know_weapon_mace": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - Mace",
+        "description": "Unlocks the knowledge required to make maces..",
+        "icon": "minecraft:mace",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -1.7,
+          5.8
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 5
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_weapon_6"
+          }
+        }
+      }
+    },
+    "cr_know_weapon_shield": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - Sheilds",
+        "description": "Unlocks the knowledge required to make shields.",
+        "icon": "minecraft:shield",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -1.7,
+          4.3
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_weapon_4"
+          }
+        }
+      }
+    },
+    "cr_know_end": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "End Knowledge",
+        "description": "You can now analyze items from the end.",
+        "icon": "minecraft:end_stone",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -5.3,
+          -0.6
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_knowledge_boost_2"
+          }
+        }
+      }
+    },
+    "cr_know_tech_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Technologist Knowledge - I",
+        "description": "Grenades and stuff (TODO)",
+        "icon": "yha:filled_smoke_canister",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.5,
+          4.3
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_weapon_shield"
           }
         }
       }
