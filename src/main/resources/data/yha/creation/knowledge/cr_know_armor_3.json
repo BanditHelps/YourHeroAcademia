@@ -1,0 +1,10 @@
+{
+  "ability": "cr_know_armor_3",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:golden_helmet", "lipid_cost": 24 },
+    { "item": "minecraft:golden_chestplate", "lipid_cost": 36 },
+    { "item": "minecraft:golden_leggings", "lipid_cost": 32 },
+    { "item": "minecraft:golden_boots", "lipid_cost": 22 }
+  ]
+}

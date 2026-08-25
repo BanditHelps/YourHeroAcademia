@@ -1,0 +1,10 @@
+{
+  "ability": "cr_know_armor_2",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:copper_helmet", "lipid_cost": 22 },
+    { "item": "minecraft:copper_chestplate", "lipid_cost": 32 },
+    { "item": "minecraft:copper_leggings", "lipid_cost": 28 },
+    { "item": "minecraft:copper_boots", "lipid_cost": 20 }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "ability": "cr_know_weapon_6",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:netherite_sword", "lipid_cost": 140 }
+  ]
+}

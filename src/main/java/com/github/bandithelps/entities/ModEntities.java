@@ -125,4 +125,20 @@ public class ModEntities {
                     ))
     );
 
+    public static final Supplier<EntityType<CreationProductEntity>> CREATION_PRODUCT = ENTITY_TYPES.register(
+            "creation_product",
+            () -> EntityType.Builder.<CreationProductEntity>of(
+                            CreationProductEntity::new,
+                            MobCategory.MISC
+                    )
+                    .noSave()
+                    .sized(0.35f, 0.35f)
+                    .clientTrackingRange(16)
+                    .updateInterval(1)
+                    .build(ResourceKey.create(
+                            Registries.ENTITY_TYPE,
+                            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "creation_product")
+                    ))
+    );
+
 }

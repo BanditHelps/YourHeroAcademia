@@ -1,0 +1,10 @@
+{
+  "ability": "cr_know_armor_5",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:diamond_helmet", "lipid_cost": 70 },
+    { "item": "minecraft:diamond_chestplate", "lipid_cost": 110 },
+    { "item": "minecraft:diamond_leggings", "lipid_cost": 95 },
+    { "item": "minecraft:diamond_boots", "lipid_cost": 60 }
+  ]
+}

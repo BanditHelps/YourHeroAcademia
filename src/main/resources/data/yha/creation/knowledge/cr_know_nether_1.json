@@ -1,0 +1,13 @@
+{
+  "ability": "cr_know_nether_1",
+  "tab": "blocks",
+  "entries": [
+    { "item": "minecraft:netherrack", "lipid_cost": 10 },
+    { "item": "minecraft:crimson_nylium", "lipid_cost": 14 },
+    { "item": "minecraft:warped_nylium", "lipid_cost": 14 },
+    { "item": "minecraft:crimson_stem", "lipid_cost": 14 },
+    { "item": "minecraft:warped_stem", "lipid_cost": 14 },
+    { "item": "minecraft:soul_sand", "lipid_cost": 12 },
+    { "item": "minecraft:soul_soil", "lipid_cost": 12 }
+  ]
+}

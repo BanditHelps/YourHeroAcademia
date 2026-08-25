@@ -1,0 +1,11 @@
+{
+  "ability": "cr_know_geo_1",
+  "tab": "materials",
+  "entries": [
+    { "item": "minecraft:raw_copper", "lipid_cost": 12 },
+    { "item": "minecraft:copper_ingot", "lipid_cost": 16 },
+    { "item": "minecraft:coal", "lipid_cost": 10 },
+    { "item": "minecraft:charcoal", "lipid_cost": 10 },
+    { "item": "minecraft:copper_block", "tab": "blocks", "lipid_cost": 40 }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "ability": "cr_know_mason_3",
+  "tab": "blocks",
+  "entries": [
+    { "item": "minecraft:stone_stairs", "lipid_cost": 10 },
+    { "item": "minecraft:stone_slab", "lipid_cost": 6 },
+    { "item": "minecraft:cobblestone_wall", "lipid_cost": 10 },
+    { "item": "minecraft:stone_brick_stairs", "lipid_cost": 12 },
+    { "item": "minecraft:stone_brick_slab", "lipid_cost": 8 },
+    { "item": "minecraft:stone_brick_wall", "lipid_cost": 12 },
+    { "item": "minecraft:deepslate_brick_stairs", "lipid_cost": 14 },
+    { "item": "minecraft:deepslate_brick_wall", "lipid_cost": 14 }
+  ]
+}

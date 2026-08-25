@@ -23,6 +23,10 @@ public class YhaUiComponentSerializers {
             register("gene_combination_browser_panel", new GeneCombinationBrowserPanelUiComponent.Serializer());
     public static final UiWidgetSerializer<AbilityLoadoutPanelUiComponent> ABILITY_LOADOUT_PANEL =
             register("ability_loadout_panel", new AbilityLoadoutPanelUiComponent.Serializer());
+    public static final UiWidgetSerializer<ResearchTablePanelUiComponent> RESEARCH_TABLE_PANEL =
+            register("research_table_panel", new ResearchTablePanelUiComponent.Serializer());
+    public static final UiWidgetSerializer<CreationNotebookUiComponent> CREATION_NOTEBOOK =
+            register("creation_notebook", new CreationNotebookUiComponent.Serializer());
 
     private static <T extends UiWidget> UiWidgetSerializer<T> register(String id, UiWidgetSerializer<T> serializer) {
         UiWidgetSerializer.register(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, id), serializer);

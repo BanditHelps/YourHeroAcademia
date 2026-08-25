@@ -7,6 +7,7 @@
   "block.yha.dna_splicer": "DNA Splicer",
   "block.yha.gene_combiner": "Gene Combiner",
   "block.yha.bio_printer": "Bio Printer",
+  "block.yha.research_table": "Research Table",
 
   "item.yha.treadmill": "Treadmill",
   "item.yha.empty_canister": "Empty Canister",
@@ -61,6 +62,7 @@
   "palladium.ability.yha.rot_wave": "Decay - Rot Wave",
 
   "palladium.ability.yha.smoke_canister_charge": "Smokescreen - Charge Smoke Canister",
+  "palladium.ability.yha.open_creation_menu": "Creation - Open Notebook",
 
 
   "palladium.ability.yha.smoke_canister_charge.not_enough_smoke": "Not enough smoke capacity to charge.",
@@ -94,6 +96,20 @@
   "ability.yha.smoke_canister_charge.empty_hand": "You must be holding a smoke canister to use this!",
   "ability.yha.smoke_canister_charge.max_tier": "You don't have the strength to compress the smoke further",
   "gui.yha.upgrade_point": "Upgrade Point",
+
+  "gui.yha.creation.need_quirk": "You don't understand this table.",
+  "gui.yha.creation.missing_sacrifice": "You don't have that item to study.",
+  "gui.yha.creation.researched": "You now understand %s.",
+  "gui.yha.creation.not_enough_lipids": "Not enough lipids.",
+  "gui.yha.creation.tab_locked": "You don't understand this yet.",
+  "gui.yha.creation.sacrifice": "Sacrifice",
+  "gui.yha.creation.inventory_count": "In inventory: %s",
+  "gui.yha.creation.search": "Search...",
+  "gui.yha.creation.tab.all": "All",
+  "gui.yha.creation.tab.materials": "Materials",
+  "gui.yha.creation.tab.blocks": "Blocks",
+  "gui.yha.creation.tab.gear": "Gear",
+  "entity.yha.creation_product": "Created Item",
 
   "key.yha.ability_mode_select": "Ability Mode Select"
 

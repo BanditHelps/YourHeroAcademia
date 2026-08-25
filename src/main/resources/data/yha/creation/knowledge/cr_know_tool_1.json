@@ -1,0 +1,10 @@
+{
+  "ability": "cr_know_tool_1",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:copper_pickaxe", "lipid_cost": 24 },
+    { "item": "minecraft:copper_axe", "lipid_cost": 24 },
+    { "item": "minecraft:copper_shovel", "lipid_cost": 16 },
+    { "item": "minecraft:copper_hoe", "lipid_cost": 16 }
+  ]
+}

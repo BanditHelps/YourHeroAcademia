@@ -1,0 +1,14 @@
+{
+  "ability": "cr_know_item_1",
+  "tab": "materials",
+  "entries": [
+    { "item": "minecraft:bowl", "lipid_cost": 4 },
+    { "item": "minecraft:paper", "lipid_cost": 3 },
+    { "item": "minecraft:book", "lipid_cost": 8 },
+    { "item": "minecraft:flint", "lipid_cost": 5 },
+    { "item": "minecraft:bone", "lipid_cost": 6 },
+    { "item": "minecraft:string", "lipid_cost": 4 },
+    { "item": "minecraft:leather", "lipid_cost": 8 },
+    { "item": "minecraft:feather", "lipid_cost": 4 }
+  ]
+}

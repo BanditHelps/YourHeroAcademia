@@ -1,0 +1,13 @@
+{
+  "ability": "cr_know_nether_3",
+  "tab": "blocks",
+  "entries": [
+    { "item": "minecraft:nether_brick_stairs", "lipid_cost": 16 },
+    { "item": "minecraft:nether_brick_slab", "lipid_cost": 10 },
+    { "item": "minecraft:nether_brick_fence", "lipid_cost": 14 },
+    { "item": "minecraft:nether_brick_wall", "lipid_cost": 14 },
+    { "item": "minecraft:red_nether_brick_stairs", "lipid_cost": 18 },
+    { "item": "minecraft:blackstone_stairs", "lipid_cost": 14 },
+    { "item": "minecraft:polished_blackstone_bricks", "lipid_cost": 16 }
+  ]
+}

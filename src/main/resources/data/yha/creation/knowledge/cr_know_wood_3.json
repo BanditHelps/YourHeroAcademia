@@ -1,0 +1,10 @@
+{
+  "ability": "cr_know_wood_3",
+  "tab": "blocks",
+  "entries": [
+    { "tag": "minecraft:wooden_stairs", "lipid_cost": 8 },
+    { "tag": "minecraft:wooden_slabs", "lipid_cost": 5 },
+    { "tag": "minecraft:wooden_fences", "lipid_cost": 8 },
+    { "tag": "minecraft:wooden_doors", "lipid_cost": 12 }
+  ]
+}

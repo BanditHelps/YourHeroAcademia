@@ -51,5 +51,25 @@ public class Config {
             .comment("Bio Printer print duration in ticks (20 ticks = 1 second)")
             .defineInRange("bioPrinterProcessTicks", 240, 20, 72000);
 
+    public static final ModConfigSpec.IntValue CREATION_RESEARCH_SACRIFICES = BUILDER
+            .comment("How many matching items must be sacrificed at the research table to unlock a recipe")
+            .defineInRange("creationResearchSacrifices", 8, 1, 64);
+
+    public static final ModConfigSpec.DoubleValue CREATION_SATURATION_TO_LIPIDS = BUILDER
+            .comment("Lipids gained per saturation point from food eaten by a Creation user")
+            .defineInRange("creationSaturationToLipids", 1.0D, 0.0D, 100.0D);
+
+    public static final ModConfigSpec.IntValue CREATION_DEFAULT_LIPID_COST = BUILDER
+            .comment("Default lipid cost to create an item when the catalog does not override it")
+            .defineInRange("creationDefaultLipidCost", 10, 1, 10000);
+
+    public static final ModConfigSpec.IntValue CREATION_MAX_LIPIDS = BUILDER
+            .comment("Maximum lipids stored on a Creation user's chest")
+            .defineInRange("creationMaxLipids", 1000, 1, 100000);
+
+    public static final ModConfigSpec.IntValue CREATION_GROW_TICKS = BUILDER
+            .comment("Ticks for a created item to grow out of the body before dropping")
+            .defineInRange("creationGrowTicks", 16, 1, 200);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 }

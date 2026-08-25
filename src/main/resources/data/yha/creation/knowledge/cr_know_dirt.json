@@ -1,0 +1,8 @@
+{
+  "ability": "cr_know_dirt",
+  "entries": [
+    { "item": "minecraft:dirt", "tab": "blocks", "lipid_cost": 8 },
+    { "item": "minecraft:stick", "tab": "materials", "lipid_cost": 4 },
+    { "item": "minecraft:cobblestone", "tab": "blocks", "lipid_cost": 8 }
+  ]
+}

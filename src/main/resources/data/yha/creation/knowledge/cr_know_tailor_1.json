@@ -1,0 +1,8 @@
+{
+  "ability": "cr_know_tailor_1",
+  "tab": "blocks",
+  "entries": [
+    { "item": "minecraft:white_wool", "lipid_cost": 8 },
+    { "item": "minecraft:string", "tab": "materials", "lipid_cost": 4 }
+  ]
+}

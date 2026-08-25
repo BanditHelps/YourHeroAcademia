@@ -19,7 +19,7 @@
       }
     },
     "cr_open_menu": {
-      "type": "palladium:dummy",
+      "type": "yha:open_creation_menu",
       "properties": {
         "title": "Open Creation Menu",
         "description": "Opens your notebook to manage all of your known recipes, quick slots, and lipid count",
@@ -1530,8 +1530,15 @@
       },
       "state": {
         "unlocking": {
-          "type": "palladium:ability_unlocked",
-          "ability": "cr_know_dirt"
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_dirt"
+          }
         }
       }
     },
@@ -1550,8 +1557,15 @@
       },
       "state": {
         "unlocking": {
-          "type": "palladium:ability_unlocked",
-          "ability": "cr_know_dirt"
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_dirt"
+          }
         }
       }
     },

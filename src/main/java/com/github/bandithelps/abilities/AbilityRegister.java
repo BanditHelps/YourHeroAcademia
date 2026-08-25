@@ -26,6 +26,7 @@ import com.github.bandithelps.abilities.decay.RotAbility;
 import com.github.bandithelps.abilities.common.PlaySoundAbility;
 import com.github.bandithelps.abilities.common.PotionGeneratorAbility;
 import com.github.bandithelps.abilities.common.SmokeCanisterChargeAbility;
+import com.github.bandithelps.abilities.creation.OpenCreationMenuAbility;
 import com.github.bandithelps.abilities.common.SprayAttackAbility;
 import com.github.bandithelps.abilities.movement.DashAbility;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -86,6 +87,11 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, SmokeCanisterChargeAbility.Serializer> SMOKE_CANISTER_CHARGE;
 
     /*=========================
+     |    Creation            |
+     =========================*/
+    public static final DeferredHolder<AbilitySerializer<?>, OpenCreationMenuAbility.Serializer> OPEN_CREATION_MENU;
+
+    /*=========================
      |    Block Displays      |
      =========================*/
     public static final DeferredHolder<AbilitySerializer<?>, BDShockwaveAbility.Serializer> BD_SHOCKWAVE;
@@ -108,6 +114,7 @@ public class AbilityRegister {
         SPRAY_ATTACK = ABILITIES.register("spray_attack", SprayAttackAbility.Serializer::new);
         PLAY_SOUND = ABILITIES.register("play_sound", PlaySoundAbility.Serializer::new);
         SMOKE_CANISTER_CHARGE = ABILITIES.register("smoke_canister_charge", SmokeCanisterChargeAbility.Serializer::new);
+        OPEN_CREATION_MENU = ABILITIES.register("open_creation_menu", OpenCreationMenuAbility.Serializer::new);
         SET_BODY_STRING = ABILITIES.register("set_body_string", SetBodyStringAbility.Serializer::new);
         SET_BODY_FLOAT = ABILITIES.register("set_body_float", SetBodyFloatAbility.Serializer::new);
         DECAY_FIST = ABILITIES.register("decay_fist", DecayFistAbility.Serializer::new);

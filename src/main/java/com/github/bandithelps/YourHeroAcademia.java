@@ -7,14 +7,16 @@ import com.github.bandithelps.attributes.StrengthAttributes;
 import com.github.bandithelps.blocks.*;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.dna.DNAAttachments;
+import com.github.bandithelps.capabilities.creation.CreationAttachments;
 import com.github.bandithelps.capabilities.loadout.AbilityLoadoutAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.client.renderers.entity.BlackwhipChainEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.BlackwhipEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.BlackwhipSegmentEntityRenderer;
+import com.github.bandithelps.client.renderers.entity.BlackwhipTossedBlockRenderer;
 import com.github.bandithelps.client.renderers.entity.PotionGeneratorEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.RgbaDisplayEntityRenderer;
-import com.github.bandithelps.client.renderers.entity.BlackwhipTossedBlockRenderer;
+import com.github.bandithelps.client.renderers.entity.CreationProductRenderer;
 import com.github.bandithelps.client.renderers.entity.SmokeCanisterProjectileRenderer;
 import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
@@ -23,6 +25,7 @@ import com.github.bandithelps.values.ValueRegister;
 import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
+import com.github.bandithelps.creation.CreationCatalog;
 import com.github.bandithelps.gene.GeneRegistry;
 import com.github.bandithelps.gene.combination.CombinationManager;
 import com.github.bandithelps.gui.menu.ModMenus;
@@ -78,6 +81,7 @@ public final class YourHeroAcademia {
     public static final DeferredItem<BlockItem> DNA_SPLICER_ITEM = ITEMS.registerSimpleBlockItem("dna_splicer", ModBlocks.DNA_SPLICER);
     public static final DeferredItem<BlockItem> GENE_COMBINER_ITEM = ITEMS.registerSimpleBlockItem("gene_combiner", ModBlocks.GENE_COMBINER);
     public static final DeferredItem<BlockItem> BIO_PRINTER_ITEM = ITEMS.registerSimpleBlockItem("bio_printer", ModBlocks.BIO_PRINTER);
+    public static final DeferredItem<BlockItem> RESEARCH_TABLE_ITEM = ITEMS.registerSimpleBlockItem("research_table", ModBlocks.RESEARCH_TABLE);
 
     public static final DeferredItem<Item> EMPTY_CANISTER = ITEMS.registerSimpleItem("empty_canister");
     public static final DeferredItem<Item> FILLED_SMOKE_CANISTER = ITEMS.register("filled_smoke_canister", () -> new SmokeCanisterItem(new Item.Properties()
@@ -117,6 +121,7 @@ public final class YourHeroAcademia {
                 output.accept(DNA_SPLICER_ITEM.get());
                 output.accept(GENE_COMBINER_ITEM.get());
                 output.accept(BIO_PRINTER_ITEM.get());
+                output.accept(RESEARCH_TABLE_ITEM.get());
                 output.accept(EMPTY_CANISTER.get());
                 output.accept(FILLED_SMOKE_CANISTER.get());
                 output.accept(INFUSED_SMOKE_CANISTER.get());
@@ -155,6 +160,7 @@ public final class YourHeroAcademia {
         BodyAttachments.ATTACHMENTS.register(modEventBus);
         DNAAttachments.ATTACHMENTS.register(modEventBus);
         AbilityLoadoutAttachments.ATTACHMENTS.register(modEventBus);
+        CreationAttachments.ATTACHMENTS.register(modEventBus);
 
         ModEffects.MOD_EFFECTS.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
@@ -184,6 +190,7 @@ public final class YourHeroAcademia {
         // Do something when the server starts
         LOGGER.info("Server Starting...");
         GeneRegistry.getInstance().reload(event.getServer().getResourceManager());
+        CreationCatalog.getInstance().reload(event.getServer().getResourceManager());
         CombinationManager.rebuildForServer(event.getServer());
     }
 
@@ -224,5 +231,6 @@ public final class YourHeroAcademia {
         event.registerEntityRenderer(ModEntities.BLACKWHIP.get(), BlackwhipEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACKWHIP_CHAIN.get(), BlackwhipChainEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACKWHIP_SEGMENT.get(), BlackwhipSegmentEntityRenderer::new);
+        event.registerEntityRenderer(ModEntities.CREATION_PRODUCT.get(), CreationProductRenderer::new);
     }
 }
