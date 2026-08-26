@@ -2,7 +2,10 @@ package com.github.bandithelps.gui.ui.components;
 
 import com.github.bandithelps.client.creation.ClientCreationState;
 import com.github.bandithelps.creation.CreationEnchantments;
+import com.github.bandithelps.creation.CreationPotionForm;
+import com.github.bandithelps.creation.CreationPotions;
 import com.github.bandithelps.creation.CreationTab;
+import com.github.bandithelps.creation.CreationUtil;
 import com.github.bandithelps.network.CreationResearchPayload;
 import com.github.bandithelps.network.CreationSyncPayload;
 import com.mojang.serialization.Codec;
@@ -183,9 +186,12 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             gui.text(minecraft.font, "Research", x + 8, y + 5, this.owner.textColor, false);
             drawHideLearnedCheckbox(gui, minecraft, mouseX, mouseY);
 
-            List<CreationSyncPayload.ClientEntry> entries = this.filterTab.isEnchants() ? List.of() : filteredEntries();
+            List<CreationSyncPayload.ClientEntry> entries = this.filterTab.isSpecial() ? List.of() : filteredEntries();
             List<CreationSyncPayload.ClientEnchantEntry> enchantEntries = this.filterTab.isEnchants() ? filteredEnchantEntries() : List.of();
-            int totalEntries = this.filterTab.isEnchants() ? enchantEntries.size() : entries.size();
+            List<CreationSyncPayload.ClientPotionEntry> potionEntries = this.filterTab.isPotions() ? filteredPotionEntries() : List.of();
+            int totalEntries = this.filterTab.isEnchants()
+                    ? enchantEntries.size()
+                    : (this.filterTab.isPotions() ? potionEntries.size() : entries.size());
             int maxScroll = Math.max(0, ceilDiv(totalEntries, COLS) - VISIBLE_ROWS);
             this.scrollOffset = Mth.clamp(this.scrollOffset, 0, maxScroll);
 
@@ -216,6 +222,11 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                         stack = enchantBookStack(entry);
                         unlocked = entry.unlocked();
                         selected = entry.enchantId().equals(this.selectedId);
+                    } else if (this.filterTab.isPotions()) {
+                        CreationSyncPayload.ClientPotionEntry entry = potionEntries.get(index);
+                        stack = potionPreviewStack(entry);
+                        unlocked = entry.unlocked();
+                        selected = entry.effectId().equals(this.selectedId);
                     } else {
                         CreationSyncPayload.ClientEntry entry = entries.get(index);
                         stack = ClientCreationState.stackOf(entry.itemId());
@@ -248,6 +259,13 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                 } else {
                     drawEnchantDetail(gui, minecraft, selectedEnchant, mouseX, mouseY, detailX, detailY, detailW);
                 }
+            } else if (this.filterTab.isPotions()) {
+                CreationSyncPayload.ClientPotionEntry selectedPotion = ClientCreationState.findPotion(this.selectedId);
+                if (selectedPotion == null) {
+                    gui.text(minecraft.font, Component.translatable("gui.yha.creation.select_potion").getString(), detailX + 8, detailY + 16, 0xFF9AAFC5, false);
+                } else {
+                    drawPotionDetail(gui, minecraft, selectedPotion, mouseX, mouseY, detailX, detailY, detailW);
+                }
             } else {
                 CreationSyncPayload.ClientEntry selected = ClientCreationState.find(this.selectedId);
                 if (selected == null) {
@@ -272,6 +290,12 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                     if (this.filterTab.isEnchants()) {
                         CreationSyncPayload.ClientEnchantEntry entry = enchantEntries.get(index);
                         String name = enchantDisplayName(entry);
+                        gui.setTooltipForNextFrame(minecraft.font, Component.literal(
+                                name + (entry.unlocked() ? " (unlocked)" : " (" + entry.progress() + "/" + Math.max(1, entry.researchCost()) + ")")
+                        ).withStyle(ChatFormatting.AQUA), mouseX, mouseY);
+                    } else if (this.filterTab.isPotions()) {
+                        CreationSyncPayload.ClientPotionEntry entry = potionEntries.get(index);
+                        String name = potionDisplayName(entry);
                         gui.setTooltipForNextFrame(minecraft.font, Component.literal(
                                 name + (entry.unlocked() ? " (unlocked)" : " (" + entry.progress() + "/" + Math.max(1, entry.researchCost()) + ")")
                         ).withStyle(ChatFormatting.AQUA), mouseX, mouseY);
@@ -428,6 +452,17 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                     clickSound();
                     return true;
                 }
+            } else if (this.filterTab.isPotions()) {
+                CreationSyncPayload.ClientPotionEntry selectedPotion = ClientCreationState.findPotion(this.selectedId);
+                if (selectedPotion != null
+                        && !selectedPotion.unlocked()
+                        && contains(mouseX, mouseY, sacrificeX(), sacrificeY(), sacrificeW(), sacrificeH())) {
+                    if (countPotions(selectedPotion.effectId()) > 0) {
+                        ClientPacketDistributor.sendToServer(new CreationResearchPayload(selectedPotion.effectId(), CreationResearchPayload.KIND_POTION));
+                    }
+                    clickSound();
+                    return true;
+                }
             } else {
                 CreationSyncPayload.ClientEntry selected = ClientCreationState.find(this.selectedId);
                 if (selected != null
@@ -455,6 +490,13 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                     return false;
                 }
                 this.selectedId = enchantEntries.get(index).enchantId();
+            } else if (this.filterTab.isPotions()) {
+                List<CreationSyncPayload.ClientPotionEntry> potionEntries = filteredPotionEntries();
+                int index = (this.scrollOffset + row) * COLS + col;
+                if (col < 0 || col >= COLS || row < 0 || row >= VISIBLE_ROWS || index < 0 || index >= potionEntries.size()) {
+                    return false;
+                }
+                this.selectedId = potionEntries.get(index).effectId();
             } else {
                 List<CreationSyncPayload.ClientEntry> entries = filteredEntries();
                 int index = (this.scrollOffset + row) * COLS + col;
@@ -472,7 +514,9 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             if (!contains((int) mouseX, (int) mouseY, gridX(), gridY(), gridW() + 3 + SCROLLBAR_W, gridH())) {
                 return false;
             }
-            int size = this.filterTab.isEnchants() ? filteredEnchantEntries().size() : filteredEntries().size();
+            int size = this.filterTab.isEnchants()
+                    ? filteredEnchantEntries().size()
+                    : (this.filterTab.isPotions() ? filteredPotionEntries().size() : filteredEntries().size());
             int maxScroll = Math.max(0, ceilDiv(size, COLS) - VISIBLE_ROWS);
             if (scrollY > 0) {
                 this.scrollOffset = Math.max(0, this.scrollOffset - 1);
@@ -578,6 +622,24 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             return result;
         }
 
+        private List<CreationSyncPayload.ClientPotionEntry> filteredPotionEntries() {
+            List<CreationSyncPayload.ClientPotionEntry> result = new ArrayList<>();
+            String query = this.searchQuery.trim().toLowerCase(Locale.ROOT);
+            for (CreationSyncPayload.ClientPotionEntry entry : ClientCreationState.potions()) {
+                if (!entry.researchable()) {
+                    continue;
+                }
+                if (hideLearned && entry.unlocked()) {
+                    continue;
+                }
+                if (!query.isEmpty() && !matchesPotionQuery(entry, query)) {
+                    continue;
+                }
+                result.add(entry);
+            }
+            return result;
+        }
+
         private static boolean matchesQuery(CreationSyncPayload.ClientEntry entry, String query) {
             if (entry.itemId().toLowerCase(Locale.ROOT).contains(query)) {
                 return true;
@@ -591,6 +653,13 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                 return true;
             }
             return enchantDisplayName(entry).toLowerCase(Locale.ROOT).contains(query);
+        }
+
+        private static boolean matchesPotionQuery(CreationSyncPayload.ClientPotionEntry entry, String query) {
+            if (entry.effectId().toLowerCase(Locale.ROOT).contains(query)) {
+                return true;
+            }
+            return potionDisplayName(entry).toLowerCase(Locale.ROOT).contains(query);
         }
 
         private void drawItemDetail(
@@ -644,6 +713,36 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                     selected.progress(),
                     selected.researchCost(),
                     Component.translatable("gui.yha.creation.inventory_count_books", owned).getString(),
+                    owned,
+                    mouseX,
+                    mouseY,
+                    detailX,
+                    detailY,
+                    detailW
+            );
+        }
+
+        private void drawPotionDetail(
+                GuiGraphicsExtractor gui,
+                Minecraft minecraft,
+                CreationSyncPayload.ClientPotionEntry selected,
+                int mouseX,
+                int mouseY,
+                int detailX,
+                int detailY,
+                int detailW
+        ) {
+            ItemStack stack = potionPreviewStack(selected);
+            int owned = countPotions(selected.effectId());
+            drawStudyDetail(
+                    gui,
+                    minecraft,
+                    stack,
+                    potionDisplayName(selected),
+                    selected.unlocked(),
+                    selected.progress(),
+                    selected.researchCost(),
+                    Component.translatable("gui.yha.creation.inventory_count_potions", owned).getString(),
                     owned,
                     mouseX,
                     mouseY,
@@ -714,6 +813,34 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                 return CreationEnchantments.displayName(clientAccess(), Identifier.parse(entry.enchantId())).getString();
             } catch (RuntimeException ignored) {
                 return entry.enchantId();
+            }
+        }
+
+        private static ItemStack potionPreviewStack(CreationSyncPayload.ClientPotionEntry entry) {
+            try {
+                return ClientCreationState.potionStack(entry.effectId(), CreationPotionForm.DRINKABLE, 15 * 20, 0);
+            } catch (RuntimeException ignored) {
+                return ItemStack.EMPTY;
+            }
+        }
+
+        private static String potionDisplayName(CreationSyncPayload.ClientPotionEntry entry) {
+            try {
+                return CreationUtil.potionDisplayName(Identifier.parse(entry.effectId())).getString();
+            } catch (RuntimeException ignored) {
+                return entry.effectId();
+            }
+        }
+
+        private static int countPotions(String effectId) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.player == null || effectId == null) {
+                return 0;
+            }
+            try {
+                return CreationPotions.countContaining(minecraft.player, Identifier.parse(effectId));
+            } catch (RuntimeException ignored) {
+                return 0;
             }
         }
 
@@ -843,7 +970,8 @@ public class ResearchTablePanelUiComponent extends UiWidget {
         MATERIALS(CreationTab.MATERIALS, "gui.yha.creation.tab.materials"),
         BLOCKS(CreationTab.BLOCKS, "gui.yha.creation.tab.blocks"),
         GEAR(CreationTab.GEAR, "gui.yha.creation.tab.gear"),
-        ENCHANTS(null, "gui.yha.creation.tab.enchants");
+        ENCHANTS(null, "gui.yha.creation.tab.enchants"),
+        ALCHEMY(null, "gui.yha.creation.tab.alchemy");
 
         private final CreationTab tab;
         private final String langKey;
@@ -855,6 +983,14 @@ public class ResearchTablePanelUiComponent extends UiWidget {
 
         boolean isEnchants() {
             return this == ENCHANTS;
+        }
+
+        boolean isPotions() {
+            return this == ALCHEMY;
+        }
+
+        boolean isSpecial() {
+            return isEnchants() || isPotions();
         }
 
         String label() {

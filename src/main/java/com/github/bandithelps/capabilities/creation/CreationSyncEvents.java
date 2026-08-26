@@ -6,6 +6,9 @@ import com.github.bandithelps.creation.CreationEnchantCatalog;
 import com.github.bandithelps.creation.CreationEnchantEntry;
 import com.github.bandithelps.creation.CreationEnchantments;
 import com.github.bandithelps.creation.CreationEntry;
+import com.github.bandithelps.creation.CreationPotionCatalog;
+import com.github.bandithelps.creation.CreationPotionEntry;
+import com.github.bandithelps.creation.CreationPotions;
 import com.github.bandithelps.creation.CreationUtil;
 import com.github.bandithelps.network.CreationSyncPayload;
 import java.util.ArrayList;
@@ -78,13 +81,40 @@ public final class CreationSyncEvents {
                     CreationUtil.isEnchantResearchable(player, entry)
             ));
         }
+        List<CreationSyncPayload.ClientPotionEntry> potions = new ArrayList<>();
+        for (CreationPotionEntry entry : CreationPotionCatalog.getInstance().allEntries()) {
+            int scaledBase = Math.max(1, Mth.ceil(entry.lipidCost() / efficiency));
+            int scaledAmp = Math.max(0, Mth.ceil(entry.lipidCostPerAmplifier() / efficiency));
+            boolean instant = CreationPotions.isInstant(entry.effectId(), entry.instantOverride());
+            potions.add(new CreationSyncPayload.ClientPotionEntry(
+                    entry.effectId().toString(),
+                    entry.groupId() == null ? "" : entry.groupId().toString(),
+                    entry.groupIcon() == null ? "" : entry.groupIcon().toString(),
+                    scaledBase,
+                    scaledAmp,
+                    entry.researchCost(),
+                    data.getPotionProgress(entry.effectId()),
+                    data.isPotionUnlocked(entry.effectId()),
+                    CreationUtil.isPotionResearchable(player, entry),
+                    entry.maxDurationSeconds(),
+                    instant
+            ));
+        }
         PacketDistributor.sendToPlayer(player, new CreationSyncPayload(
                 data.encodedUnlocked(),
                 data.encodedQuickSlots(),
                 entries,
                 enchants,
+                potions,
                 CreationUtil.unlockedQuickSlotCount(player),
                 CreationUtil.isGearTabUnlocked(player),
+                CreationUtil.isAlchemyTabUnlocked(player),
+                CreationUtil.isAbilityUnlocked(player, CreationUtil.CHEMICAL_SPLASH),
+                CreationUtil.isAbilityUnlocked(player, CreationUtil.CHEMICAL_LINGER),
+                CreationUtil.isAbilityUnlocked(player, CreationUtil.FLETCHER_ARROW_EFFECTS),
+                CreationUtil.isAbilityUnlocked(player, CreationUtil.CHEMICAL_TIMING),
+                CreationUtil.isAbilityUnlocked(player, CreationUtil.CHEMICAL_POTENCY),
+                CreationUtil.isAbilityUnlocked(player, CreationUtil.CHEMICAL_3),
                 CreationUtil.sacrificesRequired()
         ));
         LAST_SENT.put(player.getUUID(), entries.size());

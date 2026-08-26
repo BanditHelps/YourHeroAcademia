@@ -20,7 +20,9 @@ public class CreationData {
             Codec.STRING.listOf().optionalFieldOf("unlocked", List.of()).forGetter(CreationData::encodedUnlocked),
             Codec.STRING.listOf().optionalFieldOf("quickSlots", List.of()).forGetter(CreationData::encodedQuickSlots),
             Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("enchantProgress", Map.of()).forGetter(CreationData::encodedEnchantProgress),
-            Codec.STRING.listOf().optionalFieldOf("enchantUnlocked", List.of()).forGetter(CreationData::encodedEnchantUnlocked)
+            Codec.STRING.listOf().optionalFieldOf("enchantUnlocked", List.of()).forGetter(CreationData::encodedEnchantUnlocked),
+            Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("potionProgress", Map.of()).forGetter(CreationData::encodedPotionProgress),
+            Codec.STRING.listOf().optionalFieldOf("potionUnlocked", List.of()).forGetter(CreationData::encodedPotionUnlocked)
     ).apply(instance, CreationData::fromCodec));
 
     private final Map<Identifier, Integer> progress = new LinkedHashMap<>();
@@ -28,6 +30,8 @@ public class CreationData {
     private final Identifier[] quickSlots = new Identifier[QUICK_SLOT_COUNT];
     private final Map<Identifier, Integer> enchantProgress = new LinkedHashMap<>();
     private final Set<Identifier> enchantUnlocked = new LinkedHashSet<>();
+    private final Map<Identifier, Integer> potionProgress = new LinkedHashMap<>();
+    private final Set<Identifier> potionUnlocked = new LinkedHashSet<>();
 
     public CreationData() {
     }
@@ -37,7 +41,9 @@ public class CreationData {
             List<String> unlocked,
             List<String> slots,
             Map<String, Integer> enchantProgress,
-            List<String> enchantUnlocked
+            List<String> enchantUnlocked,
+            Map<String, Integer> potionProgress,
+            List<String> potionUnlocked
     ) {
         CreationData data = new CreationData();
         data.setEncodedProgress(progress);
@@ -45,6 +51,8 @@ public class CreationData {
         data.setEncodedQuickSlots(slots);
         data.setEncodedEnchantProgress(enchantProgress);
         data.setEncodedEnchantUnlocked(enchantUnlocked);
+        data.setEncodedPotionProgress(potionProgress);
+        data.setEncodedPotionUnlocked(potionUnlocked);
         return data;
     }
 
@@ -108,6 +116,36 @@ public class CreationData {
         enchantProgress.remove(enchantId);
     }
 
+    public int getPotionProgress(Identifier effectId) {
+        if (effectId == null) {
+            return 0;
+        }
+        return potionProgress.getOrDefault(effectId, 0);
+    }
+
+    public void setPotionProgress(Identifier effectId, int value) {
+        if (effectId == null) {
+            return;
+        }
+        if (value <= 0) {
+            potionProgress.remove(effectId);
+        } else {
+            potionProgress.put(effectId, value);
+        }
+    }
+
+    public boolean isPotionUnlocked(Identifier effectId) {
+        return effectId != null && potionUnlocked.contains(effectId);
+    }
+
+    public void unlockPotion(Identifier effectId) {
+        if (effectId == null) {
+            return;
+        }
+        potionUnlocked.add(effectId);
+        potionProgress.remove(effectId);
+    }
+
     public Identifier getQuickSlot(int index) {
         if (index < 0 || index >= QUICK_SLOT_COUNT) {
             return null;
@@ -153,6 +191,14 @@ public class CreationData {
         return encodeSet(enchantUnlocked);
     }
 
+    public Map<String, Integer> encodedPotionProgress() {
+        return encodeMap(potionProgress);
+    }
+
+    public List<String> encodedPotionUnlocked() {
+        return encodeSet(potionUnlocked);
+    }
+
     public void setEncodedProgress(Map<String, Integer> encoded) {
         decodeMap(encoded, progress);
     }
@@ -180,6 +226,14 @@ public class CreationData {
 
     public void setEncodedEnchantUnlocked(List<String> encoded) {
         decodeSet(encoded, enchantUnlocked);
+    }
+
+    public void setEncodedPotionProgress(Map<String, Integer> encoded) {
+        decodeMap(encoded, potionProgress);
+    }
+
+    public void setEncodedPotionUnlocked(List<String> encoded) {
+        decodeSet(encoded, potionUnlocked);
     }
 
     public Set<Identifier> unlockedView() {

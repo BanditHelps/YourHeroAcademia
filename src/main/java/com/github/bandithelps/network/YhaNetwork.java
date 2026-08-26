@@ -8,7 +8,7 @@ public final class YhaNetwork {
     }
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar("11");
+        PayloadRegistrar registrar = event.registrar("12");
         registrar.playToClient(AttackDamageSyncPayload.TYPE, AttackDamageSyncPayload.STREAM_CODEC, AttackDamageSyncPayload::handle);
         registrar.playToClient(OpenBodyDebugScreenPayload.TYPE, OpenBodyDebugScreenPayload.STREAM_CODEC, OpenBodyDebugScreenPayload::handle);
         registrar.playToClient(OpenTreeEditorScreenPayload.TYPE, OpenTreeEditorScreenPayload.STREAM_CODEC, OpenTreeEditorScreenPayload::handle);
@@ -46,6 +46,7 @@ public final class YhaNetwork {
         registrar.playToClient(CreationSyncPayload.TYPE, CreationSyncPayload.STREAM_CODEC, CreationSyncPayload::handle);
         registrar.playToServer(CreationResearchPayload.TYPE, CreationResearchPayload.STREAM_CODEC, CreationResearchPayload::handle);
         registrar.playToServer(CreationCreatePayload.TYPE, CreationCreatePayload.STREAM_CODEC, CreationCreatePayload::handle);
+        registrar.playToServer(CreationCreatePotionPayload.TYPE, CreationCreatePotionPayload.STREAM_CODEC, CreationCreatePotionPayload::handle);
         registrar.playToServer(CreationAssignSlotPayload.TYPE, CreationAssignSlotPayload.STREAM_CODEC, CreationAssignSlotPayload::handle);
     }
 }

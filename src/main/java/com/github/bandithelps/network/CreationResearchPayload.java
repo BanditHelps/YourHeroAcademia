@@ -10,20 +10,28 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public record CreationResearchPayload(String id, boolean enchant) implements CustomPacketPayload {
+public record CreationResearchPayload(String id, int kind) implements CustomPacketPayload {
+    public static final int KIND_ITEM = 0;
+    public static final int KIND_ENCHANT = 1;
+    public static final int KIND_POTION = 2;
+
     public static final Type<CreationResearchPayload> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "creation_research"));
 
     public static final StreamCodec<ByteBuf, CreationResearchPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.STRING_UTF8,
             CreationResearchPayload::id,
-            ByteBufCodecs.BOOL,
-            CreationResearchPayload::enchant,
+            ByteBufCodecs.VAR_INT,
+            CreationResearchPayload::kind,
             CreationResearchPayload::new
     );
 
     public CreationResearchPayload(String id) {
-        this(id, false);
+        this(id, KIND_ITEM);
+    }
+
+    public CreationResearchPayload(String id, boolean enchant) {
+        this(id, enchant ? KIND_ENCHANT : KIND_ITEM);
     }
 
     @Override
@@ -38,8 +46,10 @@ public record CreationResearchPayload(String id, boolean enchant) implements Cus
             }
             try {
                 Identifier parsed = Identifier.parse(payload.id());
-                if (payload.enchant()) {
+                if (payload.kind() == KIND_ENCHANT) {
                     CreationUtil.trySacrificeEnchant(player, parsed);
+                } else if (payload.kind() == KIND_POTION) {
+                    CreationUtil.trySacrificePotion(player, parsed);
                 } else {
                     CreationUtil.trySacrifice(player, parsed);
                 }

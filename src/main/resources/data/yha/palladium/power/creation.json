@@ -408,6 +408,39 @@
         }
       }
     },
+    "cr_know_chemical_experience": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Field Chemistry",
+        "description": "When a potion effect is applied to you, there is a chance you gain research progress for that effect.",
+        "icon": "minecraft:fermented_spider_eye",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.9,
+          1.7
+        ],
+        "gui_connection": [
+          [
+            2.9,
+            1
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_chemical_2"
+          }
+        }
+      }
+    },
     "cr_know_chemical_splash": {
       "type": "palladium:dummy",
       "properties": {

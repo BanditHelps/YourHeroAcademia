@@ -47,6 +47,15 @@ public final class CreationUtil {
     public static final String[] KNOWLEDGE_BOOST_ABILITIES = {
             "cr_knowledge_boost_1", "cr_knowledge_boost_2"
     };
+    public static final String CHEMICAL_1 = "cr_know_chemical_1";
+    public static final String CHEMICAL_2 = "cr_know_chemical_2";
+    public static final String CHEMICAL_3 = "cr_know_chemical_3";
+    public static final String CHEMICAL_SPLASH = "cr_know_chemical_splash";
+    public static final String CHEMICAL_LINGER = "cr_know_chemical_linger";
+    public static final String CHEMICAL_TIMING = "cr_know_chemical_timing";
+    public static final String CHEMICAL_POTENCY = "cr_know_chemical_potentcy";
+    public static final String CHEMICAL_EXPERIENCE = "cr_know_chemical_experience";
+    public static final String FLETCHER_ARROW_EFFECTS = "cr_know_fletcher_arrow_effects";
 
     private CreationUtil() {
     }
@@ -69,6 +78,20 @@ public final class CreationUtil {
             }
         }
         return false;
+    }
+
+    public static boolean isAlchemyTabUnlocked(LivingEntity entity) {
+        return isAbilityUnlocked(entity, CHEMICAL_1);
+    }
+
+    public static int maxPotionAmplifier(LivingEntity entity) {
+        if (isAbilityUnlocked(entity, CHEMICAL_3)) {
+            return 2;
+        }
+        if (isAbilityUnlocked(entity, CHEMICAL_POTENCY)) {
+            return 1;
+        }
+        return 0;
     }
 
     public static int unlockedQuickSlotCount(LivingEntity entity) {
@@ -160,6 +183,10 @@ public final class CreationUtil {
         return entry != null && isAbilityUnlocked(entity, entry.abilityKey());
     }
 
+    public static boolean isPotionResearchable(LivingEntity entity, CreationPotionEntry entry) {
+        return entry != null && isAbilityUnlocked(entity, entry.abilityKey());
+    }
+
     public static List<CreationEntry> researchableEntries(LivingEntity entity) {
         List<CreationEntry> result = new ArrayList<>();
         for (CreationEntry entry : CreationCatalog.getInstance().allEntries()) {
@@ -180,11 +207,28 @@ public final class CreationUtil {
         return result;
     }
 
+    public static List<CreationPotionEntry> researchablePotionEntries(LivingEntity entity) {
+        List<CreationPotionEntry> result = new ArrayList<>();
+        for (CreationPotionEntry entry : CreationPotionCatalog.getInstance().allEntries()) {
+            if (isPotionResearchable(entity, entry)) {
+                result.add(entry);
+            }
+        }
+        return result;
+    }
+
     public static int enchantCost(LivingEntity entity, CreationEnchantEntry entry, int level) {
         if (entry == null || level <= 0) {
             return 0;
         }
         return Math.max(1, Mth.ceil(entry.lipidCostForLevel(level) / efficiencyMultiplier(entity)));
+    }
+
+    public static int potionCost(LivingEntity entity, CreationPotionEntry entry, int extraAmplifier, int durationSeconds, CreationPotionForm form) {
+        if (entry == null) {
+            return Config.CREATION_DEFAULT_LIPID_COST.get();
+        }
+        return Math.max(1, Mth.ceil(entry.lipidCostFor(extraAmplifier, durationSeconds, form) / efficiencyMultiplier(entity)));
     }
 
     public static List<CreationEntry> unlockedEntries(Player player, CreationTab tab) {
@@ -279,6 +323,123 @@ public final class CreationUtil {
         }
         CreationSyncEvents.syncNow(player);
         return learnedAny || progressed;
+    }
+
+    public static boolean trySacrificePotion(ServerPlayer player, Identifier effectId) {
+        if (!hasCreation(player) || effectId == null) {
+            return false;
+        }
+        CreationPotionEntry entry = CreationPotionCatalog.getInstance().get(effectId).orElse(null);
+        if (!isPotionResearchable(player, entry)) {
+            return false;
+        }
+        CreationData data = CreationAttachments.get(player);
+        if (data.isPotionUnlocked(effectId)) {
+            return false;
+        }
+        if (!CreationPotions.consumeOneContaining(player, effectId)) {
+            player.sendSystemMessage(Component.translatable("gui.yha.creation.missing_potion"));
+            return false;
+        }
+        return grantPotionProgress(player, entry, data);
+    }
+
+    public static boolean tryProgressPotionFromEffect(ServerPlayer player, Identifier effectId) {
+        if (!hasCreation(player) || effectId == null || !isAbilityUnlocked(player, CHEMICAL_EXPERIENCE)) {
+            return false;
+        }
+        CreationPotionEntry entry = CreationPotionCatalog.getInstance().get(effectId).orElse(null);
+        if (!isPotionResearchable(player, entry)) {
+            return false;
+        }
+        CreationData data = CreationAttachments.get(player);
+        if (data.isPotionUnlocked(effectId)) {
+            return false;
+        }
+        float chance = entry.experientialChance() != null
+                ? entry.experientialChance()
+                : Config.CREATION_EXPERIENTIAL_RESEARCH_CHANCE.get().floatValue();
+        if (player.getRandom().nextFloat() >= chance) {
+            return false;
+        }
+        return grantPotionProgress(player, entry, data);
+    }
+
+    public static boolean tryCreatePotion(
+            ServerPlayer player,
+            Identifier effectId,
+            CreationPotionForm form,
+            int durationTicks,
+            int amplifier
+    ) {
+        if (!hasCreation(player) || effectId == null || !(player.level() instanceof ServerLevel serverLevel)) {
+            return false;
+        }
+        CreationPotionEntry entry = CreationPotionCatalog.getInstance().get(effectId).orElse(null);
+        CreationData data = CreationAttachments.get(player);
+        if (!isPotionResearchable(player, entry) || !data.isPotionUnlocked(effectId)) {
+            return false;
+        }
+        CreationPotionForm resolved = form != null ? form : CreationPotionForm.DRINKABLE;
+        if (resolved == CreationPotionForm.SPLASH && !isAbilityUnlocked(player, CHEMICAL_SPLASH)) {
+            return false;
+        }
+        if (resolved == CreationPotionForm.LINGERING && !isAbilityUnlocked(player, CHEMICAL_LINGER)) {
+            return false;
+        }
+        if (resolved == CreationPotionForm.ARROW && !isAbilityUnlocked(player, FLETCHER_ARROW_EFFECTS)) {
+            return false;
+        }
+        boolean instant = CreationPotions.isInstant(effectId, entry.instantOverride());
+        int maxAmplifier = maxPotionAmplifier(player);
+        int clampedAmplifier = Mth.clamp(amplifier, 0, maxAmplifier);
+        int defaultTicks = CreationPotionEntry.DEFAULT_DURATION_SECONDS * 20;
+        int clampedTicks;
+        if (instant) {
+            clampedTicks = 1;
+        } else if (!isAbilityUnlocked(player, CHEMICAL_TIMING)) {
+            clampedTicks = defaultTicks;
+        } else {
+            int maxTicks = Math.max(20, entry.maxDurationSeconds() * 20);
+            clampedTicks = Mth.clamp(durationTicks, 20, maxTicks);
+        }
+        ItemStack created = CreationPotions.stackOf(effectId, resolved, clampedTicks, clampedAmplifier);
+        if (created.isEmpty()) {
+            return false;
+        }
+        int cost = potionCost(player, entry, clampedAmplifier, Math.max(1, clampedTicks / 20), resolved);
+        if (getLipids(player) + 0.0001f < cost) {
+            player.sendSystemMessage(Component.translatable("gui.yha.creation.not_enough_lipids"));
+            return false;
+        }
+        setLipids(player, getLipids(player) - cost);
+        spawnCreatedItem(serverLevel, player, created);
+        CreationSyncEvents.syncNow(player);
+        return true;
+    }
+
+    private static boolean grantPotionProgress(ServerPlayer player, CreationPotionEntry entry, CreationData data) {
+        int gained = 1;
+        if (player.getRandom().nextFloat() < knowledgeBoostChance(player)) {
+            gained++;
+        }
+        Identifier effectId = entry.effectId();
+        int next = data.getPotionProgress(effectId) + gained;
+        Component name = potionDisplayName(effectId);
+        if (next >= entry.researchCost()) {
+            data.unlockPotion(effectId);
+            player.level().playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.8f, 1.2f);
+            player.sendSystemMessage(Component.translatable("gui.yha.creation.researched", name));
+        } else {
+            data.setPotionProgress(effectId, next);
+            player.level().playSound(null, player.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.4f, 0.7f);
+        }
+        CreationSyncEvents.syncNow(player);
+        return true;
+    }
+
+    public static Component potionDisplayName(Identifier effectId) {
+        return CreationPotions.displayName(effectId);
     }
 
     public static boolean tryCreate(ServerPlayer player, Identifier itemId) {

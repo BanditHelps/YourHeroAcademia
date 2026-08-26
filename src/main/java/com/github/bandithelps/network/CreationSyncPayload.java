@@ -17,8 +17,16 @@ public record CreationSyncPayload(
         List<String> quickSlots,
         List<ClientEntry> entries,
         List<ClientEnchantEntry> enchants,
+        List<ClientPotionEntry> potions,
         int unlockedQuickSlots,
         boolean gearTabUnlocked,
+        boolean alchemyTabUnlocked,
+        boolean potionSplash,
+        boolean potionLinger,
+        boolean potionArrow,
+        boolean potionTiming,
+        boolean potionPotency,
+        boolean potionMaster,
         int sacrificesRequired
 ) implements CustomPacketPayload {
     public static final Type<CreationSyncPayload> TYPE =
@@ -66,8 +74,29 @@ public record CreationSyncPayload(
             ByteBufCodecs.BOOL.encode(buf, enchant.unlocked());
             ByteBufCodecs.BOOL.encode(buf, enchant.researchable());
         }
+        ByteBufCodecs.VAR_INT.encode(buf, payload.potions().size());
+        for (ClientPotionEntry potion : payload.potions()) {
+            ByteBufCodecs.STRING_UTF8.encode(buf, potion.effectId());
+            ByteBufCodecs.STRING_UTF8.encode(buf, blankToEmpty(potion.groupId()));
+            ByteBufCodecs.STRING_UTF8.encode(buf, blankToEmpty(potion.groupIcon()));
+            ByteBufCodecs.VAR_INT.encode(buf, potion.lipidCost());
+            ByteBufCodecs.VAR_INT.encode(buf, potion.lipidCostPerAmplifier());
+            ByteBufCodecs.VAR_INT.encode(buf, potion.researchCost());
+            ByteBufCodecs.VAR_INT.encode(buf, potion.progress());
+            ByteBufCodecs.BOOL.encode(buf, potion.unlocked());
+            ByteBufCodecs.BOOL.encode(buf, potion.researchable());
+            ByteBufCodecs.VAR_INT.encode(buf, potion.maxDurationSeconds());
+            ByteBufCodecs.BOOL.encode(buf, potion.instant());
+        }
         ByteBufCodecs.VAR_INT.encode(buf, payload.unlockedQuickSlots());
         ByteBufCodecs.BOOL.encode(buf, payload.gearTabUnlocked());
+        ByteBufCodecs.BOOL.encode(buf, payload.alchemyTabUnlocked());
+        ByteBufCodecs.BOOL.encode(buf, payload.potionSplash());
+        ByteBufCodecs.BOOL.encode(buf, payload.potionLinger());
+        ByteBufCodecs.BOOL.encode(buf, payload.potionArrow());
+        ByteBufCodecs.BOOL.encode(buf, payload.potionTiming());
+        ByteBufCodecs.BOOL.encode(buf, payload.potionPotency());
+        ByteBufCodecs.BOOL.encode(buf, payload.potionMaster());
         ByteBufCodecs.VAR_INT.encode(buf, payload.sacrificesRequired());
     }
 
@@ -109,12 +138,37 @@ public record CreationSyncPayload(
                     ByteBufCodecs.BOOL.decode(buf)
             ));
         }
+        int potionCount = ByteBufCodecs.VAR_INT.decode(buf);
+        List<ClientPotionEntry> potions = new ArrayList<>(potionCount);
+        for (int i = 0; i < potionCount; i++) {
+            potions.add(new ClientPotionEntry(
+                    ByteBufCodecs.STRING_UTF8.decode(buf),
+                    ByteBufCodecs.STRING_UTF8.decode(buf),
+                    ByteBufCodecs.STRING_UTF8.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.BOOL.decode(buf),
+                    ByteBufCodecs.BOOL.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.BOOL.decode(buf)
+            ));
+        }
         return new CreationSyncPayload(
                 unlocked,
                 quickSlots,
                 entries,
                 enchants,
+                potions,
                 ByteBufCodecs.VAR_INT.decode(buf),
+                ByteBufCodecs.BOOL.decode(buf),
+                ByteBufCodecs.BOOL.decode(buf),
+                ByteBufCodecs.BOOL.decode(buf),
+                ByteBufCodecs.BOOL.decode(buf),
+                ByteBufCodecs.BOOL.decode(buf),
+                ByteBufCodecs.BOOL.decode(buf),
+                ByteBufCodecs.BOOL.decode(buf),
                 ByteBufCodecs.BOOL.decode(buf),
                 ByteBufCodecs.VAR_INT.decode(buf)
         );
@@ -191,6 +245,26 @@ public record CreationSyncPayload(
                 return Math.max(1, lipidCosts.get(index));
             }
             return Math.max(1, lipidCostPerLevel * level);
+        }
+    }
+
+    public record ClientPotionEntry(
+            String effectId,
+            String groupId,
+            String groupIcon,
+            int lipidCost,
+            int lipidCostPerAmplifier,
+            int researchCost,
+            int progress,
+            boolean unlocked,
+            boolean researchable,
+            int maxDurationSeconds,
+            boolean instant
+    ) {
+        public int costFor(int extraAmplifier, int durationSeconds, float formFactor) {
+            int extra = Math.max(0, extraAmplifier);
+            double durationFactor = instant ? 1.0 : Math.max(1.0, Math.max(1, durationSeconds) / 15.0);
+            return Math.max(1, (int) Math.ceil((lipidCost + extra * lipidCostPerAmplifier) * durationFactor * Math.max(0.01f, formFactor)));
         }
     }
 }

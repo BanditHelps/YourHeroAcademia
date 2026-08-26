@@ -71,5 +71,9 @@ public class Config {
             .comment("Ticks for a created item to grow out of the body before dropping")
             .defineInRange("creationGrowTicks", 16, 1, 200);
 
+    public static final ModConfigSpec.DoubleValue CREATION_EXPERIENTIAL_RESEARCH_CHANCE = BUILDER
+            .comment("Chance to gain potion research progress when a new effect is applied, if Field Chemistry is unlocked")
+            .defineInRange("creationExperientialResearchChance", 0.25D, 0.0D, 1.0D);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 }
