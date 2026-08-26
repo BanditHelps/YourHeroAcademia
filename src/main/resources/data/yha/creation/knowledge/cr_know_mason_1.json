@@ -2,11 +2,11 @@
   "ability": "cr_know_mason_1",
   "tab": "blocks",
   "entries": [
-    { "item": "minecraft:stone", "lipid_cost": 10 },
-    { "item": "minecraft:deepslate", "lipid_cost": 12 },
-    { "item": "minecraft:granite", "lipid_cost": 10 },
-    { "item": "minecraft:diorite", "lipid_cost": 10 },
-    { "item": "minecraft:andesite", "lipid_cost": 10 },
-    { "item": "minecraft:tuff", "lipid_cost": 10 }
+    { "item": "minecraft:stone", "lipid_cost": 1 },
+    { "item": "minecraft:deepslate", "lipid_cost": 2 },
+    { "item": "minecraft:granite", "lipid_cost": 1 },
+    { "item": "minecraft:diorite", "lipid_cost": 1 },
+    { "item": "minecraft:andesite", "lipid_cost": 1 },
+    { "item": "minecraft:tuff", "lipid_cost": 1 }
   ]
 }
