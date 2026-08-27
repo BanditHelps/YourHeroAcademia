@@ -103,6 +103,8 @@
   "gui.yha.creation.researched": "You now understand %s.",
   "gui.yha.creation.not_enough_lipids": "Not enough lipids.",
   "gui.yha.creation.tab_locked": "You don't understand this yet.",
+  "gui.yha.research_table.title": "Research",
+  "gui.yha.creation.understood": "Understood",
   "gui.yha.creation.sacrifice": "Sacrifice",
   "gui.yha.creation.inventory_count": "In inventory: %s",
   "gui.yha.creation.search": "Search...",
