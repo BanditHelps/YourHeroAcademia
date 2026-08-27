@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -48,6 +49,13 @@ public final class CreationSyncEvents {
         float efficiency = CreationUtil.efficiencyMultiplier(player);
         List<CreationSyncPayload.ClientEntry> entries = new ArrayList<>();
         for (CreationEntry entry : CreationUtil.researchableEntries(player)) {
+            List<String> unlockVariants = List.of();
+            if (entry.unlockAbility() != null && CreationUtil.isAbilityUnlocked(player, entry.unlockAbility())) {
+                unlockVariants = new ArrayList<>();
+                for (Identifier variantId : entry.unlockVariantIds()) {
+                    unlockVariants.add(variantId.toString());
+                }
+            }
             entries.add(new CreationSyncPayload.ClientEntry(
                     entry.itemId().toString(),
                     entry.tab().id(),
@@ -56,7 +64,10 @@ public final class CreationSyncEvents {
                     data.getProgress(entry.itemId()),
                     data.isUnlocked(entry.itemId()),
                     entry.nuggetId() == null ? "" : entry.nuggetId().toString(),
-                    entry.blockId() == null ? "" : entry.blockId().toString()
+                    entry.blockId() == null ? "" : entry.blockId().toString(),
+                    entry.groupId() == null ? "" : entry.groupId().toString(),
+                    entry.groupIcon() == null ? "" : entry.groupIcon().toString(),
+                    unlockVariants
             ));
         }
         List<CreationSyncPayload.ClientEnchantEntry> enchants = new ArrayList<>();

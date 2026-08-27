@@ -57,6 +57,7 @@ public final class CreationUtil {
     public static final String CHEMICAL_POTENCY = "cr_know_chemical_potentcy";
     public static final String CHEMICAL_EXPERIENCE = "cr_know_chemical_experience";
     public static final String FLETCHER_ARROW_EFFECTS = "cr_know_fletcher_arrow_effects";
+    public static final String DYE_KNOWLEDGE = "cr_know_dye";
 
     private CreationUtil() {
     }
@@ -447,13 +448,23 @@ public final class CreationUtil {
         return tryCreate(player, itemId, List.of());
     }
 
+    private static boolean canCreateKnownItem(ServerPlayer player, CreationData data, CreationEntry parent, Identifier itemId) {
+        if (parent == null || itemId == null || data == null || !parent.isKnownForm(itemId) || !data.isUnlocked(parent.itemId())) {
+            return false;
+        }
+        if (parent.isUnlockVariant(itemId) && !isAbilityUnlocked(player, parent.unlockAbility())) {
+            return false;
+        }
+        return true;
+    }
+
     public static boolean tryCreate(ServerPlayer player, Identifier itemId, List<CreationCreatePayload.EnchantChoice> requested) {
         if (!hasCreation(player) || itemId == null || !(player.level() instanceof ServerLevel serverLevel)) {
             return false;
         }
         CreationEntry parent = CreationCatalog.getInstance().parentOf(itemId).orElse(null);
         CreationData data = CreationAttachments.get(player);
-        if (parent == null || !parent.isKnownForm(itemId) || !data.isUnlocked(parent.itemId())) {
+        if (!canCreateKnownItem(player, data, parent, itemId)) {
             return false;
         }
         ItemStack created = CreationCatalog.stackOf(itemId);
@@ -569,7 +580,7 @@ public final class CreationUtil {
         }
         Identifier itemId = recipe.id();
         CreationEntry parent = CreationCatalog.getInstance().parentOf(itemId).orElse(null);
-        if (parent == null || !parent.isKnownForm(itemId) || !data.isUnlocked(parent.itemId())) {
+        if (!canCreateKnownItem(player, data, parent, itemId)) {
             return false;
         }
         ItemStack preview = CreationCatalog.stackOf(itemId);

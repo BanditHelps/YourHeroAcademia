@@ -59,6 +59,9 @@ public record CreationSyncPayload(
             ByteBufCodecs.BOOL.encode(buf, entry.unlocked());
             ByteBufCodecs.STRING_UTF8.encode(buf, blankToEmpty(entry.nuggetId()));
             ByteBufCodecs.STRING_UTF8.encode(buf, blankToEmpty(entry.blockId()));
+            ByteBufCodecs.STRING_UTF8.encode(buf, blankToEmpty(entry.groupId()));
+            ByteBufCodecs.STRING_UTF8.encode(buf, blankToEmpty(entry.groupIcon()));
+            ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).encode(buf, entry.unlockVariantIds() == null ? List.of() : entry.unlockVariantIds());
         }
         ByteBufCodecs.VAR_INT.encode(buf, payload.enchants().size());
         for (ClientEnchantEntry enchant : payload.enchants()) {
@@ -114,7 +117,10 @@ public record CreationSyncPayload(
                     ByteBufCodecs.VAR_INT.decode(buf),
                     ByteBufCodecs.BOOL.decode(buf),
                     ByteBufCodecs.STRING_UTF8.decode(buf),
-                    ByteBufCodecs.STRING_UTF8.decode(buf)
+                    ByteBufCodecs.STRING_UTF8.decode(buf),
+                    ByteBufCodecs.STRING_UTF8.decode(buf),
+                    ByteBufCodecs.STRING_UTF8.decode(buf),
+                    new ArrayList<>(ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).decode(buf))
             ));
         }
         int enchantCount = ByteBufCodecs.VAR_INT.decode(buf);
@@ -186,8 +192,15 @@ public record CreationSyncPayload(
             int progress,
             boolean unlocked,
             String nuggetId,
-            String blockId
+            String blockId,
+            String groupId,
+            String groupIcon,
+            List<String> unlockVariantIds
     ) {
+        public ClientEntry {
+            unlockVariantIds = unlockVariantIds == null ? List.of() : List.copyOf(unlockVariantIds);
+        }
+
         public boolean hasNugget() {
             return nuggetId != null && !nuggetId.isBlank();
         }
@@ -200,13 +213,21 @@ public record CreationSyncPayload(
             return hasNugget() || hasBlock();
         }
 
+        public boolean isUnlockVariant(String requested) {
+            if (requested == null || unlockVariantIds.isEmpty()) {
+                return false;
+            }
+            return unlockVariantIds.contains(requested);
+        }
+
         public boolean matches(String requested) {
             if (requested == null) {
                 return false;
             }
             return requested.equals(itemId)
                     || (hasNugget() && requested.equals(nuggetId))
-                    || (hasBlock() && requested.equals(blockId));
+                    || (hasBlock() && requested.equals(blockId))
+                    || isUnlockVariant(requested);
         }
 
         public List<String> formChoices() {

@@ -10,9 +10,11 @@ import com.google.gson.JsonParser;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -66,17 +68,47 @@ public final class CreationCatalog {
     public void rebuildResolved() {
         entriesByItem.clear();
         formToParent.clear();
+        List<ResolvedItem> pending = new ArrayList<>();
         for (RawSpec spec : rawSpecs) {
-            for (Identifier itemId : resolveSpec(spec)) {
+            for (Identifier itemId : resolveIds(spec.itemId(), spec.tagId())) {
                 if (stackOf(itemId).isEmpty()) {
                     continue;
                 }
-                Identifier nuggetId = usable(spec.nuggetId());
-                Identifier blockId = usable(spec.blockId());
-                entriesByItem.putIfAbsent(itemId, new CreationEntry(
-                        itemId, spec.tab(), spec.abilityKey(), spec.lipidCost(), spec.researchCost(), nuggetId, blockId));
-                registerForm(nuggetId, itemId);
-                registerForm(blockId, itemId);
+                pending.add(new ResolvedItem(itemId, spec));
+            }
+        }
+        Set<Identifier> catalogIds = new LinkedHashSet<>();
+        for (ResolvedItem resolved : pending) {
+            catalogIds.add(resolved.itemId());
+        }
+        for (ResolvedItem resolved : pending) {
+            Identifier itemId = resolved.itemId();
+            if (entriesByItem.containsKey(itemId)) {
+                continue;
+            }
+            RawSpec spec = resolved.spec();
+            Identifier nuggetId = usable(spec.nuggetId());
+            Identifier blockId = usable(spec.blockId());
+            Identifier groupId = spec.groupId() != null ? spec.groupId() : itemId;
+            Identifier groupIcon = spec.groupIcon() != null ? spec.groupIcon() : itemId;
+            List<Identifier> unlockVariants = resolveUnlockVariants(spec, itemId, catalogIds);
+            entriesByItem.put(itemId, new CreationEntry(
+                    itemId,
+                    spec.tab(),
+                    spec.abilityKey(),
+                    spec.lipidCost(),
+                    spec.researchCost(),
+                    nuggetId,
+                    blockId,
+                    groupId,
+                    groupIcon,
+                    spec.unlockAbility(),
+                    unlockVariants
+            ));
+            registerForm(nuggetId, itemId);
+            registerForm(blockId, itemId);
+            for (Identifier variantId : unlockVariants) {
+                registerForm(variantId, itemId);
             }
         }
     }
@@ -140,14 +172,13 @@ public final class CreationCatalog {
     }
 
     private void parseFile(JsonObject json) {
-        String ability = requireString(json, "ability");
-        if (ability.contains("#")) {
-            ability = ability.substring(ability.indexOf('#') + 1);
-        }
+        String ability = stripAbility(requireString(json, "ability"));
         CreationTab defaultTab = CreationTab.fromId(json.has("tab") ? json.get("tab").getAsString() : "materials");
         int defaultResearchCost = json.has("research_cost")
                 ? clampResearchCost(json.get("research_cost").getAsInt())
                 : Config.CREATION_RESEARCH_SACRIFICES.get();
+        Identifier fileGroupId = optionalId(json, "group");
+        Identifier fileGroupIcon = optionalId(json, "group_icon");
         if (!json.has("entries") || !json.get("entries").isJsonArray()) {
             throw new JsonParseException("Missing entries array");
         }
@@ -157,6 +188,7 @@ public final class CreationCatalog {
                 continue;
             }
             JsonObject entry = element.getAsJsonObject();
+            String entryAbility = entry.has("ability") ? stripAbility(entry.get("ability").getAsString()) : ability;
             CreationTab tab = entry.has("tab") ? CreationTab.fromId(entry.get("tab").getAsString()) : defaultTab;
             int cost = entry.has("lipid_cost")
                     ? Math.max(1, entry.get("lipid_cost").getAsInt())
@@ -166,26 +198,70 @@ public final class CreationCatalog {
                     : defaultResearchCost;
             Identifier nuggetId = optionalId(entry, "nugget");
             Identifier blockId = optionalId(entry, "block");
+            Identifier groupId = entry.has("group") ? optionalId(entry, "group") : fileGroupId;
+            Identifier groupIcon = entry.has("group_icon") ? optionalId(entry, "group_icon") : fileGroupIcon;
+            Identifier unlockTag = optionalId(entry, "unlock_tag");
+            List<Identifier> unlockItems = optionalIdList(entry, "unlock_items");
+            String unlockAbility = null;
+            if (unlockTag != null || !unlockItems.isEmpty()) {
+                unlockAbility = entry.has("unlock_ability")
+                        ? stripAbility(entry.get("unlock_ability").getAsString())
+                        : CreationUtil.DYE_KNOWLEDGE;
+            }
             if (entry.has("item")) {
                 Identifier itemId = Identifier.parse(entry.get("item").getAsString());
-                rawSpecs.add(new RawSpec(ability, tab, cost, researchCost, itemId, null, nuggetId, blockId));
+                rawSpecs.add(new RawSpec(
+                        entryAbility, tab, cost, researchCost, itemId, null, nuggetId, blockId,
+                        groupId, groupIcon, unlockAbility, unlockTag, unlockItems
+                ));
             } else if (entry.has("tag")) {
                 Identifier tagId = Identifier.parse(entry.get("tag").getAsString());
-                rawSpecs.add(new RawSpec(ability, tab, cost, researchCost, null, tagId, null, null));
+                rawSpecs.add(new RawSpec(
+                        entryAbility, tab, cost, researchCost, null, tagId, null, null,
+                        groupId, groupIcon, unlockAbility, unlockTag, unlockItems
+                ));
             }
         }
     }
 
-    private static List<Identifier> resolveSpec(RawSpec spec) {
+    private static List<Identifier> resolveUnlockVariants(RawSpec spec, Identifier baseId, Set<Identifier> catalogIds) {
         List<Identifier> ids = new ArrayList<>();
-        if (spec.itemId() != null) {
-            ids.add(spec.itemId());
+        Set<Identifier> seen = new LinkedHashSet<>();
+        for (Identifier itemId : spec.unlockItems()) {
+            addUnlockVariant(ids, seen, itemId, baseId, catalogIds);
+        }
+        if (spec.unlockTag() != null) {
+            for (Identifier itemId : resolveIds(null, spec.unlockTag())) {
+                addUnlockVariant(ids, seen, itemId, baseId, catalogIds);
+            }
+        }
+        return ids;
+    }
+
+    private static void addUnlockVariant(
+            List<Identifier> ids,
+            Set<Identifier> seen,
+            Identifier itemId,
+            Identifier baseId,
+            Set<Identifier> catalogIds
+    ) {
+        Identifier usableId = usable(itemId);
+        if (usableId == null || usableId.equals(baseId) || catalogIds.contains(usableId) || !seen.add(usableId)) {
+            return;
+        }
+        ids.add(usableId);
+    }
+
+    private static List<Identifier> resolveIds(Identifier itemId, Identifier tagId) {
+        List<Identifier> ids = new ArrayList<>();
+        if (itemId != null) {
+            ids.add(itemId);
             return ids;
         }
-        if (spec.tagId() == null) {
+        if (tagId == null) {
             return ids;
         }
-        TagKey<Item> tag = TagKey.create(Registries.ITEM, spec.tagId());
+        TagKey<Item> tag = TagKey.create(Registries.ITEM, tagId);
         for (Item item : BuiltInRegistries.ITEM) {
             if (!item.builtInRegistryHolder().is(tag)) {
                 continue;
@@ -223,6 +299,24 @@ public final class CreationCatalog {
         return Identifier.parse(raw);
     }
 
+    private static List<Identifier> optionalIdList(JsonObject json, String key) {
+        if (!json.has(key) || !json.get(key).isJsonArray()) {
+            return List.of();
+        }
+        List<Identifier> ids = new ArrayList<>();
+        for (JsonElement element : json.getAsJsonArray(key)) {
+            if (!element.isJsonPrimitive()) {
+                continue;
+            }
+            String raw = element.getAsString();
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            ids.add(Identifier.parse(raw));
+        }
+        return ids;
+    }
+
     private static int clampResearchCost(int cost) {
         return Math.max(1, Math.min(64, cost));
     }
@@ -234,6 +328,19 @@ public final class CreationCatalog {
         return json.get(key).getAsString();
     }
 
+    private static String stripAbility(String ability) {
+        if (ability == null) {
+            return null;
+        }
+        if (ability.contains("#")) {
+            return ability.substring(ability.indexOf('#') + 1);
+        }
+        return ability;
+    }
+
+    private record ResolvedItem(Identifier itemId, RawSpec spec) {
+    }
+
     private record RawSpec(
             String abilityKey,
             CreationTab tab,
@@ -242,7 +349,15 @@ public final class CreationCatalog {
             Identifier itemId,
             Identifier tagId,
             Identifier nuggetId,
-            Identifier blockId
+            Identifier blockId,
+            Identifier groupId,
+            Identifier groupIcon,
+            String unlockAbility,
+            Identifier unlockTag,
+            List<Identifier> unlockItems
     ) {
+        RawSpec {
+            unlockItems = unlockItems == null ? List.of() : List.copyOf(unlockItems);
+        }
     }
 }

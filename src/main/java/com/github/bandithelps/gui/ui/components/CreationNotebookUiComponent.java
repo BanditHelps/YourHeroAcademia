@@ -178,12 +178,14 @@ public class CreationNotebookUiComponent extends UiWidget {
         private int enchantScroll;
         private String draggingEnchantId;
         private final Map<String, String> selectedForms = new HashMap<>();
+        private final Map<String, String> selectedGroupItems = new HashMap<>();
         private final Map<CreationGearSlot, String> selectedGearVariants = new HashMap<>();
         private String formMenuParent;
         private List<String> formMenuChoices = List.of();
         private int formMenuX;
         private int formMenuY;
         private boolean potionFormMenu;
+        private boolean itemGroupFormMenu;
         private String selectedEffectId;
         private CreationPotionForm selectedPotionForm = CreationPotionForm.DRINKABLE;
         private int potionDurationSeconds = 15;
@@ -219,9 +221,9 @@ public class CreationNotebookUiComponent extends UiWidget {
             gui.text(minecraft.font, String.valueOf(lipids), x + 192, y + 44, 0xFF3A2A18, false);
 
             if (this.page == Page.BLOCKS) {
-                drawGrid(gui, x, y, ClientCreationState.entriesForTab(CreationTab.MATERIALS, true), MAT_X, MAT_Y1, 3, 3, SLOT, this.materialsPage);
-                drawGrid(gui, x, y, ClientCreationState.entriesForTab(CreationTab.MATERIALS, true), MAT_X, MAT_Y2, 3, 3, SLOT, this.materialsPage + 1);
-                drawGrid(gui, x, y, ClientCreationState.entriesForTab(CreationTab.BLOCKS, true), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, SLOT, this.blocksPage, BLOCKS_LAST_ROW);
+                drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y1, 3, 3, SLOT, this.materialsPage);
+                drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y2, 3, 3, SLOT, this.materialsPage + 1);
+                drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, SLOT, this.blocksPage, BLOCKS_LAST_ROW);
             } else if (this.page == Page.GEAR) {
                 drawGearSlots(gui, x, y);
                 drawEnchantPanel(gui, minecraft, x, y, mouseX, mouseY);
@@ -248,7 +250,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                 }
             }
 
-            CreationSyncPayload.ClientEntry selected = ClientCreationState.find(this.selectedId);
+            CreationSyncPayload.ClientEntry selected = ClientCreationState.findParent(this.selectedId);
             CreationSyncPayload.ClientPotionEntry selectedPotion = this.page == Page.ALCHEMY ? ClientCreationState.findPotion(this.selectedEffectId) : null;
             int selectedCost;
             boolean canCreate;
@@ -280,7 +282,9 @@ public class CreationNotebookUiComponent extends UiWidget {
                 GuiGraphicsExtractor gui,
                 int originX,
                 int originY,
-                List<CreationSyncPayload.ClientEntry> entries,
+                int mouseX,
+                int mouseY,
+                List<ClientCreationState.ItemGroupView> groups,
                 int gridX,
                 int gridY,
                 int cols,
@@ -288,14 +292,16 @@ public class CreationNotebookUiComponent extends UiWidget {
                 int slotSize,
                 int page
         ) {
-            drawGrid(gui, originX, originY, entries, gridX, gridY, cols, rows, slotSize, page, cols);
+            drawGrid(gui, originX, originY, mouseX, mouseY, groups, gridX, gridY, cols, rows, slotSize, page, cols);
         }
 
         private void drawGrid(
                 GuiGraphicsExtractor gui,
                 int originX,
                 int originY,
-                List<CreationSyncPayload.ClientEntry> entries,
+                int mouseX,
+                int mouseY,
+                List<ClientCreationState.ItemGroupView> groups,
                 int gridX,
                 int gridY,
                 int cols,
@@ -307,30 +313,35 @@ public class CreationNotebookUiComponent extends UiWidget {
             int perPage = cols * (rows - 1) + lastRowCols;
             int start = page * perPage;
             int index = 0;
+            boolean overMenu = formMenuContains(mouseX, mouseY);
             for (int row = 0; row < rows; row++) {
                 int rowCols = row == rows - 1 ? lastRowCols : cols;
                 for (int col = 0; col < rowCols; col++) {
                     int entryIndex = start + index;
                     index++;
-                    if (entryIndex < 0 || entryIndex >= entries.size()) {
+                    if (entryIndex < 0 || entryIndex >= groups.size()) {
                         continue;
                     }
-                    CreationSyncPayload.ClientEntry entry = entries.get(entryIndex);
+                    ClientCreationState.ItemGroupView group = groups.get(entryIndex);
                     int slotX = originX + gridX + col * slotSize;
                     int slotY = originY + gridY + row * slotSize;
                     int iconSize = iconSizeForSlot(slotSize);
                     int iconX = slotX + Math.max(0, (slotSize - iconSize) / 2);
                     int iconY = slotY + Math.max(0, (slotSize - iconSize) / 2);
-                    ItemStack stack = ClientCreationState.stackOf(displayedFormId(entry.itemId()));
+                    ItemStack stack = itemGroupIcon(group);
                     drawItem(gui, stack, iconX, iconY, iconSize);
-                    if (entry.hasForms()) {
+                    CreationSyncPayload.ClientEntry first = ClientCreationState.find(group.firstItemId());
+                    if (!group.isSingleton() || (first != null && first.hasForms())) {
                         gui.fill(slotX + slotSize - 4, slotY + 1, slotX + slotSize - 1, slotY + 4, 0xFFFFD27A);
                     }
-                    if (entry.itemId().equals(this.selectedId)) {
+                    if (group.contains(this.selectedId) || group.contains(displayedFormId(this.selectedId))) {
                         gui.fill(iconX - 1, iconY - 1, iconX + iconSize + 1, iconY, 0xFFFFD27A);
                         gui.fill(iconX - 1, iconY + iconSize, iconX + iconSize + 1, iconY + iconSize + 1, 0xFFFFD27A);
                         gui.fill(iconX - 1, iconY - 1, iconX, iconY + iconSize + 1, 0xFFFFD27A);
                         gui.fill(iconX + iconSize, iconY - 1, iconX + iconSize + 1, iconY + iconSize + 1, 0xFFFFD27A);
+                    }
+                    if (!overMenu && contains(mouseX, mouseY, slotX, slotY, slotSize, slotSize)) {
+                        gui.setTooltipForNextFrame(Minecraft.getInstance().font, itemGroupTooltip(group), mouseX, mouseY);
                     }
                 }
             }
@@ -354,6 +365,10 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
             if (this.potionFormMenu) {
                 current = this.selectedEffectId;
+            }
+            if (this.itemGroupFormMenu) {
+                ClientCreationState.ItemGroupView group = findItemGroup(this.formMenuParent);
+                current = group != null ? displayedGroupItem(group) : this.selectedId;
             }
             Component hoveredName = null;
             for (int i = 0; i < choices.size(); i++) {
@@ -511,10 +526,21 @@ public class CreationNotebookUiComponent extends UiWidget {
 
             SlotHit clicked = findClickedSlot(mouseX, mouseY, x, y);
             if (clicked != null) {
-                CreationSyncPayload.ClientEntry entry = ClientCreationState.find(clicked.itemId());
-                CreationGearSlot gearSlot = this.page == Page.GEAR ? CreationGearSlot.of(clicked.itemId()) : null;
+                ClientCreationState.ItemGroupView group = this.page == Page.BLOCKS ? findItemGroup(clicked.itemId()) : null;
+                if (group != null && !group.isSingleton()) {
+                    String displayed = displayedGroupItem(group);
+                    if (displayed != null) {
+                        this.selectedId = displayed;
+                    }
+                    openItemGroupMenu(group.groupId(), group.itemIds(), clicked);
+                    clickSound();
+                    return true;
+                }
+                String clickedId = group != null && group.firstItemId() != null ? group.firstItemId() : clicked.itemId();
+                CreationSyncPayload.ClientEntry entry = ClientCreationState.findParent(clickedId);
+                CreationGearSlot gearSlot = this.page == Page.GEAR ? CreationGearSlot.of(clickedId) : null;
                 List<String> gearVariants = gearSlot == null ? List.of() : unlockedGearVariants(gearSlot);
-                if (!clicked.itemId().equals(this.selectedId)) {
+                if (!clickedId.equals(this.selectedId)) {
                     CreationGearSlot previous = CreationGearSlot.of(this.selectedId);
                     if (previous != gearSlot) {
                         this.enchantLevels.clear();
@@ -522,10 +548,10 @@ public class CreationNotebookUiComponent extends UiWidget {
                         this.draggingEnchantId = null;
                     }
                 }
-                this.selectedId = clicked.itemId();
+                this.selectedId = clickedId;
                 if (event.button() == 1 && gearVariants.size() > 1) {
-                    if (!clicked.itemId().equals(openFormParent)) {
-                        openFormMenu(clicked.itemId(), gearVariants, clicked, "gui.yha.creation.choose_variant");
+                    if (!clickedId.equals(openFormParent)) {
+                        openFormMenu(clickedId, gearVariants, clicked, "gui.yha.creation.choose_variant");
                     }
                 } else if (event.button() == 1 && entry != null && entry.hasForms()) {
                     if (!entry.itemId().equals(openFormParent)) {
@@ -647,6 +673,14 @@ public class CreationNotebookUiComponent extends UiWidget {
                         closeFormMenu();
                         return true;
                     }
+                    if (this.itemGroupFormMenu) {
+                        if (this.formMenuParent != null) {
+                            this.selectedGroupItems.put(this.formMenuParent, chosen);
+                        }
+                        this.selectedId = chosen;
+                        closeFormMenu();
+                        return true;
+                    }
                     CreationGearSlot gearSlot = CreationGearSlot.of(this.formMenuParent);
                     if (gearSlot != null) {
                         this.selectedGearVariants.put(gearSlot, chosen);
@@ -670,6 +704,7 @@ public class CreationNotebookUiComponent extends UiWidget {
 
         private void openFormMenu(String parentId, List<String> choices, SlotHit hit, String overlayKey) {
             this.potionFormMenu = false;
+            this.itemGroupFormMenu = false;
             if (parentId != null && parentId.equals(this.formMenuParent)) {
                 closeFormMenu();
                 return;
@@ -702,10 +737,17 @@ public class CreationNotebookUiComponent extends UiWidget {
             this.potionFormMenu = true;
         }
 
+        private void openItemGroupMenu(String groupId, List<String> choices, SlotHit hit) {
+            this.itemGroupFormMenu = true;
+            openFormMenu(groupId, choices, hit, "gui.yha.creation.choose_item");
+            this.itemGroupFormMenu = true;
+        }
+
         private void closeFormMenu() {
             this.formMenuParent = null;
             this.formMenuChoices = List.of();
             this.potionFormMenu = false;
+            this.itemGroupFormMenu = false;
         }
 
         private void selectAssigned(CreationQuickSlot recipe) {
@@ -777,6 +819,11 @@ public class CreationNotebookUiComponent extends UiWidget {
             } else {
                 this.selectedId = assignedId;
             }
+            ClientCreationState.ItemGroupView group = findItemGroup(assignedId);
+            if (group != null) {
+                this.selectedGroupItems.put(group.groupId(), assignedId);
+                this.selectedId = assignedId;
+            }
         }
 
         private String displayedFormId(String parentId) {
@@ -790,8 +837,8 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (this.page == Page.GEAR || this.page == Page.ALCHEMY) {
                 return;
             }
-            int materials = ClientCreationState.entriesForTab(CreationTab.MATERIALS, true).size();
-            int blocks = ClientCreationState.entriesForTab(CreationTab.BLOCKS, true).size();
+            int materials = ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS).size();
+            int blocks = ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS).size();
             int matPages = Math.max(1, ceilDiv(materials, 18));
             int blockPages = Math.max(1, ceilDiv(blocks, BLOCKS_COLS * (BLOCKS_ROWS - 1) + BLOCKS_LAST_ROW));
             this.materialsPage = (this.materialsPage + 2) % Math.max(2, matPages + (matPages % 2));
@@ -805,15 +852,15 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (this.page == Page.ALCHEMY) {
                 return null;
             }
-            SlotHit materials = hitGrid(mouseX, mouseY, x, y, ClientCreationState.entriesForTab(CreationTab.MATERIALS, true), MAT_X, MAT_Y1, 3, 3, SLOT, this.materialsPage, 3);
+            SlotHit materials = hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y1, 3, 3, SLOT, this.materialsPage, 3);
             if (materials != null) {
                 return materials;
             }
-            materials = hitGrid(mouseX, mouseY, x, y, ClientCreationState.entriesForTab(CreationTab.MATERIALS, true), MAT_X, MAT_Y2, 3, 3, SLOT, this.materialsPage + 1, 3);
+            materials = hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y2, 3, 3, SLOT, this.materialsPage + 1, 3);
             if (materials != null) {
                 return materials;
             }
-            return hitGrid(mouseX, mouseY, x, y, ClientCreationState.entriesForTab(CreationTab.BLOCKS, true), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, SLOT, this.blocksPage, BLOCKS_LAST_ROW);
+            return hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, SLOT, this.blocksPage, BLOCKS_LAST_ROW);
         }
 
         private SlotHit hitGrid(
@@ -821,7 +868,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                 int mouseY,
                 int originX,
                 int originY,
-                List<CreationSyncPayload.ClientEntry> entries,
+                List<ClientCreationState.ItemGroupView> groups,
                 int gridX,
                 int gridY,
                 int cols,
@@ -843,10 +890,15 @@ public class CreationNotebookUiComponent extends UiWidget {
                     if (!contains(mouseX, mouseY, slotX, slotY, slotSize, slotSize)) {
                         continue;
                     }
-                    if (entryIndex < 0 || entryIndex >= entries.size()) {
+                    if (entryIndex < 0 || entryIndex >= groups.size()) {
                         return null;
                     }
-                    return new SlotHit(entries.get(entryIndex).itemId(), slotX, slotY, slotSize);
+                    ClientCreationState.ItemGroupView group = groups.get(entryIndex);
+                    String clickId = group.isSingleton() ? group.firstItemId() : group.groupId();
+                    if (clickId == null) {
+                        return null;
+                    }
+                    return new SlotHit(clickId, slotX, slotY, slotSize);
                 }
             }
             return null;
@@ -1610,6 +1662,57 @@ public class CreationNotebookUiComponent extends UiWidget {
             CreationSyncPayload.ClientPotionEntry potion = ClientCreationState.findPotion(effectId);
             int ticks = potion != null && potion.instant() ? 1 : this.potionDurationSeconds * 20;
             return ClientCreationState.potionStack(effectId, form, ticks, this.potionAmplifier);
+        }
+
+        private ClientCreationState.ItemGroupView findItemGroup(String id) {
+            if (id == null) {
+                return null;
+            }
+            for (CreationTab tab : List.of(CreationTab.MATERIALS, CreationTab.BLOCKS)) {
+                for (ClientCreationState.ItemGroupView group : ClientCreationState.unlockedItemGroups(tab)) {
+                    if (id.equals(group.groupId()) || group.contains(id)) {
+                        return group;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private String displayedGroupItem(ClientCreationState.ItemGroupView group) {
+            String selected = displayedFormId(this.selectedId);
+            if (group.contains(this.selectedId)) {
+                return selected != null && group.contains(selected) ? selected : this.selectedId;
+            }
+            if (selected != null && group.contains(selected)) {
+                return selected;
+            }
+            String remembered = this.selectedGroupItems.get(group.groupId());
+            if (remembered != null && group.contains(remembered)) {
+                return remembered;
+            }
+            if (group.isSingleton() && group.firstItemId() != null) {
+                return displayedFormId(group.firstItemId());
+            }
+            if (group.iconId() != null && !group.iconId().isBlank()) {
+                return group.iconId();
+            }
+            return group.firstItemId();
+        }
+
+        private ItemStack itemGroupIcon(ClientCreationState.ItemGroupView group) {
+            return ClientCreationState.stackOf(displayedGroupItem(group));
+        }
+
+        private Component itemGroupTooltip(ClientCreationState.ItemGroupView group) {
+            String displayed = displayedGroupItem(group);
+            ItemStack stack = ClientCreationState.stackOf(displayed);
+            if (!stack.isEmpty()) {
+                return stack.getHoverName();
+            }
+            if (group.isSingleton() && displayed != null) {
+                return Component.literal(displayed);
+            }
+            return groupDisplayName(group.groupId());
         }
 
         private static ItemStack groupIcon(ClientCreationState.PotionGroupView group) {

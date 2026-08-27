@@ -2,8 +2,8 @@
   "ability": "cr_know_nether_2",
   "tab": "blocks",
   "entries": [
-    { "item": "minecraft:nether_bricks", "lipid_cost": 16 },
-    { "item": "minecraft:red_nether_bricks", "lipid_cost": 18 },
+    { "item": "minecraft:nether_bricks", "group": "yha:nether_bricks", "group_icon": "minecraft:nether_bricks", "lipid_cost": 16 },
+    { "item": "minecraft:red_nether_bricks", "group": "yha:nether_bricks", "group_icon": "minecraft:nether_bricks", "lipid_cost": 18 },
     { "item": "minecraft:glowstone", "lipid_cost": 20 },
     { "item": "minecraft:blackstone", "lipid_cost": 14 },
     { "item": "minecraft:basalt", "lipid_cost": 14 },

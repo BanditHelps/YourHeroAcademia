@@ -128,6 +128,31 @@ public final class ClientCreationState {
         return new ArrayList<>(groups.values());
     }
 
+    public static List<ItemGroupView> unlockedItemGroups(CreationTab tab) {
+        Map<String, ItemGroupView> groups = new LinkedHashMap<>();
+        for (CreationSyncPayload.ClientEntry entry : entriesForTab(tab, true)) {
+            String groupId = entry.groupId() == null || entry.groupId().isBlank() ? entry.itemId() : entry.groupId();
+            ItemGroupView group = groups.get(groupId);
+            if (group == null) {
+                String iconId = entry.groupIcon() == null || entry.groupIcon().isBlank() ? entry.itemId() : entry.groupIcon();
+                group = new ItemGroupView(groupId, iconId, new ArrayList<>());
+                groups.put(groupId, group);
+            }
+            addGroupItem(group.itemIds(), entry.itemId());
+            for (String variantId : entry.unlockVariantIds()) {
+                addGroupItem(group.itemIds(), variantId);
+            }
+        }
+        return new ArrayList<>(groups.values());
+    }
+
+    private static void addGroupItem(List<String> itemIds, String itemId) {
+        if (itemId == null || itemId.isBlank() || itemIds.contains(itemId)) {
+            return;
+        }
+        itemIds.add(itemId);
+    }
+
     public static ItemStack potionStack(String effectId, CreationPotionForm form, int durationTicks, int amplifier) {
         try {
             return CreationPotions.stackOf(Identifier.parse(effectId), form, durationTicks, amplifier);
@@ -171,6 +196,20 @@ public final class ClientCreationState {
 
         public CreationSyncPayload.ClientPotionEntry first() {
             return this.effects.isEmpty() ? null : this.effects.getFirst();
+        }
+    }
+
+    public record ItemGroupView(String groupId, String iconId, List<String> itemIds) {
+        public boolean isSingleton() {
+            return this.itemIds.size() <= 1;
+        }
+
+        public String firstItemId() {
+            return this.itemIds.isEmpty() ? null : this.itemIds.getFirst();
+        }
+
+        public boolean contains(String itemId) {
+            return itemId != null && this.itemIds.contains(itemId);
         }
     }
 }
