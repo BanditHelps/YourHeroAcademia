@@ -417,14 +417,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          2.9,
-          1.7
-        ],
-        "gui_connection": [
-          [
-            2.9,
-            1
-          ]
+          6,
+          1
         ]
       },
       "state": {
@@ -436,7 +430,7 @@
           },
           "requires": {
             "type": "palladium:ability_unlocked",
-            "ability": "cr_know_chemical_2"
+            "ability": "cr_know_chemical_3"
           }
         }
       }
@@ -911,7 +905,7 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          5.8,
+          5.4,
           1
         ]
       },
@@ -2038,7 +2032,7 @@
     "cr_quick_slot_1": {
       "type": "palladium:dummy",
       "properties": {
-        "title": "Quick Slot - I",
+        "title": "Quick Craft - I",
         "description": "Adds a quick craft slot that allows you to save an item and quickly recal it.",
         "icon": "yha:textures/icons/creation/creation_slot_1.png",
         "hidden_in_gui": false,
@@ -2046,7 +2040,8 @@
         "gui_position": [
           0.8,
           -2.1
-        ]
+        ],
+        "list_index": 1
       },
       "state": {
         "unlocking": {
@@ -2065,7 +2060,7 @@
     "cr_quick_slot_2": {
       "type": "palladium:dummy",
       "properties": {
-        "title": "Quick Slot - II",
+        "title": "Quick Craft - II",
         "description": "Adds a secondary quick craft slot that allows you to save an item and quickly recall it.",
         "icon": "yha:textures/icons/creation/creation_slot_2.png",
         "hidden_in_gui": false,
@@ -2073,7 +2068,8 @@
         "gui_position": [
           1.5,
           -2.1
-        ]
+        ],
+        "list_index": 2
       },
       "state": {
         "unlocking": {
@@ -2092,7 +2088,7 @@
     "cr_quick_slot_3": {
       "type": "palladium:dummy",
       "properties": {
-        "title": "Quick Slot - III",
+        "title": "Quick Craft - III",
         "description": "Adds a third quick craft slot that allows you to save an item and quickly recall it.",
         "icon": "yha:textures/icons/creation/creation_slot_3.png",
         "hidden_in_gui": false,
@@ -2100,7 +2096,8 @@
         "gui_position": [
           2.2,
           -2.1
-        ]
+        ],
+        "list_index": 3
       },
       "state": {
         "unlocking": {
@@ -2412,6 +2409,90 @@
           "requires": {
             "type": "palladium:ability_unlocked",
             "ability": "cr_know_weapon_shield"
+          }
+        }
+      }
+    },
+    "cr_quick_slot_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Quick Craft - IV",
+        "description": "Adds a fourth quick craft slot that allows you to save an item and quickly recall it.",
+        "icon": "yha:textures/icons/creation/creation_slot_4.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.9,
+          -2.1
+        ],
+        "list_index": 1
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_quick_slot_3"
+          }
+        }
+      }
+    },
+    "cr_quick_slot_5": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Quick Craft - V",
+        "description": "Adds a fifth quick craft slot that allows you to save an item and quickly recall it.",
+        "icon": "yha:textures/icons/creation/creation_slot_5.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          3.6,
+          -2.1
+        ],
+        "list_index": 2
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_quick_slot_4"
+          }
+        }
+      }
+    },
+    "cr_quick_slot_6": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Quick Craft - VI",
+        "description": "Adds a sixth quick craft slot that allows you to save an item and quickly recall it.",
+        "icon": "yha:textures/icons/creation/creation_slot_6.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          4.3,
+          -2.1
+        ],
+        "list_index": 3
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_quick_slot_5"
           }
         }
       }
