@@ -2,9 +2,9 @@
   "ability": "cr_know_tool_2",
   "tab": "gear",
   "entries": [
-    { "item": "minecraft:golden_pickaxe", "lipid_cost": 28 },
-    { "item": "minecraft:golden_axe", "lipid_cost": 28 },
-    { "item": "minecraft:golden_shovel", "lipid_cost": 18 },
-    { "item": "minecraft:golden_hoe", "lipid_cost": 18 }
+    { "item": "minecraft:golden_pickaxe", "lipid_cost": 164 },
+    { "item": "minecraft:golden_axe", "lipid_cost": 164 },
+    { "item": "minecraft:golden_shovel", "lipid_cost": 60 },
+    { "item": "minecraft:golden_hoe", "lipid_cost": 112 }
   ]
 }

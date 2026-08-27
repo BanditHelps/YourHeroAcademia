@@ -2,6 +2,6 @@
   "ability": "cr_know_weapon_2",
   "tab": "gear",
   "entries": [
-    { "item": "minecraft:copper_sword", "lipid_cost": 22 }
+    { "item": "minecraft:copper_sword", "lipid_cost": 56 }
   ]
 }

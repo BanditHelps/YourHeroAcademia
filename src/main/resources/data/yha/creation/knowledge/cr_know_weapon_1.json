@@ -3,6 +3,6 @@
   "tab": "gear",
   "entries": [
     { "item": "minecraft:wooden_sword", "lipid_cost": 10 },
-    { "item": "minecraft:stone_sword", "lipid_cost": 14 }
+    { "item": "minecraft:stone_sword", "lipid_cost": 12 }
   ]
 }

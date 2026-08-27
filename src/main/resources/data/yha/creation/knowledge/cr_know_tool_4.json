@@ -2,9 +2,9 @@
   "ability": "cr_know_tool_4",
   "tab": "gear",
   "entries": [
-    { "item": "minecraft:diamond_pickaxe", "lipid_cost": 80 },
-    { "item": "minecraft:diamond_axe", "lipid_cost": 80 },
-    { "item": "minecraft:diamond_shovel", "lipid_cost": 50 },
-    { "item": "minecraft:diamond_hoe", "lipid_cost": 50 }
+    { "item": "minecraft:diamond_pickaxe", "lipid_cost": 398 },
+    { "item": "minecraft:diamond_axe", "lipid_cost": 398 },
+    { "item": "minecraft:diamond_shovel", "lipid_cost": 138 },
+    { "item": "minecraft:diamond_hoe", "lipid_cost": 268 }
   ]
 }

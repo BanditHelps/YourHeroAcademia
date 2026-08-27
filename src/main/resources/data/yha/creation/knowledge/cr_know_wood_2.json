@@ -2,7 +2,7 @@
   "ability": "cr_know_wood_2",
   "tab": "blocks",
   "entries": [
-    { "tag": "minecraft:planks", "lipid_cost": 6 },
+    { "tag": "minecraft:planks", "lipid_cost": 3 },
     { "item": "minecraft:stripped_oak_log", "lipid_cost": 12 },
     { "item": "minecraft:stripped_spruce_log", "lipid_cost": 12 },
     { "item": "minecraft:stripped_birch_log", "lipid_cost": 12 },
