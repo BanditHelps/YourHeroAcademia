@@ -26,6 +26,7 @@ import com.github.bandithelps.abilities.decay.RotAbility;
 import com.github.bandithelps.abilities.common.PlaySoundAbility;
 import com.github.bandithelps.abilities.common.PotionGeneratorAbility;
 import com.github.bandithelps.abilities.common.SmokeCanisterChargeAbility;
+import com.github.bandithelps.abilities.creation.CreationQuickSlotAbility;
 import com.github.bandithelps.abilities.creation.OpenCreationMenuAbility;
 import com.github.bandithelps.abilities.common.SprayAttackAbility;
 import com.github.bandithelps.abilities.movement.DashAbility;
@@ -90,6 +91,7 @@ public class AbilityRegister {
      |    Creation            |
      =========================*/
     public static final DeferredHolder<AbilitySerializer<?>, OpenCreationMenuAbility.Serializer> OPEN_CREATION_MENU;
+    public static final DeferredHolder<AbilitySerializer<?>, CreationQuickSlotAbility.Serializer> CREATION_QUICK_SLOT;
 
     /*=========================
      |    Block Displays      |
@@ -115,6 +117,7 @@ public class AbilityRegister {
         PLAY_SOUND = ABILITIES.register("play_sound", PlaySoundAbility.Serializer::new);
         SMOKE_CANISTER_CHARGE = ABILITIES.register("smoke_canister_charge", SmokeCanisterChargeAbility.Serializer::new);
         OPEN_CREATION_MENU = ABILITIES.register("open_creation_menu", OpenCreationMenuAbility.Serializer::new);
+        CREATION_QUICK_SLOT = ABILITIES.register("creation_quick_slot", CreationQuickSlotAbility.Serializer::new);
         SET_BODY_STRING = ABILITIES.register("set_body_string", SetBodyStringAbility.Serializer::new);
         SET_BODY_FLOAT = ABILITIES.register("set_body_float", SetBodyFloatAbility.Serializer::new);
         DECAY_FIST = ABILITIES.register("decay_fist", DecayFistAbility.Serializer::new);

@@ -63,6 +63,7 @@
 
   "palladium.ability.yha.smoke_canister_charge": "Smokescreen - Charge Smoke Canister",
   "palladium.ability.yha.open_creation_menu": "Creation - Open Notebook",
+  "palladium.ability.yha.creation_quick_slot": "Creation - Quick Craft",
 
 
   "palladium.ability.yha.smoke_canister_charge.not_enough_smoke": "Not enough smoke capacity to charge.",
@@ -132,6 +133,8 @@
   "gui.yha.creation.inventory_count_books": "Matching books: %s",
   "gui.yha.creation.inventory_count_potions": "Matching potions: %s",
   "gui.yha.creation.potion_instant": "Instant",
+  "gui.yha.creation.quick_slot_empty": "Nothing is saved in that slot.",
+  "gui.yha.creation.quick_slot_assigned": "Saved to quick slot.",
   "gui.yha.creation.amplifier": "Amplifier %s",
   "gui.yha.creation.group.yha.aquatic": "Aquatic",
   "gui.yha.creation.group.yha.damage": "Damage",

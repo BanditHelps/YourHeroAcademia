@@ -32,10 +32,7 @@ public record CreationAssignSlotPayload(int slot, String itemId) implements Cust
             if (!(context.player() instanceof ServerPlayer player)) {
                 return;
             }
-            Identifier itemId = payload.itemId() == null || payload.itemId().isBlank()
-                    ? null
-                    : Identifier.parse(payload.itemId());
-            CreationUtil.tryAssignQuickSlot(player, payload.slot(), itemId);
+            CreationUtil.tryAssignQuickSlot(player, payload.slot(), payload.itemId());
         });
     }
 }

@@ -1,5 +1,6 @@
 package com.github.bandithelps.capabilities.creation;
 
+import com.github.bandithelps.creation.CreationQuickSlot;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -13,7 +14,7 @@ import java.util.Set;
 import net.minecraft.resources.Identifier;
 
 public class CreationData {
-    public static final int QUICK_SLOT_COUNT = 3;
+    public static final int QUICK_SLOT_COUNT = 6;
 
     public static final MapCodec<CreationData> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("progress", Map.of()).forGetter(CreationData::encodedProgress),
@@ -27,7 +28,7 @@ public class CreationData {
 
     private final Map<Identifier, Integer> progress = new LinkedHashMap<>();
     private final Set<Identifier> unlocked = new LinkedHashSet<>();
-    private final Identifier[] quickSlots = new Identifier[QUICK_SLOT_COUNT];
+    private final CreationQuickSlot[] quickSlots = new CreationQuickSlot[QUICK_SLOT_COUNT];
     private final Map<Identifier, Integer> enchantProgress = new LinkedHashMap<>();
     private final Set<Identifier> enchantUnlocked = new LinkedHashSet<>();
     private final Map<Identifier, Integer> potionProgress = new LinkedHashMap<>();
@@ -146,25 +147,25 @@ public class CreationData {
         potionProgress.remove(effectId);
     }
 
-    public Identifier getQuickSlot(int index) {
+    public CreationQuickSlot getQuickSlot(int index) {
         if (index < 0 || index >= QUICK_SLOT_COUNT) {
             return null;
         }
         return quickSlots[index];
     }
 
-    public void setQuickSlot(int index, Identifier itemId) {
+    public void setQuickSlot(int index, CreationQuickSlot recipe) {
         if (index < 0 || index >= QUICK_SLOT_COUNT) {
             return;
         }
-        if (itemId != null) {
+        if (recipe != null) {
             for (int i = 0; i < QUICK_SLOT_COUNT; i++) {
-                if (itemId.equals(quickSlots[i]) && i != index) {
+                if (recipe.equals(quickSlots[i]) && i != index) {
                     quickSlots[i] = null;
                 }
             }
         }
-        quickSlots[index] = itemId;
+        quickSlots[index] = recipe;
     }
 
     public Map<String, Integer> encodedProgress() {
@@ -178,7 +179,7 @@ public class CreationData {
     public List<String> encodedQuickSlots() {
         List<String> encoded = new ArrayList<>(QUICK_SLOT_COUNT);
         for (int i = 0; i < QUICK_SLOT_COUNT; i++) {
-            encoded.add(quickSlots[i] == null ? "" : quickSlots[i].toString());
+            encoded.add(quickSlots[i] == null ? "" : quickSlots[i].encode());
         }
         return encoded;
     }
@@ -216,7 +217,7 @@ public class CreationData {
         }
         int count = Math.min(QUICK_SLOT_COUNT, encoded.size());
         for (int i = 0; i < count; i++) {
-            quickSlots[i] = parseId(encoded.get(i));
+            quickSlots[i] = CreationQuickSlot.parse(encoded.get(i));
         }
     }
 

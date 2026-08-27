@@ -38,7 +38,8 @@ public final class CreationUtil {
             "cr_know_tool_1", "cr_know_armor_1", "cr_know_weapon_1", "cr_know_fletcher_1"
     };
     public static final String[] QUICK_SLOT_ABILITIES = {
-            "cr_quick_slot_1", "cr_quick_slot_2", "cr_quick_slot_3"
+            "cr_quick_slot_1", "cr_quick_slot_2", "cr_quick_slot_3",
+            "cr_quick_slot_4", "cr_quick_slot_5", "cr_quick_slot_6"
     };
     public static final String[] EFFICIENCY_ABILITIES = {
             "cr_efficiency_1", "cr_efficiency_2", "cr_efficiency_3", "cr_efficiency_4"
@@ -510,20 +511,94 @@ public final class CreationUtil {
         return true;
     }
 
-    public static boolean tryAssignQuickSlot(ServerPlayer player, int slot, Identifier itemId) {
+    public static boolean tryAssignQuickSlot(ServerPlayer player, int slot, String encoded) {
+        CreationQuickSlot recipe = encoded == null || encoded.isBlank() ? null : CreationQuickSlot.parse(encoded);
+        return tryAssignQuickSlot(player, slot, recipe);
+    }
+
+    public static boolean tryAssignQuickSlot(ServerPlayer player, int slot, CreationQuickSlot recipe) {
         int unlocked = unlockedQuickSlotCount(player);
         if (slot < 0 || slot >= unlocked) {
             return false;
         }
         CreationData data = CreationAttachments.get(player);
-        if (itemId != null) {
-            CreationEntry parent = CreationCatalog.getInstance().parentOf(itemId).orElse(null);
-            if (parent == null || !parent.isKnownForm(itemId) || !data.isUnlocked(parent.itemId())) {
+        if (recipe != null && !isValidQuickSlotRecipe(player, data, recipe)) {
+            return false;
+        }
+        data.setQuickSlot(slot, recipe);
+        CreationSyncEvents.syncNow(player);
+        return true;
+    }
+
+    public static boolean tryActivateQuickSlot(ServerPlayer player, int slot) {
+        if (!hasCreation(player) || slot < 0 || slot >= unlockedQuickSlotCount(player)) {
+            return false;
+        }
+        CreationQuickSlot recipe = CreationAttachments.get(player).getQuickSlot(slot);
+        if (recipe == null) {
+            player.sendSystemMessage(Component.translatable("gui.yha.creation.quick_slot_empty"));
+            return false;
+        }
+        if (recipe.isPotion()) {
+            return tryCreatePotion(player, recipe.id(), recipe.form(), recipe.durationTicks(), recipe.amplifier());
+        }
+        return tryCreate(player, recipe.id(), recipe.enchants());
+    }
+
+    private static boolean isValidQuickSlotRecipe(ServerPlayer player, CreationData data, CreationQuickSlot recipe) {
+        if (recipe.isPotion()) {
+            Identifier effectId = recipe.id();
+            CreationPotionEntry entry = CreationPotionCatalog.getInstance().get(effectId).orElse(null);
+            if (!isPotionResearchable(player, entry) || !data.isPotionUnlocked(effectId)) {
+                return false;
+            }
+            CreationPotionForm form = recipe.form();
+            if (form == CreationPotionForm.SPLASH && !isAbilityUnlocked(player, CHEMICAL_SPLASH)) {
+                return false;
+            }
+            if (form == CreationPotionForm.LINGERING && !isAbilityUnlocked(player, CHEMICAL_LINGER)) {
+                return false;
+            }
+            if (form == CreationPotionForm.ARROW && !isAbilityUnlocked(player, FLETCHER_ARROW_EFFECTS)) {
+                return false;
+            }
+            if (recipe.amplifier() > maxPotionAmplifier(player)) {
+                return false;
+            }
+            return true;
+        }
+        Identifier itemId = recipe.id();
+        CreationEntry parent = CreationCatalog.getInstance().parentOf(itemId).orElse(null);
+        if (parent == null || !parent.isKnownForm(itemId) || !data.isUnlocked(parent.itemId())) {
+            return false;
+        }
+        ItemStack preview = CreationCatalog.stackOf(itemId);
+        if (preview.isEmpty()) {
+            return false;
+        }
+        for (CreationCreatePayload.EnchantChoice choice : recipe.enchants()) {
+            if (choice == null || choice.enchantId() == null || choice.enchantId().isBlank() || choice.level() <= 0) {
+                continue;
+            }
+            Identifier enchantId;
+            try {
+                enchantId = Identifier.parse(choice.enchantId());
+            } catch (RuntimeException ignored) {
+                return false;
+            }
+            CreationEnchantEntry entry = CreationEnchantCatalog.getInstance().get(enchantId).orElse(null);
+            if (!isEnchantResearchable(player, entry) || !data.isEnchantUnlocked(enchantId)) {
+                return false;
+            }
+            int maxLevel = entry.resolvedMaxLevel(
+                    CreationEnchantments.vanillaMaxLevel(player.registryAccess(), enchantId));
+            if (choice.level() > maxLevel) {
+                return false;
+            }
+            if (!CreationEnchantments.canEnchant(player.registryAccess(), enchantId, preview)) {
                 return false;
             }
         }
-        data.setQuickSlot(slot, itemId);
-        CreationSyncEvents.syncNow(player);
         return true;
     }
 

@@ -4,6 +4,7 @@ import com.github.bandithelps.creation.CreationCatalog;
 import com.github.bandithelps.creation.CreationGearKind;
 import com.github.bandithelps.creation.CreationPotionForm;
 import com.github.bandithelps.creation.CreationPotions;
+import com.github.bandithelps.creation.CreationQuickSlot;
 import com.github.bandithelps.creation.CreationTab;
 import com.github.bandithelps.network.CreationSyncPayload;
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
@@ -134,20 +136,17 @@ public final class ClientCreationState {
         }
     }
 
-    public static Identifier quickSlot(int index) {
+    public static CreationQuickSlot quickSlot(int index) {
         List<String> slots = latest.quickSlots();
         if (index < 0 || index >= slots.size()) {
             return null;
         }
-        String raw = slots.get(index);
-        if (raw == null || raw.isBlank()) {
-            return null;
-        }
-        try {
-            return Identifier.parse(raw);
-        } catch (RuntimeException ignored) {
-            return null;
-        }
+        return CreationQuickSlot.parse(slots.get(index));
+    }
+
+    public static ItemStack quickSlotStack(int index, HolderLookup.Provider access) {
+        CreationQuickSlot recipe = quickSlot(index);
+        return recipe == null ? ItemStack.EMPTY : recipe.iconStack(access);
     }
 
     public static ItemStack stackOf(String itemId) {

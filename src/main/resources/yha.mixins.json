@@ -11,6 +11,7 @@
     "AbilityBarMixin",
     "AbilityBarAbilityListMixin",
     "AbilityListComponentMixin",
+    "IconRendererMixin",
     "PalladiumKeyMappingsMixin",
     "AbilityConnectionMixin"
   ],

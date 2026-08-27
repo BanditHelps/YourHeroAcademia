@@ -9,6 +9,7 @@ import com.github.bandithelps.creation.CreationGearKind;
 import com.github.bandithelps.creation.CreationGearSlot;
 import com.github.bandithelps.creation.CreationPotionForm;
 import com.github.bandithelps.creation.CreationPotions;
+import com.github.bandithelps.creation.CreationQuickSlot;
 import com.github.bandithelps.creation.CreationTab;
 import com.github.bandithelps.creation.CreationUtil;
 import com.github.bandithelps.network.CreationAssignSlotPayload;
@@ -57,11 +58,6 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final Identifier TEX_CREATE_HOVER = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_create_button_hover.png");
     private static final Identifier TEX_LOCKED_TAB = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_green_question_tab.png");
     private static final Identifier TEX_LOCK = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/icons/blackwhip/lock.png");
-    private static final Identifier[] TEX_GEAR_SLOTS = {
-            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_tool_gui_slots_1.png"),
-            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_tool_gui_slots_2.png"),
-            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_tool_gui_slots_3.png")
-    };
     private static final Identifier TEX_ENCHANT_ARMOR = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_armor_enchant.png");
     private static final Identifier TEX_ENCHANT_SWORD = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_sword_enchant.png");
     private static final Identifier TEX_ENCHANT_TOOLS = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_tools_enchant.png");
@@ -73,7 +69,7 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int GRID_ICON = 13;
     private static final int GEAR_SLOT = 12;
     private static final int GEAR_ICON = 12;
-    private static final int QUICK_ICON = 15;
+    private static final int QUICK_ICON = 16;
     private static final int MAT_X = 15;
     private static final int MAT_Y1 = 39;
     private static final int MAT_Y2 = 99;
@@ -86,11 +82,12 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int GEAR_Y = 39;
     private static final int GEAR_COLS = 4;
     private static final int GEAR_ROWS = 3;
-    private static final int QUICK_X = 171;
-    private static final int[] QUICK_Y = {59, 77, 95};
-    private static final int QUICK_SIZE = 18;
+    private static final int QUICK_X = 192;
+    private static final int[] QUICK_Y = {61, 77, 93, 109, 125, 141};
+    private static final int QUICK_SIZE = 16;
+    private static final int QUICK_COUNT = 6;
     private static final int CREATE_X = 171;
-    private static final int CREATE_Y = 120;
+    private static final int CREATE_Y = 159;
     private static final int CREATE_W = 59;
     private static final int CREATE_H = 17;
     private static final int DOG_X = 218;
@@ -214,10 +211,8 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
 
             int quickSlots = ClientCreationState.get().unlockedQuickSlots();
-            if ((this.page == Page.GEAR || this.page == Page.ALCHEMY) && quickSlots > 0) {
-                Identifier overlay = TEX_GEAR_SLOTS[Mth.clamp(quickSlots, 1, 3) - 1];
-                int overlayH = 26 * quickSlots;
-                blit(gui, overlay, x + QUICK_X, y + QUICK_Y[0], 0, 0, 26, overlayH, 26, overlayH);
+            if (this.page != Page.BLOCKS) {
+                blit(gui, TEX_BLOCKS, x + QUICK_X, y + QUICK_Y[0], QUICK_X, QUICK_Y[0], QUICK_SIZE, QUICK_SIZE * QUICK_COUNT, TEX_W, TEX_H);
             }
 
             int lipids = Mth.floor(ClientBodyState.getCustomFloat(BodyPart.CHEST, CreationUtil.LIPIDS_KEY, 0.0f));
@@ -234,21 +229,29 @@ public class CreationNotebookUiComponent extends UiWidget {
                 drawAlchemyPage(gui, minecraft, x, y, mouseX, mouseY);
             }
 
-            for (int i = 0; i < 3; i++) {
-                Identifier assigned = i < quickSlots ? ClientCreationState.quickSlot(i) : null;
-                if (assigned != null) {
-                    int iconX = x + QUICK_X + (QUICK_SIZE - QUICK_ICON) / 2;
-                    int iconY = y + QUICK_Y[i] + (QUICK_SIZE - QUICK_ICON) / 2;
-                    drawItem(gui, ClientCreationState.stackOf(assigned.toString()), iconX, iconY, QUICK_ICON);
-                } else if (i >= quickSlots && this.page == Page.BLOCKS) {
-                    gui.fill(x + QUICK_X + 1, y + QUICK_Y[i] + 1, x + QUICK_X + QUICK_SIZE - 1, y + QUICK_Y[i] + QUICK_SIZE - 1, 0x66000000);
+            for (int i = 0; i < QUICK_COUNT; i++) {
+                int slotX = x + QUICK_X;
+                int slotY = y + QUICK_Y[i];
+                if (i >= quickSlots) {
+                    blitLock(gui, slotX, slotY);
+                    if (contains(mouseX, mouseY, slotX, slotY, QUICK_SIZE, QUICK_SIZE)) {
+                        gui.setTooltipForNextFrame(minecraft.font, Component.translatable("gui.yha.creation.tab_locked"), mouseX, mouseY);
+                    }
+                    continue;
+                }
+                ItemStack assigned = ClientCreationState.quickSlotStack(i, clientAccess());
+                if (!assigned.isEmpty()) {
+                    drawItem(gui, assigned, slotX, slotY, QUICK_ICON);
+                    if (contains(mouseX, mouseY, slotX, slotY, QUICK_SIZE, QUICK_SIZE)) {
+                        gui.setTooltipForNextFrame(minecraft.font, assigned, mouseX, mouseY);
+                    }
                 }
             }
 
             CreationSyncPayload.ClientEntry selected = ClientCreationState.find(this.selectedId);
             CreationSyncPayload.ClientPotionEntry selectedPotion = this.page == Page.ALCHEMY ? ClientCreationState.findPotion(this.selectedEffectId) : null;
-            int selectedCost = 0;
-            boolean canCreate = false;
+            int selectedCost;
+            boolean canCreate;
             if (this.page == Page.ALCHEMY) {
                 selectedCost = selectedPotion == null ? 0 : selectedPotion.costFor(this.potionAmplifier, potionDurationForCost(selectedPotion), this.selectedPotionForm.factor());
                 canCreate = selectedPotion != null && selectedPotion.unlocked() && this.selectedPotionForm != null && lipids >= selectedCost;
@@ -392,7 +395,6 @@ public class CreationNotebookUiComponent extends UiWidget {
             int mouseY = (int) event.y();
             int x = this.getX();
             int y = this.getY();
-            boolean shift = event.hasShiftDown();
 
             String openFormParent = this.formMenuParent;
             if (handleFormMenuClick(mouseX, mouseY)) {
@@ -470,24 +472,30 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
 
             int quickSlots = ClientCreationState.get().unlockedQuickSlots();
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < QUICK_COUNT; i++) {
                 if (!contains(mouseX, mouseY, x + QUICK_X, y + QUICK_Y[i], QUICK_SIZE, QUICK_SIZE)) {
                     continue;
                 }
                 closeFormMenu();
+                this.timeFocused = false;
                 if (i >= quickSlots) {
+                    minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
                     clickSound();
                     return true;
                 }
-                if (shift && this.selectedId != null) {
-                    ClientPacketDistributor.sendToServer(new CreationAssignSlotPayload(i, displayedFormId(this.selectedId)));
+                if (event.button() == 1) {
+                    ClientPacketDistributor.sendToServer(new CreationAssignSlotPayload(i, ""));
+                    clickSound();
+                    return true;
+                }
+                CreationQuickSlot selection = currentQuickSlotSelection();
+                if (selection != null) {
+                    ClientPacketDistributor.sendToServer(new CreationAssignSlotPayload(i, selection.encode()));
+                    minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.quick_slot_assigned"), false);
                 } else {
-                    Identifier assigned = ClientCreationState.quickSlot(i);
+                    CreationQuickSlot assigned = ClientCreationState.quickSlot(i);
                     if (assigned != null) {
-                        selectAssigned(assigned.toString());
-                        if (event.button() == 1) {
-                            ClientPacketDistributor.sendToServer(new CreationAssignSlotPayload(i, ""));
-                        }
+                        selectAssigned(assigned);
                     }
                 }
                 clickSound();
@@ -700,7 +708,59 @@ public class CreationNotebookUiComponent extends UiWidget {
             this.potionFormMenu = false;
         }
 
-        private void selectAssigned(String assignedId) {
+        private void selectAssigned(CreationQuickSlot recipe) {
+            if (recipe == null) {
+                return;
+            }
+            if (recipe.isPotion()) {
+                this.page = Page.ALCHEMY;
+                this.selectedEffectId = recipe.id().toString();
+                this.selectedPotionForm = recipe.form();
+                this.potionDurationSeconds = Math.max(1, recipe.durationTicks() / 20);
+                this.potionAmplifier = recipe.amplifier();
+                return;
+            }
+            String assignedId = recipe.id().toString();
+            selectAssignedItem(assignedId);
+            this.enchantLevels.clear();
+            this.enchantScroll = 0;
+            for (CreationCreatePayload.EnchantChoice choice : recipe.enchants()) {
+                if (choice != null && choice.enchantId() != null && !choice.enchantId().isBlank() && choice.level() > 0) {
+                    this.enchantLevels.put(choice.enchantId(), choice.level());
+                }
+            }
+            if (CreationGearSlot.of(assignedId) != null) {
+                this.page = Page.GEAR;
+            } else if (this.page == Page.ALCHEMY) {
+                this.page = Page.BLOCKS;
+            }
+        }
+
+        private CreationQuickSlot currentQuickSlotSelection() {
+            if (this.page == Page.ALCHEMY) {
+                if (this.selectedEffectId == null) {
+                    return null;
+                }
+                Identifier effectId = safeId(this.selectedEffectId);
+                if (effectId == null) {
+                    return null;
+                }
+                CreationSyncPayload.ClientPotionEntry potion = ClientCreationState.findPotion(this.selectedEffectId);
+                int ticks = potion != null && potion.instant() ? 1 : this.potionDurationSeconds * 20;
+                return CreationQuickSlot.potion(effectId, this.selectedPotionForm, ticks, this.potionAmplifier);
+            }
+            String createId = displayedFormId(this.selectedId);
+            if (createId == null) {
+                return null;
+            }
+            Identifier itemId = safeId(createId);
+            if (itemId == null) {
+                return null;
+            }
+            return CreationQuickSlot.item(itemId, selectedEnchantChoices());
+        }
+
+        private void selectAssignedItem(String assignedId) {
             CreationSyncPayload.ClientEntry parent = ClientCreationState.findParent(assignedId);
             String nextId = parent != null ? parent.itemId() : assignedId;
             CreationGearSlot nextSlot = CreationGearSlot.of(nextId);
