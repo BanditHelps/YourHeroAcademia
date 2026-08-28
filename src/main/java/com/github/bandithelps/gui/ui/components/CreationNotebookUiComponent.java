@@ -34,6 +34,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -66,18 +67,25 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int TEX_W = 240;
     private static final int TEX_H = 193;
     private static final int SLOT = 15;
-    private static final int GRID_ICON = 13;
+    private static final int GRID_SLOT = 16;
+    private static final int GRID_ICON = 16;
     private static final int GEAR_SLOT = 12;
     private static final int GEAR_ICON = 12;
     private static final int QUICK_ICON = 16;
     private static final int MAT_X = 15;
     private static final int MAT_Y1 = 39;
-    private static final int MAT_Y2 = 99;
-    private static final int BLOCKS_X = 78;
+    private static final int MAT_Y2 = 103;
+    private static final int MAT_COLS = 4;
+    private static final int MAT_TOP_ROWS = 3;
+    private static final int MAT_BOT_ROWS = 5;
+    private static final int MAT_TOP_COUNT = MAT_COLS * MAT_TOP_ROWS;
+    private static final int MAT_BOT_COUNT = MAT_COLS * MAT_BOT_ROWS;
+    private static final int MAT_PER_PAGE = MAT_TOP_COUNT + MAT_BOT_COUNT;
+    private static final int BLOCKS_X = 85;
     private static final int BLOCKS_Y = 39;
-    private static final int BLOCKS_COLS = 6;
-    private static final int BLOCKS_ROWS = 6;
-    private static final int BLOCKS_LAST_ROW = 3;
+    private static final int BLOCKS_COLS = 5;
+    private static final int BLOCKS_ROWS = 9;
+    private static final int BLOCKS_LAST_ROW = 5;
     private static final int GEAR_X = 15;
     private static final int GEAR_Y = 39;
     private static final int GEAR_COLS = 4;
@@ -148,6 +156,14 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int SLIDER_PAD_X = 4;
     private static final int SLIDER_Y = 12;
     private static final int SLIDER_H = 6;
+    private static final int NAME_X = 92;
+    private static final int NAME_Y = 43;
+    private static final int NAME_W = 70;
+    private static final int NAME_H = 16;
+    private static final int NAME_PAD = 4;
+    private static final int LIPID_TEXT_X = 192;
+    private static final int LIPID_TEXT_Y = 44;
+    private static final int LIPID_POP_MS = 800;
 
     public static final MapCodec<CreationNotebookUiComponent> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             propertiesCodec(TEX_W, TEX_H)
@@ -192,6 +208,10 @@ public class CreationNotebookUiComponent extends UiWidget {
         private int potionAmplifier;
         private boolean timeFocused;
         private boolean draggingAmplifier;
+        private String itemName = "";
+        private boolean nameFocused;
+        private int lastDisplayedLipids = -1;
+        private final List<LipidSpendPopup> lipidPops = new ArrayList<>();
 
         private NotebookWidget(int x, int y, int width, int height) {
             super(x, y, width, height, Component.literal("Creation"));
@@ -218,15 +238,21 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
 
             int lipids = Mth.floor(ClientBodyState.getCustomFloat(BodyPart.CHEST, CreationUtil.LIPIDS_KEY, 0.0f));
-            gui.text(minecraft.font, String.valueOf(lipids), x + 192, y + 44, 0xFF3A2A18, false);
+            if (this.lastDisplayedLipids >= 0 && lipids < this.lastDisplayedLipids) {
+                this.lipidPops.add(new LipidSpendPopup(this.lastDisplayedLipids - lipids));
+            }
+            this.lastDisplayedLipids = lipids;
+            gui.text(minecraft.font, String.valueOf(lipids), x + LIPID_TEXT_X, y + LIPID_TEXT_Y, 0xFF3A2A18, false);
+            drawLipidSpendPops(gui, minecraft, x, y, lipids);
 
             if (this.page == Page.BLOCKS) {
-                drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y1, 3, 3, SLOT, this.materialsPage);
-                drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y2, 3, 3, SLOT, this.materialsPage + 1);
-                drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, SLOT, this.blocksPage, BLOCKS_LAST_ROW);
+                drawGrid(gui, x, y, mouseX, mouseY, materialGroups(true), MAT_X, MAT_Y1, MAT_COLS, MAT_TOP_ROWS, GRID_SLOT, 0);
+                drawGrid(gui, x, y, mouseX, mouseY, materialGroups(false), MAT_X, MAT_Y2, MAT_COLS, MAT_BOT_ROWS, GRID_SLOT, 0);
+                drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, GRID_SLOT, this.blocksPage, BLOCKS_LAST_ROW);
             } else if (this.page == Page.GEAR) {
                 drawGearSlots(gui, x, y);
                 drawEnchantPanel(gui, minecraft, x, y, mouseX, mouseY);
+                drawNameField(gui, minecraft, x, y);
             } else {
                 drawAlchemyPage(gui, minecraft, x, y, mouseX, mouseY);
             }
@@ -420,6 +446,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (contains(mouseX, mouseY, x + TAB_LOCKED_1_X, y, TAB_W, TAB_H)) {
                 closeFormMenu();
                 this.timeFocused = false;
+                this.nameFocused = false;
                 minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
                 clickSound();
                 return true;
@@ -427,6 +454,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (contains(mouseX, mouseY, x + TAB_ALCHEMY_X, y, TAB_W, TAB_H)) {
                 closeFormMenu();
                 this.timeFocused = false;
+                this.nameFocused = false;
                 if (!ClientCreationState.get().alchemyTabUnlocked()) {
                     minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
                 } else {
@@ -438,6 +466,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (contains(mouseX, mouseY, x + TAB_GEAR_X, y, TAB_W, TAB_H)) {
                 closeFormMenu();
                 this.timeFocused = false;
+                this.nameFocused = false;
                 if (!ClientCreationState.get().gearTabUnlocked()) {
                     minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
                 } else {
@@ -449,10 +478,21 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (contains(mouseX, mouseY, x + TAB_BLOCKS_X, y, TAB_W, TAB_H)) {
                 closeFormMenu();
                 this.timeFocused = false;
+                this.nameFocused = false;
                 this.page = Page.BLOCKS;
                 clickSound();
                 return true;
             }
+
+            if (this.page == Page.GEAR && hitNameField(mouseX, mouseY, x, y)) {
+                closeFormMenu();
+                this.timeFocused = false;
+                this.nameFocused = true;
+                this.setFocused(true);
+                clickSound();
+                return true;
+            }
+            this.nameFocused = false;
 
             if (this.page == Page.GEAR && handleEnchantClick(mouseX, mouseY, x, y)) {
                 return true;
@@ -464,6 +504,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (contains(mouseX, mouseY, x + CREATE_X, y + CREATE_Y, CREATE_W, CREATE_H)) {
                 closeFormMenu();
                 this.timeFocused = false;
+                this.nameFocused = false;
                 if (this.page == Page.ALCHEMY) {
                     if (this.selectedEffectId != null) {
                         CreationSyncPayload.ClientPotionEntry potion = ClientCreationState.findPotion(this.selectedEffectId);
@@ -479,7 +520,8 @@ public class CreationNotebookUiComponent extends UiWidget {
                 } else {
                     String createId = displayedFormId(this.selectedId);
                     if (createId != null) {
-                        ClientPacketDistributor.sendToServer(new CreationCreatePayload(createId, selectedEnchantChoices()));
+                        String name = this.page == Page.GEAR ? this.itemName : "";
+                        ClientPacketDistributor.sendToServer(new CreationCreatePayload(createId, selectedEnchantChoices(), name));
                         clickSound();
                     }
                 }
@@ -493,6 +535,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                 }
                 closeFormMenu();
                 this.timeFocused = false;
+                this.nameFocused = false;
                 if (i >= quickSlots) {
                     minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
                     clickSound();
@@ -519,6 +562,8 @@ public class CreationNotebookUiComponent extends UiWidget {
 
             if (contains(mouseX, mouseY, x + DOG_X, y + DOG_Y, DOG_W, DOG_H)) {
                 closeFormMenu();
+                this.timeFocused = false;
+                this.nameFocused = false;
                 turnPage();
                 clickSound();
                 return true;
@@ -526,7 +571,7 @@ public class CreationNotebookUiComponent extends UiWidget {
 
             SlotHit clicked = findClickedSlot(mouseX, mouseY, x, y);
             if (clicked != null) {
-                ClientCreationState.ItemGroupView group = this.page == Page.BLOCKS ? findItemGroup(clicked.itemId()) : null;
+                ClientCreationState.ItemGroupView group = findItemGroup(clicked.itemId());
                 if (group != null && !group.isSingleton()) {
                     String displayed = displayedGroupItem(group);
                     if (displayed != null) {
@@ -547,6 +592,8 @@ public class CreationNotebookUiComponent extends UiWidget {
                         this.enchantScroll = 0;
                         this.draggingEnchantId = null;
                     }
+                    this.itemName = "";
+                    this.nameFocused = false;
                 }
                 this.selectedId = clickedId;
                 if (event.button() == 1 && gearVariants.size() > 1) {
@@ -615,6 +662,25 @@ public class CreationNotebookUiComponent extends UiWidget {
 
         @Override
         public boolean keyPressed(KeyEvent event) {
+            if (this.page == Page.GEAR && this.nameFocused) {
+                int key = event.key();
+                if (key == GLFW.GLFW_KEY_ESCAPE) {
+                    this.nameFocused = false;
+                    this.setFocused(false);
+                    return true;
+                }
+                if (key == GLFW.GLFW_KEY_BACKSPACE) {
+                    if (!this.itemName.isEmpty()) {
+                        this.itemName = this.itemName.substring(0, this.itemName.length() - 1);
+                    }
+                    return true;
+                }
+                if (key == GLFW.GLFW_KEY_DELETE) {
+                    this.itemName = "";
+                    return true;
+                }
+                return true;
+            }
             if (this.page != Page.ALCHEMY || !this.timeFocused) {
                 return false;
             }
@@ -633,6 +699,17 @@ public class CreationNotebookUiComponent extends UiWidget {
 
         @Override
         public boolean charTyped(CharacterEvent event) {
+            if (this.page == Page.GEAR && this.nameFocused) {
+                int code = event.codepoint();
+                if (code < 32 || code == 127 || code == '§') {
+                    return false;
+                }
+                if (this.itemName.length() >= CreationUtil.CUSTOM_NAME_MAX_LENGTH) {
+                    return true;
+                }
+                this.itemName += Character.toString(code);
+                return true;
+            }
             if (this.page != Page.ALCHEMY || !this.timeFocused || !ClientCreationState.get().potionTiming()) {
                 return false;
             }
@@ -810,6 +887,10 @@ public class CreationNotebookUiComponent extends UiWidget {
                 this.enchantLevels.clear();
                 this.enchantScroll = 0;
             }
+            if (nextId != null && !nextId.equals(this.selectedId)) {
+                this.itemName = "";
+                this.nameFocused = false;
+            }
             if (nextSlot != null) {
                 this.selectedGearVariants.put(nextSlot, nextId);
             }
@@ -839,10 +920,20 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
             int materials = ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS).size();
             int blocks = ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS).size();
-            int matPages = Math.max(1, ceilDiv(materials, 18));
+            int matPages = Math.max(1, ceilDiv(materials, MAT_PER_PAGE));
             int blockPages = Math.max(1, ceilDiv(blocks, BLOCKS_COLS * (BLOCKS_ROWS - 1) + BLOCKS_LAST_ROW));
-            this.materialsPage = (this.materialsPage + 2) % Math.max(2, matPages + (matPages % 2));
+            this.materialsPage = (this.materialsPage + 1) % matPages;
             this.blocksPage = (this.blocksPage + 1) % blockPages;
+        }
+
+        private List<ClientCreationState.ItemGroupView> materialGroups(boolean top) {
+            List<ClientCreationState.ItemGroupView> all = ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS);
+            int start = this.materialsPage * MAT_PER_PAGE + (top ? 0 : MAT_TOP_COUNT);
+            int count = top ? MAT_TOP_COUNT : MAT_BOT_COUNT;
+            if (start < 0 || start >= all.size() || count <= 0) {
+                return List.of();
+            }
+            return all.subList(start, Math.min(all.size(), start + count));
         }
 
         private SlotHit findClickedSlot(int mouseX, int mouseY, int x, int y) {
@@ -852,15 +943,15 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (this.page == Page.ALCHEMY) {
                 return null;
             }
-            SlotHit materials = hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y1, 3, 3, SLOT, this.materialsPage, 3);
+            SlotHit materials = hitGrid(mouseX, mouseY, x, y, materialGroups(true), MAT_X, MAT_Y1, MAT_COLS, MAT_TOP_ROWS, GRID_SLOT, 0, MAT_COLS);
             if (materials != null) {
                 return materials;
             }
-            materials = hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y2, 3, 3, SLOT, this.materialsPage + 1, 3);
+            materials = hitGrid(mouseX, mouseY, x, y, materialGroups(false), MAT_X, MAT_Y2, MAT_COLS, MAT_BOT_ROWS, GRID_SLOT, 0, MAT_COLS);
             if (materials != null) {
                 return materials;
             }
-            return hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, SLOT, this.blocksPage, BLOCKS_LAST_ROW);
+            return hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, GRID_SLOT, this.blocksPage, BLOCKS_LAST_ROW);
         }
 
         private SlotHit hitGrid(
@@ -1000,6 +1091,12 @@ public class CreationNotebookUiComponent extends UiWidget {
         }
 
         private record SlotHit(String itemId, int slotX, int slotY, int slotSize) {
+        }
+
+        private record LipidSpendPopup(int amount, long startMs) {
+            private LipidSpendPopup(int amount) {
+                this(amount, System.currentTimeMillis());
+            }
         }
 
         private void drawGearSlots(GuiGraphicsExtractor gui, int originX, int originY) {
@@ -1341,7 +1438,74 @@ public class CreationNotebookUiComponent extends UiWidget {
                 }
             }
             CreationEnchantments.apply(stack, access, levels);
+            applyPreviewName(stack);
             return stack;
+        }
+
+        private void applyPreviewName(ItemStack stack) {
+            String cleaned = CreationUtil.sanitizeCustomName(this.itemName);
+            if (cleaned.isEmpty()) {
+                return;
+            }
+            stack.set(DataComponents.CUSTOM_NAME, Component.literal(cleaned));
+        }
+
+        private boolean hitNameField(int mouseX, int mouseY, int originX, int originY) {
+            return this.selectedId != null && contains(mouseX, mouseY, originX + NAME_X, originY + NAME_Y, NAME_W, NAME_H);
+        }
+
+        private void drawNameField(GuiGraphicsExtractor gui, Minecraft minecraft, int originX, int originY) {
+            if (this.selectedId == null) {
+                return;
+            }
+            int x = originX + NAME_X;
+            int y = originY + NAME_Y;
+            int border = this.nameFocused ? 0xFFFFD27A : 0xFF8A6A48;
+            gui.fill(x, y, x + NAME_W, y + NAME_H, 0x33000000);
+            drawFrame(gui, x, y, NAME_W, NAME_H, border);
+            int innerX = x + NAME_PAD;
+            int innerW = NAME_W - NAME_PAD * 2;
+            int textY = y + (NAME_H - minecraft.font.lineHeight) / 2;
+            if (this.itemName.isBlank()) {
+                gui.text(
+                        minecraft.font,
+                        Component.translatable("gui.yha.creation.item_name").getString(),
+                        innerX,
+                        textY,
+                        0xFF9A8A78,
+                        false
+                );
+                if (this.nameFocused && ((System.currentTimeMillis() / 400L) % 2L == 0L)) {
+                    gui.fill(innerX, y + 3, innerX + 1, y + NAME_H - 3, 0xFF3A2A18);
+                }
+                return;
+            }
+            int textW = minecraft.font.width(this.itemName);
+            int scroll = this.nameFocused ? Math.max(0, textW - innerW + 1) : 0;
+            int drawX = innerX - scroll;
+            gui.enableScissor(innerX, y + 1, innerX + innerW, y + NAME_H - 1);
+            gui.text(minecraft.font, this.itemName, drawX, textY, 0xFF3A2A18, false);
+            if (this.nameFocused && ((System.currentTimeMillis() / 400L) % 2L == 0L)) {
+                int cursorX = drawX + textW;
+                gui.fill(cursorX, y + 3, cursorX + 1, y + NAME_H - 3, 0xFF3A2A18);
+            }
+            gui.disableScissor();
+        }
+
+        private void drawLipidSpendPops(GuiGraphicsExtractor gui, Minecraft minecraft, int originX, int originY, int lipids) {
+            long now = System.currentTimeMillis();
+            this.lipidPops.removeIf(pop -> now - pop.startMs() >= LIPID_POP_MS);
+            int baseX = originX + LIPID_TEXT_X + minecraft.font.width(String.valueOf(lipids)) + 3;
+            for (LipidSpendPopup pop : this.lipidPops) {
+                float t = (now - pop.startMs()) / (float) LIPID_POP_MS;
+                int alpha = Mth.clamp(Math.round((1.0f - t) * 255.0f), 0, 255);
+                if (alpha <= 0) {
+                    continue;
+                }
+                int color = (alpha << 24) | 0x00B03A2A;
+                int popY = originY + LIPID_TEXT_Y - Math.round(t * 12.0f);
+                gui.text(minecraft.font, "-" + pop.amount(), baseX, popY, color, false);
+            }
         }
 
         private static String enchantName(CreationSyncPayload.ClientEnchantEntry entry) {

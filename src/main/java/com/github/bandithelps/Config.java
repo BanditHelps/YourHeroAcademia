@@ -59,6 +59,10 @@ public class Config {
             .comment("Lipids gained per saturation point from food eaten by a Creation user")
             .defineInRange("creationSaturationToLipids", 1.0D, 0.0D, 100.0D);
 
+    public static final ModConfigSpec.DoubleValue CREATION_QUIRK_FACTOR_LIPID_BONUS = BUILDER
+            .comment("Extra lipid gain per quirk factor point when eating food: gained *= (1 + quirkFactor * this)")
+            .defineInRange("creationQuirkFactorLipidBonus", 0.1D, 0.0D, 10.0D);
+
     public static final ModConfigSpec.IntValue CREATION_DEFAULT_LIPID_COST = BUILDER
             .comment("Default lipid cost to create an item when the catalog does not override it")
             .defineInRange("creationDefaultLipidCost", 10, 1, 10000);

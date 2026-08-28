@@ -2,14 +2,13 @@
   "ability": "cr_know_mason_2",
   "tab": "blocks",
   "entries": [
-    { "item": "minecraft:stone_bricks", "lipid_cost": 2 },
-    { "item": "minecraft:mossy_stone_bricks", "lipid_cost": 2 },
-    { "item": "minecraft:cracked_stone_bricks", "lipid_cost": 2 },
-    { "item": "minecraft:chiseled_stone_bricks", "lipid_cost": 2 },
-    { "item": "minecraft:smooth_stone", "lipid_cost": 2 },
-    { "item": "minecraft:polished_granite", "lipid_cost": 2 },
-    { "item": "minecraft:polished_diorite", "lipid_cost": 2 },
-    { "item": "minecraft:polished_andesite", "lipid_cost": 2 },
-    { "item": "minecraft:polished_deepslate", "lipid_cost": 2 }
+    { "item": "minecraft:stone_bricks", "lipid_cost": 2, "group": "yha:stone" },
+    { "item": "minecraft:cracked_stone_bricks", "lipid_cost": 2, "group": "yha:stone" },
+    { "item": "minecraft:chiseled_stone_bricks", "lipid_cost": 2, "group": "yha:stone" },
+    { "item": "minecraft:smooth_stone", "lipid_cost": 2, "group": "yha:stone" },
+    { "item": "minecraft:polished_granite", "lipid_cost": 2, "group": "yha:granite" },
+    { "item": "minecraft:polished_diorite", "lipid_cost": 2, "group": "yha:diorite" },
+    { "item": "minecraft:polished_andesite", "lipid_cost": 2, "group": "yha:andesite" },
+    { "item": "minecraft:polished_deepslate", "lipid_cost": 2, "group": "yha:deepslate" }
   ]
 }

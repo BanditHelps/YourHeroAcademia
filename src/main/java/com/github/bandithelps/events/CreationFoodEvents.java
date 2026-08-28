@@ -1,7 +1,6 @@
 package com.github.bandithelps.events;
 
 import com.github.bandithelps.YourHeroAcademia;
-import com.github.bandithelps.Config;
 import com.github.bandithelps.creation.CreationUtil;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerPlayer;
@@ -29,8 +28,7 @@ public final class CreationFoodEvents {
         if (food == null) {
             return;
         }
-        float saturation = food.saturation();
-        float gained = (float) (saturation * Config.CREATION_SATURATION_TO_LIPIDS.get());
+        float gained = CreationUtil.lipidsFromFood(player, food.saturation());
         if (gained <= 0.0f) {
             return;
         }

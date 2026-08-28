@@ -2,6 +2,13 @@
   "ability": "cr_know_tailor_2",
   "tab": "materials",
   "entries": [
-    { "item": "palladium:white_fabric", "lipid_cost": 12 }
+    {
+      "item": "palladium:white_fabric",
+      "group": "yha:fabric",
+      "group_icon": "palladium:white_fabric",
+      "lipid_cost": 12,
+      "unlock_ability": "cr_know_dye",
+      "unlock_tag": "palladium:white_fabric"
+    }
   ]
 }

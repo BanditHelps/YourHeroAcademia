@@ -87,6 +87,17 @@ public class CreationData {
         progress.remove(itemId);
     }
 
+    public boolean lock(Identifier itemId) {
+        if (itemId == null) {
+            return false;
+        }
+        boolean changed = unlocked.remove(itemId);
+        if (progress.remove(itemId) != null) {
+            changed = true;
+        }
+        return changed;
+    }
+
     public int getEnchantProgress(Identifier enchantId) {
         if (enchantId == null) {
             return 0;
@@ -117,6 +128,17 @@ public class CreationData {
         enchantProgress.remove(enchantId);
     }
 
+    public boolean lockEnchant(Identifier enchantId) {
+        if (enchantId == null) {
+            return false;
+        }
+        boolean changed = enchantUnlocked.remove(enchantId);
+        if (enchantProgress.remove(enchantId) != null) {
+            changed = true;
+        }
+        return changed;
+    }
+
     public int getPotionProgress(Identifier effectId) {
         if (effectId == null) {
             return 0;
@@ -145,6 +167,17 @@ public class CreationData {
         }
         potionUnlocked.add(effectId);
         potionProgress.remove(effectId);
+    }
+
+    public boolean lockPotion(Identifier effectId) {
+        if (effectId == null) {
+            return false;
+        }
+        boolean changed = potionUnlocked.remove(effectId);
+        if (potionProgress.remove(effectId) != null) {
+            changed = true;
+        }
+        return changed;
     }
 
     public CreationQuickSlot getQuickSlot(int index) {

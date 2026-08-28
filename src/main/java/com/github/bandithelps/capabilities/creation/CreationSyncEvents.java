@@ -17,7 +17,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.Mth;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -46,7 +45,6 @@ public final class CreationSyncEvents {
     public static void syncNow(ServerPlayer player) {
         CreationData data = CreationAttachments.get(player);
         CreationUtil.migrateFormUnlocks(data);
-        float efficiency = CreationUtil.efficiencyMultiplier(player);
         List<CreationSyncPayload.ClientEntry> entries = new ArrayList<>();
         for (CreationEntry entry : CreationUtil.researchableEntries(player)) {
             List<String> unlockVariants = List.of();
@@ -74,17 +72,16 @@ public final class CreationSyncEvents {
         for (CreationEnchantEntry entry : CreationEnchantCatalog.getInstance().allEntries()) {
             int vanillaMax = CreationEnchantments.vanillaMaxLevel(player.registryAccess(), entry.enchantId());
             int maxLevel = entry.resolvedMaxLevel(vanillaMax);
-            int scaledPerLevel = Math.max(1, Mth.ceil(entry.lipidCostPerLevel() / efficiency));
-            List<Integer> scaledCosts = new ArrayList<>();
+            List<Integer> costs = new ArrayList<>();
             if (entry.lipidCosts() != null) {
                 for (int cost : entry.lipidCosts()) {
-                    scaledCosts.add(Math.max(1, Mth.ceil(cost / efficiency)));
+                    costs.add(Math.max(1, cost));
                 }
             }
             enchants.add(new CreationSyncPayload.ClientEnchantEntry(
                     entry.enchantId().toString(),
-                    scaledPerLevel,
-                    scaledCosts,
+                    Math.max(1, entry.lipidCostPerLevel()),
+                    costs,
                     maxLevel,
                     entry.researchCost(),
                     data.getEnchantProgress(entry.enchantId()),
@@ -94,15 +91,13 @@ public final class CreationSyncEvents {
         }
         List<CreationSyncPayload.ClientPotionEntry> potions = new ArrayList<>();
         for (CreationPotionEntry entry : CreationPotionCatalog.getInstance().allEntries()) {
-            int scaledBase = Math.max(1, Mth.ceil(entry.lipidCost() / efficiency));
-            int scaledAmp = Math.max(0, Mth.ceil(entry.lipidCostPerAmplifier() / efficiency));
             boolean instant = CreationPotions.isInstant(entry.effectId(), entry.instantOverride());
             potions.add(new CreationSyncPayload.ClientPotionEntry(
                     entry.effectId().toString(),
                     entry.groupId() == null ? "" : entry.groupId().toString(),
                     entry.groupIcon() == null ? "" : entry.groupIcon().toString(),
-                    scaledBase,
-                    scaledAmp,
+                    Math.max(1, entry.lipidCost()),
+                    Math.max(0, entry.lipidCostPerAmplifier()),
                     entry.researchCost(),
                     data.getPotionProgress(entry.effectId()),
                     data.isPotionUnlocked(entry.effectId()),

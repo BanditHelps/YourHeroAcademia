@@ -108,6 +108,7 @@
   "gui.yha.creation.sacrifice": "Sacrifice",
   "gui.yha.creation.inventory_count": "In inventory: %s",
   "gui.yha.creation.search": "Search...",
+  "gui.yha.creation.item_name": "Name...",
   "gui.yha.creation.hide_learned": "Hide learned",
   "gui.yha.creation.hide_learned.tooltip": "Hide items you already understand",
   "gui.yha.creation.tab.all": "All",
@@ -168,6 +169,9 @@
   "effect.yha.dna_fatigue": "DNA Fatigue",
   "entity.yha.creation_product": "Created Item",
 
+  "commands.yha.creation.unlock.success": "Unlocked %s creation recipe(s) for %s.",
+  "commands.yha.creation.lock.success": "Locked %s creation recipe(s) for %s.",
+  "commands.yha.creation.unknown_item": "Unknown creation recipe '%s'.",
   "key.yha.ability_mode_select": "Ability Mode Select"
 
 }

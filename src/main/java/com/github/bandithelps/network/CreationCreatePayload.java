@@ -12,7 +12,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public record CreationCreatePayload(String itemId, List<EnchantChoice> enchants) implements CustomPacketPayload {
+public record CreationCreatePayload(String itemId, List<EnchantChoice> enchants, String customName) implements CustomPacketPayload {
     public static final Type<CreationCreatePayload> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "creation_create"));
 
@@ -22,7 +22,11 @@ public record CreationCreatePayload(String itemId, List<EnchantChoice> enchants)
     );
 
     public CreationCreatePayload(String itemId) {
-        this(itemId, List.of());
+        this(itemId, List.of(), "");
+    }
+
+    public CreationCreatePayload(String itemId, List<EnchantChoice> enchants) {
+        this(itemId, enchants, "");
     }
 
     @Override
@@ -36,7 +40,7 @@ public record CreationCreatePayload(String itemId, List<EnchantChoice> enchants)
                 return;
             }
             try {
-                CreationUtil.tryCreate(player, Identifier.parse(payload.itemId()), payload.enchants());
+                CreationUtil.tryCreate(player, Identifier.parse(payload.itemId()), payload.enchants(), payload.customName());
             } catch (RuntimeException ignored) {
             }
         });
@@ -49,6 +53,7 @@ public record CreationCreatePayload(String itemId, List<EnchantChoice> enchants)
             ByteBufCodecs.STRING_UTF8.encode(buf, choice.enchantId());
             ByteBufCodecs.VAR_INT.encode(buf, choice.level());
         }
+        ByteBufCodecs.STRING_UTF8.encode(buf, payload.customName() == null ? "" : payload.customName());
     }
 
     private static CreationCreatePayload decode(ByteBuf buf) {
@@ -61,7 +66,8 @@ public record CreationCreatePayload(String itemId, List<EnchantChoice> enchants)
                     ByteBufCodecs.VAR_INT.decode(buf)
             ));
         }
-        return new CreationCreatePayload(itemId, enchants);
+        String customName = ByteBufCodecs.STRING_UTF8.decode(buf);
+        return new CreationCreatePayload(itemId, enchants, customName);
     }
 
     public record EnchantChoice(String enchantId, int level) {

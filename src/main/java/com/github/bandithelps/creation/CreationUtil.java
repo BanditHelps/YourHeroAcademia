@@ -10,10 +10,12 @@ import com.github.bandithelps.capabilities.creation.CreationData;
 import com.github.bandithelps.capabilities.creation.CreationSyncEvents;
 import com.github.bandithelps.entities.CreationProductEntity;
 import com.github.bandithelps.network.CreationCreatePayload;
+import com.github.bandithelps.utils.quirk.QuirkFactorUtil;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -58,6 +60,7 @@ public final class CreationUtil {
     public static final String CHEMICAL_EXPERIENCE = "cr_know_chemical_experience";
     public static final String FLETCHER_ARROW_EFFECTS = "cr_know_fletcher_arrow_effects";
     public static final String DYE_KNOWLEDGE = "cr_know_dye";
+    public static final int CUSTOM_NAME_MAX_LENGTH = 50;
 
     private CreationUtil() {
     }
@@ -116,6 +119,28 @@ public final class CreationUtil {
         return multiplier;
     }
 
+    public static float lipidsFromFood(Player player, float saturation) {
+        if (player == null || saturation <= 0.0f) {
+            return 0.0f;
+        }
+        double quirkBonus = 1.0D + QuirkFactorUtil.getQuirkFactor(player) * Config.CREATION_QUIRK_FACTOR_LIPID_BONUS.get();
+        return (float) (saturation
+                * Config.CREATION_SATURATION_TO_LIPIDS.get()
+                * efficiencyMultiplier(player)
+                * Math.max(0.0D, quirkBonus));
+    }
+
+    public static String sanitizeCustomName(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String cleaned = raw.replace("§", "").replace("\n", "").replace("\r", "").trim();
+        if (cleaned.length() > CUSTOM_NAME_MAX_LENGTH) {
+            return cleaned.substring(0, CUSTOM_NAME_MAX_LENGTH);
+        }
+        return cleaned;
+    }
+
     public static float knowledgeBoostChance(LivingEntity entity) {
         float chance = 0.0f;
         for (String ability : KNOWLEDGE_BOOST_ABILITIES) {
@@ -163,10 +188,8 @@ public final class CreationUtil {
 
     public static int creationCost(LivingEntity entity, CreationEntry entry, CreationForm form) {
         int base = entry != null ? entry.lipidCost() : Config.CREATION_DEFAULT_LIPID_COST.get();
-        float efficiency = efficiencyMultiplier(entity);
-        int ingotCost = Math.max(1, Mth.ceil(base / efficiency));
         CreationForm resolved = form != null ? form : CreationForm.BASE;
-        return resolved.scaledCost(ingotCost);
+        return resolved.scaledCost(Math.max(1, base));
     }
 
     public static int sacrificesRequired() {
@@ -223,14 +246,14 @@ public final class CreationUtil {
         if (entry == null || level <= 0) {
             return 0;
         }
-        return Math.max(1, Mth.ceil(entry.lipidCostForLevel(level) / efficiencyMultiplier(entity)));
+        return Math.max(1, entry.lipidCostForLevel(level));
     }
 
     public static int potionCost(LivingEntity entity, CreationPotionEntry entry, int extraAmplifier, int durationSeconds, CreationPotionForm form) {
         if (entry == null) {
             return Config.CREATION_DEFAULT_LIPID_COST.get();
         }
-        return Math.max(1, Mth.ceil(entry.lipidCostFor(extraAmplifier, durationSeconds, form) / efficiencyMultiplier(entity)));
+        return Math.max(1, entry.lipidCostFor(extraAmplifier, durationSeconds, form));
     }
 
     public static List<CreationEntry> unlockedEntries(Player player, CreationTab tab) {
@@ -459,6 +482,15 @@ public final class CreationUtil {
     }
 
     public static boolean tryCreate(ServerPlayer player, Identifier itemId, List<CreationCreatePayload.EnchantChoice> requested) {
+        return tryCreate(player, itemId, requested, "");
+    }
+
+    public static boolean tryCreate(
+            ServerPlayer player,
+            Identifier itemId,
+            List<CreationCreatePayload.EnchantChoice> requested,
+            String customName
+    ) {
         if (!hasCreation(player) || itemId == null || !(player.level() instanceof ServerLevel serverLevel)) {
             return false;
         }
@@ -517,6 +549,7 @@ public final class CreationUtil {
         }
         setLipids(player, getLipids(player) - cost);
         CreationEnchantments.apply(created, player.registryAccess(), levels);
+        applyCustomName(created, customName);
         spawnCreatedItem(serverLevel, player, created);
         CreationSyncEvents.syncNow(player);
         return true;
@@ -627,6 +660,17 @@ public final class CreationUtil {
                 data.unlock(entry.itemId());
             }
         }
+    }
+
+    private static void applyCustomName(ItemStack stack, String customName) {
+        if (stack == null || stack.isEmpty()) {
+            return;
+        }
+        String cleaned = sanitizeCustomName(customName);
+        if (cleaned.isEmpty()) {
+            return;
+        }
+        stack.set(DataComponents.CUSTOM_NAME, Component.literal(cleaned));
     }
 
     public static void spawnCreatedItem(ServerLevel level, ServerPlayer player, ItemStack stack) {
