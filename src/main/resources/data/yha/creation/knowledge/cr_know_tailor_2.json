@@ -8,7 +8,15 @@
       "group_icon": "palladium:white_fabric",
       "lipid_cost": 12,
       "unlock_ability": "cr_know_dye",
-      "unlock_tag": "palladium:white_fabric"
+      "unlock_tag": "palladium:fabrics"
+    },
+    {
+      "item": "minecraft:white_dye",
+      "group": "yha:dyes",
+      "group_icon": "minecraft:white_dye",
+      "lipid_cost": 2,
+      "unlock_ability": "cr_know_dye",
+      "unlock_tag": "minecraft:dyes"
     }
   ]
 }

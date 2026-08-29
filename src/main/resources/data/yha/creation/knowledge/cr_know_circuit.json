@@ -1,0 +1,10 @@
+{
+  "ability": "cr_know_circuit",
+  "tab": "materials",
+  "group": "yha:circuits",
+  "entries": [
+    { "item": "palladium:lead_circuit", "lipid_cost": 32 },
+    { "item": "palladium:quartz_circuit", "lipid_cost": 32 },
+    { "item": "palladium:vibranium_circuit", "lipid_cost": 32 }
+  ]
+}

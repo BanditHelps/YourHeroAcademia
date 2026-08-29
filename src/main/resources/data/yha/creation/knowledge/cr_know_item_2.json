@@ -1,0 +1,13 @@
+{
+  "ability": "cr_know_item_2",
+  "tab": "materials",
+  "entries": [
+    { "item": "minecraft:ghast_tear", "group": "yha:hostile" },
+    { "item": "minecraft:magma_cream", "group": "yha:hostile" },
+    { "item": "minecraft:ghast_tear", "group": "yha:hostile" },
+    { "item": "minecraft:blaze_rod", "group": "yha:hostile" },
+    { "item": "minecraft:blaze_powder", "group": "yha:hostile" },
+    { "item": "minecraft:gunpowder", "group": "yha:hostile" },
+    { "item": "minecraft:glowstone_dust", "group": "yha:dusts" }
+  ]
+}
