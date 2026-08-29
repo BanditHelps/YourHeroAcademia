@@ -928,7 +928,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Masonry Knowledge - I",
-        "description": "Gives your body the ability to create simple stone blocks. STONE, DEEPSLATE, GRANITE, ANDESITE, (non decorated type blocks)",
+        "description": "Gives your body the ability to create simple stone blocks, including sand.",
         "icon": "minecraft:stone",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -973,7 +973,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Masonry Knowledge - II",
-        "description": "Gives your body the ability to create more advanced stone blocks/structures. STONE_BRICKS, SMOOTH GRANITE, (more complicated bricks that need crafting)",
+        "description": "Gives your body the ability to create more advanced stone blocks, glass, terracotta, concrete, sandstone, and prismarine.",
         "icon": "minecraft:stone_bricks",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -1000,7 +1000,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Masonry Knowledge - III",
-        "description": "Gives your body the ability to create non block shapes. (stairs, walls, etc.)",
+        "description": "Gives your body the ability to create non-block shapes: stairs, slabs, and walls for stone families.",
         "icon": "minecraft:stone_brick_stairs",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -1028,7 +1028,7 @@
       "properties": {
         "title": "Woodworking Knowledge - I",
         "description": {
-          "unlocked": "Gives your body the ability to create logs of any type. (Just logs, not stripped or plank variants)",
+          "unlocked": "Gives your body the ability to create logs of any type, including bamboo blocks.",
           "locked": "u can't see me"
         },
         "icon": "minecraft:oak_log",
@@ -1075,7 +1075,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Woodworking Knowledge - II",
-        "description": "Gives your body the ability to create more advanced wood of any type. (Planks, stripped, etc.)",
+        "description": "Gives your body the ability to create more advanced wood of any type. (Planks, stripped, mosaic, etc.)",
         "icon": "minecraft:oak_planks",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -1102,7 +1102,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Woodworking Knowledge - III",
-        "description": "Gives your body the ability to structure wood products better than before. (Stairs, fences, etc.)",
+        "description": "Learn wood shapes: stairs, slabs, fences, doors, and fence gates. Any wood you have researched can be used.",
         "icon": "minecraft:oak_stairs",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -1121,6 +1121,33 @@
           "requires": {
             "type": "palladium:ability_unlocked",
             "ability": "cr_know_wood_2"
+          }
+        }
+      }
+    },
+    "cr_know_wood_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Woodworking Knowledge - IV",
+        "description": "Learn carpentry: signs, shelves, storage, boats, scaffolding, and workstations.",
+        "icon": "minecraft:crafting_table",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -3.9,
+          0.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_wood_3"
           }
         }
       }
@@ -1212,7 +1239,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Nether Knowledge - III",
-        "description": "You can better shape the blocks from the nether, and create more complicated ones. (Nether bricks, stairs, glowstone)",
+        "description": "You can better shape nether blocks: nether brick, blackstone, and quartz stairs, slabs, and walls.",
         "icon": "minecraft:nether_brick_stairs",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -1239,7 +1266,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Nether Knowledge - II",
-        "description": "You are now able to create more complicated blocks, like nether bricks, glowstone, and more.",
+        "description": "You are now able to create more complicated blocks, like nether bricks, blackstone, quartz, and glowstone.",
         "icon": "minecraft:nether_bricks",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -1266,7 +1293,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Tailoring Knowledge - I",
-        "description": "Begin to understand the basics of synthetic wools.",
+        "description": "Begin to understand the basics of synthetic wools, beds, and candles.",
         "icon": "minecraft:white_wool",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -1570,7 +1597,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Item Knowledge - I",
-        "description": "You are able to understand the most basic of materials. (Super low level useless items)",
+        "description": "You are able to understand the most basic of materials, plus clay and torches.",
         "icon": "minecraft:leather",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -1624,7 +1651,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Tooling Knowledge - I",
-        "description": "You can obtain the knowledge required to create copper-level tools.",
+        "description": "You can obtain the knowledge required to create copper-level tools, plus fishing rods.",
         "icon": "minecraft:copper_pickaxe",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -1669,7 +1696,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Geology knowledge - II",
-        "description": "You are able to obtain knowledge of rare minerals found in the world. (Iron, Redstone)",
+        "description": "You are able to obtain knowledge of rare minerals found in the world. (Iron, lead, redstone)",
         "icon": "yha:textures/icons/creation/creation_advanced_knowledge.png",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -1751,7 +1778,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Tooling Knowledge - III",
-        "description": "You can obtain the knowledge required to create iron-level tools.",
+        "description": "You can obtain the knowledge required to create iron-level tools, plus shears.",
         "icon": "minecraft:iron_pickaxe",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -2376,7 +2403,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "End Knowledge",
-        "description": "You can now analyze items from the end.",
+        "description": "You can now analyze items from the End: end stone, purpur, and ender pearls.",
         "icon": "minecraft:end_stone",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -2526,7 +2553,7 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Item Knowledge - II",
-        "description": "You can further understand slightly more complex items in the world.",
+        "description": "You can further understand slightly more complex items, including slime, prismarine shards, fireworks, and echo shards.",
         "icon": "minecraft:phantom_membrane",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
@@ -2559,6 +2586,33 @@
           "requires": {
             "type": "palladium:ability_unlocked",
             "ability": "cr_know_item_1"
+          }
+        }
+      }
+    },
+    "cr_know_item_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Item Knowledge - III",
+        "description": "Learn manufactured utilities: buckets, bundles, lighting, rails, minecarts, saddles, and similar tools.",
+        "icon": "minecraft:bucket",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.1,
+          1.55
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_item_2"
           }
         }
       }

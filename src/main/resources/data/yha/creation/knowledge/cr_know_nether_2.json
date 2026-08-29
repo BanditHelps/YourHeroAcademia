@@ -3,10 +3,27 @@
   "tab": "blocks",
   "entries": [
     { "item": "minecraft:nether_bricks", "group": "yha:nether_bricks", "group_icon": "minecraft:nether_bricks", "lipid_cost": 16 },
-    { "item": "minecraft:red_nether_bricks", "group": "yha:nether_bricks", "group_icon": "minecraft:nether_bricks", "lipid_cost": 18 },
+    { "item": "minecraft:red_nether_bricks", "group": "yha:nether_bricks", "lipid_cost": 18 },
+    { "item": "minecraft:cracked_nether_bricks", "group": "yha:nether_bricks", "lipid_cost": 16 },
+    { "item": "minecraft:chiseled_nether_bricks", "group": "yha:nether_bricks", "lipid_cost": 16 },
+    { "item": "minecraft:nether_brick", "tab": "materials", "lipid_cost": 8 },
     { "item": "minecraft:glowstone", "group": "yha:nether", "lipid_cost": 20 },
-    { "item": "minecraft:blackstone", "lipid_cost": 14 },
-    { "item": "minecraft:basalt", "lipid_cost": 14 },
-    { "item": "minecraft:magma_block", "group": "yha:nether", "lipid_cost": 16 }
+    { "item": "minecraft:blackstone", "group": "yha:blackstone", "group_icon": "minecraft:blackstone", "lipid_cost": 14 },
+    { "item": "minecraft:gilded_blackstone", "group": "yha:blackstone", "lipid_cost": 18 },
+    { "item": "minecraft:polished_blackstone", "group": "yha:blackstone", "lipid_cost": 16 },
+    { "item": "minecraft:chiseled_polished_blackstone", "group": "yha:blackstone", "lipid_cost": 16 },
+    { "item": "minecraft:polished_blackstone_bricks", "group": "yha:blackstone", "lipid_cost": 16 },
+    { "item": "minecraft:cracked_polished_blackstone_bricks", "group": "yha:blackstone", "lipid_cost": 16 },
+    { "item": "minecraft:basalt", "group": "yha:basalt", "group_icon": "minecraft:basalt", "lipid_cost": 14 },
+    { "item": "minecraft:polished_basalt", "group": "yha:basalt", "lipid_cost": 16 },
+    { "item": "minecraft:smooth_basalt", "group": "yha:basalt", "lipid_cost": 16 },
+    { "item": "minecraft:magma_block", "group": "yha:nether", "lipid_cost": 16 },
+    { "item": "minecraft:crying_obsidian", "group": "yha:obsidian", "lipid_cost": 72, "research_cost": 16 },
+    { "item": "minecraft:quartz", "tab": "materials", "lipid_cost": 16 },
+    { "item": "minecraft:quartz_block", "group": "yha:quartz", "group_icon": "minecraft:quartz_block", "lipid_cost": 8 },
+    { "item": "minecraft:chiseled_quartz_block", "group": "yha:quartz", "lipid_cost": 8 },
+    { "item": "minecraft:quartz_pillar", "group": "yha:quartz", "lipid_cost": 8 },
+    { "item": "minecraft:quartz_bricks", "group": "yha:quartz", "lipid_cost": 8 },
+    { "item": "minecraft:smooth_quartz", "group": "yha:quartz", "lipid_cost": 10 }
   ]
 }

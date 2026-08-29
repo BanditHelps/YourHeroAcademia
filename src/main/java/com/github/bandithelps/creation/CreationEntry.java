@@ -1,5 +1,6 @@
 package com.github.bandithelps.creation;
 
+import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
@@ -16,10 +17,12 @@ public record CreationEntry(
         Identifier groupId,
         Identifier groupIcon,
         String unlockAbility,
+        CreationUnlockMode unlockMode,
         List<Identifier> unlockVariantIds
 ) {
     public CreationEntry {
         unlockVariantIds = unlockVariantIds == null ? List.of() : List.copyOf(unlockVariantIds);
+        unlockMode = unlockMode == null ? CreationUnlockMode.ABILITY : unlockMode;
     }
 
     public ItemStack stack() {
@@ -34,6 +37,10 @@ public record CreationEntry(
         return nuggetId != null || blockId != null;
     }
 
+    public boolean isWoodUnlock() {
+        return unlockMode == CreationUnlockMode.WOOD;
+    }
+
     public boolean isUnlockVariant(Identifier requested) {
         return requested != null && unlockVariantIds.contains(requested);
     }
@@ -46,5 +53,12 @@ public record CreationEntry(
                 || requested.equals(nuggetId)
                 || requested.equals(blockId)
                 || isUnlockVariant(requested);
+    }
+
+    public List<Identifier> familyIds() {
+        List<Identifier> ids = new ArrayList<>(1 + unlockVariantIds.size());
+        ids.add(itemId);
+        ids.addAll(unlockVariantIds);
+        return ids;
     }
 }

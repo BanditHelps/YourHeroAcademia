@@ -103,6 +103,7 @@ public final class CreationCatalog {
                     groupId,
                     groupIcon,
                     spec.unlockAbility(),
+                    spec.unlockMode(),
                     unlockVariants
             ));
             registerForm(nuggetId, itemId);
@@ -202,23 +203,32 @@ public final class CreationCatalog {
             Identifier groupIcon = entry.has("group_icon") ? optionalId(entry, "group_icon") : fileGroupIcon;
             Identifier unlockTag = optionalId(entry, "unlock_tag");
             List<Identifier> unlockItems = optionalIdList(entry, "unlock_items");
+            CreationUnlockMode unlockMode = entry.has("unlock_mode")
+                    ? CreationUnlockMode.fromId(entry.get("unlock_mode").getAsString())
+                    : CreationUnlockMode.ABILITY;
             String unlockAbility = null;
             if (unlockTag != null || !unlockItems.isEmpty()) {
-                unlockAbility = entry.has("unlock_ability")
-                        ? stripAbility(entry.get("unlock_ability").getAsString())
-                        : CreationUtil.DYE_KNOWLEDGE;
+                if (unlockMode == CreationUnlockMode.WOOD) {
+                    unlockAbility = entry.has("unlock_ability")
+                            ? stripAbility(entry.get("unlock_ability").getAsString())
+                            : null;
+                } else {
+                    unlockAbility = entry.has("unlock_ability")
+                            ? stripAbility(entry.get("unlock_ability").getAsString())
+                            : CreationUtil.DYE_KNOWLEDGE;
+                }
             }
             if (entry.has("item")) {
                 Identifier itemId = Identifier.parse(entry.get("item").getAsString());
                 rawSpecs.add(new RawSpec(
                         entryAbility, tab, cost, researchCost, itemId, null, nuggetId, blockId,
-                        groupId, groupIcon, unlockAbility, unlockTag, unlockItems
+                        groupId, groupIcon, unlockAbility, unlockMode, unlockTag, unlockItems
                 ));
             } else if (entry.has("tag")) {
                 Identifier tagId = Identifier.parse(entry.get("tag").getAsString());
                 rawSpecs.add(new RawSpec(
                         entryAbility, tab, cost, researchCost, null, tagId, null, null,
-                        groupId, groupIcon, unlockAbility, unlockTag, unlockItems
+                        groupId, groupIcon, unlockAbility, unlockMode, unlockTag, unlockItems
                 ));
             }
         }
@@ -353,11 +363,13 @@ public final class CreationCatalog {
             Identifier groupId,
             Identifier groupIcon,
             String unlockAbility,
+            CreationUnlockMode unlockMode,
             Identifier unlockTag,
             List<Identifier> unlockItems
     ) {
         RawSpec {
             unlockItems = unlockItems == null ? List.of() : List.copyOf(unlockItems);
+            unlockMode = unlockMode == null ? CreationUnlockMode.ABILITY : unlockMode;
         }
     }
 }

@@ -3,6 +3,7 @@
   "tab": "materials",
   "entries": [
     { "item": "minecraft:iron_ingot", "lipid_cost": 52, "research_cost": 64, "nugget": "minecraft:iron_nugget", "block": "minecraft:iron_block" },
+    { "item": "palladium:lead", "lipid_cost": 40, "research_cost": 64 },
     { "item": "minecraft:redstone", "lipid_cost": 3, "research_cost": 64, "block": "minecraft:redstone_block" }
   ]
 }

@@ -62,6 +62,7 @@ public record CreationSyncPayload(
             ByteBufCodecs.STRING_UTF8.encode(buf, blankToEmpty(entry.groupId()));
             ByteBufCodecs.STRING_UTF8.encode(buf, blankToEmpty(entry.groupIcon()));
             ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).encode(buf, entry.unlockVariantIds() == null ? List.of() : entry.unlockVariantIds());
+            ByteBufCodecs.BOOL.encode(buf, entry.woodVariants());
         }
         ByteBufCodecs.VAR_INT.encode(buf, payload.enchants().size());
         for (ClientEnchantEntry enchant : payload.enchants()) {
@@ -120,7 +121,8 @@ public record CreationSyncPayload(
                     ByteBufCodecs.STRING_UTF8.decode(buf),
                     ByteBufCodecs.STRING_UTF8.decode(buf),
                     ByteBufCodecs.STRING_UTF8.decode(buf),
-                    new ArrayList<>(ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).decode(buf))
+                    new ArrayList<>(ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()).decode(buf)),
+                    ByteBufCodecs.BOOL.decode(buf)
             ));
         }
         int enchantCount = ByteBufCodecs.VAR_INT.decode(buf);
@@ -195,10 +197,21 @@ public record CreationSyncPayload(
             String blockId,
             String groupId,
             String groupIcon,
-            List<String> unlockVariantIds
+            List<String> unlockVariantIds,
+            boolean woodVariants
     ) {
         public ClientEntry {
             unlockVariantIds = unlockVariantIds == null ? List.of() : List.copyOf(unlockVariantIds);
+        }
+
+        public List<String> sacrificeItemIds() {
+            if (!woodVariants) {
+                return List.of(itemId);
+            }
+            List<String> ids = new ArrayList<>(1 + unlockVariantIds.size());
+            ids.add(itemId);
+            ids.addAll(unlockVariantIds);
+            return ids;
         }
 
         public boolean hasNugget() {

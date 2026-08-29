@@ -57,6 +57,7 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final Identifier TEX_ALCHEMY = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_alchemy_gui.png");
     private static final Identifier TEX_CREATE = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_create_button.png");
     private static final Identifier TEX_CREATE_HOVER = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_create_button_hover.png");
+    private static final Identifier TEX_LIPID = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/lipid_icon.png");
     private static final Identifier TEX_LOCKED_TAB = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_green_question_tab.png");
     private static final Identifier TEX_LOCK = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/icons/blackwhip/lock.png");
     private static final Identifier TEX_ENCHANT_ARMOR = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_armor_enchant.png");
@@ -66,38 +67,36 @@ public class CreationNotebookUiComponent extends UiWidget {
 
     private static final int TEX_W = 240;
     private static final int TEX_H = 193;
-    private static final int SLOT = 15;
-    private static final int GRID_SLOT = 16;
+    private static final int GRID_SLOT = 18;
     private static final int GRID_ICON = 16;
     private static final int GEAR_SLOT = 12;
     private static final int GEAR_ICON = 12;
     private static final int QUICK_ICON = 16;
     private static final int MAT_X = 15;
-    private static final int MAT_Y1 = 39;
-    private static final int MAT_Y2 = 103;
-    private static final int MAT_COLS = 4;
-    private static final int MAT_TOP_ROWS = 3;
-    private static final int MAT_BOT_ROWS = 5;
-    private static final int MAT_TOP_COUNT = MAT_COLS * MAT_TOP_ROWS;
-    private static final int MAT_BOT_COUNT = MAT_COLS * MAT_BOT_ROWS;
-    private static final int MAT_PER_PAGE = MAT_TOP_COUNT + MAT_BOT_COUNT;
-    private static final int BLOCKS_X = 85;
+    private static final int MAT_Y = 39;
+    private static final int MAT_COLS = 3;
+    private static final int MAT_ROWS = 8;
+    private static final int MAT_PER_PAGE = MAT_COLS * MAT_ROWS;
+    private static final int BLOCKS_X = 77;
     private static final int BLOCKS_Y = 39;
     private static final int BLOCKS_COLS = 5;
-    private static final int BLOCKS_ROWS = 9;
-    private static final int BLOCKS_LAST_ROW = 5;
+    private static final int BLOCKS_ROWS = 8;
     private static final int GEAR_X = 15;
     private static final int GEAR_Y = 39;
     private static final int GEAR_COLS = 4;
     private static final int GEAR_ROWS = 3;
-    private static final int QUICK_X = 192;
-    private static final int[] QUICK_Y = {61, 77, 93, 109, 125, 141};
-    private static final int QUICK_SIZE = 16;
-    private static final int QUICK_COUNT = 6;
+    private static final int QUICK_X = 175;
+    private static final int QUICK_Y = 61;
+    private static final int QUICK_SIZE = 18;
+    private static final int QUICK_COLS = 3;
+    private static final int QUICK_ROWS = 2;
+    private static final int QUICK_COUNT = QUICK_COLS * QUICK_ROWS;
     private static final int CREATE_X = 171;
-    private static final int CREATE_Y = 159;
+    private static final int CREATE_Y = 118;
     private static final int CREATE_W = 59;
     private static final int CREATE_H = 17;
+    private static final int LIPID_ICON_W = 9;
+    private static final int LIPID_ICON_H = 11;
     private static final int DOG_X = 218;
     private static final int DOG_Y = 178;
     private static final int DOG_W = 20;
@@ -116,11 +115,10 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int TIME_Y = 39;
     private static final int TIME_W = 60;
     private static final int TIME_H = 17;
-    private static final int ALCHEMY_GRID_X = 15;
+    private static final int ALCHEMY_GRID_X = 18;
     private static final int ALCHEMY_GRID_Y = 59;
-    private static final int ALCHEMY_COLS = 4;
-    private static final int ALCHEMY_ROWS = 8;
-    private static final int ALCHEMY_FIRST_ROW_STRIDE = 14;
+    private static final int ALCHEMY_COLS = 3;
+    private static final int ALCHEMY_ROWS = 6;
     private static final int DIAMOND_SIZE = 17;
     private static final int DIAMOND_TOP_X = 112;
     private static final int DIAMOND_TOP_Y = 59;
@@ -205,6 +203,8 @@ public class CreationNotebookUiComponent extends UiWidget {
         private String selectedEffectId;
         private CreationPotionForm selectedPotionForm = CreationPotionForm.DRINKABLE;
         private int potionDurationSeconds = 15;
+        private String timeInput = "";
+        private boolean timeReplace;
         private int potionAmplifier;
         private boolean timeFocused;
         private boolean draggingAmplifier;
@@ -234,7 +234,7 @@ public class CreationNotebookUiComponent extends UiWidget {
 
             int quickSlots = ClientCreationState.get().unlockedQuickSlots();
             if (this.page != Page.BLOCKS) {
-                blit(gui, TEX_BLOCKS, x + QUICK_X, y + QUICK_Y[0], QUICK_X, QUICK_Y[0], QUICK_SIZE, QUICK_SIZE * QUICK_COUNT, TEX_W, TEX_H);
+                blit(gui, TEX_BLOCKS, x + QUICK_X, y + QUICK_Y, QUICK_X, QUICK_Y, QUICK_COLS * QUICK_SIZE, QUICK_COUNT * QUICK_SIZE, TEX_W, TEX_H);
             }
 
             int lipids = Mth.floor(ClientBodyState.getCustomFloat(BodyPart.CHEST, CreationUtil.LIPIDS_KEY, 0.0f));
@@ -246,9 +246,8 @@ public class CreationNotebookUiComponent extends UiWidget {
             drawLipidSpendPops(gui, minecraft, x, y, lipids);
 
             if (this.page == Page.BLOCKS) {
-                drawGrid(gui, x, y, mouseX, mouseY, materialGroups(true), MAT_X, MAT_Y1, MAT_COLS, MAT_TOP_ROWS, GRID_SLOT, 0);
-                drawGrid(gui, x, y, mouseX, mouseY, materialGroups(false), MAT_X, MAT_Y2, MAT_COLS, MAT_BOT_ROWS, GRID_SLOT, 0);
-                drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, GRID_SLOT, this.blocksPage, BLOCKS_LAST_ROW);
+                drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y, MAT_COLS, MAT_ROWS, GRID_SLOT, this.materialsPage);
+                drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, GRID_SLOT, this.blocksPage);
             } else if (this.page == Page.GEAR) {
                 drawGearSlots(gui, x, y);
                 drawEnchantPanel(gui, minecraft, x, y, mouseX, mouseY);
@@ -258,10 +257,12 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
 
             for (int i = 0; i < QUICK_COUNT; i++) {
-                int slotX = x + QUICK_X;
-                int slotY = y + QUICK_Y[i];
+                int slotX = quickSlotX(x, i);
+                int slotY = quickSlotY(y, i);
+                int iconX = slotX + Math.max(0, (QUICK_SIZE - QUICK_ICON) / 2);
+                int iconY = slotY + Math.max(0, (QUICK_SIZE - QUICK_ICON) / 2);
                 if (i >= quickSlots) {
-                    blitLock(gui, slotX, slotY);
+                    blitLock(gui, iconX, iconY);
                     if (contains(mouseX, mouseY, slotX, slotY, QUICK_SIZE, QUICK_SIZE)) {
                         gui.setTooltipForNextFrame(minecraft.font, Component.translatable("gui.yha.creation.tab_locked"), mouseX, mouseY);
                     }
@@ -269,7 +270,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                 }
                 ItemStack assigned = ClientCreationState.quickSlotStack(i, clientAccess());
                 if (!assigned.isEmpty()) {
-                    drawItem(gui, assigned, slotX, slotY, QUICK_ICON);
+                    drawItem(gui, assigned, iconX, iconY, QUICK_ICON);
                     if (contains(mouseX, mouseY, slotX, slotY, QUICK_SIZE, QUICK_SIZE)) {
                         gui.setTooltipForNextFrame(minecraft.font, assigned, mouseX, mouseY);
                     }
@@ -293,12 +294,9 @@ public class CreationNotebookUiComponent extends UiWidget {
                 gui.fill(x + CREATE_X, y + CREATE_Y, x + CREATE_X + CREATE_W, y + CREATE_Y + CREATE_H, 0x66000000);
             }
 
-            if (this.page == Page.ALCHEMY) {
-                if (selectedPotion != null) {
-                    gui.text(minecraft.font, String.valueOf(selectedCost), x + CREATE_X, y + CREATE_Y + CREATE_H + 2, 0xFF3A2A18, false);
-                }
-            } else if (selected != null) {
-                gui.text(minecraft.font, String.valueOf(selectedCost), x + CREATE_X, y + CREATE_Y + CREATE_H + 2, 0xFF3A2A18, false);
+            boolean showCost = this.page == Page.ALCHEMY ? selectedPotion != null : selected != null;
+            if (showCost) {
+                drawCreateCost(gui, minecraft, x, y, selectedCost, canCreate);
             }
 
             drawFormMenu(gui, mouseX, mouseY);
@@ -445,7 +443,7 @@ public class CreationNotebookUiComponent extends UiWidget {
 
             if (contains(mouseX, mouseY, x + TAB_LOCKED_1_X, y, TAB_W, TAB_H)) {
                 closeFormMenu();
-                this.timeFocused = false;
+                unfocusTime();
                 this.nameFocused = false;
                 minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
                 clickSound();
@@ -453,7 +451,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
             if (contains(mouseX, mouseY, x + TAB_ALCHEMY_X, y, TAB_W, TAB_H)) {
                 closeFormMenu();
-                this.timeFocused = false;
+                unfocusTime();
                 this.nameFocused = false;
                 if (!ClientCreationState.get().alchemyTabUnlocked()) {
                     minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
@@ -465,7 +463,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
             if (contains(mouseX, mouseY, x + TAB_GEAR_X, y, TAB_W, TAB_H)) {
                 closeFormMenu();
-                this.timeFocused = false;
+                unfocusTime();
                 this.nameFocused = false;
                 if (!ClientCreationState.get().gearTabUnlocked()) {
                     minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
@@ -477,7 +475,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
             if (contains(mouseX, mouseY, x + TAB_BLOCKS_X, y, TAB_W, TAB_H)) {
                 closeFormMenu();
-                this.timeFocused = false;
+                unfocusTime();
                 this.nameFocused = false;
                 this.page = Page.BLOCKS;
                 clickSound();
@@ -486,7 +484,7 @@ public class CreationNotebookUiComponent extends UiWidget {
 
             if (this.page == Page.GEAR && hitNameField(mouseX, mouseY, x, y)) {
                 closeFormMenu();
-                this.timeFocused = false;
+                unfocusTime();
                 this.nameFocused = true;
                 this.setFocused(true);
                 clickSound();
@@ -503,7 +501,7 @@ public class CreationNotebookUiComponent extends UiWidget {
 
             if (contains(mouseX, mouseY, x + CREATE_X, y + CREATE_Y, CREATE_W, CREATE_H)) {
                 closeFormMenu();
-                this.timeFocused = false;
+                unfocusTime();
                 this.nameFocused = false;
                 if (this.page == Page.ALCHEMY) {
                     if (this.selectedEffectId != null) {
@@ -530,11 +528,11 @@ public class CreationNotebookUiComponent extends UiWidget {
 
             int quickSlots = ClientCreationState.get().unlockedQuickSlots();
             for (int i = 0; i < QUICK_COUNT; i++) {
-                if (!contains(mouseX, mouseY, x + QUICK_X, y + QUICK_Y[i], QUICK_SIZE, QUICK_SIZE)) {
+                if (!contains(mouseX, mouseY, quickSlotX(x, i), quickSlotY(y, i), QUICK_SIZE, QUICK_SIZE)) {
                     continue;
                 }
                 closeFormMenu();
-                this.timeFocused = false;
+                unfocusTime();
                 this.nameFocused = false;
                 if (i >= quickSlots) {
                     minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
@@ -562,7 +560,7 @@ public class CreationNotebookUiComponent extends UiWidget {
 
             if (contains(mouseX, mouseY, x + DOG_X, y + DOG_Y, DOG_W, DOG_H)) {
                 closeFormMenu();
-                this.timeFocused = false;
+                unfocusTime();
                 this.nameFocused = false;
                 turnPage();
                 clickSound();
@@ -686,15 +684,31 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
             int key = event.key();
             if (key == GLFW.GLFW_KEY_ESCAPE) {
-                this.timeFocused = false;
+                cancelTimeInput();
+                this.setFocused(false);
+                return true;
+            }
+            if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+                unfocusTime();
                 this.setFocused(false);
                 return true;
             }
             if (key == GLFW.GLFW_KEY_BACKSPACE) {
-                this.potionDurationSeconds = this.potionDurationSeconds / 10;
+                if (this.timeReplace) {
+                    this.timeInput = "";
+                    this.timeReplace = false;
+                } else if (!this.timeInput.isEmpty()) {
+                    this.timeInput = this.timeInput.substring(0, this.timeInput.length() - 1);
+                }
+                applyTimeInput(false);
                 return true;
             }
-            return false;
+            if (key == GLFW.GLFW_KEY_DELETE) {
+                this.timeInput = "";
+                this.timeReplace = false;
+                return true;
+            }
+            return true;
         }
 
         @Override
@@ -714,14 +728,19 @@ public class CreationNotebookUiComponent extends UiWidget {
                 return false;
             }
             int code = event.codepoint();
-            if (code < '0' || code > '9') {
+            if (code != ':' && (code < '0' || code > '9')) {
                 return false;
             }
-            int digit = code - '0';
-            int next = this.potionDurationSeconds * 10 + digit;
-            CreationSyncPayload.ClientPotionEntry potion = ClientCreationState.findPotion(this.selectedEffectId);
-            int max = potion == null ? 480 : Math.max(1, potion.maxDurationSeconds());
-            this.potionDurationSeconds = Mth.clamp(next, 1, max);
+            String next = this.timeReplace ? Character.toString(code) : this.timeInput + Character.toString(code);
+            if (code == ':' && this.timeInput.indexOf(':') >= 0 && !this.timeReplace) {
+                return true;
+            }
+            if (next.length() > 5) {
+                return true;
+            }
+            this.timeInput = next;
+            this.timeReplace = false;
+            applyTimeInput(false);
             return true;
         }
 
@@ -921,19 +940,9 @@ public class CreationNotebookUiComponent extends UiWidget {
             int materials = ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS).size();
             int blocks = ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS).size();
             int matPages = Math.max(1, ceilDiv(materials, MAT_PER_PAGE));
-            int blockPages = Math.max(1, ceilDiv(blocks, BLOCKS_COLS * (BLOCKS_ROWS - 1) + BLOCKS_LAST_ROW));
+            int blockPages = Math.max(1, ceilDiv(blocks, BLOCKS_COLS * BLOCKS_ROWS));
             this.materialsPage = (this.materialsPage + 1) % matPages;
             this.blocksPage = (this.blocksPage + 1) % blockPages;
-        }
-
-        private List<ClientCreationState.ItemGroupView> materialGroups(boolean top) {
-            List<ClientCreationState.ItemGroupView> all = ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS);
-            int start = this.materialsPage * MAT_PER_PAGE + (top ? 0 : MAT_TOP_COUNT);
-            int count = top ? MAT_TOP_COUNT : MAT_BOT_COUNT;
-            if (start < 0 || start >= all.size() || count <= 0) {
-                return List.of();
-            }
-            return all.subList(start, Math.min(all.size(), start + count));
         }
 
         private SlotHit findClickedSlot(int mouseX, int mouseY, int x, int y) {
@@ -943,15 +952,11 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (this.page == Page.ALCHEMY) {
                 return null;
             }
-            SlotHit materials = hitGrid(mouseX, mouseY, x, y, materialGroups(true), MAT_X, MAT_Y1, MAT_COLS, MAT_TOP_ROWS, GRID_SLOT, 0, MAT_COLS);
+            SlotHit materials = hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y, MAT_COLS, MAT_ROWS, GRID_SLOT, this.materialsPage, MAT_COLS);
             if (materials != null) {
                 return materials;
             }
-            materials = hitGrid(mouseX, mouseY, x, y, materialGroups(false), MAT_X, MAT_Y2, MAT_COLS, MAT_BOT_ROWS, GRID_SLOT, 0, MAT_COLS);
-            if (materials != null) {
-                return materials;
-            }
-            return hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, GRID_SLOT, this.blocksPage, BLOCKS_LAST_ROW);
+            return hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, GRID_SLOT, this.blocksPage, BLOCKS_COLS);
         }
 
         private SlotHit hitGrid(
@@ -1047,8 +1052,31 @@ public class CreationNotebookUiComponent extends UiWidget {
             return slotSize <= GEAR_SLOT ? GEAR_ICON : GRID_ICON;
         }
 
+        private static int quickSlotX(int originX, int index) {
+            return originX + QUICK_X + (index % QUICK_COLS) * QUICK_SIZE;
+        }
+
+        private static int quickSlotY(int originY, int index) {
+            return originY + QUICK_Y + (index / QUICK_COLS) * QUICK_SIZE;
+        }
+
+        private static void drawCreateCost(GuiGraphicsExtractor gui, Minecraft minecraft, int originX, int originY, int cost, boolean canCreate) {
+            String text = String.valueOf(cost);
+            int textW = minecraft.font.width(text);
+            int totalW = LIPID_ICON_W + 2 + textW;
+            int left = originX + CREATE_X + Math.max(0, (CREATE_W - totalW) / 2);
+            int iconY = originY + CREATE_Y - LIPID_ICON_H - 3;
+            int textY = iconY + Math.max(0, (LIPID_ICON_H - minecraft.font.lineHeight) / 2);
+            blit(gui, TEX_LIPID, left, iconY, 0, 0, LIPID_ICON_W, LIPID_ICON_H, LIPID_ICON_W, LIPID_ICON_H);
+            gui.text(minecraft.font, text, left + LIPID_ICON_W + 2, textY, canCreate ? 0xFF3A2A18 : 0xFFB03A2A, false);
+        }
+
         private static void drawItem(GuiGraphicsExtractor gui, ItemStack stack, int x, int y, int size) {
             if (stack == null || stack.isEmpty() || size <= 0) {
+                return;
+            }
+            if (size == 16) {
+                gui.item(stack, x, y);
                 return;
             }
             float scale = size / 16.0f;
@@ -1554,11 +1582,15 @@ public class CreationNotebookUiComponent extends UiWidget {
             } else {
                 String timeText = instant
                         ? Component.translatable("gui.yha.creation.potion_instant").getString()
-                        : formatTime(this.potionDurationSeconds);
+                        : (this.timeFocused ? this.timeInput : formatTime(this.potionDurationSeconds));
                 int timeColor = canTime ? (this.timeFocused ? 0xFF3A2A18 : 0xFF5A4030) : 0xFF9A8A78;
-                int timeX = originX + TIME_X + (TIME_W - minecraft.font.width(timeText)) / 2;
-                int timeY = originY + TIME_Y + (TIME_H - 8) / 2;
+                int timeX = originX + TIME_X + Math.max(0, (TIME_W - minecraft.font.width(timeText.isEmpty() ? "0:00" : timeText)) / 2);
+                int timeY = originY + TIME_Y + (TIME_H - minecraft.font.lineHeight) / 2;
                 gui.text(minecraft.font, timeText, timeX, timeY, timeColor, false);
+                if (this.timeFocused && canTime && ((System.currentTimeMillis() / 400L) % 2L == 0L)) {
+                    int cursorX = timeX + minecraft.font.width(timeText);
+                    gui.fill(cursorX, originY + TIME_Y + 3, cursorX + 1, originY + TIME_Y + TIME_H - 3, 0xFF3A2A18);
+                }
             }
             boolean overMenu = formMenuContains(mouseX, mouseY);
             if (!overMenu && contains(mouseX, mouseY, originX + TIME_X, originY + TIME_Y, TIME_W, TIME_H)) {
@@ -1582,7 +1614,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                 int iconY = slotY + 1;
                 drawItem(gui, icon, iconX, iconY, iconSize);
                 if (!group.isSingleton()) {
-                    gui.fill(slotX + SLOT - 4, slotY + 1, slotX + SLOT - 1, slotY + 4, 0xFFFFD27A);
+                    gui.fill(slotX + GRID_SLOT - 4, slotY + 1, slotX + GRID_SLOT - 1, slotY + 4, 0xFFFFD27A);
                 }
                 boolean selectedGroup = group.effects().stream().anyMatch(entry -> entry.effectId().equals(this.selectedEffectId));
                 if (selectedGroup) {
@@ -1591,7 +1623,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                     gui.fill(iconX - 1, iconY - 1, iconX, iconY + iconSize + 1, 0xFFFFD27A);
                     gui.fill(iconX + iconSize, iconY - 1, iconX + iconSize + 1, iconY + iconSize + 1, 0xFFFFD27A);
                 }
-                if (!overMenu && contains(mouseX, mouseY, slotX, slotY, SLOT, SLOT)) {
+                if (!overMenu && contains(mouseX, mouseY, slotX, slotY, GRID_SLOT, GRID_SLOT)) {
                     gui.setTooltipForNextFrame(minecraft.font, groupTooltip(group), mouseX, mouseY);
                 }
             }
@@ -1677,12 +1709,22 @@ public class CreationNotebookUiComponent extends UiWidget {
             CreationSyncPayload state = ClientCreationState.get();
             if (contains(mouseX, mouseY, originX + TIME_X, originY + TIME_Y, TIME_W, TIME_H)) {
                 CreationSyncPayload.ClientPotionEntry potion = ClientCreationState.findPotion(this.selectedEffectId);
-                this.timeFocused = state.potionTiming() && (potion == null || !potion.instant());
-                this.setFocused(this.timeFocused);
+                boolean canFocus = state.potionTiming() && (potion == null || !potion.instant());
+                if (canFocus) {
+                    if (!this.timeFocused) {
+                        this.timeInput = formatTime(this.potionDurationSeconds);
+                    }
+                    this.timeReplace = true;
+                    this.timeFocused = true;
+                    this.setFocused(true);
+                } else {
+                    this.timeFocused = false;
+                    this.setFocused(false);
+                }
                 clickSound();
                 return true;
             }
-            this.timeFocused = false;
+            unfocusTime();
 
             if (contains(mouseX, mouseY, originX + AMP_BOX_X, originY + AMP_BOX_Y, AMP_BOX_W, AMP_BOX_H)) {
                 if (!state.potionPotency() && !state.potionMaster()) {
@@ -1716,13 +1758,13 @@ public class CreationNotebookUiComponent extends UiWidget {
                 int row = i / ALCHEMY_COLS;
                 int slotX = alchemySlotX(originX, col);
                 int slotY = alchemySlotY(originY, row);
-                if (!contains(mouseX, mouseY, slotX, slotY, SLOT, SLOT)) {
+                if (!contains(mouseX, mouseY, slotX, slotY, GRID_SLOT, GRID_SLOT)) {
                     continue;
                 }
                 ClientCreationState.PotionGroupView group = groups.get(i);
                 List<String> ids = group.effects().stream().map(CreationSyncPayload.ClientPotionEntry::effectId).toList();
                 if (ids.size() > 1) {
-                    openPotionGroupMenu(group.groupId(), ids, new SlotHit(group.groupId(), slotX, slotY, SLOT));
+                    openPotionGroupMenu(group.groupId(), ids, new SlotHit(group.groupId(), slotX, slotY, GRID_SLOT));
                 } else if (!ids.isEmpty()) {
                     this.selectedEffectId = ids.getFirst();
                     closeFormMenu();
@@ -1747,6 +1789,10 @@ public class CreationNotebookUiComponent extends UiWidget {
                     delta *= 60;
                 }
                 this.potionDurationSeconds = Mth.clamp(this.potionDurationSeconds + delta, 1, max);
+                if (this.timeFocused) {
+                    this.timeInput = formatTime(this.potionDurationSeconds);
+                    this.timeReplace = true;
+                }
                 return true;
             }
             if (contains(mouseX, mouseY, originX + AMP_BOX_X, originY + AMP_BOX_Y, AMP_BOX_W, AMP_BOX_H)
@@ -1767,15 +1813,11 @@ public class CreationNotebookUiComponent extends UiWidget {
         }
 
         private static int alchemySlotX(int originX, int col) {
-            return originX + ALCHEMY_GRID_X + col * SLOT;
+            return originX + ALCHEMY_GRID_X + col * GRID_SLOT;
         }
 
         private static int alchemySlotY(int originY, int row) {
-            int top = originY + ALCHEMY_GRID_Y;
-            if (row <= 0) {
-                return top;
-            }
-            return top + ALCHEMY_FIRST_ROW_STRIDE + (row - 1) * SLOT;
+            return originY + ALCHEMY_GRID_Y + row * GRID_SLOT;
         }
 
         private static int ampTrackX(int originX) {
@@ -1939,9 +1981,92 @@ public class CreationNotebookUiComponent extends UiWidget {
             return this.potionDurationSeconds;
         }
 
+        private void unfocusTime() {
+            if (this.timeFocused) {
+                applyTimeInput(true);
+            }
+            this.timeFocused = false;
+            this.timeReplace = false;
+        }
+
+        private void cancelTimeInput() {
+            this.timeFocused = false;
+            this.timeReplace = false;
+            this.timeInput = formatTime(this.potionDurationSeconds);
+        }
+
+        private void applyTimeInput(boolean commitDisplay) {
+            Integer parsed = parseTimeInput(this.timeInput);
+            if (parsed == null) {
+                if (commitDisplay) {
+                    this.timeInput = formatTime(this.potionDurationSeconds);
+                }
+                return;
+            }
+            this.potionDurationSeconds = Mth.clamp(parsed, 1, maxPotionDurationSeconds());
+            if (commitDisplay) {
+                this.timeInput = formatTime(this.potionDurationSeconds);
+            }
+        }
+
+        private int maxPotionDurationSeconds() {
+            CreationSyncPayload.ClientPotionEntry potion = ClientCreationState.findPotion(this.selectedEffectId);
+            return potion == null ? 480 : Math.max(1, potion.maxDurationSeconds());
+        }
+
+        private static Integer parseTimeInput(String raw) {
+            if (raw == null) {
+                return null;
+            }
+            String text = raw.trim();
+            if (text.isEmpty()) {
+                return null;
+            }
+            int colon = text.indexOf(':');
+            if (colon >= 0) {
+                if (text.indexOf(':', colon + 1) >= 0) {
+                    return null;
+                }
+                String minPart = text.substring(0, colon);
+                String secPart = text.substring(colon + 1);
+                if (!isDigits(minPart) || !isDigits(secPart) || secPart.length() > 2) {
+                    return null;
+                }
+                int minutes = minPart.isEmpty() ? 0 : Integer.parseInt(minPart);
+                int seconds = secPart.isEmpty() ? 0 : Integer.parseInt(secPart);
+                if (seconds > 59) {
+                    return null;
+                }
+                return minutes * 60 + seconds;
+            }
+            if (!isDigits(text) || text.length() > 4) {
+                return null;
+            }
+            if (text.length() <= 2) {
+                return Integer.parseInt(text);
+            }
+            int value = Integer.parseInt(text);
+            int seconds = value % 100;
+            int minutes = value / 100;
+            if (seconds > 59) {
+                return null;
+            }
+            return minutes * 60 + seconds;
+        }
+
+        private static boolean isDigits(String text) {
+            for (int i = 0; i < text.length(); i++) {
+                char character = text.charAt(i);
+                if (character < '0' || character > '9') {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private static String formatTime(int totalSeconds) {
             int clamped = Math.max(0, totalSeconds);
-            return String.format("%02d:%02d", clamped / 60, clamped % 60);
+            return String.format("%d:%02d", clamped / 60, clamped % 60);
         }
 
         private static String roman(int value) {

@@ -2,9 +2,47 @@
   "ability": "cr_know_wood_3",
   "tab": "blocks",
   "entries": [
-    { "tag": "minecraft:wooden_stairs", "group": "yha:stairs", "lipid_cost": 8 },
-    { "tag": "minecraft:wooden_slabs", "group": "yha:slabs", "lipid_cost": 5 },
-    { "tag": "minecraft:wooden_fences", "group": "yha:fences", "lipid_cost": 8 },
-    { "tag": "minecraft:wooden_doors", "group": "yha:doors", "lipid_cost": 12 }
+    {
+      "item": "minecraft:oak_stairs",
+      "group": "yha:stairs",
+      "group_icon": "minecraft:oak_stairs",
+      "lipid_cost": 8,
+      "unlock_mode": "wood",
+      "unlock_tag": "minecraft:wooden_stairs"
+    },
+    {
+      "item": "minecraft:oak_slab",
+      "group": "yha:slabs",
+      "group_icon": "minecraft:oak_slab",
+      "lipid_cost": 5,
+      "unlock_mode": "wood",
+      "unlock_tag": "minecraft:wooden_slabs"
+    },
+    {
+      "item": "minecraft:oak_fence",
+      "group": "yha:fences",
+      "group_icon": "minecraft:oak_fence",
+      "lipid_cost": 8,
+      "unlock_mode": "wood",
+      "unlock_tag": "minecraft:wooden_fences"
+    },
+    {
+      "item": "minecraft:oak_door",
+      "group": "yha:doors",
+      "group_icon": "minecraft:oak_door",
+      "lipid_cost": 12,
+      "unlock_mode": "wood",
+      "unlock_tag": "minecraft:wooden_doors"
+    },
+    {
+      "item": "minecraft:oak_fence_gate",
+      "group": "yha:fence_gates",
+      "group_icon": "minecraft:oak_fence_gate",
+      "lipid_cost": 10,
+      "unlock_mode": "wood",
+      "unlock_tag": "minecraft:fence_gates"
+    },
+    { "item": "minecraft:bamboo_mosaic_stairs", "group": "yha:stairs", "lipid_cost": 8 },
+    { "item": "minecraft:bamboo_mosaic_slab", "group": "yha:slabs", "lipid_cost": 5 }
   ]
 }

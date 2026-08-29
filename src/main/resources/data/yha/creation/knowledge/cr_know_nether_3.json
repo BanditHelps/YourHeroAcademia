@@ -7,7 +7,20 @@
     { "item": "minecraft:nether_brick_fence", "group": "yha:fences", "lipid_cost": 14 },
     { "item": "minecraft:nether_brick_wall", "group": "yha:walls", "lipid_cost": 14 },
     { "item": "minecraft:red_nether_brick_stairs", "group": "yha:stairs", "lipid_cost": 18 },
+    { "item": "minecraft:red_nether_brick_slab", "group": "yha:slabs", "lipid_cost": 12 },
+    { "item": "minecraft:red_nether_brick_wall", "group": "yha:walls", "lipid_cost": 18 },
     { "item": "minecraft:blackstone_stairs", "group": "yha:stairs", "lipid_cost": 14 },
-    { "item": "minecraft:polished_blackstone_bricks", "lipid_cost": 16 }
+    { "item": "minecraft:blackstone_slab", "group": "yha:slabs", "lipid_cost": 10 },
+    { "item": "minecraft:blackstone_wall", "group": "yha:walls", "lipid_cost": 14 },
+    { "item": "minecraft:polished_blackstone_stairs", "group": "yha:stairs", "lipid_cost": 16 },
+    { "item": "minecraft:polished_blackstone_slab", "group": "yha:slabs", "lipid_cost": 10 },
+    { "item": "minecraft:polished_blackstone_wall", "group": "yha:walls", "lipid_cost": 16 },
+    { "item": "minecraft:polished_blackstone_brick_stairs", "group": "yha:stairs", "lipid_cost": 16 },
+    { "item": "minecraft:polished_blackstone_brick_slab", "group": "yha:slabs", "lipid_cost": 10 },
+    { "item": "minecraft:polished_blackstone_brick_wall", "group": "yha:walls", "lipid_cost": 16 },
+    { "item": "minecraft:quartz_stairs", "group": "yha:stairs", "lipid_cost": 16 },
+    { "item": "minecraft:quartz_slab", "group": "yha:slabs", "lipid_cost": 10 },
+    { "item": "minecraft:smooth_quartz_stairs", "group": "yha:stairs", "lipid_cost": 16 },
+    { "item": "minecraft:smooth_quartz_slab", "group": "yha:slabs", "lipid_cost": 10 }
   ]
 }

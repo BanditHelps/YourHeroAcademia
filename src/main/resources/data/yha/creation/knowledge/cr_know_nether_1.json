@@ -6,6 +6,7 @@
     { "item": "minecraft:crimson_stem", "group": "yha:logs", "lipid_cost": 14 },
     { "item": "minecraft:warped_stem", "group": "yha:logs", "lipid_cost": 14 },
     { "item": "minecraft:soul_sand", "group": "yha:nether", "lipid_cost": 12 },
-    { "item": "minecraft:soul_soil", "group": "yha:nether", "lipid_cost": 12 }
+    { "item": "minecraft:soul_soil", "group": "yha:nether", "lipid_cost": 12 },
+    { "item": "minecraft:soul_torch", "group": "yha:torches", "lipid_cost": 3 }
   ]
 }

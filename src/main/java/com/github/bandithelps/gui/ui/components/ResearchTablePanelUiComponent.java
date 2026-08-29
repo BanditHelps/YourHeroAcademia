@@ -548,7 +548,7 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                 if (selected != null
                         && !selected.unlocked()
                         && contains(mouseX, mouseY, sacrificeX(), sacrificeY(), sacrificeW(), sacrificeH())) {
-                    if (countInInventory(ClientCreationState.stackOf(selected.itemId())) > 0) {
+                    if (countSacrificeItems(selected) > 0) {
                         ClientPacketDistributor.sendToServer(new CreationResearchPayload(selected.itemId()));
                     }
                     clickSound();
@@ -720,8 +720,23 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             if (entry.itemId().toLowerCase(Locale.ROOT).contains(query)) {
                 return true;
             }
+            if (entry.groupId() != null && !entry.groupId().isBlank() && entry.groupId().toLowerCase(Locale.ROOT).contains(query)) {
+                return true;
+            }
             ItemStack stack = ClientCreationState.stackOf(entry.itemId());
-            return !stack.isEmpty() && stack.getHoverName().getString().toLowerCase(Locale.ROOT).contains(query);
+            if (!stack.isEmpty() && stack.getHoverName().getString().toLowerCase(Locale.ROOT).contains(query)) {
+                return true;
+            }
+            String display = itemDisplayName(entry, stack).toLowerCase(Locale.ROOT);
+            if (display.contains(query)) {
+                return true;
+            }
+            for (String variantId : entry.unlockVariantIds()) {
+                if (variantId.toLowerCase(Locale.ROOT).contains(query)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static boolean matchesEnchantQuery(CreationSyncPayload.ClientEnchantEntry entry, String query) {
@@ -749,17 +764,20 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                 int detailW
         ) {
             ItemStack stack = ClientCreationState.stackOf(selected.itemId());
-            int owned = countInInventory(stack);
+            int owned = countSacrificeItems(selected);
+            String ownedLabel = selected.woodVariants()
+                    ? Component.translatable("gui.yha.creation.inventory_count_any", owned).getString()
+                    : Component.translatable("gui.yha.creation.inventory_count", owned).getString();
             drawStudyDetail(
                     gui,
                     minecraft,
                     stack,
-                    stack.isEmpty() ? selected.itemId() : stack.getHoverName().getString(),
+                    itemDisplayName(selected, stack),
                     selected.unlocked(),
                     selected.progress(),
                     selected.researchCost(),
                     selected.lipidCost(),
-                    Component.translatable("gui.yha.creation.inventory_count", owned).getString(),
+                    ownedLabel,
                     owned,
                     mouseX,
                     mouseY,
@@ -926,7 +944,7 @@ public class ResearchTablePanelUiComponent extends UiWidget {
                 return selected != null && !selected.unlocked() && countPotions(selected.effectId()) <= 0;
             }
             CreationSyncPayload.ClientEntry selected = ClientCreationState.find(this.selectedId);
-            return selected != null && !selected.unlocked() && countInInventory(ClientCreationState.stackOf(selected.itemId())) <= 0;
+            return selected != null && !selected.unlocked() && countSacrificeItems(selected) <= 0;
         }
 
         private Component missingSacrificeTooltip() {
@@ -935,6 +953,10 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             }
             if (this.filterTab.isPotions()) {
                 return Component.translatable("gui.yha.creation.missing_potion");
+            }
+            CreationSyncPayload.ClientEntry selected = ClientCreationState.find(this.selectedId);
+            if (selected != null && selected.woodVariants()) {
+                return Component.translatable("gui.yha.creation.missing_sacrifice_any");
             }
             return Component.translatable("gui.yha.creation.missing_sacrifice");
         }
@@ -1000,6 +1022,31 @@ public class ResearchTablePanelUiComponent extends UiWidget {
             } catch (RuntimeException ignored) {
                 return 0;
             }
+        }
+
+        private static int countSacrificeItems(CreationSyncPayload.ClientEntry entry) {
+            if (entry == null) {
+                return 0;
+            }
+            int count = 0;
+            for (String itemId : entry.sacrificeItemIds()) {
+                count += countInInventory(ClientCreationState.stackOf(itemId));
+            }
+            return count;
+        }
+
+        private static String itemDisplayName(CreationSyncPayload.ClientEntry entry, ItemStack stack) {
+            if (entry != null && entry.woodVariants() && entry.groupId() != null && !entry.groupId().isBlank()) {
+                String key = "gui.yha.creation.group." + entry.groupId().replace(':', '.');
+                Component translated = Component.translatable(key);
+                if (!translated.getString().equals(key)) {
+                    return translated.getString();
+                }
+            }
+            if (stack == null || stack.isEmpty()) {
+                return entry == null ? "" : entry.itemId();
+            }
+            return stack.getHoverName().getString();
         }
 
         private static int countInInventory(ItemStack match) {

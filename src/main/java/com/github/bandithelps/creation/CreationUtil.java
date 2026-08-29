@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -27,7 +28,11 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.FireworkExplosion;
+import net.minecraft.world.item.component.Fireworks;
 import net.minecraft.world.phys.Vec3;
 import net.threetag.palladium.power.PowerUtil;
 import net.threetag.palladium.power.ability.AbilityUtil;
@@ -279,7 +284,10 @@ public final class CreationUtil {
         if (data.isUnlocked(itemId)) {
             return false;
         }
-        if (!consumeOne(player, entry.stack())) {
+        boolean consumed = entry.isWoodUnlock()
+                ? consumeAny(player, entry.familyIds())
+                : consumeOne(player, entry.stack());
+        if (!consumed) {
             player.sendSystemMessage(Component.translatable("gui.yha.creation.missing_sacrifice"));
             return false;
         }
@@ -475,6 +483,9 @@ public final class CreationUtil {
         if (parent == null || itemId == null || data == null || !parent.isKnownForm(itemId) || !data.isUnlocked(parent.itemId())) {
             return false;
         }
+        if (parent.isWoodUnlock()) {
+            return CreationWoodTypes.isWoodKnown(data.unlockedView(), itemId);
+        }
         if (parent.isUnlockVariant(itemId) && !isAbilityUnlocked(player, parent.unlockAbility())) {
             return false;
         }
@@ -505,6 +516,7 @@ public final class CreationUtil {
         }
         created = created.copy();
         created.setCount(1);
+        applyRandomFirework(created, player);
 
         LinkedHashMap<Identifier, Integer> levels = new LinkedHashMap<>();
         if (requested != null) {
@@ -656,8 +668,28 @@ public final class CreationUtil {
             }
             if (entry.nuggetId() != null && data.isUnlocked(entry.nuggetId())) {
                 data.unlock(entry.itemId());
-            } else if (entry.blockId() != null && data.isUnlocked(entry.blockId())) {
+                continue;
+            }
+            if (entry.blockId() != null && data.isUnlocked(entry.blockId())) {
                 data.unlock(entry.itemId());
+                continue;
+            }
+            if (!entry.isWoodUnlock()) {
+                continue;
+            }
+            boolean variantUnlocked = false;
+            int combinedProgress = data.getProgress(entry.itemId());
+            for (Identifier variantId : entry.unlockVariantIds()) {
+                if (data.isUnlocked(variantId)) {
+                    variantUnlocked = true;
+                    break;
+                }
+                combinedProgress += data.getProgress(variantId);
+            }
+            if (variantUnlocked || combinedProgress >= entry.researchCost()) {
+                data.unlock(entry.itemId());
+            } else if (combinedProgress > data.getProgress(entry.itemId())) {
+                data.setProgress(entry.itemId(), combinedProgress);
             }
         }
     }
@@ -695,6 +727,41 @@ public final class CreationUtil {
         double dx = -Math.sin(yaw) * forward + Math.cos(yaw) * side;
         double dz = Math.cos(yaw) * forward + Math.sin(yaw) * side;
         return new Vec3(player.getX() + dx, player.getY() + height, player.getZ() + dz);
+    }
+
+    private static void applyRandomFirework(ItemStack stack, ServerPlayer player) {
+        if (stack == null || stack.isEmpty() || stack.getItem() != Items.FIREWORK_ROCKET) {
+            return;
+        }
+        var random = player.getRandom();
+        FireworkExplosion.Shape[] shapes = FireworkExplosion.Shape.values();
+        DyeColor[] dyes = DyeColor.values();
+        int colorCount = 2 + random.nextInt(4);
+        IntArrayList colors = new IntArrayList(colorCount);
+        for (int i = 0; i < colorCount; i++) {
+            colors.add(dyes[random.nextInt(dyes.length)].getFireworkColor());
+        }
+        FireworkExplosion explosion = new FireworkExplosion(
+                shapes[random.nextInt(shapes.length)],
+                colors,
+                new IntArrayList(),
+                random.nextBoolean(),
+                random.nextBoolean()
+        );
+        int flight = 1 + random.nextInt(2);
+        stack.set(DataComponents.FIREWORKS, new Fireworks(flight, List.of(explosion)));
+    }
+
+    private static boolean consumeAny(ServerPlayer player, List<Identifier> itemIds) {
+        if (itemIds == null || itemIds.isEmpty()) {
+            return false;
+        }
+        for (Identifier itemId : itemIds) {
+            if (consumeOne(player, CreationCatalog.stackOf(itemId))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean consumeOne(ServerPlayer player, ItemStack match) {

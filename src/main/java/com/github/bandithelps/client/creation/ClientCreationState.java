@@ -6,9 +6,11 @@ import com.github.bandithelps.creation.CreationPotionForm;
 import com.github.bandithelps.creation.CreationPotions;
 import com.github.bandithelps.creation.CreationQuickSlot;
 import com.github.bandithelps.creation.CreationTab;
+import com.github.bandithelps.creation.CreationWoodTypes;
 import com.github.bandithelps.network.CreationSyncPayload;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +19,20 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 public final class ClientCreationState {
+    private static final List<String> MATERIAL_STRIP = List.of(
+            "minecraft:flint",
+            "minecraft:copper_ingot",
+            "minecraft:coal",
+            "minecraft:charcoal",
+            "minecraft:iron_ingot",
+            "palladium:lead",
+            "minecraft:redstone",
+            "minecraft:gold_ingot",
+            "minecraft:lapis_lazuli",
+            "minecraft:diamond",
+            "minecraft:emerald",
+            "minecraft:netherite_ingot"
+    );
     private static CreationSyncPayload latest = emptyPayload();
 
     private ClientCreationState() {
@@ -130,6 +146,7 @@ public final class ClientCreationState {
 
     public static List<ItemGroupView> unlockedItemGroups(CreationTab tab) {
         Map<String, ItemGroupView> groups = new LinkedHashMap<>();
+        List<String> unlockedIds = latest.unlocked() == null ? List.of() : latest.unlocked();
         for (CreationSyncPayload.ClientEntry entry : entriesForTab(tab, true)) {
             String groupId = entry.groupId() == null || entry.groupId().isBlank() ? entry.itemId() : entry.groupId();
             ItemGroupView group = groups.get(groupId);
@@ -138,12 +155,43 @@ public final class ClientCreationState {
                 group = new ItemGroupView(groupId, iconId, new ArrayList<>());
                 groups.put(groupId, group);
             }
-            addGroupItem(group.itemIds(), entry.itemId());
-            for (String variantId : entry.unlockVariantIds()) {
-                addGroupItem(group.itemIds(), variantId);
+            if (entry.woodVariants()) {
+                if (CreationWoodTypes.isWoodKnown(unlockedIds, entry.itemId())) {
+                    addGroupItem(group.itemIds(), entry.itemId());
+                }
+                for (String variantId : entry.unlockVariantIds()) {
+                    if (CreationWoodTypes.isWoodKnown(unlockedIds, variantId)) {
+                        addGroupItem(group.itemIds(), variantId);
+                    }
+                }
+            } else {
+                addGroupItem(group.itemIds(), entry.itemId());
+                for (String variantId : entry.unlockVariantIds()) {
+                    addGroupItem(group.itemIds(), variantId);
+                }
             }
         }
-        return new ArrayList<>(groups.values());
+        List<ItemGroupView> result = new ArrayList<>();
+        for (ItemGroupView group : groups.values()) {
+            if (!group.itemIds().isEmpty()) {
+                result.add(group);
+            }
+        }
+        if (tab == CreationTab.MATERIALS) {
+            result.sort(Comparator.comparingInt(ClientCreationState::materialStripIndex));
+        }
+        return result;
+    }
+
+    private static int materialStripIndex(ItemGroupView group) {
+        int best = Integer.MAX_VALUE;
+        for (String itemId : group.itemIds()) {
+            int index = MATERIAL_STRIP.indexOf(itemId);
+            if (index >= 0 && index < best) {
+                best = index;
+            }
+        }
+        return best;
     }
 
     private static void addGroupItem(List<String> itemIds, String itemId) {

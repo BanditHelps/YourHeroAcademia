@@ -8,6 +8,9 @@
     { "item": "minecraft:string", "lipid_cost": 4, "research_cost": 16, "group": "yha:hostile" },
     { "item": "minecraft:leather", "lipid_cost": 13, "research_cost": 16, "group": "yha:passive" },
     { "item": "minecraft:feather", "lipid_cost": 3, "research_cost": 16, "group": "yha:passive" },
-    { "item": "minecraft:snowball", "lipid_cost": 1 }
+    { "item": "minecraft:snowball", "lipid_cost": 1 },
+    { "item": "minecraft:clay_ball", "lipid_cost": 3, "research_cost": 16, "group": "yha:clay", "group_icon": "minecraft:clay_ball" },
+    { "item": "minecraft:clay", "tab": "blocks", "lipid_cost": 8, "group": "yha:clay" },
+    { "item": "minecraft:torch", "tab": "blocks", "lipid_cost": 2, "group": "yha:torches", "group_icon": "minecraft:torch" }
   ]
 }

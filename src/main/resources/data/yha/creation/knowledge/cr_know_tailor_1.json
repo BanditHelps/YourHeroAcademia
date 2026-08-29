@@ -10,6 +10,22 @@
       "unlock_ability": "cr_know_dye",
       "unlock_tag": "minecraft:wool"
     },
+    {
+      "item": "minecraft:white_bed",
+      "lipid_cost": 24,
+      "group": "yha:beds",
+      "group_icon": "minecraft:white_bed",
+      "unlock_ability": "cr_know_dye",
+      "unlock_tag": "minecraft:beds"
+    },
+    {
+      "item": "minecraft:candle",
+      "lipid_cost": 4,
+      "group": "yha:candles",
+      "group_icon": "minecraft:candle",
+      "unlock_ability": "cr_know_dye",
+      "unlock_tag": "minecraft:candles"
+    },
     { "item": "minecraft:string", "tab": "materials", "lipid_cost": 4 }
   ]
 }

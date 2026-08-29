@@ -9,6 +9,97 @@
     { "item": "minecraft:polished_granite", "lipid_cost": 2, "group": "yha:granite" },
     { "item": "minecraft:polished_diorite", "lipid_cost": 2, "group": "yha:diorite" },
     { "item": "minecraft:polished_andesite", "lipid_cost": 2, "group": "yha:andesite" },
-    { "item": "minecraft:polished_deepslate", "lipid_cost": 2, "group": "yha:deepslate" }
+    { "item": "minecraft:polished_deepslate", "lipid_cost": 2, "group": "yha:deepslate" },
+    { "item": "minecraft:cobbled_deepslate", "lipid_cost": 2, "group": "yha:deepslate" },
+    { "item": "minecraft:chiseled_deepslate", "lipid_cost": 2, "group": "yha:deepslate" },
+    { "item": "minecraft:deepslate_bricks", "lipid_cost": 2, "group": "yha:deepslate" },
+    { "item": "minecraft:cracked_deepslate_bricks", "lipid_cost": 2, "group": "yha:deepslate" },
+    { "item": "minecraft:deepslate_tiles", "lipid_cost": 2, "group": "yha:deepslate" },
+    { "item": "minecraft:cracked_deepslate_tiles", "lipid_cost": 2, "group": "yha:deepslate" },
+    { "item": "minecraft:chiseled_tuff", "lipid_cost": 2, "group": "yha:tuff" },
+    { "item": "minecraft:polished_tuff", "lipid_cost": 2, "group": "yha:tuff" },
+    { "item": "minecraft:tuff_bricks", "lipid_cost": 2, "group": "yha:tuff" },
+    { "item": "minecraft:chiseled_tuff_bricks", "lipid_cost": 2, "group": "yha:tuff" },
+    {
+      "item": "minecraft:sandstone",
+      "lipid_cost": 2,
+      "group": "yha:sandstone",
+      "group_icon": "minecraft:sandstone",
+      "unlock_ability": "cr_know_mason_2",
+      "unlock_items": ["minecraft:red_sandstone"]
+    },
+    {
+      "item": "minecraft:cut_sandstone",
+      "lipid_cost": 2,
+      "group": "yha:sandstone",
+      "unlock_ability": "cr_know_mason_2",
+      "unlock_items": ["minecraft:cut_red_sandstone"]
+    },
+    {
+      "item": "minecraft:chiseled_sandstone",
+      "lipid_cost": 2,
+      "group": "yha:sandstone",
+      "unlock_ability": "cr_know_mason_2",
+      "unlock_items": ["minecraft:chiseled_red_sandstone"]
+    },
+    {
+      "item": "minecraft:smooth_sandstone",
+      "lipid_cost": 3,
+      "group": "yha:sandstone",
+      "unlock_ability": "cr_know_mason_2",
+      "unlock_items": ["minecraft:smooth_red_sandstone"]
+    },
+    { "item": "minecraft:prismarine", "lipid_cost": 12, "group": "yha:prismarine", "group_icon": "minecraft:prismarine" },
+    { "item": "minecraft:prismarine_bricks", "lipid_cost": 14, "group": "yha:prismarine" },
+    { "item": "minecraft:dark_prismarine", "lipid_cost": 16, "group": "yha:prismarine" },
+    { "item": "minecraft:sea_lantern", "lipid_cost": 20, "group": "yha:prismarine" },
+    { "item": "minecraft:obsidian", "lipid_cost": 64, "research_cost": 16, "group": "yha:obsidian", "group_icon": "minecraft:obsidian" },
+    {
+      "item": "minecraft:glass",
+      "lipid_cost": 8,
+      "group": "yha:glass",
+      "group_icon": "minecraft:glass",
+      "unlock_ability": "cr_know_dye",
+      "unlock_tag": "yha:stained_glass"
+    },
+    { "item": "minecraft:tinted_glass", "lipid_cost": 16, "group": "yha:glass" },
+    {
+      "item": "minecraft:glass_pane",
+      "lipid_cost": 3,
+      "group": "yha:glass_panes",
+      "group_icon": "minecraft:glass_pane",
+      "unlock_ability": "cr_know_dye",
+      "unlock_tag": "yha:stained_glass_panes"
+    },
+    {
+      "item": "minecraft:terracotta",
+      "lipid_cost": 4,
+      "group": "yha:terracotta",
+      "group_icon": "minecraft:terracotta",
+      "unlock_ability": "cr_know_dye",
+      "unlock_tag": "minecraft:terracotta"
+    },
+    {
+      "item": "minecraft:white_glazed_terracotta",
+      "lipid_cost": 6,
+      "group": "yha:terracotta",
+      "unlock_ability": "cr_know_dye",
+      "unlock_tag": "minecraft:glazed_terracotta"
+    },
+    {
+      "item": "minecraft:white_concrete",
+      "lipid_cost": 6,
+      "group": "yha:concrete",
+      "group_icon": "minecraft:white_concrete",
+      "unlock_ability": "cr_know_dye",
+      "unlock_tag": "minecraft:concrete"
+    },
+    {
+      "item": "minecraft:white_concrete_powder",
+      "lipid_cost": 4,
+      "group": "yha:concrete",
+      "unlock_ability": "cr_know_dye",
+      "unlock_tag": "minecraft:concrete_powders"
+    }
   ]
 }

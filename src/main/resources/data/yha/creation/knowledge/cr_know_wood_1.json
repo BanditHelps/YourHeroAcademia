@@ -12,6 +12,7 @@
     { "item": "minecraft:dark_oak_log", "lipid_cost": 12 },
     { "item": "minecraft:mangrove_log", "lipid_cost": 12 },
     { "item": "minecraft:cherry_log", "lipid_cost": 12 },
-    { "item": "minecraft:pale_oak_log", "lipid_cost": 12 }
+    { "item": "minecraft:pale_oak_log", "lipid_cost": 12 },
+    { "item": "minecraft:bamboo_block", "lipid_cost": 10 }
   ]
 }

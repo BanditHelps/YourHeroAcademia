@@ -48,7 +48,12 @@ public final class CreationSyncEvents {
         List<CreationSyncPayload.ClientEntry> entries = new ArrayList<>();
         for (CreationEntry entry : CreationUtil.researchableEntries(player)) {
             List<String> unlockVariants = List.of();
-            if (entry.unlockAbility() != null && CreationUtil.isAbilityUnlocked(player, entry.unlockAbility())) {
+            if (entry.isWoodUnlock()) {
+                unlockVariants = new ArrayList<>();
+                for (Identifier variantId : entry.unlockVariantIds()) {
+                    unlockVariants.add(variantId.toString());
+                }
+            } else if (entry.unlockAbility() != null && CreationUtil.isAbilityUnlocked(player, entry.unlockAbility())) {
                 unlockVariants = new ArrayList<>();
                 for (Identifier variantId : entry.unlockVariantIds()) {
                     unlockVariants.add(variantId.toString());
@@ -65,7 +70,8 @@ public final class CreationSyncEvents {
                     entry.blockId() == null ? "" : entry.blockId().toString(),
                     entry.groupId() == null ? "" : entry.groupId().toString(),
                     entry.groupIcon() == null ? "" : entry.groupIcon().toString(),
-                    unlockVariants
+                    unlockVariants,
+                    entry.isWoodUnlock()
             ));
         }
         List<CreationSyncPayload.ClientEnchantEntry> enchants = new ArrayList<>();

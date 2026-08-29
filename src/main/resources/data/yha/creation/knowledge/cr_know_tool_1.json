@@ -13,6 +13,7 @@
     { "item": "minecraft:copper_pickaxe", "lipid_cost": 86 },
     { "item": "minecraft:copper_axe", "lipid_cost": 86 },
     { "item": "minecraft:copper_shovel", "lipid_cost": 34 },
-    { "item": "minecraft:copper_hoe", "lipid_cost": 60 }
+    { "item": "minecraft:copper_hoe", "lipid_cost": 60 },
+    { "item": "minecraft:fishing_rod", "lipid_cost": 22 }
   ]
 }
