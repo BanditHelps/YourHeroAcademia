@@ -744,27 +744,25 @@ public final class CreationUtil {
     }
 
     public static void spawnCreatedItem(ServerLevel level, ServerPlayer player, ItemStack stack) {
-        Vec3 origin = randomBodyOffset(player);
-        CreationProductEntity product = new CreationProductEntity(level, stack, origin, Config.CREATION_GROW_TICKS.get());
+        int slot = CreationGrowthAnchors.nextSlot(level, player);
+        float jitterSide = (player.getRandom().nextFloat() - 0.5f) * 0.16f;
+        float jitterUp = (player.getRandom().nextFloat() - 0.5f) * 0.12f;
+        CreationProductEntity product = new CreationProductEntity(
+                level, player, stack, slot, jitterSide, jitterUp, Config.CREATION_GROW_TICKS.get());
         level.addFreshEntity(product);
+        Vec3 origin = product.position();
         level.sendParticles(
                 new ItemParticleOption(ParticleTypes.ITEM, stack.getItem()),
                 origin.x, origin.y, origin.z,
                 12, 0.15, 0.15, 0.15, 0.04
         );
         level.sendParticles(ParticleTypes.CLOUD, origin.x, origin.y, origin.z, 6, 0.12, 0.12, 0.12, 0.01);
-        level.sendParticles(ParticleTypes.END_ROD, origin.x, origin.y, origin.z, 4, 0.1, 0.1, 0.1, 0.02);
+        Vec3 chest = CreationGrowthAnchors.visualPos(player, CreationGrowthAnchors.SLOT_CHEST, 0.0f, 0.0f, 1.0f);
+        level.sendParticles(ParticleTypes.END_ROD, chest.x, chest.y, chest.z, 4, 0.08, 0.08, 0.08, 0.02);
+        if (slot != CreationGrowthAnchors.SLOT_CHEST) {
+            level.sendParticles(ParticleTypes.CLOUD, chest.x, chest.y, chest.z, 3, 0.08, 0.06, 0.08, 0.01);
+        }
         level.playSound(null, player.blockPosition(), SoundEvents.BUNDLE_INSERT, SoundSource.PLAYERS, 0.7f, 1.4f);
-    }
-
-    private static Vec3 randomBodyOffset(ServerPlayer player) {
-        double yaw = Math.toRadians(player.getYRot());
-        double side = (player.getRandom().nextDouble() - 0.5) * 0.7;
-        double forward = (player.getRandom().nextDouble() - 0.35) * 0.35;
-        double height = player.getBbHeight() * (0.25 + player.getRandom().nextDouble() * 0.55);
-        double dx = -Math.sin(yaw) * forward + Math.cos(yaw) * side;
-        double dz = Math.cos(yaw) * forward + Math.sin(yaw) * side;
-        return new Vec3(player.getX() + dx, player.getY() + height, player.getZ() + dz);
     }
 
     private static void applyRandomFirework(ItemStack stack, ServerPlayer player) {
