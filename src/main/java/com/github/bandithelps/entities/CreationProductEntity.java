@@ -1,6 +1,7 @@
 package com.github.bandithelps.entities;
 
 import com.github.bandithelps.creation.CreationGrowthAnchors;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -17,7 +18,12 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
@@ -238,8 +244,35 @@ public class CreationProductEntity extends Entity {
     public float growScale(float partialTick) {
         float progress = growProgress(partialTick);
         float eased = 1.0f - (1.0f - progress) * (1.0f - progress);
-        float growAdd = getItem().getItem() instanceof BlockItem ? BLOCK_GROW_ADD : ITEM_GROW_ADD;
+        float growAdd = rendersAsGrowingBlock() ? BLOCK_GROW_ADD : ITEM_GROW_ADD;
         return GROW_START + eased * growAdd;
+    }
+
+    public boolean rendersAsGrowingBlock() {
+        return rendersAsGrowingBlock(getItem());
+    }
+
+    /**
+     * Only full 1x1x1 cubes use the 3D block model. String, doors, beds, slabs, and
+     * other non-cube BlockItems keep their item icon.
+     */
+    public static boolean rendersAsGrowingBlock(ItemStack stack) {
+        BlockState state = growingBlockState(stack);
+        if (state == null || state.getRenderShape() != RenderShape.MODEL) {
+            return false;
+        }
+        return Block.isShapeFullBlock(state.getShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO));
+    }
+
+    public static BlockState growingBlockState(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof BlockItem blockItem)) {
+            return null;
+        }
+        BlockState state = blockItem.getBlock().defaultBlockState();
+        if (state.hasProperty(BlockStateProperties.WATERLOGGED)) {
+            state = state.setValue(BlockStateProperties.WATERLOGGED, false);
+        }
+        return state;
     }
 
     @Override

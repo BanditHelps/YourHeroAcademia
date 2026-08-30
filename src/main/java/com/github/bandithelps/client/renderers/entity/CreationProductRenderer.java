@@ -13,12 +13,10 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
 
 public class CreationProductRenderer extends EntityRenderer<CreationProductEntity, CreationProductRenderState> {
@@ -58,8 +56,8 @@ public class CreationProductRenderer extends EntityRenderer<CreationProductEntit
         state.yaw = (float) (Mth.atan2(-normal.x, normal.z) * Mth.RAD_TO_DEG);
 
         ItemStack stack = entity.getItem();
-        BlockState blockState = blockStateOf(stack);
-        state.renderBlock = blockState != null && blockState.getRenderShape() == RenderShape.MODEL;
+        BlockState blockState = CreationProductEntity.growingBlockState(stack);
+        state.renderBlock = CreationProductEntity.rendersAsGrowingBlock(stack);
         if (state.renderBlock) {
             state.itemModel.clear();
             state.emerge = 0.5f;
@@ -110,15 +108,5 @@ public class CreationProductRenderer extends EntityRenderer<CreationProductEntit
         poseStack.popPose();
         super.submit(state, poseStack, collector, camera);
     }
-
-    private static BlockState blockStateOf(ItemStack stack) {
-        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof BlockItem blockItem)) {
-            return null;
-        }
-        BlockState state = blockItem.getBlock().defaultBlockState();
-        if (state.hasProperty(BlockStateProperties.WATERLOGGED)) {
-            state = state.setValue(BlockStateProperties.WATERLOGGED, false);
-        }
-        return state;
-    }
 }
+
