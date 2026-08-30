@@ -96,12 +96,15 @@ public class CreationProductRenderer extends EntityRenderer<CreationProductEntit
                 state.normalZ * state.scale * state.emerge
         );
         poseStack.mulPose(Axis.YP.rotationDegrees(-state.yaw));
-        poseStack.mulPose(Axis.XP.rotationDegrees(state.wobble));
-        poseStack.scale(state.scale, state.scale, state.scale);
         if (block) {
+            poseStack.mulPose(Axis.XP.rotationDegrees(state.wobble));
+            poseStack.scale(state.scale, state.scale, state.scale);
             poseStack.translate(-0.5, -0.5, -0.5);
             collector.submitMovingBlock(poseStack, state.movingBlockRenderState);
         } else {
+            // Tip the sprite so its long axis points outward (slides out of the body).
+            poseStack.mulPose(Axis.YP.rotationDegrees(90.0f + state.wobble));
+            poseStack.scale(state.scale, state.scale, state.scale);
             state.itemModel.submit(poseStack, collector, state.lightCoords, OverlayTexture.NO_OVERLAY, 0);
         }
         poseStack.popPose();

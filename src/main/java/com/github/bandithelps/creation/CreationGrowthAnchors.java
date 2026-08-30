@@ -75,7 +75,7 @@ public final class CreationGrowthAnchors {
             }
             default -> {
                 y = Mth.clamp(height * 0.62, 0.55, 1.55) + crouch;
-                offset = basis.forward.scale(-0.32);
+                offset = basis.forward.scale(-0.18);
             }
         }
         // Embed slightly so scale-up reads as pushing out of the skin.
