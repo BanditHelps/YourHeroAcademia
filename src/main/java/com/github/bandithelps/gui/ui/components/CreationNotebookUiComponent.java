@@ -55,6 +55,7 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final Identifier TEX_BLOCKS = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui.png");
     private static final Identifier TEX_GEAR = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_tool_gui.png");
     private static final Identifier TEX_ALCHEMY = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_alchemy_gui.png");
+    private static final Identifier TEX_DARKENED = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_darkened.png");
     private static final Identifier TEX_CREATE = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_create_button.png");
     private static final Identifier TEX_CREATE_HOVER = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_create_button_hover.png");
     private static final Identifier TEX_LIPID = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/lipid_icon.png");
@@ -64,9 +65,12 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final Identifier TEX_ENCHANT_SWORD = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_sword_enchant.png");
     private static final Identifier TEX_ENCHANT_TOOLS = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_tools_enchant.png");
     private static final Identifier TEX_ENCHANT_UTILITY = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_utility_enchant.png");
+    private static final Identifier TEX_FORM_MENU = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "creation/form_menu");
+    private static final Identifier TEX_SUBMENU_BADGE = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/submenu_badge.png");
 
     private static final int TEX_W = 240;
     private static final int TEX_H = 193;
+    private static final int SUBMENU_BADGE = 5;
     private static final int GRID_SLOT = 18;
     private static final int GRID_ICON = 16;
     private static final int GEAR_SLOT = 12;
@@ -101,9 +105,9 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int DOG_Y = 178;
     private static final int DOG_W = 20;
     private static final int DOG_H = 14;
-    private static final int FORM_SLOT = 16;
+    private static final int FORM_SLOT = 18;
     private static final int FORM_PAD = 3;
-    private static final int FORM_ICON = 14;
+    private static final int FORM_ICON = 16;
     private static final int FORM_MENU_COLS = 6;
     private static final int TAB_W = 16;
     private static final int TAB_H = 16;
@@ -162,6 +166,8 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int LIPID_TEXT_X = 192;
     private static final int LIPID_TEXT_Y = 44;
     private static final int LIPID_POP_MS = 800;
+
+
 
     public static final MapCodec<CreationNotebookUiComponent> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             propertiesCodec(TEX_W, TEX_H)
@@ -356,7 +362,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                     drawItem(gui, stack, iconX, iconY, iconSize);
                     CreationSyncPayload.ClientEntry first = ClientCreationState.find(group.firstItemId());
                     if (!group.isSingleton() || (first != null && first.hasForms())) {
-                        gui.fill(slotX + slotSize - 4, slotY + 1, slotX + slotSize - 1, slotY + 4, 0xFFFFD27A);
+                        blitSubmenuBadge(gui, slotX, slotY, slotSize);
                     }
                     if (group.contains(this.selectedId) || group.contains(displayedFormId(this.selectedId))) {
                         gui.fill(iconX - 1, iconY - 1, iconX + iconSize + 1, iconY, 0xFFFFD27A);
@@ -381,8 +387,10 @@ public class CreationNotebookUiComponent extends UiWidget {
             int rows = formMenuRows(choices.size());
             int width = formMenuWidth(cols);
             int height = formMenuHeight(rows);
-            gui.fill(this.formMenuX, this.formMenuY, this.formMenuX + width, this.formMenuY + height, 0xF21A1410);
-            drawFrame(gui, this.formMenuX, this.formMenuY, width, height, 0xFFFFD27A);
+            //gui.fill(this.formMenuX, this.formMenuY, this.formMenuX + width, this.formMenuY + height, 0xF21A1410);
+            //drawFrame(gui, this.formMenuX, this.formMenuY, width, height, 0xFFFFD27A);
+            blit(gui, TEX_DARKENED, this.getX(), this.getY(), 0, 0, TEX_W, TEX_H, TEX_W, TEX_H);
+            gui.blitSprite(RenderPipelines.GUI_TEXTURED, TEX_FORM_MENU, this.formMenuX, this.formMenuY, width, height);
             String current = displayedFormId(this.formMenuParent);
             if (this.formMenuParent != null && CreationGearSlot.of(this.formMenuParent) != null) {
                 current = this.selectedId;
@@ -575,7 +583,12 @@ public class CreationNotebookUiComponent extends UiWidget {
                     if (displayed != null) {
                         this.selectedId = displayed;
                     }
-                    openItemGroupMenu(group.groupId(), group.itemIds(), clicked);
+                    //right click only
+                    if (event.button() == 1) {
+                        openItemGroupMenu(group.groupId(), group.itemIds(), clicked);
+                    } else {
+                        closeFormMenu();
+                    }
                     clickSound();
                     return true;
                 }
@@ -1035,6 +1048,12 @@ public class CreationNotebookUiComponent extends UiWidget {
             blit(gui, TEX_LOCK, x, y, 0, 0, LOCK_SIZE, LOCK_SIZE, 16, 16);
         }
 
+        private static void blitSubmenuBadge(GuiGraphicsExtractor gui, int slotX, int slotY, int slotSize) {
+            int x = slotX + slotSize - SUBMENU_BADGE - 1;
+            int y = slotY + 1;
+            blit(gui, TEX_SUBMENU_BADGE, x, y, 0, 0, SUBMENU_BADGE, SUBMENU_BADGE, SUBMENU_BADGE, SUBMENU_BADGE);
+        }
+
         private static void drawLockedBox(GuiGraphicsExtractor gui, int x, int y, int width, int height) {
             gui.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0xAA6A6A6A);
             blitLock(gui, x + (width - LOCK_SIZE) / 2, y + (height - LOCK_SIZE) / 2);
@@ -1144,7 +1163,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                 int iconY = slotY + Math.max(0, (GEAR_SLOT - iconSize) / 2);
                 drawItem(gui, ClientCreationState.stackOf(itemId), iconX, iconY, iconSize);
                 if (variants.size() > 1) {
-                    gui.fill(slotX + GEAR_SLOT - 4, slotY + 1, slotX + GEAR_SLOT - 1, slotY + 4, 0xFFFFD27A);
+                    blitSubmenuBadge(gui, slotX, slotY, GEAR_SLOT);
                 }
                 if (itemId.equals(this.selectedId)) {
                     gui.fill(iconX - 1, iconY - 1, iconX + iconSize + 1, iconY, 0xFFFFD27A);
@@ -1614,7 +1633,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                 int iconY = slotY + 1;
                 drawItem(gui, icon, iconX, iconY, iconSize);
                 if (!group.isSingleton()) {
-                    gui.fill(slotX + GRID_SLOT - 4, slotY + 1, slotX + GRID_SLOT - 1, slotY + 4, 0xFFFFD27A);
+                    blitSubmenuBadge(gui, slotX, slotY, GRID_SLOT);
                 }
                 boolean selectedGroup = group.effects().stream().anyMatch(entry -> entry.effectId().equals(this.selectedEffectId));
                 if (selectedGroup) {
@@ -1763,10 +1782,12 @@ public class CreationNotebookUiComponent extends UiWidget {
                 }
                 ClientCreationState.PotionGroupView group = groups.get(i);
                 List<String> ids = group.effects().stream().map(CreationSyncPayload.ClientPotionEntry::effectId).toList();
-                if (ids.size() > 1) {
-                    openPotionGroupMenu(group.groupId(), ids, new SlotHit(group.groupId(), slotX, slotY, GRID_SLOT));
-                } else if (!ids.isEmpty()) {
+                if (!ids.isEmpty() && !ids.contains(this.selectedEffectId)) {
                     this.selectedEffectId = ids.getFirst();
+                }
+                if (ids.size() > 1 && event.button() == 1) {
+                    openPotionGroupMenu(group.groupId(), ids, new SlotHit(group.groupId(), slotX, slotY, GRID_SLOT));
+                } else {
                     closeFormMenu();
                 }
                 clickSound();
