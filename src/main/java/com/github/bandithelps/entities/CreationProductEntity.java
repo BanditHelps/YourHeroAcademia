@@ -15,6 +15,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
@@ -36,6 +37,11 @@ public class CreationProductEntity extends Entity {
             SynchedEntityData.defineId(CreationProductEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_JITTER_UP =
             SynchedEntityData.defineId(CreationProductEntity.class, EntityDataSerializers.FLOAT);
+
+    /** Added to GROW_START at the end of the animation. Blocks stay smaller; items need more. */
+    private static final float BLOCK_GROW_ADD = 0.25f;
+    private static final float ITEM_GROW_ADD = 0.55f;
+    private static final float GROW_START = 0.05f;
 
     private int growTicks = 16;
 
@@ -232,7 +238,8 @@ public class CreationProductEntity extends Entity {
     public float growScale(float partialTick) {
         float progress = growProgress(partialTick);
         float eased = 1.0f - (1.0f - progress) * (1.0f - progress);
-        return 0.05f + eased * 0.25f; // .25
+        float growAdd = getItem().getItem() instanceof BlockItem ? BLOCK_GROW_ADD : ITEM_GROW_ADD;
+        return GROW_START + eased * growAdd;
     }
 
     @Override
