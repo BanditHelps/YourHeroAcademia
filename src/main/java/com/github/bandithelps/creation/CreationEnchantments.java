@@ -41,7 +41,7 @@ public final class CreationEnchantments {
             return false;
         }
         Holder<Enchantment> enchantment = holder(provider, enchantId).orElse(null);
-        return enchantment != null && enchantment.value().isSupportedItem(stack);
+        return enchantment != null && stack.supportsEnchantment(enchantment);
     }
 
     public static boolean compatible(HolderLookup.Provider provider, Identifier leftId, Identifier rightId) {
@@ -53,22 +53,29 @@ public final class CreationEnchantments {
         if (left == null || right == null) {
             return true;
         }
-        return !left.value().exclusiveSet().contains(right) && !right.value().exclusiveSet().contains(left);
+        return Enchantment.areCompatible(left, right);
     }
 
     public static boolean compatibleWith(HolderLookup.Provider provider, Identifier candidateId, Map<Identifier, Integer> selected) {
-        if (selected == null || selected.isEmpty()) {
-            return true;
+        return !conflictsWithAny(provider, candidateId, selected);
+    }
+
+    public static boolean conflictsWithAny(HolderLookup.Provider provider, Identifier candidateId, Map<Identifier, Integer> selected) {
+        if (selected == null || selected.isEmpty() || candidateId == null) {
+            return false;
         }
         for (Map.Entry<Identifier, Integer> entry : selected.entrySet()) {
             if (entry.getValue() == null || entry.getValue() <= 0) {
                 continue;
             }
+            if (candidateId.equals(entry.getKey())) {
+                continue;
+            }
             if (!compatible(provider, candidateId, entry.getKey())) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     public static Component displayName(HolderLookup.Provider provider, Identifier enchantId) {

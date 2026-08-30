@@ -1,6 +1,7 @@
 package com.github.bandithelps.blocks;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.capabilities.body.BodySyncEvents;
 import com.github.bandithelps.capabilities.creation.CreationSyncEvents;
 import com.github.bandithelps.creation.CreationCatalog;
 import com.github.bandithelps.creation.CreationUtil;
@@ -54,6 +55,7 @@ public final class ResearchTableBlockEvents {
         }
         CreationCatalog.getInstance().rebuildResolved();
         CreationSyncEvents.syncNow(serverPlayer);
+        BodySyncEvents.syncNow(serverPlayer);
         PacketDistributor.sendToPlayer(serverPlayer, new OpenScreenPacket(SCREEN_ID));
     }
 }

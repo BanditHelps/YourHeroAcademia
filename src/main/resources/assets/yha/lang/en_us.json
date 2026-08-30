@@ -130,6 +130,7 @@
   "gui.yha.creation.gear.utility": "Utility",
   "gui.yha.creation.enchant_level": "%s %s",
   "gui.yha.creation.enchant_cost": "Lipids: %s",
+  "gui.yha.creation.enchant_conflict_cost": "Lipids: %s (conflicting ×2)",
   "gui.yha.creation.potion_cost": "%s - Lipids: %s",
   "gui.yha.creation.select_item": "Select an item to study.",
   "gui.yha.creation.select_enchant": "Select an enchantment to study.",

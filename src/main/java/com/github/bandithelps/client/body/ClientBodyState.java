@@ -22,6 +22,10 @@ public final class ClientBodyState {
     private ClientBodyState() {
     }
 
+    public static synchronized void clear() {
+        resetDefaults();
+    }
+
     private static void resetDefaults() {
         PARTS.clear();
         DISPLAY_BARS.clear();
@@ -60,6 +64,14 @@ public final class ClientBodyState {
             return defaultValue;
         }
         return data.getCustomFloat(key, defaultValue);
+    }
+
+    public static synchronized void setCustomFloat(BodyPart physicalPart, String key, float value) {
+        if (physicalPart == null || !physicalPart.isPhysical() || key == null || key.isBlank()) {
+            return;
+        }
+        BodyPartData data = PARTS.computeIfAbsent(physicalPart, ignored -> new BodyPartData());
+        data.setCustomFloat(key, value);
     }
 
     public static synchronized Map<String, BodyDisplayBar> getDisplayBars() {

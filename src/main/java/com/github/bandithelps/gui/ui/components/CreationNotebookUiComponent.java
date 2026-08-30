@@ -239,6 +239,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
 
             int quickSlots = ClientCreationState.get().unlockedQuickSlots();
+            boolean overMenu = formMenuContains(mouseX, mouseY);
             if (this.page != Page.BLOCKS) {
                 blit(gui, TEX_BLOCKS, x + QUICK_X, y + QUICK_Y, QUICK_X, QUICK_Y, QUICK_COLS * QUICK_SIZE, QUICK_COUNT * QUICK_SIZE, TEX_W, TEX_H);
             }
@@ -269,7 +270,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                 int iconY = slotY + Math.max(0, (QUICK_SIZE - QUICK_ICON) / 2);
                 if (i >= quickSlots) {
                     blitLock(gui, iconX, iconY);
-                    if (contains(mouseX, mouseY, slotX, slotY, QUICK_SIZE, QUICK_SIZE)) {
+                    if (!overMenu && contains(mouseX, mouseY, slotX, slotY, QUICK_SIZE, QUICK_SIZE)) {
                         gui.setTooltipForNextFrame(minecraft.font, Component.translatable("gui.yha.creation.tab_locked"), mouseX, mouseY);
                     }
                     continue;
@@ -277,13 +278,14 @@ public class CreationNotebookUiComponent extends UiWidget {
                 ItemStack assigned = ClientCreationState.quickSlotStack(i, clientAccess());
                 if (!assigned.isEmpty()) {
                     drawItem(gui, assigned, iconX, iconY, QUICK_ICON);
-                    if (contains(mouseX, mouseY, slotX, slotY, QUICK_SIZE, QUICK_SIZE)) {
+                    if (!overMenu && contains(mouseX, mouseY, slotX, slotY, QUICK_SIZE, QUICK_SIZE)) {
                         gui.setTooltipForNextFrame(minecraft.font, assigned, mouseX, mouseY);
                     }
                 }
             }
 
-            CreationSyncPayload.ClientEntry selected = ClientCreationState.findParent(this.selectedId);
+            String createId = displayedFormId(this.selectedId);
+            CreationSyncPayload.ClientEntry selected = ClientCreationState.findParent(createId != null ? createId : this.selectedId);
             CreationSyncPayload.ClientPotionEntry selectedPotion = this.page == Page.ALCHEMY ? ClientCreationState.findPotion(this.selectedEffectId) : null;
             int selectedCost;
             boolean canCreate;
@@ -291,7 +293,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                 selectedCost = selectedPotion == null ? 0 : selectedPotion.costFor(this.potionAmplifier, potionDurationForCost(selectedPotion), this.selectedPotionForm.factor());
                 canCreate = selectedPotion != null && selectedPotion.unlocked() && this.selectedPotionForm != null && lipids >= selectedCost;
             } else {
-                selectedCost = selected == null ? 0 : selected.formCost(displayedFormId(this.selectedId)) + selectedEnchantCost();
+                selectedCost = selected == null ? 0 : selected.formCost(createId) + selectedEnchantCost();
                 canCreate = selected != null && selected.unlocked() && lipids >= selectedCost;
             }
             boolean createHovered = contains(mouseX, mouseY, x + CREATE_X, y + CREATE_Y, CREATE_W, CREATE_H);
@@ -403,6 +405,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                 current = group != null ? displayedGroupItem(group) : this.selectedId;
             }
             Component hoveredName = null;
+            ItemStack hoveredStack = ItemStack.EMPTY;
             for (int i = 0; i < choices.size(); i++) {
                 int col = i % cols;
                 int row = i / cols;
@@ -422,13 +425,18 @@ public class CreationNotebookUiComponent extends UiWidget {
                     drawFrame(gui, slotX, slotY, FORM_SLOT, FORM_SLOT, 0xFFFFD27A);
                 }
                 if (hovered) {
+                    hoveredStack = icon;
                     hoveredName = this.potionFormMenu
                             ? CreationPotions.itemName(safeId(choices.get(i)), CreationPotionForm.DRINKABLE)
                             : (icon.isEmpty() ? Component.literal(choices.get(i)) : icon.getHoverName());
                 }
             }
             if (formMenuContains(mouseX, mouseY) && hoveredName != null) {
-                gui.setTooltipForNextFrame(minecraft.font, hoveredName, mouseX, mouseY);
+                if (!hoveredStack.isEmpty()) {
+                    gui.setTooltipForNextFrame(minecraft.font, hoveredStack, mouseX, mouseY);
+                } else {
+                    gui.setTooltipForNextFrame(minecraft.font, hoveredName, mouseX, mouseY);
+                }
             }
         }
 
@@ -581,7 +589,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                 if (group != null && !group.isSingleton()) {
                     String displayed = displayedGroupItem(group);
                     if (displayed != null) {
-                        this.selectedId = displayed;
+                        setSelectedItem(displayed);
                     }
                     //right click only
                     if (event.button() == 1) {
@@ -596,17 +604,7 @@ public class CreationNotebookUiComponent extends UiWidget {
                 CreationSyncPayload.ClientEntry entry = ClientCreationState.findParent(clickedId);
                 CreationGearSlot gearSlot = this.page == Page.GEAR ? CreationGearSlot.of(clickedId) : null;
                 List<String> gearVariants = gearSlot == null ? List.of() : unlockedGearVariants(gearSlot);
-                if (!clickedId.equals(this.selectedId)) {
-                    CreationGearSlot previous = CreationGearSlot.of(this.selectedId);
-                    if (previous != gearSlot) {
-                        this.enchantLevels.clear();
-                        this.enchantScroll = 0;
-                        this.draggingEnchantId = null;
-                    }
-                    this.itemName = "";
-                    this.nameFocused = false;
-                }
-                this.selectedId = clickedId;
+                setSelectedItem(clickedId);
                 if (event.button() == 1 && gearVariants.size() > 1) {
                     if (!clickedId.equals(openFormParent)) {
                         openFormMenu(clickedId, gearVariants, clicked, "gui.yha.creation.choose_variant");
@@ -786,23 +784,20 @@ public class CreationNotebookUiComponent extends UiWidget {
                         if (this.formMenuParent != null) {
                             this.selectedGroupItems.put(this.formMenuParent, chosen);
                         }
-                        this.selectedId = chosen;
-                        closeFormMenu();
-                        return true;
-                    }
-                    CreationGearSlot gearSlot = CreationGearSlot.of(this.formMenuParent);
-                    if (gearSlot != null) {
-                        this.selectedGearVariants.put(gearSlot, chosen);
-                        if (gearSlot != CreationGearSlot.of(this.selectedId)) {
-                            this.enchantLevels.clear();
-                            this.enchantScroll = 0;
-                        }
-                        this.selectedId = chosen;
-                    } else if (this.formMenuParent != null) {
-                        this.selectedForms.put(this.formMenuParent, chosen);
-                        this.selectedId = this.formMenuParent;
+                        setSelectedItem(chosen);
                     } else {
-                        this.selectedId = chosen;
+                        CreationGearSlot gearSlot = CreationGearSlot.of(chosen);
+                        if (gearSlot == null) {
+                            gearSlot = CreationGearSlot.of(this.formMenuParent);
+                        }
+                        if (gearSlot != null) {
+                            setSelectedItem(chosen);
+                        } else if (this.formMenuParent != null) {
+                            this.selectedForms.put(this.formMenuParent, chosen);
+                            this.selectedId = this.formMenuParent;
+                        } else {
+                            setSelectedItem(chosen);
+                        }
                     }
                     closeFormMenu();
                     return true;
@@ -943,7 +938,36 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (parentId == null) {
                 return null;
             }
+            if (CreationGearSlot.of(parentId) != null) {
+                return parentId;
+            }
             return this.selectedForms.getOrDefault(parentId, parentId);
+        }
+
+        private void setSelectedItem(String itemId) {
+            if (itemId == null) {
+                this.selectedId = null;
+                this.enchantLevels.clear();
+                this.enchantScroll = 0;
+                this.draggingEnchantId = null;
+                return;
+            }
+            boolean changed = !itemId.equals(this.selectedId);
+            CreationGearSlot slot = CreationGearSlot.of(itemId);
+            if (slot != null) {
+                this.selectedGearVariants.put(slot, itemId);
+                this.selectedForms.remove(itemId);
+            }
+            if (changed) {
+                this.enchantLevels.clear();
+                this.enchantScroll = 0;
+                this.draggingEnchantId = null;
+                this.itemName = "";
+                this.nameFocused = false;
+            } else {
+                pruneEnchantLevels();
+            }
+            this.selectedId = itemId;
         }
 
         private void turnPage() {
@@ -1351,7 +1375,8 @@ public class CreationNotebookUiComponent extends UiWidget {
             blit(gui, atlas, previewX, previewY, 0, 0, ENCHANT_SLOT_SIZE, ENCHANT_SLOT_SIZE, ENCHANT_ATLAS_W, texH);
             ItemStack preview = previewStack(true);
             drawItem(gui, preview, previewX + 4, previewY + 4, 16);
-            boolean hoveringPreview = contains(mouseX, mouseY, previewX, previewY, ENCHANT_SLOT_SIZE, ENCHANT_SLOT_SIZE);
+            boolean hoveringPreview = !formMenuContains(mouseX, mouseY)
+                    && contains(mouseX, mouseY, previewX, previewY, ENCHANT_SLOT_SIZE, ENCHANT_SLOT_SIZE);
             if (hoveringPreview && !preview.isEmpty()) {
                 gui.setTooltipForNextFrame(minecraft.font, preview, mouseX, mouseY);
             }
@@ -1373,7 +1398,9 @@ public class CreationNotebookUiComponent extends UiWidget {
                         String name = trim(minecraft, enchantName(entry), ENCHANT_ROW_W - 8);
                         gui.text(minecraft.font, name, cellX + 4, cellY + 2, 0xFF3A2A18, false);
                         drawEnchantSlider(gui, cellX, cellY, entry.maxLevel(), level);
-                        if (!hoveringPreview && contains(mouseX, mouseY, cellX, cellY, ENCHANT_ROW_W, ENCHANT_ROW_H)) {
+                        if (!hoveringPreview
+                                && !formMenuContains(mouseX, mouseY)
+                                && contains(mouseX, mouseY, cellX, cellY, ENCHANT_ROW_W, ENCHANT_ROW_H)) {
                             gui.setTooltipForNextFrame(minecraft.font, enchantTooltip(entry, level), mouseX, mouseY);
                         }
                     } else {
@@ -1418,7 +1445,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             } catch (RuntimeException ignored) {
                 return;
             }
-            if (access != null) {
+            if (access != null && !allowsConflictingEnchants()) {
                 List<String> toClear = new ArrayList<>();
                 for (Map.Entry<String, Integer> current : this.enchantLevels.entrySet()) {
                     if (current.getValue() == null || current.getValue() <= 0 || current.getKey().equals(enchantId)) {
@@ -1439,23 +1466,59 @@ public class CreationNotebookUiComponent extends UiWidget {
         }
 
         private int selectedEnchantCost() {
+            pruneEnchantLevels();
+            Map<Identifier, Integer> selected = selectedEnchantLevels();
+            boolean allowConflicts = allowsConflictingEnchants();
+            HolderLookup.Provider access = clientAccess();
             int total = 0;
             for (Map.Entry<String, Integer> entry : this.enchantLevels.entrySet()) {
                 if (entry.getValue() == null || entry.getValue() <= 0) {
                     continue;
                 }
                 CreationSyncPayload.ClientEnchantEntry catalog = ClientCreationState.findEnchant(entry.getKey());
-                if (catalog != null) {
-                    total += catalog.costForLevel(entry.getValue());
+                if (catalog == null) {
+                    continue;
                 }
+                int cost = catalog.costForLevel(entry.getValue());
+                Identifier enchantId = parseEnchantId(entry.getKey());
+                if (allowConflicts && enchantId != null && CreationEnchantments.conflictsWithAny(access, enchantId, selected)) {
+                    cost *= CreationUtil.CONFLICTING_ENCHANT_COST_MULTIPLIER;
+                }
+                total += cost;
             }
             return total;
+        }
+
+        private Map<Identifier, Integer> selectedEnchantLevels() {
+            Map<Identifier, Integer> selected = new HashMap<>();
+            for (Map.Entry<String, Integer> entry : this.enchantLevels.entrySet()) {
+                if (entry.getValue() == null || entry.getValue() <= 0) {
+                    continue;
+                }
+                Identifier enchantId = parseEnchantId(entry.getKey());
+                if (enchantId != null) {
+                    selected.put(enchantId, entry.getValue());
+                }
+            }
+            return selected;
+        }
+
+        private static Identifier parseEnchantId(String enchantId) {
+            if (enchantId == null || enchantId.isBlank()) {
+                return null;
+            }
+            try {
+                return Identifier.parse(enchantId);
+            } catch (RuntimeException ignored) {
+                return Identifier.tryParse(enchantId);
+            }
         }
 
         private List<CreationCreatePayload.EnchantChoice> selectedEnchantChoices() {
             if (this.page != Page.GEAR) {
                 return List.of();
             }
+            pruneEnchantLevels();
             List<CreationCreatePayload.EnchantChoice> choices = new ArrayList<>();
             for (Map.Entry<String, Integer> entry : this.enchantLevels.entrySet()) {
                 if (entry.getValue() == null || entry.getValue() <= 0) {
@@ -1464,6 +1527,25 @@ public class CreationNotebookUiComponent extends UiWidget {
                 choices.add(new CreationCreatePayload.EnchantChoice(entry.getKey(), entry.getValue()));
             }
             return choices;
+        }
+
+        private void pruneEnchantLevels() {
+            if (this.enchantLevels.isEmpty()) {
+                return;
+            }
+            ItemStack stack = previewStack(false);
+            HolderLookup.Provider access = clientAccess();
+            if (stack.isEmpty() || access == null) {
+                this.enchantLevels.clear();
+                return;
+            }
+            this.enchantLevels.entrySet().removeIf(entry -> {
+                if (entry.getValue() == null || entry.getValue() <= 0) {
+                    return true;
+                }
+                Identifier enchantId = parseEnchantId(entry.getKey());
+                return enchantId == null || !CreationEnchantments.canEnchant(access, enchantId, stack);
+            });
         }
 
         private ItemStack previewStack(boolean applyEnchants) {
@@ -1563,10 +1645,33 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
         }
 
-        private static Component enchantTooltip(CreationSyncPayload.ClientEnchantEntry entry, int level) {
+        private Component enchantTooltip(CreationSyncPayload.ClientEnchantEntry entry, int level) {
+            int cost = entry.costForLevel(level);
+            boolean conflicting = false;
+            if (level > 0 && allowsConflictingEnchants()) {
+                try {
+                    Identifier enchantId = Identifier.parse(entry.enchantId());
+                    conflicting = CreationEnchantments.conflictsWithAny(clientAccess(), enchantId, selectedEnchantLevels());
+                } catch (RuntimeException ignored) {
+                }
+            }
             String name = enchantName(entry);
             String levelText = level <= 0 ? "0" : String.valueOf(level);
-            return Component.literal(name + " " + levelText + " - " + Component.translatable("gui.yha.creation.enchant_cost", entry.costForLevel(level)).getString());
+            if (conflicting) {
+                cost *= CreationUtil.CONFLICTING_ENCHANT_COST_MULTIPLIER;
+                return Component.literal(
+                        name + " " + levelText + " - "
+                                + Component.translatable("gui.yha.creation.enchant_conflict_cost", cost).getString()
+                );
+            }
+            return Component.literal(
+                    name + " " + levelText + " - "
+                            + Component.translatable("gui.yha.creation.enchant_cost", cost).getString()
+            );
+        }
+
+        private static boolean allowsConflictingEnchants() {
+            return ClientCreationState.get().enchantConflicts();
         }
 
         private static HolderLookup.Provider clientAccess() {

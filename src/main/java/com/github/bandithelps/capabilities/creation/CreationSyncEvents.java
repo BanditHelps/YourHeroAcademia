@@ -12,7 +12,10 @@ import com.github.bandithelps.creation.CreationPotions;
 import com.github.bandithelps.creation.CreationUtil;
 import com.github.bandithelps.network.CreationSyncPayload;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.resources.Identifier;
@@ -20,26 +23,62 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = YourHeroAcademia.MODID)
 public final class CreationSyncEvents {
-    private static final java.util.Map<UUID, Integer> LAST_SENT = new ConcurrentHashMap<>();
+    private static final Map<UUID, AbilitySnapshot> LAST_ABILITIES = new ConcurrentHashMap<>();
 
     private CreationSyncEvents() {
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || player.level().isClientSide()) {
+            return;
+        }
+        if (!CreationUtil.hasCreation(player)) {
+            LAST_ABILITIES.remove(player.getUUID());
+            return;
+        }
+        AbilitySnapshot next = AbilitySnapshot.of(player);
+        AbilitySnapshot previous = LAST_ABILITIES.get(player.getUUID());
+        if (next.equals(previous)) {
+            return;
+        }
+        LAST_ABILITIES.put(player.getUUID(), next);
+        syncNow(player);
     }
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             CreationCatalog.getInstance().rebuildResolved();
+            LAST_ABILITIES.put(player.getUUID(), AbilitySnapshot.of(player));
+            syncNow(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            LAST_ABILITIES.put(player.getUUID(), AbilitySnapshot.of(player));
+            syncNow(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            LAST_ABILITIES.put(player.getUUID(), AbilitySnapshot.of(player));
             syncNow(player);
         }
     }
 
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        LAST_SENT.remove(event.getEntity().getUUID());
+        LAST_ABILITIES.remove(event.getEntity().getUUID());
     }
 
     public static void syncNow(ServerPlayer player) {
@@ -112,6 +151,7 @@ public final class CreationSyncEvents {
                     instant
             ));
         }
+        LAST_ABILITIES.put(player.getUUID(), AbilitySnapshot.of(player));
         PacketDistributor.sendToPlayer(player, new CreationSyncPayload(
                 data.encodedUnlocked(),
                 data.encodedQuickSlots(),
@@ -127,8 +167,59 @@ public final class CreationSyncEvents {
                 CreationUtil.isAbilityUnlocked(player, CreationUtil.CHEMICAL_TIMING),
                 CreationUtil.isAbilityUnlocked(player, CreationUtil.CHEMICAL_POTENCY),
                 CreationUtil.isAbilityUnlocked(player, CreationUtil.CHEMICAL_3),
-                CreationUtil.sacrificesRequired()
+                CreationUtil.allowsConflictingEnchants(player),
+                CreationUtil.sacrificesRequired(),
+                CreationUtil.getLipids(player),
+                CreationUtil.getMaxLipids(player)
         ));
-        LAST_SENT.put(player.getUUID(), entries.size());
+    }
+
+    private record AbilitySnapshot(long[] bits) {
+        AbilitySnapshot {
+            bits = bits == null ? new long[0] : bits.clone();
+        }
+
+        static AbilitySnapshot of(ServerPlayer player) {
+            boolean hasPower = CreationUtil.hasCreation(player);
+            BitSet unlocked = new BitSet();
+            int index = 0;
+            index = appendFlags(player, hasPower, unlocked, index, CreationUtil.GEAR_UNLOCK_ABILITIES);
+            index = appendFlags(player, hasPower, unlocked, index, CreationUtil.QUICK_SLOT_ABILITIES);
+            index = appendFlag(player, hasPower, unlocked, index, CreationUtil.CHEMICAL_1);
+            index = appendFlag(player, hasPower, unlocked, index, CreationUtil.CHEMICAL_SPLASH);
+            index = appendFlag(player, hasPower, unlocked, index, CreationUtil.CHEMICAL_LINGER);
+            index = appendFlag(player, hasPower, unlocked, index, CreationUtil.CHEMICAL_TIMING);
+            index = appendFlag(player, hasPower, unlocked, index, CreationUtil.CHEMICAL_POTENCY);
+            index = appendFlag(player, hasPower, unlocked, index, CreationUtil.CHEMICAL_3);
+            index = appendFlag(player, hasPower, unlocked, index, CreationUtil.FLETCHER_ARROW_EFFECTS);
+            index = appendFlag(player, hasPower, unlocked, index, CreationUtil.ENCHANT_CONFLICTS);
+            index = appendKeys(player, hasPower, unlocked, index, CreationCatalog.getInstance().abilityKeys());
+            index = appendKeys(player, hasPower, unlocked, index, CreationEnchantCatalog.getInstance().abilityKeys());
+            appendKeys(player, hasPower, unlocked, index, CreationPotionCatalog.getInstance().abilityKeys());
+            return new AbilitySnapshot(unlocked.toLongArray());
+        }
+
+        private static int appendFlags(ServerPlayer player, boolean hasPower, BitSet bits, int start, String[] keys) {
+            int index = start;
+            for (String key : keys) {
+                index = appendFlag(player, hasPower, bits, index, key);
+            }
+            return index;
+        }
+
+        private static int appendKeys(ServerPlayer player, boolean hasPower, BitSet bits, int start, Set<String> keys) {
+            int index = start;
+            for (String key : keys) {
+                index = appendFlag(player, hasPower, bits, index, key);
+            }
+            return index;
+        }
+
+        private static int appendFlag(ServerPlayer player, boolean hasPower, BitSet bits, int index, String key) {
+            if (hasPower && CreationUtil.isAbilityUnlocked(player, key)) {
+                bits.set(index);
+            }
+            return index + 1;
+        }
     }
 }

@@ -31,6 +31,7 @@ public final class CreationCatalog {
     private final Map<Identifier, CreationEntry> entriesByItem = new LinkedHashMap<>();
     private final Map<Identifier, Identifier> formToParent = new LinkedHashMap<>();
     private final List<RawSpec> rawSpecs = new ArrayList<>();
+    private final Set<String> abilityKeys = new LinkedHashSet<>();
 
     private CreationCatalog() {
     }
@@ -43,6 +44,7 @@ public final class CreationCatalog {
         rawSpecs.clear();
         entriesByItem.clear();
         formToParent.clear();
+        abilityKeys.clear();
         if (resourceManager == null) {
             return;
         }
@@ -111,6 +113,28 @@ public final class CreationCatalog {
             for (Identifier variantId : unlockVariants) {
                 registerForm(variantId, itemId);
             }
+        }
+        rebuildAbilityKeys();
+    }
+
+    public Set<String> abilityKeys() {
+        if (entriesByItem.isEmpty() && !rawSpecs.isEmpty()) {
+            rebuildResolved();
+        }
+        return Collections.unmodifiableSet(abilityKeys);
+    }
+
+    private void rebuildAbilityKeys() {
+        abilityKeys.clear();
+        for (CreationEntry entry : entriesByItem.values()) {
+            addAbilityKey(entry.abilityKey());
+            addAbilityKey(entry.unlockAbility());
+        }
+    }
+
+    private void addAbilityKey(String key) {
+        if (key != null && !key.isBlank()) {
+            abilityKeys.add(key);
         }
     }
 

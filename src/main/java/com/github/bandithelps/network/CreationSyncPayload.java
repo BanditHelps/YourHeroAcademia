@@ -1,8 +1,11 @@
 package com.github.bandithelps.network;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.client.body.ClientBodyState;
 import com.github.bandithelps.client.creation.ClientCreationState;
+import com.github.bandithelps.capabilities.body.BodyPart;
 import com.github.bandithelps.creation.CreationForm;
+import com.github.bandithelps.creation.CreationUtil;
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +30,10 @@ public record CreationSyncPayload(
         boolean potionTiming,
         boolean potionPotency,
         boolean potionMaster,
-        int sacrificesRequired
+        boolean enchantConflicts,
+        int sacrificesRequired,
+        float lipids,
+        float maxLipids
 ) implements CustomPacketPayload {
     public static final Type<CreationSyncPayload> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "creation_sync"));
@@ -43,7 +49,11 @@ public record CreationSyncPayload(
     }
 
     public static void handle(CreationSyncPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientCreationState.apply(payload));
+        context.enqueueWork(() -> {
+            ClientCreationState.apply(payload);
+            ClientBodyState.setCustomFloat(BodyPart.CHEST, CreationUtil.LIPIDS_KEY, payload.lipids());
+            ClientBodyState.setCustomFloat(BodyPart.CHEST, CreationUtil.MAX_LIPIDS_KEY, payload.maxLipids());
+        });
     }
 
     private static void encode(ByteBuf buf, CreationSyncPayload payload) {
@@ -101,7 +111,10 @@ public record CreationSyncPayload(
         ByteBufCodecs.BOOL.encode(buf, payload.potionTiming());
         ByteBufCodecs.BOOL.encode(buf, payload.potionPotency());
         ByteBufCodecs.BOOL.encode(buf, payload.potionMaster());
+        ByteBufCodecs.BOOL.encode(buf, payload.enchantConflicts());
         ByteBufCodecs.VAR_INT.encode(buf, payload.sacrificesRequired());
+        ByteBufCodecs.FLOAT.encode(buf, payload.lipids());
+        ByteBufCodecs.FLOAT.encode(buf, payload.maxLipids());
     }
 
     private static CreationSyncPayload decode(ByteBuf buf) {
@@ -178,7 +191,10 @@ public record CreationSyncPayload(
                 ByteBufCodecs.BOOL.decode(buf),
                 ByteBufCodecs.BOOL.decode(buf),
                 ByteBufCodecs.BOOL.decode(buf),
-                ByteBufCodecs.VAR_INT.decode(buf)
+                ByteBufCodecs.BOOL.decode(buf),
+                ByteBufCodecs.VAR_INT.decode(buf),
+                ByteBufCodecs.FLOAT.decode(buf),
+                ByteBufCodecs.FLOAT.decode(buf)
         );
     }
 

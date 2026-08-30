@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class BodyPartData {
@@ -28,8 +28,8 @@ public class BodyPartData {
     private float maxHealthModifier;
     private float currentHealth = 100.0F;
     private boolean prosthetic;
-    private final Map<String, Float> customFloats = new HashMap<>();
-    private final Map<String, String> customStrings = new HashMap<>();
+    private final Map<String, Float> customFloats = new LinkedHashMap<>();
+    private final Map<String, String> customStrings = new LinkedHashMap<>();
 
     public BodyPartData() {
     }

@@ -9,9 +9,11 @@ import com.google.gson.JsonParser;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -21,6 +23,7 @@ public final class CreationPotionCatalog {
 
     private final Map<Identifier, CreationPotionEntry> entries = new LinkedHashMap<>();
     private final Map<Identifier, PotionGroup> groups = new LinkedHashMap<>();
+    private final Set<String> abilityKeys = new LinkedHashSet<>();
 
     private CreationPotionCatalog() {
     }
@@ -32,6 +35,7 @@ public final class CreationPotionCatalog {
     public void reload(ResourceManager resourceManager) {
         entries.clear();
         groups.clear();
+        abilityKeys.clear();
         if (resourceManager == null) {
             return;
         }
@@ -50,6 +54,7 @@ public final class CreationPotionCatalog {
                 YourHeroAcademia.LOGGER.warn("Failed to parse creation potion knowledge {}: {}", entry.getKey(), e.getMessage());
             }
         }
+        rebuildAbilityKeys();
         YourHeroAcademia.LOGGER.info("Registered {} creation potion catalog entries in {} groups", entries.size(), groups.size());
     }
 
@@ -62,6 +67,20 @@ public final class CreationPotionCatalog {
 
     public List<CreationPotionEntry> allEntries() {
         return Collections.unmodifiableList(new ArrayList<>(entries.values()));
+    }
+
+    public Set<String> abilityKeys() {
+        return Collections.unmodifiableSet(abilityKeys);
+    }
+
+    private void rebuildAbilityKeys() {
+        abilityKeys.clear();
+        for (CreationPotionEntry entry : entries.values()) {
+            String key = entry.abilityKey();
+            if (key != null && !key.isBlank()) {
+                abilityKeys.add(key);
+            }
+        }
     }
 
     public List<PotionGroup> groups() {

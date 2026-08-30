@@ -65,6 +65,8 @@ public final class CreationUtil {
     public static final String CHEMICAL_EXPERIENCE = "cr_know_chemical_experience";
     public static final String FLETCHER_ARROW_EFFECTS = "cr_know_fletcher_arrow_effects";
     public static final String DYE_KNOWLEDGE = "cr_know_dye";
+    public static final String ENCHANT_CONFLICTS = "cr_know_enchant_conflicts";
+    public static final int CONFLICTING_ENCHANT_COST_MULTIPLIER = 2;
     public static final int CUSTOM_NAME_MAX_LENGTH = 50;
 
     private CreationUtil() {
@@ -92,6 +94,10 @@ public final class CreationUtil {
 
     public static boolean isAlchemyTabUnlocked(LivingEntity entity) {
         return isAbilityUnlocked(entity, CHEMICAL_1);
+    }
+
+    public static boolean allowsConflictingEnchants(LivingEntity entity) {
+        return isAbilityUnlocked(entity, ENCHANT_CONFLICTS);
     }
 
     public static int maxPotionAmplifier(LivingEntity entity) {
@@ -160,7 +166,11 @@ public final class CreationUtil {
         if (player == null) {
             return 0.0f;
         }
-        return BodyAttachments.get(player).getCustomFloat(player, BodyPart.CHEST, LIPIDS_KEY, 0.0f);
+        return Mth.clamp(
+                BodyAttachments.get(player).getCustomFloat(player, BodyPart.CHEST, LIPIDS_KEY, 0.0f),
+                0.0f,
+                getMaxLipids(player)
+        );
     }
 
     public static float getMaxLipids(Player player) {
@@ -177,6 +187,16 @@ public final class CreationUtil {
     public static void setLipids(ServerPlayer player, float value) {
         float clamped = Mth.clamp(value, 0.0f, getMaxLipids(player));
         BodyAttachments.get(player).setCustomFloat(player, BodyPart.CHEST, LIPIDS_KEY, clamped);
+        BodySyncEvents.syncNow(player);
+    }
+
+    public static void setMaxLipids(ServerPlayer player, float value) {
+        float clamped = Math.max(1.0f, value);
+        BodyAttachments.get(player).setCustomFloat(player, BodyPart.CHEST, MAX_LIPIDS_KEY, clamped);
+        float lipids = BodyAttachments.get(player).getCustomFloat(player, BodyPart.CHEST, LIPIDS_KEY, 0.0f);
+        if (lipids > clamped) {
+            BodyAttachments.get(player).setCustomFloat(player, BodyPart.CHEST, LIPIDS_KEY, clamped);
+        }
         BodySyncEvents.syncNow(player);
     }
 
@@ -248,10 +268,18 @@ public final class CreationUtil {
     }
 
     public static int enchantCost(LivingEntity entity, CreationEnchantEntry entry, int level) {
+        return enchantCost(entity, entry, level, false);
+    }
+
+    public static int enchantCost(LivingEntity entity, CreationEnchantEntry entry, int level, boolean conflicting) {
         if (entry == null || level <= 0) {
             return 0;
         }
-        return Math.max(1, entry.lipidCostForLevel(level));
+        int cost = Math.max(1, entry.lipidCostForLevel(level));
+        if (conflicting) {
+            return cost * CONFLICTING_ENCHANT_COST_MULTIPLIER;
+        }
+        return cost;
     }
 
     public static int potionCost(LivingEntity entity, CreationPotionEntry entry, int extraAmplifier, int durationSeconds, CreationPotionForm form) {
@@ -540,9 +568,10 @@ public final class CreationUtil {
                     return false;
                 }
                 if (!CreationEnchantments.canEnchant(player.registryAccess(), enchantId, created)) {
-                    return false;
+                    continue;
                 }
-                if (!CreationEnchantments.compatibleWith(player.registryAccess(), enchantId, levels)) {
+                if (!allowsConflictingEnchants(player)
+                        && !CreationEnchantments.compatibleWith(player.registryAccess(), enchantId, levels)) {
                     player.sendSystemMessage(Component.translatable("gui.yha.creation.enchant_incompatible"));
                     return false;
                 }
@@ -551,9 +580,12 @@ public final class CreationUtil {
         }
 
         int cost = creationCost(player, parent, CreationForm.of(parent, itemId));
+        boolean allowConflicts = allowsConflictingEnchants(player);
         for (Map.Entry<Identifier, Integer> entry : levels.entrySet()) {
             CreationEnchantEntry enchant = CreationEnchantCatalog.getInstance().get(entry.getKey()).orElse(null);
-            cost += enchantCost(player, enchant, entry.getValue());
+            boolean conflicting = allowConflicts
+                    && CreationEnchantments.conflictsWithAny(player.registryAccess(), entry.getKey(), levels);
+            cost += enchantCost(player, enchant, entry.getValue(), conflicting);
         }
         if (getLipids(player) + 0.0001f < cost) {
             player.sendSystemMessage(Component.translatable("gui.yha.creation.not_enough_lipids"));
@@ -632,6 +664,7 @@ public final class CreationUtil {
         if (preview.isEmpty()) {
             return false;
         }
+        LinkedHashMap<Identifier, Integer> assignedEnchants = new LinkedHashMap<>();
         for (CreationCreatePayload.EnchantChoice choice : recipe.enchants()) {
             if (choice == null || choice.enchantId() == null || choice.enchantId().isBlank() || choice.level() <= 0) {
                 continue;
@@ -654,6 +687,11 @@ public final class CreationUtil {
             if (!CreationEnchantments.canEnchant(player.registryAccess(), enchantId, preview)) {
                 return false;
             }
+            if (!allowsConflictingEnchants(player)
+                    && !CreationEnchantments.compatibleWith(player.registryAccess(), enchantId, assignedEnchants)) {
+                return false;
+            }
+            assignedEnchants.put(enchantId, choice.level());
         }
         return true;
     }

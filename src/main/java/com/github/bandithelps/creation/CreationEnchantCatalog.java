@@ -10,9 +10,11 @@ import com.google.gson.JsonParser;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -21,6 +23,7 @@ public final class CreationEnchantCatalog {
     private static final CreationEnchantCatalog INSTANCE = new CreationEnchantCatalog();
 
     private final Map<Identifier, CreationEnchantEntry> entries = new LinkedHashMap<>();
+    private final Set<String> abilityKeys = new LinkedHashSet<>();
 
     private CreationEnchantCatalog() {
     }
@@ -31,6 +34,7 @@ public final class CreationEnchantCatalog {
 
     public void reload(ResourceManager resourceManager) {
         entries.clear();
+        abilityKeys.clear();
         if (resourceManager == null) {
             return;
         }
@@ -49,6 +53,7 @@ public final class CreationEnchantCatalog {
                 YourHeroAcademia.LOGGER.warn("Failed to parse creation enchant knowledge {}: {}", entry.getKey(), e.getMessage());
             }
         }
+        rebuildAbilityKeys();
         YourHeroAcademia.LOGGER.info("Registered {} creation enchant catalog entries", entries.size());
     }
 
@@ -61,6 +66,20 @@ public final class CreationEnchantCatalog {
 
     public List<CreationEnchantEntry> allEntries() {
         return Collections.unmodifiableList(new ArrayList<>(entries.values()));
+    }
+
+    public Set<String> abilityKeys() {
+        return Collections.unmodifiableSet(abilityKeys);
+    }
+
+    private void rebuildAbilityKeys() {
+        abilityKeys.clear();
+        for (CreationEnchantEntry entry : entries.values()) {
+            String key = entry.abilityKey();
+            if (key != null && !key.isBlank()) {
+                abilityKeys.add(key);
+            }
+        }
     }
 
     private void parseFile(JsonObject json) {

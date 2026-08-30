@@ -47,6 +47,7 @@
       "part": "chest",
       "key": "max_lipids",
       "value": 1000,
+      "overwrite": false,
       "properties": {
         "title": "Default Lipid Capacity",
         "description": "Your body can store up to 1000 lipids.",
@@ -893,6 +894,39 @@
           "requires": {
             "type": "palladium:ability_unlocked",
             "ability": "cr_know_enchant_6"
+          }
+        }
+      }
+    },
+    "cr_know_enchant_conflicts": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Conflicting Enchant Knowledge",
+        "description": "You can apply enchantments that normally cannot coexist, such as Protection and Blast Protection. Enchantments that conflict with another selected enchantment cost twice as many lipids.",
+        "icon": "minecraft:anvil",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          5.4,
+          5.95
+        ],
+        "gui_connection": [
+          [
+            4.9,
+            5.95
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_enchant_7"
           }
         }
       }

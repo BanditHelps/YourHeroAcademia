@@ -29,6 +29,7 @@ public class SetBodyFloatAbility extends Ability {
                     Codec.STRING.optionalFieldOf("part", BodyPart.CHEST.getId()).forGetter((ab) -> ab.part),
                     Codec.STRING.fieldOf("key").forGetter((ab) -> ab.key),
                     Value.CODEC.fieldOf("value").forGetter((ab) -> ab.value),
+                    Codec.BOOL.optionalFieldOf("overwrite", true).forGetter((ab) -> ab.overwrite),
                     propertiesCodec(),
                     stateCodec(),
                     energyBarUsagesCodec()).apply(instance, SetBodyFloatAbility::new));
@@ -36,12 +37,18 @@ public class SetBodyFloatAbility extends Ability {
     public final String part;
     public final String key;
     public final Value value;
+    public final boolean overwrite;
 
     public SetBodyFloatAbility(String part, String key, Value value, AbilityProperties properties, AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
+        this(part, key, value, true, properties, conditions, energyBarUsages);
+    }
+
+    public SetBodyFloatAbility(String part, String key, Value value, boolean overwrite, AbilityProperties properties, AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.part = part;
         this.key = key;
         this.value = value;
+        this.overwrite = overwrite;
     }
 
     @Override
@@ -51,8 +58,11 @@ public class SetBodyFloatAbility extends Ability {
             if (bodyPart == null) {
                 return;
             }
-            DataContext context = DataContext.forEntity(entity);
             IBodyData body = BodyAttachments.get(player);
+            if (!this.overwrite && body.getCustomFloats(player, bodyPart).containsKey(this.key)) {
+                return;
+            }
+            DataContext context = DataContext.forEntity(entity);
             body.setCustomFloat(player, bodyPart, this.key, this.value.getAsFloat(context));
             BodySyncEvents.syncNow(player);
         }
@@ -73,6 +83,7 @@ public class SetBodyFloatAbility extends Ability {
                     .add("part", ModSettingTypes.TYPE_BODY_PART, "The body part to store the string in.")
                     .add("key", TYPE_STRING, "The key to store the string under.")
                     .add("value", TYPE_FLOAT_VALUE, "The float value to store.")
+                    .add("overwrite", TYPE_BOOLEAN, "If false, the value is only written when the key is missing. Defaults to true.")
                     .addExampleObject(new SetBodyFloatAbility(BodyPart.CHEST.getId(), "max_tethers", new StaticValue(1.0f), AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
     }

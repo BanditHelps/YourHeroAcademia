@@ -39,7 +39,11 @@ public final class ClientCreationState {
     }
 
     public static void apply(CreationSyncPayload payload) {
-        latest = payload;
+        latest = payload == null ? emptyPayload() : payload;
+    }
+
+    public static void clear() {
+        latest = emptyPayload();
     }
 
     public static CreationSyncPayload get() {
@@ -108,7 +112,28 @@ public final class ClientCreationState {
                 return entry;
             }
         }
+        Identifier wanted = parseId(enchantId);
+        if (wanted == null) {
+            return null;
+        }
+        for (CreationSyncPayload.ClientEnchantEntry entry : latest.enchants()) {
+            Identifier id = parseId(entry.enchantId());
+            if (wanted.equals(id)) {
+                return entry;
+            }
+        }
         return null;
+    }
+
+    private static Identifier parseId(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Identifier.parse(value);
+        } catch (RuntimeException ignored) {
+            return Identifier.tryParse(value);
+        }
     }
 
     public static List<CreationSyncPayload.ClientPotionEntry> potions() {
@@ -233,7 +258,8 @@ public final class ClientCreationState {
     private static CreationSyncPayload emptyPayload() {
         return new CreationSyncPayload(
                 List.of(), List.of(), List.of(), List.of(), List.of(),
-                0, false, false, false, false, false, false, false, false, 8
+                0, false, false, false, false, false, false, false, false, false, 8,
+                0.0f, 0.0f
         );
     }
 
