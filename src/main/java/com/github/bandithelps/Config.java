@@ -79,5 +79,9 @@ public class Config {
             .comment("Chance to gain potion research progress when a new effect is applied, if Field Chemistry is unlocked")
             .defineInRange("creationExperientialResearchChance", 0.25D, 0.0D, 1.0D);
 
+    public static final ModConfigSpec.BooleanValue THROWABLE_BLOCK_DAMAGE = BUILDER
+            .comment("Master switch for throwable weapons breaking blocks. If false, no throwable (including grenades) destroys terrain, even when the item itself enables world damage.")
+            .define("throwableBlockDamage", true);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 }

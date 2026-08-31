@@ -17,7 +17,7 @@ import com.github.bandithelps.client.renderers.entity.BlackwhipTossedBlockRender
 import com.github.bandithelps.client.renderers.entity.PotionGeneratorEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.RgbaDisplayEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.CreationProductRenderer;
-import com.github.bandithelps.client.renderers.entity.SmokeCanisterProjectileRenderer;
+import com.github.bandithelps.client.renderers.entity.ThrownWeaponRenderer;
 import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
 import com.github.bandithelps.conditions.cost.CostRegister;
@@ -37,6 +37,11 @@ import com.github.bandithelps.items.TissueExtractorItem;
 import com.github.bandithelps.items.TissueSampleItem;
 import com.github.bandithelps.items.GeneVialItem;
 import com.github.bandithelps.items.DNAInjectorItem;
+import com.github.bandithelps.throwable.EffectBurstDetonation;
+import com.github.bandithelps.throwable.ExplosionDetonation;
+import com.github.bandithelps.throwable.FuseMode;
+import com.github.bandithelps.throwable.ThrowableWeaponItem;
+import com.github.bandithelps.throwable.ThrowableWeaponSpec;
 import com.github.bandithelps.network.YhaNetwork;
 import com.github.bandithelps.particles.ModParticles;
 import com.github.bandithelps.recipes.ModRecipeSerializers;
@@ -92,6 +97,45 @@ public final class YourHeroAcademia {
     public static final DeferredItem<Item> INFUSED_SMOKE_CANISTER = ITEMS.register("infused_smoke_canister", () -> new SmokeCanisterItem(new Item.Properties()
             .stacksTo(16)
             .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "infused_smoke_canister")))));
+    public static final DeferredItem<Item> GRENADE = ITEMS.register("grenade", () -> new ThrowableWeaponItem(new Item.Properties()
+            .stacksTo(16)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "grenade"))),
+            ThrowableWeaponSpec.builder()
+                    .scale(1.0f)
+                    .minThrowSpeed(0.4f)
+                    .maxThrowSpeed(1.6f)
+                    .maxChargeTicks(20)
+                    .fuseTicks(40)
+                    .fuseMode(FuseMode.FROM_THROW)
+                    .bounce(true)
+                    .bounceDamping(0.25f)
+                    .stickOnImpact(false)
+                    .breaksBlocks(true)
+                    .explosionRadius(5.0f)
+                    .explosionDamage(12.0f)
+                    .explosionKnockback(1.0f)
+                    .cooldownTicks(20)
+                    .detonation(ExplosionDetonation.INSTANCE)
+                    .build()));
+    public static final DeferredItem<Item> FLASHBANG = ITEMS.register("flashbang", () -> new ThrowableWeaponItem(new Item.Properties()
+            .stacksTo(16)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "flashbang"))),
+            ThrowableWeaponSpec.builder()
+                    .scale(1.0f)
+                    .minThrowSpeed(0.4f)
+                    .maxThrowSpeed(1.6f)
+                    .maxChargeTicks(20)
+                    .fuseTicks(8)
+                    .fuseMode(FuseMode.FROM_IMPACT)
+                    .bounce(true)
+                    .stickOnImpact(false)
+                    .breaksBlocks(false)
+                    .effectRadius(9.0f)
+                    .effectDurationTicks(80)
+                    .effectAmplifier(0)
+                    .cooldownTicks(20)
+                    .detonation(EffectBurstDetonation.FLASHBANG)
+                    .build()));
     public static final DeferredItem<Item> PIPETTE = ITEMS.registerSimpleItem("pipette");
     public static final DeferredItem<Item> TISSUE_EXTRACTOR = ITEMS.register("tissue_extractor", () -> new TissueExtractorItem(new Item.Properties()
             .stacksTo(1)
@@ -127,6 +171,8 @@ public final class YourHeroAcademia {
                 output.accept(EMPTY_CANISTER.get());
                 output.accept(FILLED_SMOKE_CANISTER.get());
                 output.accept(INFUSED_SMOKE_CANISTER.get());
+                output.accept(GRENADE.get());
+                output.accept(FLASHBANG.get());
                 output.accept(PIPETTE.get());
                 output.accept(TISSUE_EXTRACTOR.get());
                 output.accept(TISSUE_SAMPLE.get());
@@ -231,7 +277,7 @@ public final class YourHeroAcademia {
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.POTION_GENERATOR.get(), PotionGeneratorEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.RGBA_DISPLAY.get(), RgbaDisplayEntityRenderer::new);
-        event.registerEntityRenderer(ModEntities.SMOKE_CANISTER_PROJECTILE.get(), SmokeCanisterProjectileRenderer::new);
+        event.registerEntityRenderer(ModEntities.THROWN_WEAPON.get(), ThrownWeaponRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACKWHIP_TOSSED_BLOCK.get(), BlackwhipTossedBlockRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACKWHIP.get(), BlackwhipEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACKWHIP_CHAIN.get(), BlackwhipChainEntityRenderer::new);

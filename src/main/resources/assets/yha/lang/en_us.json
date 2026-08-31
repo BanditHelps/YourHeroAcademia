@@ -13,6 +13,8 @@
   "item.yha.empty_canister": "Empty Canister",
   "item.yha.filled_smoke_canister": "Filled Smoke Canister",
   "item.yha.infused_smoke_canister": "Infused Smoke Canister",
+  "item.yha.grenade": "Grenade",
+  "item.yha.flashbang": "Flashbang",
   "item.yha.pipette": "Pipette",
   "item.yha.empty_gene_vial": "Empty Gene Vial",
   "item.yourheroacademia.example_item": "Example Item",
@@ -23,6 +25,7 @@
   "item.yha.genetic_slop": "Genetic Slop",
 
   "effect.yha.smoke_blind": "Smoke Blindness",
+  "effect.yha.flashbanged": "Flashbanged",
   "effect.yha.decay": "Decay",
 
   "palladium.ability.yha.bd_body_part_emitter": "Block Display - Body Emitter",
@@ -72,6 +75,7 @@
   "entity.yha.blackwhip_chain": "Blackwhip Chain",
   "entity.yha.blackwhip_segment": "Blackwhip Segment",
   "entity.yha.blackwhip_tossed_block": "Whipped Block",
+  "entity.yha.thrown_weapon": "Thrown Weapon",
 
   "condition.yha.body_health": "Body Health",
   "condition.yha.body_float": "Body String",
@@ -228,6 +232,6 @@
   "commands.yha.creation.unknown_item": "Unknown creation recipe '%s'.",
   "key.yha.ability_mode_select": "Ability Mode Select",
   "gui.yha.creation.potion_ingredients": "Ingredients",
-  "gui.yha.creation.quick_craft": "Quick Craft"
+  "gui.yha.creation.quick_craft": "Quick Slots"
 
 }

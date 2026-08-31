@@ -2464,8 +2464,8 @@
       "type": "palladium:dummy",
       "properties": {
         "title": "Technologist Knowledge - I",
-        "description": "Grenades and stuff (TODO)",
-        "icon": "yha:filled_smoke_canister",
+        "description": "Learn to fabricate grenades and flashbangs from canisters and common explosives.",
+        "icon": "yha:grenade",
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [

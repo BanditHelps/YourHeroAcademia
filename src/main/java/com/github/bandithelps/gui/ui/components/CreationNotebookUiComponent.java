@@ -143,7 +143,7 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int AMP_BOX_H = 30;
     private static final int AMP_TRACK_W = 72;
     private static final int POTION_NAME_X = AMP_BOX_X;
-    private static final int POTION_NAME_Y = TIME_Y - 2;
+    private static final int POTION_NAME_Y = TIME_Y;
     private static final int POTION_NAME_W = AMP_BOX_W;
     private static final int POTION_NAME_H = TIME_H;
     private static final int POTION_NAME_PAD = 4;
