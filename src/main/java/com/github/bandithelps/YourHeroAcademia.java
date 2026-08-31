@@ -136,6 +136,28 @@ public final class YourHeroAcademia {
                     .cooldownTicks(20)
                     .detonation(EffectBurstDetonation.FLASHBANG)
                     .build()));
+
+    public static final DeferredItem<Item> IMPULSE = ITEMS.register("impulse", () -> new ThrowableWeaponItem(new Item.Properties()
+            .stacksTo(16)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "impulse"))),
+            ThrowableWeaponSpec.builder()
+                    .scale(1.0f)
+                    .minThrowSpeed(0.4f)
+                    .maxThrowSpeed(1.6f)
+                    .maxChargeTicks(20)
+                    .fuseTicks(8)
+                    .fuseMode(FuseMode.FROM_IMPACT)
+                    .bounce(true)
+                    .stickOnImpact(true)
+                    .breaksBlocks(false)
+                    .explosionRadius(6.0f)
+                    .explosionDamage(0.0f)
+                    .explosionKnockback(2.5f)
+                    .cooldownTicks(20)
+                    .detonation(ExplosionDetonation.INSTANCE)
+                    .build()));
+
+
     public static final DeferredItem<Item> PIPETTE = ITEMS.registerSimpleItem("pipette");
     public static final DeferredItem<Item> TISSUE_EXTRACTOR = ITEMS.register("tissue_extractor", () -> new TissueExtractorItem(new Item.Properties()
             .stacksTo(1)
@@ -173,6 +195,7 @@ public final class YourHeroAcademia {
                 output.accept(INFUSED_SMOKE_CANISTER.get());
                 output.accept(GRENADE.get());
                 output.accept(FLASHBANG.get());
+                output.accept(IMPULSE.get());
                 output.accept(PIPETTE.get());
                 output.accept(TISSUE_EXTRACTOR.get());
                 output.accept(TISSUE_SAMPLE.get());
