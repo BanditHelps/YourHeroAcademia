@@ -15,7 +15,8 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 @EventBusSubscriber(modid = YourHeroAcademia.MODID, value = Dist.CLIENT)
 public final class FlashbangOverlay {
-    private static final int FADE_TICKS = 32;
+    /** Last this many ticks ease from full white-out down to clear. */
+    private static final int FADE_TICKS = 80;
     private static final float MAX_ALPHA = 0.92f;
     /** Peak overlay strength when fully turned away (still visible, not a white-out). */
     private static final float LOOK_AWAY_STRENGTH = 0.5f;
@@ -61,7 +62,10 @@ public final class FlashbangOverlay {
         if (remainingTicks >= FADE_TICKS) {
             timeFade = 1.0f;
         } else {
-            timeFade = Mth.clamp(remainingTicks / (float) FADE_TICKS, 0.0f, 1.0f);
+            float linear = Mth.clamp(remainingTicks / (float) FADE_TICKS, 0.0f, 1.0f);
+            // Ease-out: stay near full strength, then recede in the last stretch.
+            float inv = 1.0f - linear;
+            timeFade = 1.0f - inv * inv * inv;
         }
         float lookAway = Mth.clamp(amplifier / (float) LOOK_AWAY_AMPLIFIER_MAX, 0.0f, 1.0f);
         float facingStrength = Mth.lerp(lookAway, 1.0f, LOOK_AWAY_STRENGTH);
