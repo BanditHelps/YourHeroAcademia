@@ -226,6 +226,8 @@
   "commands.yha.creation.unlock.success": "Unlocked %s creation recipe(s) for %s.",
   "commands.yha.creation.lock.success": "Locked %s creation recipe(s) for %s.",
   "commands.yha.creation.unknown_item": "Unknown creation recipe '%s'.",
-  "key.yha.ability_mode_select": "Ability Mode Select"
+  "key.yha.ability_mode_select": "Ability Mode Select",
+  "gui.yha.creation.potion_ingredients": "Ingredients",
+  "gui.yha.creation.quick_craft": "Quick Craft"
 
 }

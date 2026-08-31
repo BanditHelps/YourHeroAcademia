@@ -12,6 +12,8 @@ import com.github.bandithelps.creation.CreationPotions;
 import com.github.bandithelps.creation.CreationQuickSlot;
 import com.github.bandithelps.creation.CreationTab;
 import com.github.bandithelps.creation.CreationUtil;
+import com.github.bandithelps.gui.text.ScaledText;
+import com.github.bandithelps.gui.text.TextScales;
 import com.github.bandithelps.network.CreationAssignSlotPayload;
 import com.github.bandithelps.network.CreationCreatePayload;
 import com.github.bandithelps.network.CreationCreatePotionPayload;
@@ -93,13 +95,13 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int GEAR_COLS = 4;
     private static final int GEAR_ROWS = 3;
     private static final int QUICK_X = 175;
-    private static final int QUICK_Y = 61;
+    private static final int QUICK_Y = 68;
     private static final int QUICK_SIZE = 18;
     private static final int QUICK_COLS = 3;
     private static final int QUICK_ROWS = 2;
     private static final int QUICK_COUNT = QUICK_COLS * QUICK_ROWS;
-    private static final int CREATE_X = 171;
-    private static final int CREATE_Y = 118;
+    private static final int CREATE_X = 173;
+    private static final int CREATE_Y = 132;
     private static final int CREATE_W = 59;
     private static final int CREATE_H = 17;
     private static final int LIPID_ICON_W = 9;
@@ -123,10 +125,10 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int TIME_W = 60;
     private static final int TIME_H = 17;
     private static final int ALCHEMY_GRID_X = 18;
-    private static final int ALCHEMY_GRID_Y = 59;
+    private static final int ALCHEMY_GRID_Y = 70;
     private static final int ALCHEMY_COLS = 3;
     private static final int ALCHEMY_ROWS = 6;
-    private static final int DIAMOND_SIZE = 17;
+    private static final int DIAMOND_SIZE = 18;
     private static final int DIAMOND_TOP_X = 112;
     private static final int DIAMOND_TOP_Y = 59;
     private static final int DIAMOND_LEFT_X = 83;
@@ -140,6 +142,11 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int AMP_BOX_W = 94;
     private static final int AMP_BOX_H = 30;
     private static final int AMP_TRACK_W = 72;
+    private static final int POTION_NAME_X = AMP_BOX_X;
+    private static final int POTION_NAME_Y = TIME_Y - 2;
+    private static final int POTION_NAME_W = AMP_BOX_W;
+    private static final int POTION_NAME_H = TIME_H;
+    private static final int POTION_NAME_PAD = 4;
     private static final int LOCK_SIZE = 16;
     private static final int ENCHANT_ATLAS_W = 155;
     private static final int ENCHANT_SLOT_SIZE = 24;
@@ -153,7 +160,7 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int ENCHANT_LIST_X = GEAR_X;
     private static final int ENCHANT_LIST_Y = GEAR_Y + GEAR_ROWS * GEAR_SLOT + 8;
     private static final int ENCHANT_COLS = 2;
-    private static final int ENCHANT_COL_GAP = 4;
+    private static final int ENCHANT_COL_GAP = 0;
     private static final int ENCHANT_VISIBLE_ROWS = 5;
     private static final int ENCHANT_SCROLLBAR_W = 4;
     private static final int ENCHANT_SCROLLBAR_TRACK = 0xFF8A6A48;
@@ -161,6 +168,7 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int SLIDER_PAD_X = 4;
     private static final int SLIDER_Y = 12;
     private static final int SLIDER_H = 6;
+    private static final float ENCHANT_NAME_SCALE = TextScales.SMALL;
     private static final int NAME_X = 92;
     private static final int NAME_Y = 43;
     private static final int NAME_W = 70;
@@ -246,9 +254,6 @@ public class CreationNotebookUiComponent extends UiWidget {
 
             int quickSlots = ClientCreationState.get().unlockedQuickSlots();
             boolean overMenu = formMenuContains(mouseX, mouseY);
-            if (this.page != Page.BLOCKS) {
-                blit(gui, TEX_BLOCKS, x + QUICK_X, y + QUICK_Y, QUICK_X, QUICK_Y, QUICK_COLS * QUICK_SIZE, QUICK_COUNT * QUICK_SIZE, TEX_W, TEX_H);
-            }
 
             int lipids = Mth.floor(ClientBodyState.getCustomFloat(BodyPart.CHEST, CreationUtil.LIPIDS_KEY, 0.0f));
             if (this.lastDisplayedLipids >= 0 && lipids < this.lastDisplayedLipids) {
@@ -257,6 +262,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             this.lastDisplayedLipids = lipids;
             gui.text(minecraft.font, String.valueOf(lipids), x + LIPID_TEXT_X, y + LIPID_TEXT_Y, 0xFF3A2A18, false);
             drawLipidSpendPops(gui, minecraft, x, y, lipids);
+            drawQuickCraftLabel(gui, minecraft, x, y);
 
             if (this.page == Page.BLOCKS) {
                 drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y, MAT_COLS, MAT_ROWS, GRID_SLOT, this.materialsPage);
@@ -305,7 +311,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             boolean createHovered = contains(mouseX, mouseY, x + CREATE_X, y + CREATE_Y, CREATE_W, CREATE_H);
             blit(gui, createHovered && canCreate ? TEX_CREATE_HOVER : TEX_CREATE, x + CREATE_X, y + CREATE_Y, 0, 0, CREATE_W, CREATE_H, CREATE_W, CREATE_H);
             if (!canCreate) {
-                gui.fill(x + CREATE_X, y + CREATE_Y, x + CREATE_X + CREATE_W, y + CREATE_Y + CREATE_H, 0x66000000);
+                gui.fill(x + CREATE_X, y + CREATE_Y + 1, x + CREATE_X + CREATE_W, y + CREATE_Y + CREATE_H - 1, 0x66000000);
             }
 
             boolean showCost = this.page == Page.ALCHEMY ? selectedPotion != null : selected != null;
@@ -1101,6 +1107,16 @@ public class CreationNotebookUiComponent extends UiWidget {
             return slotSize <= GEAR_SLOT ? GEAR_ICON : GRID_ICON;
         }
 
+        private static void drawQuickCraftLabel(GuiGraphicsExtractor gui, Minecraft minecraft, int originX, int originY) {
+            String label = Component.translatable("gui.yha.creation.quick_craft").getString();
+            int gridW = QUICK_COLS * QUICK_SIZE;
+            int textW = ScaledText.width(minecraft.font, label, TextScales.SMALLER);
+            int textH = ScaledText.lineHeight(minecraft.font, TextScales.SMALLER);
+            int textX = originX + QUICK_X + Math.max(0, (gridW - textW) / 2);
+            int textY = originY + QUICK_Y - textH - 3;
+            ScaledText.draw(gui, minecraft.font, label, textX, textY, TextScales.SMALLER, 0xFF3A2A18, false);
+        }
+
         private static int quickSlotX(int originX, int index) {
             return originX + QUICK_X + (index % QUICK_COLS) * QUICK_SIZE;
         }
@@ -1328,7 +1344,8 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (maxScroll <= 0) {
                 return;
             }
-            int barX = enchantCellX(x, ENCHANT_COLS - 1) + ENCHANT_ROW_W - ENCHANT_SCROLLBAR_W;
+            // Add 4 for padding of the scroll bar and the sliders
+            int barX = 4 + enchantCellX(x, ENCHANT_COLS - 1) + ENCHANT_ROW_W - ENCHANT_SCROLLBAR_W;
             int barY = y + ENCHANT_LIST_Y;
             int barH = enchantListHeight();
             int visibleCells = ENCHANT_VISIBLE_ROWS * ENCHANT_COLS;
@@ -1401,8 +1418,8 @@ public class CreationNotebookUiComponent extends UiWidget {
                     int cellY = enchantCellY(y, row);
                     if (entry.unlocked()) {
                         int level = this.enchantLevels.getOrDefault(entry.enchantId(), 0);
-                        String name = trim(minecraft, enchantName(entry), ENCHANT_ROW_W - 8);
-                        gui.text(minecraft.font, name, cellX + 4, cellY + 2, 0xFF3A2A18, false);
+                        String name = ScaledText.ellipsize(minecraft.font, enchantName(entry), ENCHANT_ROW_W - 8, ENCHANT_NAME_SCALE);
+                        ScaledText.draw(gui, minecraft.font, name, cellX + 4, cellY + 2, ENCHANT_NAME_SCALE, 0xFF3A2A18, false);
                         drawEnchantSlider(gui, cellX, cellY, entry.maxLevel(), level);
                         if (!hoveringPreview
                                 && !formMenuContains(mouseX, mouseY)
@@ -1726,14 +1743,29 @@ public class CreationNotebookUiComponent extends UiWidget {
                         ? Component.translatable("gui.yha.creation.potion_instant").getString()
                         : (this.timeFocused ? this.timeInput : formatTime(this.potionDurationSeconds));
                 int timeColor = canTime ? (this.timeFocused ? 0xFF3A2A18 : 0xFF5A4030) : 0xFF9A8A78;
-                int timeX = originX + TIME_X + Math.max(0, (TIME_W - minecraft.font.width(timeText.isEmpty() ? "0:00" : timeText)) / 2);
-                int timeY = originY + TIME_Y + (TIME_H - minecraft.font.lineHeight) / 2;
+                int timeX = originX + TIME_X + 5 + Math.max(0, (TIME_W - minecraft.font.width(timeText.isEmpty() ? "0:00" : timeText)) / 2);
+                int timeY = originY + TIME_Y + 1 + (TIME_H - minecraft.font.lineHeight) / 2;
                 gui.text(minecraft.font, timeText, timeX, timeY, timeColor, false);
                 if (this.timeFocused && canTime && ((System.currentTimeMillis() / 400L) % 2L == 0L)) {
                     int cursorX = timeX + minecraft.font.width(timeText);
                     gui.fill(cursorX, originY + TIME_Y + 3, cursorX + 1, originY + TIME_Y + TIME_H - 3, 0xFF3A2A18);
                 }
             }
+
+            // Draw Ingredients word
+            String ingredientText = Component.translatable("gui.yha.creation.potion_ingredients").getString();
+            ScaledText.draw(
+                    gui,
+                    minecraft.font,
+                    ingredientText,
+                    originX + TIME_X + 13,
+                    originY + TIME_Y + TIME_H + 4,
+                    TextScales.SMALLER,
+                    0xFF3A2A18,
+                    false
+            );
+
+
             boolean overMenu = formMenuContains(mouseX, mouseY);
             if (!overMenu && contains(mouseX, mouseY, originX + TIME_X, originY + TIME_Y, TIME_W, TIME_H)) {
                 if (selected != null && selected.instant()) {
@@ -1771,6 +1803,7 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
 
             if (selected != null) {
+                drawPotionName(gui, minecraft, originX, originY);
                 drawAlchemyForm(gui, minecraft, originX, originY, mouseX, mouseY, CreationPotionForm.DRINKABLE, DIAMOND_TOP_X, DIAMOND_TOP_Y, true);
                 drawAlchemyForm(gui, minecraft, originX, originY, mouseX, mouseY, CreationPotionForm.LINGERING, DIAMOND_LEFT_X, DIAMOND_LEFT_Y, state.potionLinger());
                 drawAlchemyForm(gui, minecraft, originX, originY, mouseX, mouseY, CreationPotionForm.ARROW, DIAMOND_RIGHT_X, DIAMOND_RIGHT_Y, state.potionArrow());
@@ -1787,6 +1820,8 @@ public class CreationNotebookUiComponent extends UiWidget {
                 drawLockedBox(gui, boxX, boxY, AMP_BOX_W, AMP_BOX_H);
             } else {
                 String ampLabel = Component.translatable("gui.yha.creation.amplifier", roman(this.potionAmplifier + 1)).getString();
+
+
                 int labelX = boxX + Math.max(0, (AMP_BOX_W - minecraft.font.width(ampLabel)) / 2);
                 gui.text(minecraft.font, ampLabel, labelX, boxY + 4, 0xFF3A2A18, false);
                 gui.fill(trackX, trackY + 2, trackX + AMP_TRACK_W, trackY + 4, 0xFF8A6A48);
@@ -1796,10 +1831,29 @@ public class CreationNotebookUiComponent extends UiWidget {
                 if (this.potionAmplifier > 0) {
                     gui.fill(trackX, trackY + 2, knobX + 2, trackY + 4, 0xFFFFD27A);
                 }
+
+
             }
             if (!overMenu && contains(mouseX, mouseY, boxX, boxY, AMP_BOX_W, AMP_BOX_H) && ampLocked) {
                 gui.setTooltipForNextFrame(minecraft.font, Component.translatable("gui.yha.creation.tab_locked"), mouseX, mouseY);
             }
+        }
+
+        private void drawPotionName(GuiGraphicsExtractor gui, Minecraft minecraft, int originX, int originY) {
+            Identifier effectId = safeId(this.selectedEffectId);
+            if (effectId == null) {
+                return;
+            }
+            String name = CreationPotions.itemName(effectId, CreationPotionForm.DRINKABLE).getString();
+            int boxX = originX + POTION_NAME_X;
+            int boxY = originY + POTION_NAME_Y;
+            int maxW = POTION_NAME_W - POTION_NAME_PAD * 2;
+            String shown = ScaledText.ellipsize(minecraft.font, name, maxW, TextScales.SMALLER);
+            int textW = ScaledText.width(minecraft.font, shown, TextScales.SMALLER);
+            int textH = ScaledText.lineHeight(minecraft.font, TextScales.SMALLER);
+            int textX = boxX + Math.max(POTION_NAME_PAD, (POTION_NAME_W - textW) / 2);
+            int textY = boxY + Math.max(0, (POTION_NAME_H - textH) / 2);
+            ScaledText.draw(gui, minecraft.font, shown, textX, textY, TextScales.SMALLER, 0xFF3A2A18, false);
         }
 
         private void drawAlchemyForm(
@@ -1825,8 +1879,8 @@ public class CreationNotebookUiComponent extends UiWidget {
                 return;
             }
             ItemStack stack = alchemyPreviewStack(this.selectedEffectId, form);
-            int icon = 15;
-            drawItem(gui, stack, x + 1, y + 1, icon);
+            int icon = 16;
+            drawItem(gui, stack, x, y, icon);
             if (this.selectedPotionForm == form) {
                 drawFrame(gui, x, y, DIAMOND_SIZE, DIAMOND_SIZE, 0xFFFFD27A);
             }
