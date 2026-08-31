@@ -175,7 +175,7 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int NAME_H = 16;
     private static final int NAME_PAD = 4;
     private static final int LIPID_TEXT_X = 192;
-    private static final int LIPID_TEXT_Y = 44;
+    private static final int LIPID_TEXT_Y = 43;
     private static final int LIPID_POP_MS = 800;
     private static final int SLIDER_TRACK_W = 67;
     private static final int SLIDER_KNOB_W = 5;
@@ -1745,7 +1745,10 @@ public class CreationNotebookUiComponent extends UiWidget {
                 int timeColor = canTime ? (this.timeFocused ? 0xFF3A2A18 : 0xFF5A4030) : 0xFF9A8A78;
                 int timeX = originX + TIME_X + 5 + Math.max(0, (TIME_W - minecraft.font.width(timeText.isEmpty() ? "0:00" : timeText)) / 2);
                 int timeY = originY + TIME_Y + 1 + (TIME_H - minecraft.font.lineHeight) / 2;
-                gui.text(minecraft.font, timeText, timeX, timeY, timeColor, false);
+
+                gui.text(minecraft.font, timeText, instant ? timeX + 4 : timeX, timeY, timeColor, false);
+
+
                 if (this.timeFocused && canTime && ((System.currentTimeMillis() / 400L) % 2L == 0L)) {
                     int cursorX = timeX + minecraft.font.width(timeText);
                     gui.fill(cursorX, originY + TIME_Y + 3, cursorX + 1, originY + TIME_Y + TIME_H - 3, 0xFF3A2A18);
@@ -1813,24 +1816,37 @@ public class CreationNotebookUiComponent extends UiWidget {
             int maxAmp = maxClientAmplifier();
             int boxX = originX + AMP_BOX_X;
             int boxY = originY + AMP_BOX_Y;
-            int trackX = ampTrackX(originX);
-            int trackY = ampTrackY(originY);
+            int trackX = ampTrackX(originX) + 1;
+            int trackY = ampTrackY(originY) + SLIDER_Y;
             boolean ampLocked = !state.potionPotency() && !state.potionMaster();
             if (ampLocked) {
                 drawLockedBox(gui, boxX, boxY, AMP_BOX_W, AMP_BOX_H);
             } else {
                 String ampLabel = Component.translatable("gui.yha.creation.amplifier", roman(this.potionAmplifier + 1)).getString();
 
+                // Amplifier Scroll Bar
+                int trackW = ENCHANT_ROW_W - SLIDER_PAD_X * 2;
+
+                // Draw the empty slider texture
+                blit(gui, TEX_SLIDER_TRACK, trackX, trackY, 0, 0, trackW, SLIDER_H, SLIDER_TRACK_W, SLIDER_H);
+
+
+                float ratio = maxAmp <= 0 ? 0.0f : this.potionAmplifier / (float) maxAmp;
+                int fillW = Math.round(ratio * trackW);
+                // If the slider has been moved, draw the fill texture proportionally over the empty texture
+                if (fillW > 0) {
+                    blit(gui, TEX_SLIDER_FILL, trackX, trackY, 0, 0, fillW, SLIDER_H, SLIDER_TRACK_W, SLIDER_H);
+                }
+
+                int knobX = trackX + Math.round(ratio * (trackW - SLIDER_KNOB_W));
+                int knobY = trackY + (SLIDER_H - SLIDER_KNOB_H) / 2;
+
+                // Draw the slider in the right spot
+                blit(gui, TEX_SLIDER_KNOB, knobX, knobY, 0, 0, SLIDER_KNOB_W, SLIDER_KNOB_H, SLIDER_KNOB_W, SLIDER_KNOB_H);
+
 
                 int labelX = boxX + Math.max(0, (AMP_BOX_W - minecraft.font.width(ampLabel)) / 2);
                 gui.text(minecraft.font, ampLabel, labelX, boxY + 4, 0xFF3A2A18, false);
-                gui.fill(trackX, trackY + 2, trackX + AMP_TRACK_W, trackY + 4, 0xFF8A6A48);
-                float ratio = maxAmp <= 0 ? 0.0f : this.potionAmplifier / (float) maxAmp;
-                int knobX = trackX + Math.round(ratio * (AMP_TRACK_W - 4));
-                gui.fill(knobX, trackY, knobX + 4, trackY + SLIDER_H, 0xFFFFD27A);
-                if (this.potionAmplifier > 0) {
-                    gui.fill(trackX, trackY + 2, knobX + 2, trackY + 4, 0xFFFFD27A);
-                }
 
 
             }
@@ -2023,7 +2039,7 @@ public class CreationNotebookUiComponent extends UiWidget {
         }
 
         private static int ampTrackY(int originY) {
-            return originY + AMP_BOX_Y + 16;
+            return originY + AMP_BOX_Y + 4;
         }
 
         private static int maxClientAmplifier() {
