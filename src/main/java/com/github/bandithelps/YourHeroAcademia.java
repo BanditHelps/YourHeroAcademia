@@ -40,6 +40,7 @@ import com.github.bandithelps.items.DNAInjectorItem;
 import com.github.bandithelps.throwable.EffectBurstDetonation;
 import com.github.bandithelps.throwable.ExplosionDetonation;
 import com.github.bandithelps.throwable.FuseMode;
+import com.github.bandithelps.throwable.ImpulseDetonation;
 import com.github.bandithelps.throwable.ThrowableWeaponItem;
 import com.github.bandithelps.throwable.ThrowableWeaponSpec;
 import com.github.bandithelps.network.YhaNetwork;
@@ -154,7 +155,7 @@ public final class YourHeroAcademia {
                     .explosionDamage(0.0f)
                     .explosionKnockback(2.5f)
                     .cooldownTicks(20)
-                    .detonation(ExplosionDetonation.INSTANCE)
+                    .detonation(ImpulseDetonation.INSTANCE)
                     .build()));
 
 
