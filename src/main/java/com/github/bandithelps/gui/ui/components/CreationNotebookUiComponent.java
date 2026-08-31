@@ -67,6 +67,9 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final Identifier TEX_ENCHANT_UTILITY = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_utility_enchant.png");
     private static final Identifier TEX_FORM_MENU = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "creation/form_menu");
     private static final Identifier TEX_SUBMENU_BADGE = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/submenu_badge.png");
+    private static final Identifier TEX_SLIDER_TRACK = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/enchant_slider_track.png");
+    private static final Identifier TEX_SLIDER_FILL = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/enchant_slider_fill.png");
+    private static final Identifier TEX_SLIDER_KNOB = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/enchant_slider_knob.png");
 
     private static final int TEX_W = 240;
     private static final int TEX_H = 193;
@@ -166,6 +169,9 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int LIPID_TEXT_X = 192;
     private static final int LIPID_TEXT_Y = 44;
     private static final int LIPID_POP_MS = 800;
+    private static final int SLIDER_TRACK_W = 67;
+    private static final int SLIDER_KNOB_W = 5;
+    private static final int SLIDER_KNOB_H = 8;
 
 
 
@@ -1183,8 +1189,8 @@ public class CreationNotebookUiComponent extends UiWidget {
                 }
                 String itemId = displayedGearItem(slots[i], variants);
                 int iconSize = GEAR_ICON;
-                int iconX = slotX + Math.max(0, (GEAR_SLOT - iconSize) / 2);
-                int iconY = slotY + Math.max(0, (GEAR_SLOT - iconSize) / 2);
+                int iconX = slotX;
+                int iconY = slotY;
                 drawItem(gui, ClientCreationState.stackOf(itemId), iconX, iconY, iconSize);
                 if (variants.size() > 1) {
                     blitSubmenuBadge(gui, slotX, slotY, GEAR_SLOT);
@@ -1411,17 +1417,29 @@ public class CreationNotebookUiComponent extends UiWidget {
             drawEnchantScrollbar(gui, x, y, enchants.size(), maxScroll);
         }
 
+
         private void drawEnchantSlider(GuiGraphicsExtractor gui, int rowX, int rowY, int maxLevel, int level) {
             int trackX = rowX + SLIDER_PAD_X;
             int trackY = rowY + SLIDER_Y;
             int trackW = ENCHANT_ROW_W - SLIDER_PAD_X * 2;
-            gui.fill(trackX, trackY + 2, trackX + trackW, trackY + 4, 0xFF8A6A48);
+
+            // Draw the empty slider texture
+            blit(gui, TEX_SLIDER_TRACK, trackX, trackY, 0, 0, trackW, SLIDER_H, SLIDER_TRACK_W, SLIDER_H);
+
+
             float ratio = maxLevel <= 0 ? 0.0f : level / (float) maxLevel;
-            int knobX = trackX + Math.round(ratio * (trackW - 4));
-            gui.fill(knobX, trackY, knobX + 4, trackY + SLIDER_H, 0xFFFFD27A);
-            if (level > 0) {
-                gui.fill(trackX, trackY + 2, knobX + 2, trackY + 4, 0xFFFFD27A);
+            int fillW = Math.round(ratio * trackW);
+            // If the slider has been moved, draw the fill texture proportionally over the empty texture
+            if (fillW > 0) {
+                blit(gui, TEX_SLIDER_FILL, trackX, trackY, 0, 0, fillW, SLIDER_H, SLIDER_TRACK_W, SLIDER_H);
             }
+
+
+            int knobX = trackX + Math.round(ratio * (trackW - SLIDER_KNOB_W));
+            int knobY = trackY + (SLIDER_H - SLIDER_KNOB_H) / 2;
+
+            // Draw the slider in the right spot
+            blit(gui, TEX_SLIDER_KNOB, knobX, knobY, 0, 0, SLIDER_KNOB_W, SLIDER_KNOB_H, SLIDER_KNOB_W, SLIDER_KNOB_H);
         }
 
         private void setEnchantFromMouse(CreationSyncPayload.ClientEnchantEntry entry, int mouseX, int originX) {
