@@ -1,11 +1,13 @@
 package com.github.bandithelps.queries;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.abilities.floatquirk.FloatAnimPose;
 import com.github.bandithelps.attributes.QuirkAttributes;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.body.BodyPart;
 import com.github.bandithelps.capabilities.body.IBodyData;
 import com.github.bandithelps.utils.quirk.QuirkFactorUtil;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -56,6 +58,8 @@ public class YourHeroAcademiaQueries implements ObjectValue {
         this.functions.put("armor_current", this::armor_current);
         this.functions.put("max_health_current", this::max_health_current);
         this.functions.put("armor_toughness_current", this::armor_toughness_current);
+        this.functions.put("float_lean", this::float_lean);
+        this.functions.put("float_sitting", this::float_sitting);
     }
 
     public @NotNull Value get(@NonNull String name) {
@@ -214,6 +218,22 @@ public class YourHeroAcademiaQueries implements ObjectValue {
     public double armor_toughness_current() {
         if (context.entity() instanceof Player player) {
             return fetchBodyPhysicalStat("armor_toughness_current", player);
+        }
+        return 0;
+    }
+
+    @Binding({"float_lean"})
+    public double float_lean() {
+        if (context.entity() instanceof LivingEntity living) {
+            return FloatAnimPose.getLean(living);
+        }
+        return 0;
+    }
+
+    @Binding({"float_sitting"})
+    public double float_sitting() {
+        if (context.entity() instanceof LivingEntity living) {
+            return FloatAnimPose.isSitting(living) ? 1.0d : 0.0d;
         }
         return 0;
     }

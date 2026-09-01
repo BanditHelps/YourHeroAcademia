@@ -1,0 +1,45 @@
+{
+	"initial_state": "off",
+	"blend_transition": 8,
+	"animations": {
+		"hover": "yha:float.hovering",
+		"sit": "yha:float.sitting"
+	},
+	"states": {
+		"off": {
+			"animation": "palladium:empty",
+			"transitions": {
+				"hovering": {
+					"type": "palladium:ability_enabled",
+					"ability": "yha:float#float_toggle"
+				}
+			}
+		},
+		"hovering": {
+			"animation": "#hover",
+			"transitions": {
+				"off": {
+					"type": "palladium:not",
+					"conditions": {
+						"type": "palladium:ability_enabled",
+						"ability": "yha:float#float_toggle"
+					}
+				},
+				"sitting": "yha.float_sitting()"
+			}
+		},
+		"sitting": {
+			"animation": "#sit",
+			"transitions": {
+				"off": {
+					"type": "palladium:not",
+					"conditions": {
+						"type": "palladium:ability_enabled",
+						"ability": "yha:float#float_toggle"
+					}
+				},
+				"hovering": "yha.float_sitting() == false"
+			}
+		}
+	}
+}
