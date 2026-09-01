@@ -4,7 +4,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import com.github.bandithelps.utils.TextComponentHolders;
 import net.minecraft.resources.Identifier;
+import net.threetag.palladium.logic.context.DataContext;
 import net.threetag.palladium.power.Power;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,7 +58,9 @@ public final class TreeEditorDraft {
         if (json != null) {
             return fromJson(powerId, json);
         }
-        TreeEditorDraft draft = new TreeEditorDraft(powerId, power.getName().getString());
+        TreeEditorDraft draft = new TreeEditorDraft(
+                powerId,
+                TextComponentHolders.resolveString(power.getName(), DataContext.create()));
         draft.saveNamed = true;
         draft.dirty = false;
         return draft;
