@@ -1,0 +1,273 @@
+{
+  "name": "Float",
+  "parent": "yha:quirk",
+  "screen": "yha:power/float",
+  "icon": "minecraft:feather",
+  "gui_display_type": "tree",
+  "abilities": {
+    "quirk_info": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Float",
+        "description": "Turn off your gravity and suspend yourself in the air. You cannot fly on your own — only rise, sink, keep existing momentum, and use outside force to move.",
+        "icon": "minecraft:feather",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [0, 0]
+      }
+    },
+    "float_toggle": {
+      "type": "yha:float",
+      "max_height": {
+        "type": "yha:upgrade_switch",
+        "cases": [
+          { "ability": "fl_tree_height_1", "value": 16 },
+          { "ability": "fl_tree_height_2", "value": 32 },
+          { "ability": "fl_tree_height_3", "value": 64 },
+          { "ability": "fl_tree_height_4", "value": 128 }
+        ],
+        "fallback": 8
+      },
+      "stamina_interval": {
+        "type": "yha:upgrade_switch",
+        "cases": [
+          { "ability": "fl_tree_stamina_3", "value": 40 }
+        ],
+        "fallback": 20
+      },
+      "stamina_interval_cost": {
+        "type": "yha:upgrade_switch",
+        "cases": [
+          { "ability": "fl_tree_stamina_1", "value": 2 },
+          { "ability": "fl_tree_stamina_2", "value": 1 },
+          { "ability": "fl_tree_stamina_3", "value": 1 }
+        ],
+        "fallback": 3
+      },
+      "max_speed": 8.0,
+      "properties": {
+        "title": "Toggle Float",
+        "description": "Leave the ground and ignore gravity. Jump or sneak to rise and sink. Horizontal movement only comes from the speed you already had, or from an outside push like fireworks. Jumping fades out above a height based on the ground under you; fireworks and other quirks can go higher.",
+        "icon": "minecraft:feather",
+        "list_index": 0,
+        "hidden_in_gui": false,
+        "hidden_in_bar": false,
+        "gui_position": [0, -1]
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "toggle"
+        },
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "quirk_info"
+        }
+      }
+    },
+    "float_fall_immunity": {
+      "type": "palladium:damage_immunity",
+      "damage_type": "#minecraft:is_fall",
+      "properties": {
+        "title": "Float Fall Immunity",
+        "hidden_in_gui": true,
+        "hidden_in_bar": true
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:ability_enabled",
+          "ability": "float_toggle"
+        }
+      }
+    },
+    "fl_tree_height_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Height - I",
+        "description": {
+          "unlocked": "You can rise 16 blocks above the ground under your feet. Space bar fades out past that; fireworks and other quirks can overshoot.",
+          "locked": "Raise how high you can jump with Float to 16 blocks above the ground."
+        },
+        "icon": "minecraft:phantom_membrane",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [1, 0]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "quirk_info"
+          }
+        }
+      }
+    },
+    "fl_tree_height_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Height - II",
+        "description": {
+          "unlocked": "You can rise 32 blocks above the ground under your feet. Space bar fades out past that; fireworks and other quirks can overshoot.",
+          "locked": "Raise how high you can jump with Float to 32 blocks above the ground."
+        },
+        "icon": "minecraft:phantom_membrane",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [2, 0]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "fl_tree_height_1"
+          }
+        }
+      }
+    },
+    "fl_tree_height_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Height - III",
+        "description": {
+          "unlocked": "You can rise 64 blocks above the ground under your feet. Space bar fades out past that; fireworks and other quirks can overshoot.",
+          "locked": "Raise how high you can jump with Float to 64 blocks above the ground."
+        },
+        "icon": "minecraft:phantom_membrane",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [2, 1]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "fl_tree_height_2"
+          }
+        }
+      }
+    },
+    "fl_tree_height_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Height - IV",
+        "description": {
+          "unlocked": "You can rise 128 blocks above the ground under your feet. Space bar fades out past that; fireworks and other quirks can overshoot.",
+          "locked": "Raise how high you can jump with Float to 128 blocks above the ground."
+        },
+        "icon": "minecraft:phantom_membrane",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [2, 2]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 5
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "fl_tree_height_3"
+          }
+        }
+      }
+    },
+    "fl_tree_stamina_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Stamina Efficiency - I",
+        "description": {
+          "unlocked": "Floating drains 2 stamina every second instead of 3.",
+          "locked": "Reduce Float's stamina drain."
+        },
+        "icon": "minecraft:sugar",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [-1, 0]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "quirk_info"
+          }
+        }
+      }
+    },
+    "fl_tree_stamina_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Stamina Efficiency - II",
+        "description": {
+          "unlocked": "Floating drains 1 stamina every second.",
+          "locked": "Further reduce Float's stamina drain."
+        },
+        "icon": "minecraft:sugar",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [-2, 0]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "fl_tree_stamina_1"
+          }
+        }
+      }
+    },
+    "fl_tree_stamina_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Stamina Efficiency - III",
+        "description": {
+          "unlocked": "Floating drains 1 stamina every two seconds.",
+          "locked": "Float for much longer between stamina ticks."
+        },
+        "icon": "minecraft:sugar",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [-3, 0]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "fl_tree_stamina_2"
+          }
+        }
+      }
+    }
+  }
+}
