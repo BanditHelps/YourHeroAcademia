@@ -1,6 +1,7 @@
 package com.github.bandithelps.utils.loadout;
 
 import com.github.bandithelps.capabilities.loadout.AbilityLoadoutData;
+import com.github.bandithelps.utils.TextComponentHolders;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -33,15 +34,18 @@ public final class AbilityLoadoutUtil {
         return instance.getAbility().getProperties().getListIndex().get(context, -1);
     }
 
-    public static Component displayName(AbilityInstance<?> instance) {
+    public static Component displayName(LivingEntity entity, AbilityInstance<?> instance) {
         if (instance == null) {
             return Component.literal("Empty");
         }
-        Component title = instance.getAbility().getProperties().getTitle();
-        if (title != null) {
+        DataContext context = entity == null
+                ? DataContext.create()
+                : DataContext.forAbility(entity, instance);
+        Component title = TextComponentHolders.resolve(instance.getAbility().getProperties().getTitle(), context);
+        if (!title.getString().isBlank()) {
             return title;
         }
-        return instance.getAbility().getDisplayName();
+        return TextComponentHolders.resolve(instance.getAbility().getDisplayName(), context);
     }
 
     public static AbilityInstance<?> resolveInstance(Player player, AbilityReference reference) {
@@ -83,7 +87,9 @@ public final class AbilityLoadoutUtil {
             return entries;
         }
         for (PowerInstance powerInstance : PowerUtil.getPowerHandler(player).getPowers()) {
-            Component powerName = powerInstance.getPower().value().getName();
+            Component powerName = TextComponentHolders.resolve(
+                    powerInstance.getPower().value().getName(),
+                    DataContext.forPower(player, powerInstance));
             List<AbilityInstance<?>> abilities = new ArrayList<>(powerInstance.getAbilities().values());
             abilities.sort(Comparator.comparing(instance -> instance.getAbility().getKey(), Comparator.nullsLast(String::compareTo)));
             for (AbilityInstance<?> instance : abilities) {
@@ -94,7 +100,7 @@ public final class AbilityLoadoutUtil {
                         powerInstance.getPowerId(),
                         powerName,
                         instance.getReference(),
-                        displayName(instance),
+                        displayName(player, instance),
                         getListIndex(player, instance)
                 ));
             }
