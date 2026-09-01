@@ -78,21 +78,21 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int SUBMENU_BADGE = 5;
     private static final int GRID_SLOT = 18;
     private static final int GRID_ICON = 16;
-    private static final int GEAR_SLOT = 12;
-    private static final int GEAR_ICON = 12;
+    private static final int GEAR_SLOT = 18;
+    private static final int GEAR_ICON = 16;
     private static final int QUICK_ICON = 16;
     private static final int MAT_X = 15;
     private static final int MAT_Y = 39;
     private static final int MAT_COLS = 3;
     private static final int MAT_ROWS = 8;
     private static final int MAT_PER_PAGE = MAT_COLS * MAT_ROWS;
-    private static final int BLOCKS_X = 77;
+    private static final int BLOCKS_X = 76;
     private static final int BLOCKS_Y = 39;
     private static final int BLOCKS_COLS = 5;
     private static final int BLOCKS_ROWS = 8;
     private static final int GEAR_X = 15;
     private static final int GEAR_Y = 39;
-    private static final int GEAR_COLS = 4;
+    private static final int GEAR_COLS = 5;
     private static final int GEAR_ROWS = 3;
     private static final int QUICK_X = 175;
     private static final int QUICK_Y = 68;
@@ -106,9 +106,9 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int CREATE_H = 17;
     private static final int LIPID_ICON_W = 9;
     private static final int LIPID_ICON_H = 11;
-    private static final int DOG_X = 218;
+    private static final int DOG_X = 200;
     private static final int DOG_Y = 178;
-    private static final int DOG_W = 20;
+    private static final int DOG_W = 40;
     private static final int DOG_H = 14;
     private static final int FORM_SLOT = 18;
     private static final int FORM_PAD = 3;
@@ -149,19 +149,19 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int POTION_NAME_PAD = 4;
     private static final int LOCK_SIZE = 16;
     private static final int ENCHANT_ATLAS_W = 155;
-    private static final int ENCHANT_SLOT_SIZE = 24;
+    private static final int ENCHANT_SLOT_SIZE = 16;
     private static final int ENCHANT_ROW_U = 0;
     private static final int ENCHANT_ROW_V = 25;
     private static final int ENCHANT_ROW_W = 75;
     private static final int ENCHANT_ROW_H = 20;
     private static final int ENCHANT_ROW_STRIDE = 21;
-    private static final int ENCHANT_PANEL_X = 66;
+    private static final int ENCHANT_PANEL_X = 128;
     private static final int ENCHANT_PANEL_Y = 39;
     private static final int ENCHANT_LIST_X = GEAR_X;
     private static final int ENCHANT_LIST_Y = GEAR_Y + GEAR_ROWS * GEAR_SLOT + 8;
     private static final int ENCHANT_COLS = 2;
     private static final int ENCHANT_COL_GAP = 0;
-    private static final int ENCHANT_VISIBLE_ROWS = 5;
+    private static final int ENCHANT_VISIBLE_ROWS = 4;
     private static final int ENCHANT_SCROLLBAR_W = 4;
     private static final int ENCHANT_SCROLLBAR_TRACK = 0xFF8A6A48;
     private static final int ENCHANT_SCROLLBAR_THUMB = 0xFFFFD27A;
@@ -169,9 +169,9 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int SLIDER_Y = 12;
     private static final int SLIDER_H = 6;
     private static final float ENCHANT_NAME_SCALE = TextScales.SMALL;
-    private static final int NAME_X = 92;
-    private static final int NAME_Y = 43;
-    private static final int NAME_W = 70;
+    private static final int NAME_X = 107;
+    private static final int NAME_Y = 58;
+    private static final int NAME_W = 59;
     private static final int NAME_H = 16;
     private static final int NAME_PAD = 4;
     private static final int LIPID_TEXT_X = 192;
@@ -1205,8 +1205,8 @@ public class CreationNotebookUiComponent extends UiWidget {
                 }
                 String itemId = displayedGearItem(slots[i], variants);
                 int iconSize = GEAR_ICON;
-                int iconX = slotX;
-                int iconY = slotY;
+                int iconX = slotX + Math.max(0, (GEAR_SLOT - iconSize) / 2);
+                int iconY = slotY + Math.max(0, (GEAR_SLOT - iconSize) / 2);
                 drawItem(gui, ClientCreationState.stackOf(itemId), iconX, iconY, iconSize);
                 if (variants.size() > 1) {
                     blitSubmenuBadge(gui, slotX, slotY, GEAR_SLOT);
@@ -1397,7 +1397,9 @@ public class CreationNotebookUiComponent extends UiWidget {
             int previewY = y + ENCHANT_PANEL_Y;
             blit(gui, atlas, previewX, previewY, 0, 0, ENCHANT_SLOT_SIZE, ENCHANT_SLOT_SIZE, ENCHANT_ATLAS_W, texH);
             ItemStack preview = previewStack(true);
-            drawItem(gui, preview, previewX + 4, previewY + 4, 16);
+            int previewIcon = 16;
+            int previewPad = Math.max(0, (ENCHANT_SLOT_SIZE - previewIcon) / 2);
+            drawItem(gui, preview, previewX + previewPad, previewY + previewPad, previewIcon);
             boolean hoveringPreview = !formMenuContains(mouseX, mouseY)
                     && contains(mouseX, mouseY, previewX, previewY, ENCHANT_SLOT_SIZE, ENCHANT_SLOT_SIZE);
             if (hoveringPreview && !preview.isEmpty()) {
