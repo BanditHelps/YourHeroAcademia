@@ -3,45 +3,48 @@
 	"animations": {
 		"float.hovering": {
 			"loop": true,
-			"animation_length": 8.0,
+			"animation_length": 8,
 			"bones": {
 				"body": {
-					"rotation": ["0.5 + yha.float_lean() * 92", 0, 0],
-					"position": [0, "math.sin(query.anim_time * 90) * 0.4 * (1 - yha.float_lean())", 0]
+					"rotation": ["0.5 + yha.float_lean() * 80", 0, 0],
+					"position": [0, "math.sin(query.anim_time * 90) * 0.4 * (1 - yha.float_lean()) - 9 * yha.float_lean()", 0]
+				},
+				"head": {
+					"rotation": ["palladium.head_x_rotation() - (0.5 + yha.float_lean() * 80)", "pal.disabled", "pal.disabled"]
 				},
 				"right_arm": {
 					"rotation": [
-						"5.8472 - yha.float_lean() * 95",
-						"23.383 - yha.float_lean() * 10",
-						"17.2626 - yha.float_lean() * 6 + math.sin(query.anim_time * 90) * 3 * (1 - yha.float_lean())"
+						"5.4245 + yha.float_lean() * 2.15",
+						"8.4547 - yha.float_lean() * 5.38",
+						"15.7351 - yha.float_lean() * 5.26 + math.sin(query.anim_time * 90) * 3 * (1 - yha.float_lean())"
 					]
 				},
 				"left_arm": {
 					"rotation": [
-						"4.7647 - yha.float_lean() * 95",
-						"-23.6142 + yha.float_lean() * 10",
-						"-14.5482 + yha.float_lean() * 6 - math.sin(query.anim_time * 90) * 3 * (1 - yha.float_lean())"
+						"4.3737 + yha.float_lean() * 3.24",
+						"-3.6765 + yha.float_lean() * 5.61",
+						"-12.9169 + yha.float_lean() * 2.55 - math.sin(query.anim_time * 90) * 3 * (1 - yha.float_lean())"
 					]
 				},
 				"right_leg": {
 					"rotation": [
-						"4.5 - yha.float_lean() * 92 + math.sin(query.anim_time * 45) * 4 * (1 - yha.float_lean())",
-						"10 - yha.float_lean() * 8",
-						"14 - yha.float_lean() * 10"
+						"3.1449 + yha.float_lean() * 10.5 + math.sin(query.anim_time * 45) * 4 * (1 - yha.float_lean())",
+						"10.5007 - yha.float_lean() * 8",
+						"6.3952 - yha.float_lean() * 11"
 					]
 				},
 				"left_leg": {
 					"rotation": [
-						"-11.024 - yha.float_lean() * 90 + math.cos(query.anim_time * 45) * 4 * (1 - yha.float_lean())",
-						"-10.9499 + yha.float_lean() * 10",
-						"-5.8518 + yha.float_lean() * 12"
+						"-10.9085 + yha.float_lean() * 26 + math.cos(query.anim_time * 45) * 4 * (1 - yha.float_lean())",
+						"-3.5051 + yha.float_lean() * 8.95",
+						"-6.7681 + yha.float_lean() * 2.85"
 					]
 				}
 			}
 		},
 		"float.sitting": {
 			"loop": true,
-			"animation_length": 8.0,
+			"animation_length": 8,
 			"bones": {
 				"body": {
 					"rotation": [-12, 0, 0],

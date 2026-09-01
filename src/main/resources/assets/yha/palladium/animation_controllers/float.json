@@ -9,35 +9,20 @@
 		"off": {
 			"animation": "palladium:empty",
 			"transitions": {
-				"hovering": {
-					"type": "palladium:ability_enabled",
-					"ability": "yha:float#float_toggle"
-				}
+				"hovering": "yha.float_pose()"
 			}
 		},
 		"hovering": {
 			"animation": "#hover",
 			"transitions": {
-				"off": {
-					"type": "palladium:not",
-					"conditions": {
-						"type": "palladium:ability_enabled",
-						"ability": "yha:float#float_toggle"
-					}
-				},
+				"off": "yha.float_pose() == false",
 				"sitting": "yha.float_sitting()"
 			}
 		},
 		"sitting": {
 			"animation": "#sit",
 			"transitions": {
-				"off": {
-					"type": "palladium:not",
-					"conditions": {
-						"type": "palladium:ability_enabled",
-						"ability": "yha:float#float_toggle"
-					}
-				},
+				"off": "yha.float_pose() == false",
 				"hovering": "yha.float_sitting() == false"
 			}
 		}

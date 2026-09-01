@@ -14,10 +14,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class FloatAnimPose {
 
     public static final double STILL_THRESHOLD = 0.02d;
-    public static final double LEAN_START_SPEED = 0.02d;
+    public static final double LEAN_START_SPEED = 0.2d;
     public static final double LEAN_FULL_SPEED = FloatPhysics.FIREWORK_MAX_SPEED * 2.0d;
     public static final double SIT_BREAK_SPEED = FloatPhysics.FIREWORK_IMPULSE;
-    public static final int SIT_DELAY_TICKS = 50;
+    public static final int SIT_DELAY_TICKS = 300;
     private static final double LEAN_SMOOTH = 0.25d;
 
     private static final Map<UUID, State> STATES = new ConcurrentHashMap<>();
@@ -56,7 +56,7 @@ public final class FloatAnimPose {
             state.lastTick = entity.tickCount;
             state.lean += (target - state.lean) * LEAN_SMOOTH;
 
-            if (entity.hurtTime > 0 || horiz > SIT_BREAK_SPEED) {
+            if (entity.isFallFlying() || entity.hurtTime > 0 || horiz > SIT_BREAK_SPEED) {
                 state.sitting = false;
                 state.stillSinceTick = -1;
             } else if (horiz < STILL_THRESHOLD) {

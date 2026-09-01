@@ -1,6 +1,7 @@
 package com.github.bandithelps.queries;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.abilities.floatquirk.FloatAbility;
 import com.github.bandithelps.abilities.floatquirk.FloatAnimPose;
 import com.github.bandithelps.attributes.QuirkAttributes;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
@@ -60,6 +61,7 @@ public class YourHeroAcademiaQueries implements ObjectValue {
         this.functions.put("armor_toughness_current", this::armor_toughness_current);
         this.functions.put("float_lean", this::float_lean);
         this.functions.put("float_sitting", this::float_sitting);
+        this.functions.put("float_pose", this::float_pose);
     }
 
     public @NotNull Value get(@NonNull String name) {
@@ -236,6 +238,17 @@ public class YourHeroAcademiaQueries implements ObjectValue {
             return FloatAnimPose.isSitting(living) ? 1.0d : 0.0d;
         }
         return 0;
+    }
+
+    @Binding({"float_pose"})
+    public double float_pose() {
+        if (!(context.entity() instanceof LivingEntity living)) {
+            return 0;
+        }
+        if (!FloatAbility.isActive(living) || living.isFallFlying()) {
+            return 0;
+        }
+        return 1;
     }
 
     @Override
