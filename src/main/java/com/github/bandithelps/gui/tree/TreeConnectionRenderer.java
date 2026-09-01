@@ -60,7 +60,10 @@ public final class TreeConnectionRenderer {
     }
 
     public static void drawHandle(GuiGraphicsExtractor graphics, int x, int y, boolean hovered) {
-        int fill = hovered ? 0xFFFFFF66 : 0xFF00FFFF;
+        drawHandle(graphics, x, y, hovered ? 0xFFFFFF66 : 0xFF00FFFF);
+    }
+
+    public static void drawHandle(GuiGraphicsExtractor graphics, int x, int y, int fill) {
         graphics.fill(x - 3, y - 3, x + 4, y + 4, 0xFF000000);
         graphics.fill(x - 2, y - 2, x + 3, y + 3, fill);
     }
