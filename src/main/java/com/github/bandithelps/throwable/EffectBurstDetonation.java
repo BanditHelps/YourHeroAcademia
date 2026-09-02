@@ -62,7 +62,7 @@ public final class EffectBurstDetonation implements ThrowableDetonation {
                     appliedDuration = Math.max(8, Math.round(duration * exposure));
                     appliedAmplifier = amplifier + lookAwayAmplifier(exposure);
                 }
-                living.addEffect(new MobEffectInstance(ModEffects.FLASHBANGED, appliedDuration, appliedAmplifier, false, false, true));
+                living.addEffect(new MobEffectInstance(ModEffects.FLASHBANGED, appliedDuration, appliedAmplifier, false, false, false));
             }
         }
 
