@@ -84,8 +84,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          0.9,
-          -2.1
+          0.8,
+          -3.5
         ]
       },
       "state": {
@@ -124,8 +124,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          1.5,
-          -2.1
+          1.4,
+          -3.5
         ]
       },
       "state": {
@@ -164,8 +164,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          2.1,
-          -2.1
+          2,
+          -3.5
         ]
       },
       "state": {
@@ -204,8 +204,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          2.7,
-          -2.1
+          2.6,
+          -3.5
         ]
       },
       "state": {
@@ -233,6 +233,20 @@
         "gui_position": [
           0.8,
           0.7
+        ],
+        "gui_connection": [
+          [
+            0.2,
+            0.1
+          ],
+          [
+            0.4,
+            0.1
+          ],
+          [
+            0.4,
+            0.7
+          ]
         ]
       },
       "state": {
@@ -258,8 +272,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          0.8,
-          2.35
+          1.45,
+          2.7
         ]
       },
       "state": {
@@ -285,22 +299,22 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          1.5,
-          2.35
+          2.15,
+          2.7
         ],
         "gui_connection": {
           "cr_know_geo_2": [
             [
               0.2,
-              3.4
+              3.9
             ],
             [
-              1.5,
-              3.4
+              2.15,
+              3.9
             ],
             [
-              1.5,
-              2.55
+              2.15,
+              2.9
             ]
           ]
         }
@@ -334,28 +348,32 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          2.2,
-          2.35
+          2.85,
+          2.7
         ],
         "gui_connection": {
           "cr_know_geo_3": [
             [
               0.2,
-              4.2
+              4.7
             ],
             [
-              2.2,
-              4.2
+              0.85,
+              4.7
             ],
             [
-              2.2,
-              2.65
+              2.85,
+              4.7
+            ],
+            [
+              2.85,
+              3
             ]
           ],
           "cr_know_armor_3": [
             [
-              1.85,
-              2.35
+              2.5,
+              2.7
             ]
           ]
         }
@@ -389,22 +407,26 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          2.9,
-          2.35
+          3.55,
+          2.7
         ],
         "gui_connection": {
           "cr_know_geo_4": [
             [
               0.2,
-              5
+              5.5
             ],
             [
-              2.9,
-              5
+              0.85,
+              5.5
             ],
             [
-              2.9,
-              2.55
+              3.55,
+              5.5
+            ],
+            [
+              3.55,
+              2.9
             ]
           ]
         }
@@ -438,22 +460,26 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          3.6,
-          2.35
+          4.25,
+          2.7
         ],
         "gui_connection": {
           "cr_know_geo_5": [
             [
               0.2,
-              5.7
+              6.35
             ],
             [
-              3.6,
-              5.7
+              0.85,
+              6.35
             ],
             [
-              3.6,
-              2.75
+              4.25,
+              6.35
+            ],
+            [
+              4.25,
+              3.1
             ]
           ]
         }
@@ -492,15 +518,15 @@
         ],
         "gui_connection": [
           [
-            0.2,
-            0.5
+            0.1,
+            -0.2
           ],
           [
-            0.4,
-            0.5
+            0.1,
+            -0.8
           ],
           [
-            0.4,
+            1.5,
             -0.8
           ]
         ]
@@ -528,26 +554,30 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          2.9,
-          1
+          3.6,
+          1.1
         ],
         "gui_connection": {
           "cr_know_geo_1": [
             [
-              0.2,
-              2.2
+              0.1,
+              2.1
             ],
             [
-              0.4,
-              2.2
-            ],
-            [
-              0.4,
-              1.1
+              0.1,
+              1.2
             ],
             [
               2.7,
-              1.1
+              1.2
+            ],
+            [
+              3.2,
+              1.2
+            ],
+            [
+              3.4,
+              1.2
             ]
           ]
         }
@@ -581,8 +611,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          6,
-          1
+          6.7,
+          1.1
         ]
       },
       "state": {
@@ -608,21 +638,21 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          3.6,
-          1.4
+          4.3,
+          1.5
         ],
         "gui_connection": [
           [
-            2.9,
-            1.1
+            3.6,
+            1.2
           ],
           [
-            2.9,
-            1.4
+            3.6,
+            1.5
           ],
           [
-            3.2,
-            1.4
+            3.9,
+            1.5
           ]
         ]
       },
@@ -649,21 +679,21 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          3.6,
-          0.6
+          4.3,
+          0.7
         ],
         "gui_connection": [
           [
-            2.9,
-            0.8
+            3.6,
+            0.9
           ],
           [
-            2.9,
-            0.6
+            3.6,
+            0.7
           ],
           [
-            3.2,
-            0.6
+            3.9,
+            0.7
           ]
         ]
       },
@@ -690,21 +720,21 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          4.7,
-          1.4
+          5.4,
+          1.5
         ],
         "gui_connection": [
           [
-            3.1,
-            1.1
+            3.8,
+            1.2
           ],
           [
-            4.05,
-            1.1
+            4.75,
+            1.2
           ],
           [
-            4.05,
-            1.4
+            4.75,
+            1.5
           ]
         ]
       },
@@ -731,21 +761,21 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          4.7,
-          0.6
+          5.4,
+          0.7
         ],
         "gui_connection": [
           [
-            3.1,
-            0.9
+            3.8,
+            1
           ],
           [
-            4.05,
-            0.9
+            4.75,
+            1
           ],
           [
-            4.05,
-            0.6
+            4.75,
+            0.7
           ]
         ]
       },
@@ -840,40 +870,40 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          4.7,
-          2.35
+          6.2,
+          2.7
         ],
         "gui_connection": {
           "cr_know_armor_2": [
             [
-              0.8,
-              1.9
+              1.45,
+              2.25
             ],
             [
-              4.2,
-              1.9
+              4.85,
+              2.25
             ],
             [
-              4.2,
-              2.2
+              6.2,
+              2.25
             ],
             [
-              4.5,
-              2.2
+              6.2,
+              2.5
             ]
           ],
           "cr_know_tool_1": [
             [
-              1.15,
-              2.05
+              1.8,
+              2.4
             ],
             [
-              4,
-              2.05
+              4.65,
+              2.4
             ],
             [
-              4,
-              2.35
+              4.65,
+              2.7
             ]
           ]
         }
@@ -907,8 +937,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          4.7,
-          2.95
+          6.2,
+          3.3
         ]
       },
       "state": {
@@ -934,8 +964,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          4.7,
-          3.55
+          6.2,
+          3.9
         ]
       },
       "state": {
@@ -961,8 +991,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          4.7,
-          4.15
+          6.2,
+          4.5
         ]
       },
       "state": {
@@ -988,8 +1018,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          4.7,
-          4.75
+          6.2,
+          5.1
         ]
       },
       "state": {
@@ -1015,8 +1045,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          4.7,
-          5.35
+          6.2,
+          5.7
         ]
       },
       "state": {
@@ -1042,8 +1072,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          4.7,
-          5.95
+          6.2,
+          6.3
         ]
       },
       "state": {
@@ -1069,13 +1099,13 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          5.4,
-          5.95
+          6.9,
+          6.3
         ],
         "gui_connection": [
           [
-            4.9,
-            5.95
+            6.4,
+            6.3
           ]
         ]
       },
@@ -1102,13 +1132,13 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          4.0,
-          5.95
+          5.5,
+          6.3
         ],
         "gui_connection": [
           [
-            4.5,
-            5.95
+            6,
+            6.3
           ]
         ]
       },
@@ -1135,8 +1165,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          5.4,
-          1
+          6.1,
+          1.1
         ]
       },
       "state": {
@@ -1163,24 +1193,24 @@
         "hidden_in_bar": true,
         "gui_position": [
           -2.1,
-          -1.3
+          -2.1
         ],
         "gui_connection": [
           [
             -0.2,
-            -0.7
+            -1.5
           ],
           [
             -1.2,
-            -0.7
+            -1.5
           ],
           [
             -1.6,
-            -0.7
+            -1.5
           ],
           [
             -1.6,
-            -1.3
+            -2.1
           ]
         ]
       },
@@ -1208,7 +1238,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -2.7,
-          -1.3
+          -2.1
         ]
       },
       "state": {
@@ -1235,7 +1265,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -3.3,
-          -1.3
+          -2.1
         ]
       },
       "state": {
@@ -1265,24 +1295,24 @@
         "hidden_in_bar": true,
         "gui_position": [
           -2.1,
-          0.1
+          -0.7
         ],
         "gui_connection": [
           [
             -0.2,
-            -0.5
+            -1.3
           ],
           [
             -1.2,
-            -0.5
+            -1.3
           ],
           [
             -1.6,
-            -0.5
+            -1.3
           ],
           [
             -1.6,
-            0.1
+            -0.7
           ]
         ]
       },
@@ -1310,7 +1340,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -2.7,
-          0.1
+          -0.7
         ]
       },
       "state": {
@@ -1337,7 +1367,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -3.3,
-          0.1
+          -0.7
         ]
       },
       "state": {
@@ -1364,7 +1394,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -3.9,
-          0.1
+          -0.7
         ]
       },
       "state": {
@@ -1391,7 +1421,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           0,
-          -0.6
+          -1.4
         ]
       },
       "state": {
@@ -1411,35 +1441,35 @@
         "hidden_in_bar": true,
         "gui_position": [
           -2.7,
-          -0.6
+          -1.4
         ],
         "gui_connection": {
           "cr_know_wood_1": [
             [
               -2.1,
-              -0.1
+              -0.9
             ],
             [
               -2.1,
-              -0.5
+              -1.3
             ],
             [
               -2.5,
-              -0.5
+              -1.3
             ]
           ],
           "cr_know_mason_1": [
             [
               -2.1,
-              -1.1
+              -1.9
             ],
             [
               -2.1,
-              -0.7
+              -1.5
             ],
             [
               -2.5,
-              -0.7
+              -1.5
             ]
           ]
         }
@@ -1474,7 +1504,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -3.9,
-          -0.6
+          -1.4
         ]
       },
       "state": {
@@ -1501,7 +1531,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -3.3,
-          -0.6
+          -1.4
         ]
       },
       "state": {
@@ -1532,7 +1562,11 @@
         ],
         "gui_connection": [
           [
-            -0.2,
+            -0.1,
+            0.2
+          ],
+          [
+            -0.1,
             0.8
           ],
           [
@@ -1628,8 +1662,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -0.9,
-          -2.1
+          -0.7,
+          -3.5
         ]
       },
       "state": {
@@ -1655,8 +1689,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -1.5,
-          -2.1
+          -1.3,
+          -3.5
         ]
       },
       "state": {
@@ -1682,8 +1716,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -2.1,
-          -2.1
+          -1.9,
+          -3.5
         ]
       },
       "state": {
@@ -1709,8 +1743,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -2.7,
-          -2.1
+          -2.5,
+          -3.5
         ]
       },
       "state": {
@@ -1736,8 +1770,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          4.7,
-          6.6
+          6.2,
+          6.95
         ]
       },
       "state": {
@@ -1764,7 +1798,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -4.6,
-          -0.6
+          -1.4
         ]
       },
       "state": {
@@ -1795,14 +1829,6 @@
         ],
         "gui_connection": [
           [
-            0.2,
-            0.6
-          ],
-          [
-            0.5,
-            0.6
-          ],
-          [
             0.5,
             0
           ]
@@ -1832,7 +1858,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           0,
-          0.7
+          0
         ]
       },
       "state": {
@@ -1885,8 +1911,8 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          1.15,
-          2.95
+          1.8,
+          3.3
         ],
         "gui_connection": [
           [
@@ -1894,16 +1920,16 @@
             2.4
           ],
           [
-            0.3,
+            0.5,
             2.4
           ],
           [
-            0.3,
-            2.6
+            0.5,
+            3.3
           ],
           [
-            0.3,
-            2.95
+            0.95,
+            3.3
           ]
         ]
       },
@@ -1931,7 +1957,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           0,
-          3.5
+          4
         ],
         "gui_connection": [
           [
@@ -1963,22 +1989,26 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          1.85,
-          2.95
+          2.5,
+          3.3
         ],
         "gui_connection": {
           "cr_know_geo_2": [
             [
               0.2,
-              3.6
+              4.1
             ],
             [
-              1.85,
-              3.6
+              1.9,
+              4.1
             ],
             [
-              1.85,
-              3.15
+              2.5,
+              4.1
+            ],
+            [
+              2.5,
+              3.5
             ]
           ]
         }
@@ -2012,18 +2042,22 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          2.55,
-          2.95
+          3.2,
+          3.3
         ],
         "gui_connection": {
           "cr_know_geo_3": [
             [
               0.2,
-              4.4
+              4.9
             ],
             [
-              2.55,
-              4.4
+              0.85,
+              4.9
+            ],
+            [
+              3.2,
+              4.9
             ]
           ]
         }
@@ -2058,12 +2092,12 @@
         "hidden_in_bar": true,
         "gui_position": [
           0,
-          4.3
+          4.8
         ],
         "gui_connection": [
           [
             0,
-            3.9
+            4.4
           ]
         ]
       },
@@ -2091,12 +2125,12 @@
         "hidden_in_bar": true,
         "gui_position": [
           0,
-          5.1
+          5.6
         ],
         "gui_connection": [
           [
             0,
-            4.7
+            5.2
           ]
         ]
       },
@@ -2123,22 +2157,26 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          3.25,
-          2.95
+          3.9,
+          3.3
         ],
         "gui_connection": {
           "cr_know_geo_4": [
             [
               0.2,
-              5.2
+              5.7
             ],
             [
-              1.8,
-              5.2
+              0.85,
+              5.7
             ],
             [
-              3.25,
-              5.2
+              2.45,
+              5.7
+            ],
+            [
+              3.9,
+              5.7
             ]
           ]
         }
@@ -2173,12 +2211,12 @@
         "hidden_in_bar": true,
         "gui_position": [
           0,
-          5.8
+          6.45
         ],
         "gui_connection": [
           [
             0,
-            5.5
+            6.15
           ]
         ]
       },
@@ -2205,22 +2243,26 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          3.95,
-          2.95
+          4.6,
+          3.3
         ],
         "gui_connection": {
           "cr_know_geo_5": [
             [
               0.2,
-              5.9
+              6.55
             ],
             [
-              3.95,
-              5.9
+              0.85,
+              6.55
             ],
             [
-              3.95,
-              3.3
+              4.6,
+              6.55
+            ],
+            [
+              4.6,
+              3.65
             ]
           ]
         }
@@ -2254,20 +2296,12 @@
         "hidden_in_gui": false,
         "hidden_in_bar": true,
         "gui_position": [
-          -0.7,
+          -1.6,
           0
         ],
         "gui_connection": [
           [
             -0.2,
-            0.6
-          ],
-          [
-            -0.3,
-            0.6
-          ],
-          [
-            -0.3,
             0
           ]
         ]
@@ -2328,7 +2362,7 @@
         "hidden_in_gui": false,
         "hidden_in_bar": false,
         "gui_position": [
-          1.5,
+          1.4,
           -2.1
         ],
         "list_index": 2
@@ -2360,7 +2394,7 @@
         "hidden_in_gui": false,
         "hidden_in_bar": false,
         "gui_position": [
-          2.2,
+          2,
           -2.1
         ],
         "list_index": 3
@@ -2425,7 +2459,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -0.7,
-          3.5
+          4
         ]
       },
       "state": {
@@ -2458,7 +2492,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -0.7,
-          4.3
+          4.8
         ]
       },
       "state": {
@@ -2491,7 +2525,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -0.7,
-          5.1
+          5.6
         ]
       },
       "state": {
@@ -2524,7 +2558,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -0.7,
-          5.8
+          6.45
         ]
       },
       "state": {
@@ -2584,7 +2618,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -1.7,
-          5.8
+          6.45
         ]
       },
       "state": {
@@ -2611,7 +2645,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -1.7,
-          4.3
+          4.8
         ]
       },
       "state": {
@@ -2638,7 +2672,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -5.3,
-          -0.6
+          -1.4
         ]
       },
       "state": {
@@ -2665,7 +2699,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -2.5,
-          4.3
+          4.8
         ]
       },
       "state": {
@@ -2692,7 +2726,7 @@
         "hidden_in_gui": false,
         "hidden_in_bar": false,
         "gui_position": [
-          2.9,
+          2.6,
           -2.1
         ],
         "list_index": 1
@@ -2724,7 +2758,7 @@
         "hidden_in_gui": false,
         "hidden_in_bar": false,
         "gui_position": [
-          3.6,
+          3.2,
           -2.1
         ],
         "list_index": 2
@@ -2756,7 +2790,7 @@
         "hidden_in_gui": false,
         "hidden_in_bar": false,
         "gui_position": [
-          4.3,
+          3.8,
           -2.1
         ],
         "list_index": 3
@@ -2788,20 +2822,20 @@
         "hidden_in_bar": true,
         "gui_position": [
           -2.1,
-          1
+          0.6
         ],
         "gui_connection": [
           [
+            -0.2,
+            0.1
+          ],
+          [
             -0.8,
-            0.7
+            0.1
           ],
           [
-            -1.7,
-            0.7
-          ],
-          [
-            -1.7,
-            1
+            -0.8,
+            0.6
           ]
         ]
       },
@@ -2829,7 +2863,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -2.1,
-          1.55
+          1.2
         ]
       },
       "state": {
@@ -2856,7 +2890,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -2.7,
-          1
+          0.6
         ]
       },
       "state": {
@@ -2883,7 +2917,7 @@
         "hidden_in_bar": true,
         "gui_position": [
           -3.3,
-          1
+          0.6
         ]
       },
       "state": {
