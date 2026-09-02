@@ -12,6 +12,7 @@ import com.github.bandithelps.entities.CreationProductEntity;
 import com.github.bandithelps.network.CreationCreatePayload;
 import com.github.bandithelps.utils.quirk.QuirkFactorUtil;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,11 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.RandomSource;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -66,6 +71,7 @@ public final class CreationUtil {
     public static final String FLETCHER_ARROW_EFFECTS = "cr_know_fletcher_arrow_effects";
     public static final String DYE_KNOWLEDGE = "cr_know_dye";
     public static final String ENCHANT_CONFLICTS = "cr_know_enchant_conflicts";
+    public static final String ENCHANT_EVOLVE = "cr_know_enchant_evolve";
     public static final int CONFLICTING_ENCHANT_COST_MULTIPLIER = 2;
     public static final int CUSTOM_NAME_MAX_LENGTH = 50;
 
@@ -98,6 +104,38 @@ public final class CreationUtil {
 
     public static boolean allowsConflictingEnchants(LivingEntity entity) {
         return isAbilityUnlocked(entity, ENCHANT_CONFLICTS);
+    }
+
+    public static boolean allowsEnchantEvolve(LivingEntity entity) {
+        return isAbilityUnlocked(entity, ENCHANT_EVOLVE);
+    }
+
+    public static boolean evolveEnchantLevels(RandomSource random, Map<Identifier, Integer> levels) {
+        if (random == null || levels == null || levels.isEmpty()) {
+            return false;
+        }
+        if (random.nextDouble() < Config.CREATION_ENCHANT_RAINBOW_CHANCE.get()) {
+            bumpEnchantLevels(levels);
+            return true;
+        }
+        double evolveChance = Config.CREATION_ENCHANT_EVOLVE_CHANCE.get();
+        for (Map.Entry<Identifier, Integer> entry : levels.entrySet()) {
+            if (entry.getValue() == null || entry.getValue() <= 0) {
+                continue;
+            }
+            if (random.nextDouble() < evolveChance) {
+                entry.setValue(entry.getValue() + 1);
+            }
+        }
+        return false;
+    }
+
+    private static void bumpEnchantLevels(Map<Identifier, Integer> levels) {
+        for (Map.Entry<Identifier, Integer> entry : levels.entrySet()) {
+            if (entry.getValue() != null && entry.getValue() > 0) {
+                entry.setValue(entry.getValue() + 1);
+            }
+        }
     }
 
     public static int maxPotionAmplifier(LivingEntity entity) {
@@ -247,30 +285,6 @@ public final class CreationUtil {
         return result;
     }
 
-    public static List<CreationEnchantEntry> researchableEnchantEntries(LivingEntity entity) {
-        List<CreationEnchantEntry> result = new ArrayList<>();
-        for (CreationEnchantEntry entry : CreationEnchantCatalog.getInstance().allEntries()) {
-            if (isEnchantResearchable(entity, entry)) {
-                result.add(entry);
-            }
-        }
-        return result;
-    }
-
-    public static List<CreationPotionEntry> researchablePotionEntries(LivingEntity entity) {
-        List<CreationPotionEntry> result = new ArrayList<>();
-        for (CreationPotionEntry entry : CreationPotionCatalog.getInstance().allEntries()) {
-            if (isPotionResearchable(entity, entry)) {
-                result.add(entry);
-            }
-        }
-        return result;
-    }
-
-    public static int enchantCost(LivingEntity entity, CreationEnchantEntry entry, int level) {
-        return enchantCost(entity, entry, level, false);
-    }
-
     public static int enchantCost(LivingEntity entity, CreationEnchantEntry entry, int level, boolean conflicting) {
         if (entry == null || level <= 0) {
             return 0;
@@ -287,17 +301,6 @@ public final class CreationUtil {
             return Config.CREATION_DEFAULT_LIPID_COST.get();
         }
         return Math.max(1, entry.lipidCostFor(extraAmplifier, durationSeconds, form));
-    }
-
-    public static List<CreationEntry> unlockedEntries(Player player, CreationTab tab) {
-        CreationData data = CreationAttachments.get(player);
-        List<CreationEntry> result = new ArrayList<>();
-        for (CreationEntry entry : CreationCatalog.getInstance().allEntries()) {
-            if (entry.tab() == tab && data.isUnlocked(entry.itemId())) {
-                result.add(entry);
-            }
-        }
-        return result;
     }
 
     public static boolean trySacrifice(ServerPlayer player, Identifier itemId) {
@@ -503,10 +506,6 @@ public final class CreationUtil {
         return CreationPotions.displayName(effectId);
     }
 
-    public static boolean tryCreate(ServerPlayer player, Identifier itemId) {
-        return tryCreate(player, itemId, List.of());
-    }
-
     private static boolean canCreateKnownItem(ServerPlayer player, CreationData data, CreationEntry parent, Identifier itemId) {
         if (parent == null || itemId == null || data == null || !parent.isKnownForm(itemId) || !data.isUnlocked(parent.itemId())) {
             return false;
@@ -592,8 +591,14 @@ public final class CreationUtil {
             return false;
         }
         setLipids(player, getLipids(player) - cost);
+        boolean rainbow = allowsEnchantEvolve(player) && !levels.isEmpty()
+                && evolveEnchantLevels(player.getRandom(), levels);
         CreationEnchantments.apply(created, player.registryAccess(), levels);
-        applyCustomName(created, customName);
+        if (rainbow) {
+            applyRainbowName(created, customName);
+        } else {
+            applyCustomName(created, customName);
+        }
         spawnCreatedItem(serverLevel, player, created);
         CreationSyncEvents.syncNow(player);
         return true;
@@ -741,6 +746,110 @@ public final class CreationUtil {
             return;
         }
         stack.set(DataComponents.CUSTOM_NAME, Component.literal(cleaned));
+    }
+
+    private static void applyRainbowName(ItemStack stack, String customName) {
+        if (stack == null || stack.isEmpty()) {
+            return;
+        }
+        String cleaned = sanitizeCustomName(customName);
+        if (cleaned.isEmpty()) {
+            cleaned = stack.getHoverName().getString();
+        }
+        if (cleaned.isEmpty()) {
+            return;
+        }
+        stack.set(DataComponents.CUSTOM_NAME, rainbowComponent(cleaned));
+    }
+
+    public static Component rainbowComponent(String text) {
+        if (text == null || text.isEmpty()) {
+            return Component.empty();
+        }
+        MutableComponent result = Component.empty();
+        int length = text.length();
+        for (int i = 0; i < length; i++) {
+            float hue = length <= 1 ? 0.83f : (float) i / (length - 1);
+            int rgb = Mth.hsvToRgb(hue, 1.0f, 1.0f) & 0xFFFFFF;
+            result.append(Component.literal(String.valueOf(text.charAt(i)))
+                    .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(rgb))));
+        }
+        return result;
+    }
+
+    public static List<CreationKnowledgeRecipe> lockedResearchableRecipes(ServerPlayer player) {
+        if (player == null || !hasCreation(player)) {
+            return List.of();
+        }
+        CreationData data = CreationAttachments.get(player);
+        List<CreationKnowledgeRecipe> result = new ArrayList<>();
+        for (CreationEntry entry : CreationCatalog.getInstance().allEntries()) {
+            if (isResearchable(player, entry) && !data.isUnlocked(entry.itemId())) {
+                result.add(CreationKnowledgeRecipe.item(entry.itemId()));
+            }
+        }
+        for (CreationEnchantEntry entry : CreationEnchantCatalog.getInstance().allEntries()) {
+            if (isEnchantResearchable(player, entry) && !data.isEnchantUnlocked(entry.enchantId())) {
+                result.add(CreationKnowledgeRecipe.enchant(entry.enchantId()));
+            }
+        }
+        for (CreationPotionEntry entry : CreationPotionCatalog.getInstance().allEntries()) {
+            if (isPotionResearchable(player, entry) && !data.isPotionUnlocked(entry.effectId())) {
+                result.add(CreationKnowledgeRecipe.potion(entry.effectId()));
+            }
+        }
+        return result;
+    }
+
+    public static List<CreationKnowledgeRecipe> rollKnowledgeChoices(ServerPlayer player, int count) {
+        List<CreationKnowledgeRecipe> pool = new ArrayList<>(lockedResearchableRecipes(player));
+        if (pool.isEmpty() || count <= 0) {
+            return List.of();
+        }
+        for (int i = pool.size() - 1; i > 0; i--) {
+            int j = player.getRandom().nextInt(i + 1);
+            Collections.swap(pool, i, j);
+        }
+        int limit = Math.min(count, pool.size());
+        return List.copyOf(pool.subList(0, limit));
+    }
+
+    public static boolean tryLearnKnowledgeRecipe(ServerPlayer player, CreationKnowledgeRecipe recipe) {
+        if (player == null || recipe == null || recipe.id() == null || !hasCreation(player)) {
+            return false;
+        }
+        CreationData data = CreationAttachments.get(player);
+        Component name;
+        switch (recipe.kind()) {
+            case ENCHANT -> {
+                CreationEnchantEntry entry = CreationEnchantCatalog.getInstance().get(recipe.id()).orElse(null);
+                if (!isEnchantResearchable(player, entry) || data.isEnchantUnlocked(recipe.id())) {
+                    return false;
+                }
+                data.unlockEnchant(recipe.id());
+                name = CreationEnchantments.displayName(player.registryAccess(), recipe.id());
+            }
+            case POTION -> {
+                CreationPotionEntry entry = CreationPotionCatalog.getInstance().get(recipe.id()).orElse(null);
+                if (!isPotionResearchable(player, entry) || data.isPotionUnlocked(recipe.id())) {
+                    return false;
+                }
+                data.unlockPotion(recipe.id());
+                name = potionDisplayName(recipe.id());
+            }
+            default -> {
+                CreationEntry entry = CreationCatalog.getInstance().get(recipe.id()).orElse(null);
+                if (!isResearchable(player, entry) || data.isUnlocked(recipe.id())) {
+                    return false;
+                }
+                data.unlock(recipe.id());
+                name = CreationCatalog.stackOf(recipe.id()).getHoverName();
+            }
+        }
+        player.level().playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.8f, 1.2f);
+        player.sendSystemMessage(Component.translatable("gui.yha.creation.researched", name));
+        CreationSyncEvents.syncNow(player);
+        return true;
     }
 
     public static void spawnCreatedItem(ServerLevel level, ServerPlayer player, ItemStack stack) {

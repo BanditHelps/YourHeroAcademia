@@ -16,7 +16,9 @@ public enum CreationGearSlot {
     SWORD,
     SHIELD,
     RANGED,
-    HEAVY;
+    HEAVY,
+    SHEARS,
+    FISHING_ROD;
 
     public static CreationGearSlot of(String itemId) {
         String path = pathOf(itemId);
@@ -58,6 +60,12 @@ public enum CreationGearSlot {
         }
         if (path.contains("spear") || path.equals("mace") || path.endsWith("_mace")) {
             return HEAVY;
+        }
+        if (path.equals("shears")) {
+            return SHEARS;
+        }
+        if (path.equals("fishing_rod")) {
+            return FISHING_ROD;
         }
         return null;
     }

@@ -24,6 +24,7 @@
   "item.yha.gene_vial": "Gene Vial",
   "item.yha.dna_injector": "DNA Injector",
   "item.yha.genetic_slop": "Genetic Slop",
+  "item.yha.book_of_knowledge": "Book of Knowledge",
 
   "effect.yha.smoke_blind": "Smoke Blindness",
   "effect.yha.flashbanged": "Flashbanged",
@@ -103,6 +104,10 @@
   "ability.yha.smoke_canister_charge.max_tier": "You don't have the strength to compress the smoke further",
   "gui.yha.upgrade_point": "Upgrade Point",
 
+  "gui.yha.creation.book.title": "Book of Knowledge",
+  "gui.yha.creation.book.hint": "Choose one recipe to learn.",
+  "gui.yha.creation.book.cannot_read": "You cannot make sense of this book.",
+  "gui.yha.creation.book.nothing_to_learn": "There is nothing left in this book that you can learn.",
   "gui.yha.creation.need_quirk": "You don't understand this table.",
   "gui.yha.creation.missing_sacrifice": "You don't have that item to study.",
   "gui.yha.creation.researched": "You now understand %s.",

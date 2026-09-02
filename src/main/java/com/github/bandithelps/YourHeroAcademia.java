@@ -32,11 +32,13 @@ import com.github.bandithelps.gene.GeneRegistry;
 import com.github.bandithelps.gene.combination.CombinationManager;
 import com.github.bandithelps.gui.menu.ModMenus;
 import com.github.bandithelps.gui.actions.YhaDialogActions;
+import com.github.bandithelps.items.BookOfKnowledgeItem;
 import com.github.bandithelps.items.SmokeCanisterItem;
 import com.github.bandithelps.items.TissueExtractorItem;
 import com.github.bandithelps.items.TissueSampleItem;
 import com.github.bandithelps.items.GeneVialItem;
 import com.github.bandithelps.items.DNAInjectorItem;
+import com.github.bandithelps.loot.ModLootModifiers;
 import com.github.bandithelps.throwable.EffectBurstDetonation;
 import com.github.bandithelps.throwable.ExplosionDetonation;
 import com.github.bandithelps.throwable.FuseMode;
@@ -178,6 +180,9 @@ public final class YourHeroAcademia {
     public static final DeferredItem<Item> GENETIC_SLOP = ITEMS.register("genetic_slop", () -> new Item(new Item.Properties()
             .stacksTo(64)
             .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "genetic_slop")))));
+    public static final DeferredItem<Item> BOOK_OF_KNOWLEDGE = ITEMS.register("book_of_knowledge", () -> new BookOfKnowledgeItem(new Item.Properties()
+            .stacksTo(1)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "book_of_knowledge")))));
     public static final DeferredItem<BlockItem> SAMPLE_REFRIGERATOR = ITEMS.registerSimpleBlockItem("sample_refrigerator", ModBlocks.EXAMPLE_BLOCK);
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> YHA_MAIN_TAB = CREATIVE_MODE_TABS.register("yha_main_tab", () -> CreativeModeTab.builder()
@@ -204,6 +209,7 @@ public final class YourHeroAcademia {
                 output.accept(GENE_VIAL.get());
                 output.accept(DNA_INJECTOR.get());
                 output.accept(GENETIC_SLOP.get());
+                output.accept(BOOK_OF_KNOWLEDGE.get());
                 output.accept(SAMPLE_REFRIGERATOR.get());
             }).build());
 
@@ -241,6 +247,7 @@ public final class YourHeroAcademia {
         ModRecipeSerializers.RECIPE_SERIALIZERS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModMenus.MENUS.register(modEventBus);
+        ModLootModifiers.SERIALIZERS.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in.
         // Note that this is necessary if and only if we want *this* class (YourHeroAcademia) to respond directly to events.

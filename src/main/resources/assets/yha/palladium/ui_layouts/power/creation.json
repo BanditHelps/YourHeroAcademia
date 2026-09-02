@@ -43,7 +43,7 @@
     },
     {
       "width": 70,
-      "height": 25,
+      "height": 48,
       "padding": 2,
       "background": {
         "type": "palladium:sprite",
@@ -54,8 +54,9 @@
           "type": "palladium:icon",
           "icon": "minecraft:command_block",
           "properties": {
-            "alignment": "middle_left",
+            "alignment": "top_left",
             "x": 4,
+            "y": 4,
             "width": 16,
             "height": 16
           }
@@ -63,9 +64,28 @@
         {
           "type": "yha:upgrade_points",
           "properties": {
-            "alignment": "middle_left",
+            "alignment": "top_left",
             "x": 24,
-            "y": 6
+            "y": 8
+          }
+        },
+        {
+          "type": "palladium:icon",
+          "icon": "yha:textures/gui/creation/lipid_icon.png",
+          "properties": {
+            "alignment": "top_left",
+            "x": 4,
+            "y": 26,
+            "width": 16,
+            "height": 16
+          }
+        },
+        {
+          "type": "yha:max_lipids",
+          "properties": {
+            "alignment": "top_left",
+            "x": 24,
+            "y": 30
           }
         }
       ]

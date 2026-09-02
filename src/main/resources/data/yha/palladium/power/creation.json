@@ -58,6 +58,168 @@
           0,
           0
         ]
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:creation#cr_max_lipids_1"
+            }
+          ]
+        }
+      }
+    },
+    "cr_max_lipids_1": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "max_lipids",
+      "value": 1500,
+      "overwrite": true,
+      "properties": {
+        "title": "Lipid Capacity - I",
+        "description": "Your body can now store up to 1500 lipids.",
+        "icon": "yha:textures/gui/creation/lipid_icon.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0.9,
+          -2.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "quirk_info"
+          }
+        },
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:creation#cr_max_lipids_2"
+            }
+          ]
+        }
+      }
+    },
+    "cr_max_lipids_2": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "max_lipids",
+      "value": 2000,
+      "overwrite": true,
+      "properties": {
+        "title": "Lipid Capacity - II",
+        "description": "Your body can now store up to 2000 lipids.",
+        "icon": "yha:textures/gui/creation/lipid_icon.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          1.5,
+          -2.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 5
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_max_lipids_1"
+          }
+        },
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:creation#cr_max_lipids_3"
+            }
+          ]
+        }
+      }
+    },
+    "cr_max_lipids_3": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "max_lipids",
+      "value": 3000,
+      "overwrite": true,
+      "properties": {
+        "title": "Lipid Capacity - III",
+        "description": "Your body can now store up to 3000 lipids.",
+        "icon": "yha:textures/gui/creation/lipid_icon.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.1,
+          -2.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 8
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_max_lipids_2"
+          }
+        },
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:creation#cr_max_lipids_4"
+            }
+          ]
+        }
+      }
+    },
+    "cr_max_lipids_4": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "max_lipids",
+      "value": 5000,
+      "overwrite": true,
+      "properties": {
+        "title": "Lipid Capacity - IV",
+        "description": "Your body can now store up to 5000 lipids.",
+        "icon": "yha:textures/gui/creation/lipid_icon.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.7,
+          -2.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 10
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_max_lipids_3"
+          }
+        }
       }
     },
     "cr_know_armor_1": {
@@ -913,6 +1075,39 @@
         "gui_connection": [
           [
             4.9,
+            5.95
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_enchant_7"
+          }
+        }
+      }
+    },
+    "cr_know_enchant_evolve": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Enchant Evolution",
+        "description": "When you create an enchanted item, each selected enchantment has a chance to apply one level higher than chosen for free. There is also a rare chance that every enchantment evolves, and the item's name becomes rainbow.",
+        "icon": "minecraft:enchanted_golden_apple",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          4.0,
+          5.95
+        ],
+        "gui_connection": [
+          [
+            4.5,
             5.95
           ]
         ]

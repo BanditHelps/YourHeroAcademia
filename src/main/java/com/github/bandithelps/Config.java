@@ -79,6 +79,18 @@ public class Config {
             .comment("Chance to gain potion research progress when a new effect is applied, if Field Chemistry is unlocked")
             .defineInRange("creationExperientialResearchChance", 0.25D, 0.0D, 1.0D);
 
+    public static final ModConfigSpec.DoubleValue CREATION_ENCHANT_EVOLVE_CHANCE = BUILDER
+            .comment("Chance for each selected enchantment to apply one level higher than chosen when Enchant Evolution is unlocked. 0.0 is 0%, 1.0 is 100%.")
+            .defineInRange("creationEnchantEvolveChance", 0.10D, 0.0D, 1.0D);
+
+    public static final ModConfigSpec.DoubleValue CREATION_ENCHANT_RAINBOW_CHANCE = BUILDER
+            .comment("Chance for every selected enchantment to evolve one level and the item name to become rainbow when Enchant Evolution is unlocked. 0.0 is 0%, 1.0 is 100%.")
+            .defineInRange("creationEnchantRainbowChance", 0.0005D, 0.0D, 1.0D);
+
+    public static final ModConfigSpec.DoubleValue CREATION_BOOK_OF_KNOWLEDGE_CHANCE = BUILDER
+            .comment("Chance for a Book of Knowledge to appear in applicable chest loot. 0.0 is 0%, 1.0 is 100%.")
+            .defineInRange("creationBookOfKnowledgeChance", 0.08D, 0.0D, 1.0D);
+
     public static final ModConfigSpec.BooleanValue THROWABLE_BLOCK_DAMAGE = BUILDER
             .comment("Master switch for throwable weapons breaking blocks. If false, no throwable (including grenades) destroys terrain, even when the item itself enables world damage.")
             .define("throwableBlockDamage", true);

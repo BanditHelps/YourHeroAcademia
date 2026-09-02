@@ -61,7 +61,9 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final Identifier TEX_CREATE = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_create_button.png");
     private static final Identifier TEX_CREATE_HOVER = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_create_button_hover.png");
     private static final Identifier TEX_LIPID = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/lipid_icon.png");
-    private static final Identifier TEX_LOCKED_TAB = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_green_question_tab.png");
+    private static final Identifier TEX_LOCKED_TAB_GREEN = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_green_question_tab.png");
+    private static final Identifier TEX_LOCKED_TAB_BLUE = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_blue_question_tab.png");
+    private static final Identifier TEX_LOCKED_TAB_YELLOW = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_yellow_question_tab.png");
     private static final Identifier TEX_LOCK = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/icons/blackwhip/lock.png");
     private static final Identifier TEX_ENCHANT_ARMOR = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_armor_enchant.png");
     private static final Identifier TEX_ENCHANT_SWORD = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_sword_enchant.png");
@@ -137,10 +139,10 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int DIAMOND_RIGHT_Y = 95;
     private static final int DIAMOND_BOTTOM_X = 112;
     private static final int DIAMOND_BOTTOM_Y = 113;
-    private static final int AMP_BOX_X = 78;
-    private static final int AMP_BOX_Y = 148;
-    private static final int AMP_BOX_W = 94;
-    private static final int AMP_BOX_H = 30;
+    private static final int AMP_BOX_X = 81;
+    private static final int AMP_BOX_Y = 147;
+    private static final int AMP_BOX_W = 85;
+    private static final int AMP_BOX_H = 32;
     private static final int AMP_TRACK_W = 72;
     private static final int POTION_NAME_X = AMP_BOX_X;
     private static final int POTION_NAME_Y = TIME_Y;
@@ -246,10 +248,10 @@ public class CreationNotebookUiComponent extends UiWidget {
             blit(gui, background, x, y, 0, 0, TEX_W, TEX_H, TEX_W, TEX_H);
 
             if (!ClientCreationState.get().gearTabUnlocked()) {
-                blit(gui, TEX_LOCKED_TAB, x + TAB_GEAR_X + 1, y + 1, 0, 0, 16, 16, 16, 16);
+                blit(gui, TEX_LOCKED_TAB_GREEN, x + TAB_GEAR_X, y, 0, 0, 16, 16, 16, 16);
             }
             if (!ClientCreationState.get().alchemyTabUnlocked()) {
-                blit(gui, TEX_LOCKED_TAB, x + TAB_ALCHEMY_X + 1, y + 1, 0, 0, 16, 16, 16, 16);
+                blit(gui, TEX_LOCKED_TAB_BLUE, x + TAB_ALCHEMY_X, y, 0, 0, 16, 16, 16, 16);
             }
 
             int quickSlots = ClientCreationState.get().unlockedQuickSlots();

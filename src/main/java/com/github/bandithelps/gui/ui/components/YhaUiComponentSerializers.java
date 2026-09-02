@@ -8,6 +8,7 @@ import net.threetag.palladium.client.gui.ui.widget.UiWidgetSerializer;
 public class YhaUiComponentSerializers {
 
     public static final UiWidgetSerializer<UpgradePointUiComponent> UPGRADE_POINTS = register("upgrade_points", new UpgradePointUiComponent.Serializer());
+    public static final UiWidgetSerializer<MaxLipidsUiComponent> MAX_LIPIDS = register("max_lipids", new MaxLipidsUiComponent.Serializer());
     public static final UiWidgetSerializer<BodyDisplayBarUiComponent> BODY_DISPLAY_BAR = register("body_display_bar", new BodyDisplayBarUiComponent.Serializer());
     public static final UiWidgetSerializer<PlayerAttributeValueUiComponent> PLAYER_ATTRIBUTE_VALUE = register("player_attribute_value", new PlayerAttributeValueUiComponent.Serializer());
     public static final UiWidgetSerializer<StaminaBarUiComponent> STAMINA_BAR = register("stamina_bar", new StaminaBarUiComponent.Serializer());
@@ -27,6 +28,8 @@ public class YhaUiComponentSerializers {
             register("research_table_panel", new ResearchTablePanelUiComponent.Serializer());
     public static final UiWidgetSerializer<CreationNotebookUiComponent> CREATION_NOTEBOOK =
             register("creation_notebook", new CreationNotebookUiComponent.Serializer());
+    public static final UiWidgetSerializer<BookOfKnowledgeUiComponent> BOOK_OF_KNOWLEDGE =
+            register("book_of_knowledge", new BookOfKnowledgeUiComponent.Serializer());
 
     private static <T extends UiWidget> UiWidgetSerializer<T> register(String id, UiWidgetSerializer<T> serializer) {
         UiWidgetSerializer.register(Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, id), serializer);
