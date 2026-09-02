@@ -5,7 +5,8 @@ import java.util.Locale;
 public enum CreationTab {
     MATERIALS,
     BLOCKS,
-    GEAR;
+    GEAR,
+    TECHNOLOGY;
 
     public static CreationTab fromId(String raw) {
         if (raw == null || raw.isBlank()) {

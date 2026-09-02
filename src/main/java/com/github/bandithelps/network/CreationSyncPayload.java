@@ -24,6 +24,7 @@ public record CreationSyncPayload(
         int unlockedQuickSlots,
         boolean gearTabUnlocked,
         boolean alchemyTabUnlocked,
+        boolean technologyTabUnlocked,
         boolean potionSplash,
         boolean potionLinger,
         boolean potionArrow,
@@ -105,6 +106,7 @@ public record CreationSyncPayload(
         ByteBufCodecs.VAR_INT.encode(buf, payload.unlockedQuickSlots());
         ByteBufCodecs.BOOL.encode(buf, payload.gearTabUnlocked());
         ByteBufCodecs.BOOL.encode(buf, payload.alchemyTabUnlocked());
+        ByteBufCodecs.BOOL.encode(buf, payload.technologyTabUnlocked());
         ByteBufCodecs.BOOL.encode(buf, payload.potionSplash());
         ByteBufCodecs.BOOL.encode(buf, payload.potionLinger());
         ByteBufCodecs.BOOL.encode(buf, payload.potionArrow());
@@ -183,6 +185,7 @@ public record CreationSyncPayload(
                 enchants,
                 potions,
                 ByteBufCodecs.VAR_INT.decode(buf),
+                ByteBufCodecs.BOOL.decode(buf),
                 ByteBufCodecs.BOOL.decode(buf),
                 ByteBufCodecs.BOOL.decode(buf),
                 ByteBufCodecs.BOOL.decode(buf),

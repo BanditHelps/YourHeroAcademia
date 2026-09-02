@@ -1,5 +1,6 @@
 package com.github.bandithelps.gui.ui.components;
 
+import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.client.creation.ClientCreationState;
 import com.github.bandithelps.creation.CreationEnchantments;
 import com.github.bandithelps.creation.CreationPotionForm;
@@ -165,7 +166,7 @@ public class ResearchTablePanelUiComponent extends UiWidget {
         }
 
         private int searchX() {
-            return detailX() - 80;
+            return detailX() - 65;
         }
 
         private int searchY() {
@@ -173,7 +174,7 @@ public class ResearchTablePanelUiComponent extends UiWidget {
         }
 
         private int searchW() {
-            return detailW();
+            return detailW() - 15;
         }
 
         private int tabY() {
@@ -1192,6 +1193,7 @@ public class ResearchTablePanelUiComponent extends UiWidget {
         MATERIALS(CreationTab.MATERIALS, "gui.yha.creation.tab.materials", Items.IRON_INGOT),
         BLOCKS(CreationTab.BLOCKS, "gui.yha.creation.tab.blocks", Items.COBBLESTONE),
         GEAR(CreationTab.GEAR, "gui.yha.creation.tab.gear", Items.IRON_CHESTPLATE),
+        TECHNOLOGY(CreationTab.TECHNOLOGY, "gui.yha.creation.tab.technology", YourHeroAcademia.FLASHBANG.get()),
         ENCHANTS(null, "gui.yha.creation.tab.enchants", Items.ENCHANTED_BOOK),
         ALCHEMY(null, "gui.yha.creation.tab.alchemy", Items.POTION);
 

@@ -161,6 +161,7 @@ public final class CreationSyncEvents {
                 CreationUtil.unlockedQuickSlotCount(player),
                 CreationUtil.isGearTabUnlocked(player),
                 CreationUtil.isAlchemyTabUnlocked(player),
+                CreationUtil.isTechnologyTabUnlocked(player),
                 CreationUtil.isAbilityUnlocked(player, CreationUtil.CHEMICAL_SPLASH),
                 CreationUtil.isAbilityUnlocked(player, CreationUtil.CHEMICAL_LINGER),
                 CreationUtil.isAbilityUnlocked(player, CreationUtil.FLETCHER_ARROW_EFFECTS),

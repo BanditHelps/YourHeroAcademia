@@ -72,6 +72,7 @@ public final class CreationUtil {
     public static final String DYE_KNOWLEDGE = "cr_know_dye";
     public static final String ENCHANT_CONFLICTS = "cr_know_enchant_conflicts";
     public static final String ENCHANT_EVOLVE = "cr_know_enchant_evolve";
+    public static final String TECH_1 = "cr_know_tech_1";
     public static final int CONFLICTING_ENCHANT_COST_MULTIPLIER = 2;
     public static final int CUSTOM_NAME_MAX_LENGTH = 50;
 
@@ -100,6 +101,10 @@ public final class CreationUtil {
 
     public static boolean isAlchemyTabUnlocked(LivingEntity entity) {
         return isAbilityUnlocked(entity, CHEMICAL_1);
+    }
+
+    public static boolean isTechnologyTabUnlocked(LivingEntity entity) {
+        return isAbilityUnlocked(entity, TECH_1);
     }
 
     public static boolean allowsConflictingEnchants(LivingEntity entity) {

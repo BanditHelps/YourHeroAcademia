@@ -125,6 +125,7 @@
   "gui.yha.creation.tab.materials": "Materials",
   "gui.yha.creation.tab.blocks": "Blocks",
   "gui.yha.creation.tab.gear": "Gear",
+  "gui.yha.creation.tab.technology": "Technology",
   "gui.yha.creation.tab.enchants": "Enchants",
   "gui.yha.creation.tab.alchemy": "Alchemy",
   "gui.yha.creation.choose_form": "Right-click to switch between nugget, item, and block.",

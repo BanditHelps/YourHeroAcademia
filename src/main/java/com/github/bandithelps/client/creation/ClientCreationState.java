@@ -258,7 +258,7 @@ public final class ClientCreationState {
     private static CreationSyncPayload emptyPayload() {
         return new CreationSyncPayload(
                 List.of(), List.of(), List.of(), List.of(), List.of(),
-                0, false, false, false, false, false, false, false, false, false, 8,
+                0, false, false, false, false, false, false, false, false, false, false, 8,
                 0.0f, 0.0f
         );
     }

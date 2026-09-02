@@ -1,8 +1,9 @@
 {
   "ability": "cr_know_tech_1",
-  "tab": "gear",
+  "tab": "technology",
   "entries": [
     { "item": "yha:grenade", "lipid_cost": 36 },
-    { "item": "yha:flashbang", "lipid_cost": 32 }
+    { "item": "yha:flashbang", "lipid_cost": 32 },
+    { "item": "yha:impulse", "lipid_cost": 32}
   ]
 }

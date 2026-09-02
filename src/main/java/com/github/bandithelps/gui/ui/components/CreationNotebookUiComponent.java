@@ -57,6 +57,7 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final Identifier TEX_BLOCKS = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui.png");
     private static final Identifier TEX_GEAR = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_tool_gui.png");
     private static final Identifier TEX_ALCHEMY = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_alchemy_gui.png");
+    private static final Identifier TEX_TECHNOLOGY = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_technology_gui.png");
     private static final Identifier TEX_DARKENED = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_darkened.png");
     private static final Identifier TEX_CREATE = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_create_button.png");
     private static final Identifier TEX_CREATE_HOVER = Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "textures/gui/creation/creation_gui_create_button_hover.png");
@@ -118,7 +119,12 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int FORM_MENU_COLS = 6;
     private static final int TAB_W = 16;
     private static final int TAB_H = 16;
-    private static final int TAB_LOCKED_1_X = 142;
+    private static final int TAB_TECH_X = 142;
+    private static final int TECH_X = 17;
+    private static final int TECH_Y = 39;
+    private static final int TECH_COLS = 8;
+    private static final int TECH_ROWS = 1;
+
     private static final int TAB_ALCHEMY_X = 162;
     private static final int TAB_GEAR_X = 182;
     private static final int TAB_BLOCKS_X = 202;
@@ -204,12 +210,13 @@ public class CreationNotebookUiComponent extends UiWidget {
     }
 
     private static final class NotebookWidget extends AbstractWidget {
-        private enum Page { BLOCKS, GEAR, ALCHEMY }
+        private enum Page { BLOCKS, GEAR, ALCHEMY, TECHNOLOGY }
 
         private Page page = Page.BLOCKS;
         private String selectedId;
         private int materialsPage;
         private int blocksPage;
+        private int technologyPage;
         private final Map<String, Integer> enchantLevels = new HashMap<>();
         private int enchantScroll;
         private String draggingEnchantId;
@@ -244,7 +251,14 @@ public class CreationNotebookUiComponent extends UiWidget {
             Minecraft minecraft = Minecraft.getInstance();
             int x = this.getX();
             int y = this.getY();
-            Identifier background = this.page == Page.GEAR ? TEX_GEAR : (this.page == Page.ALCHEMY ? TEX_ALCHEMY : TEX_BLOCKS);
+
+            Identifier background = switch (this.page) {
+                case Page.GEAR -> TEX_GEAR;
+                case Page.ALCHEMY -> TEX_ALCHEMY;
+                case Page.TECHNOLOGY -> TEX_TECHNOLOGY;
+                default -> TEX_BLOCKS;
+            };
+
             blit(gui, background, x, y, 0, 0, TEX_W, TEX_H, TEX_W, TEX_H);
 
             if (!ClientCreationState.get().gearTabUnlocked()) {
@@ -252,6 +266,10 @@ public class CreationNotebookUiComponent extends UiWidget {
             }
             if (!ClientCreationState.get().alchemyTabUnlocked()) {
                 blit(gui, TEX_LOCKED_TAB_BLUE, x + TAB_ALCHEMY_X, y, 0, 0, 16, 16, 16, 16);
+            }
+
+            if (!ClientCreationState.get().technologyTabUnlocked()) {
+                blit(gui, TEX_LOCKED_TAB_YELLOW, x + TAB_TECH_X, y, 0, 0, 16, 16, 16, 16);
             }
 
             int quickSlots = ClientCreationState.get().unlockedQuickSlots();
@@ -266,6 +284,8 @@ public class CreationNotebookUiComponent extends UiWidget {
             drawLipidSpendPops(gui, minecraft, x, y, lipids);
             drawQuickCraftLabel(gui, minecraft, x, y);
 
+
+            // Grids for each page
             if (this.page == Page.BLOCKS) {
                 drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y, MAT_COLS, MAT_ROWS, GRID_SLOT, this.materialsPage);
                 drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, GRID_SLOT, this.blocksPage);
@@ -273,6 +293,8 @@ public class CreationNotebookUiComponent extends UiWidget {
                 drawGearSlots(gui, x, y);
                 drawEnchantPanel(gui, minecraft, x, y, mouseX, mouseY);
                 drawNameField(gui, minecraft, x, y);
+            } else if (this.page == Page.TECHNOLOGY) {
+                drawGrid(gui, x, y, mouseX, mouseY, ClientCreationState.unlockedItemGroups(CreationTab.TECHNOLOGY), TECH_X, TECH_Y, TECH_COLS, TECH_ROWS, GRID_SLOT, this.technologyPage);
             } else {
                 drawAlchemyPage(gui, minecraft, x, y, mouseX, mouseY);
             }
@@ -471,18 +493,31 @@ public class CreationNotebookUiComponent extends UiWidget {
                 return true;
             }
 
-            if (contains(mouseX, mouseY, x + TAB_LOCKED_1_X, y, TAB_W, TAB_H)) {
+            /*
+             * Click handlers for the tabs. Tech, Alchemy, Gear, Blocks
+             */
+
+            if (contains(mouseX, mouseY, x + TAB_TECH_X, y, TAB_W, TAB_H)) {
                 closeFormMenu();
                 unfocusTime();
                 this.nameFocused = false;
-                minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
+
+                if (!ClientCreationState.get().technologyTabUnlocked()) {
+                    minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
+                } else {
+                    this.page = Page.TECHNOLOGY;
+                }
+
                 clickSound();
                 return true;
             }
+
             if (contains(mouseX, mouseY, x + TAB_ALCHEMY_X, y, TAB_W, TAB_H)) {
                 closeFormMenu();
                 unfocusTime();
+
                 this.nameFocused = false;
+
                 if (!ClientCreationState.get().alchemyTabUnlocked()) {
                     minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
                 } else {
@@ -491,18 +526,23 @@ public class CreationNotebookUiComponent extends UiWidget {
                 clickSound();
                 return true;
             }
+
             if (contains(mouseX, mouseY, x + TAB_GEAR_X, y, TAB_W, TAB_H)) {
                 closeFormMenu();
                 unfocusTime();
+
                 this.nameFocused = false;
+
                 if (!ClientCreationState.get().gearTabUnlocked()) {
                     minecraft.gui.setOverlayMessage(Component.translatable("gui.yha.creation.tab_locked"), false);
                 } else {
                     this.page = Page.GEAR;
                 }
+
                 clickSound();
                 return true;
             }
+
             if (contains(mouseX, mouseY, x + TAB_BLOCKS_X, y, TAB_W, TAB_H)) {
                 closeFormMenu();
                 unfocusTime();
@@ -889,9 +929,10 @@ public class CreationNotebookUiComponent extends UiWidget {
                     this.enchantLevels.put(choice.enchantId(), choice.level());
                 }
             }
+
             if (CreationGearSlot.of(assignedId) != null) {
                 this.page = Page.GEAR;
-            } else if (this.page == Page.ALCHEMY) {
+            } else if (this.page == Page.ALCHEMY || this.page == Page.TECHNOLOGY) {
                 this.page = Page.BLOCKS;
             }
         }
@@ -988,25 +1029,44 @@ public class CreationNotebookUiComponent extends UiWidget {
             if (this.page == Page.GEAR || this.page == Page.ALCHEMY) {
                 return;
             }
-            int materials = ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS).size();
-            int blocks = ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS).size();
-            int matPages = Math.max(1, ceilDiv(materials, MAT_PER_PAGE));
-            int blockPages = Math.max(1, ceilDiv(blocks, BLOCKS_COLS * BLOCKS_ROWS));
+
+            // Get the number of unlocked items to display
+            int numMaterials = ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS).size();
+            int numBlocks = ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS).size();
+            int numTechnology = ClientCreationState.unlockedItemGroups(CreationTab.TECHNOLOGY).size();
+
+            // Split them up into the appropriate amount of pages
+            int matPages = Math.max(1, ceilDiv(numMaterials, MAT_COLS * MAT_ROWS));
+            int blockPages = Math.max(1, ceilDiv(numBlocks, BLOCKS_COLS * BLOCKS_ROWS));
+            int technologyPages = Math.max(1, ceilDiv(numTechnology, TECH_COLS * TECH_ROWS));
+
+            // Turn the actual pages
             this.materialsPage = (this.materialsPage + 1) % matPages;
             this.blocksPage = (this.blocksPage + 1) % blockPages;
+            this.technologyPage = (this.technologyPage + 1) % technologyPages;
         }
 
+        // Depending on the page, determine what slot is closest to the mouse
         private SlotHit findClickedSlot(int mouseX, int mouseY, int x, int y) {
             if (this.page == Page.GEAR) {
                 return hitGearSlot(mouseX, mouseY, x, y);
             }
+
             if (this.page == Page.ALCHEMY) {
                 return null;
             }
+
             SlotHit materials = hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.MATERIALS), MAT_X, MAT_Y, MAT_COLS, MAT_ROWS, GRID_SLOT, this.materialsPage, MAT_COLS);
             if (materials != null) {
                 return materials;
             }
+
+            SlotHit technology = hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.TECHNOLOGY), TECH_X, TECH_Y, TECH_COLS, TECH_ROWS, GRID_SLOT, this.technologyPage, TECH_COLS);
+            if (technology != null) {
+                return technology;
+            }
+
+            // Defaults to the blocks screen
             return hitGrid(mouseX, mouseY, x, y, ClientCreationState.unlockedItemGroups(CreationTab.BLOCKS), BLOCKS_X, BLOCKS_Y, BLOCKS_COLS, BLOCKS_ROWS, GRID_SLOT, this.blocksPage, BLOCKS_COLS);
         }
 
