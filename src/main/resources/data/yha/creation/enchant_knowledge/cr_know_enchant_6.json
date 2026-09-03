@@ -2,11 +2,11 @@
   "ability": "cr_know_enchant_6",
   "research_cost": 4,
   "entries": [
-    { "enchant": "minecraft:breach", "lipid_cost_per_level": 40 },
-    { "enchant": "minecraft:density", "lipid_cost_per_level": 22 },
-    { "enchant": "minecraft:fortune", "lipid_cost_per_level": 18 },
-    { "enchant": "minecraft:silk_touch", "lipid_cost_per_level": 20 },
-    { "enchant": "minecraft:swift_sneak", "lipid_cost_per_level": 14 },
-    { "enchant": "minecraft:wind_burst", "lipid_cost_per_level": 14 }
+    { "enchant": "minecraft:breach", "lipid_cost_per_level": 143 },
+    { "enchant": "minecraft:density", "lipid_cost_per_level": 143 },
+    { "enchant": "minecraft:fortune", "lipid_cost_per_level": 143 },
+    { "enchant": "minecraft:silk_touch", "lipid_cost_per_level": 143 },
+    { "enchant": "minecraft:swift_sneak", "lipid_cost_per_level": 143 },
+    { "enchant": "minecraft:wind_burst", "lipid_cost_per_level": 143 }
   ]
 }

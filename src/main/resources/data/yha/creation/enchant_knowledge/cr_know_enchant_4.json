@@ -2,11 +2,11 @@
   "ability": "cr_know_enchant_4",
   "research_cost": 3,
   "entries": [
-    { "enchant": "minecraft:depth_strider", "lipid_cost_per_level": 40 },
-    { "enchant": "minecraft:fire_aspect", "lipid_cost_per_level": 14 },
-    { "enchant": "minecraft:frost_walker", "lipid_cost_per_level": 14 },
-    { "enchant": "minecraft:respiration", "lipid_cost_per_level": 14 },
-    { "enchant": "minecraft:smite", "lipid_cost_per_level": 16 },
-    { "enchant": "minecraft:unbreaking", "lipid_cost_per_level": 16 }
+    { "enchant": "minecraft:depth_strider", "lipid_cost_per_level": 117 },
+    { "enchant": "minecraft:fire_aspect", "lipid_cost_per_level": 117 },
+    { "enchant": "minecraft:frost_walker", "lipid_cost_per_level": 117 },
+    { "enchant": "minecraft:respiration", "lipid_cost_per_level": 117 },
+    { "enchant": "minecraft:smite", "lipid_cost_per_level": 117 },
+    { "enchant": "minecraft:unbreaking", "lipid_cost_per_level": 117 }
   ]
 }

@@ -2,11 +2,11 @@
   "ability": "cr_know_enchant_2",
   "research_cost": 2,
   "entries": [
-    { "enchant": "minecraft:blast_protection", "lipid_cost_per_level": 12 },
-    { "enchant": "minecraft:flame", "lipid_cost_per_level": 12 },
-    { "enchant": "minecraft:impaling", "lipid_cost_per_level": 14 },
-    { "enchant": "minecraft:loyalty", "lipid_cost_per_level": 14 },
-    { "enchant": "minecraft:multishot", "lipid_cost_per_level": 18 },
-    { "enchant": "minecraft:piercing", "lipid_cost_per_level": 20 }
+    { "enchant": "minecraft:blast_protection", "lipid_cost_per_level": 91 },
+    { "enchant": "minecraft:flame", "lipid_cost_per_level": 91 },
+    { "enchant": "minecraft:impaling", "lipid_cost_per_level": 91 },
+    { "enchant": "minecraft:loyalty", "lipid_cost_per_level": 91 },
+    { "enchant": "minecraft:multishot", "lipid_cost_per_level": 91 },
+    { "enchant": "minecraft:piercing", "lipid_cost_per_level": 91 }
   ]
 }
