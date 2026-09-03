@@ -29,7 +29,6 @@ public class SetBodyFloatAbility extends Ability {
                     Codec.STRING.optionalFieldOf("part", BodyPart.CHEST.getId()).forGetter((ab) -> ab.part),
                     Codec.STRING.fieldOf("key").forGetter((ab) -> ab.key),
                     Value.CODEC.fieldOf("value").forGetter((ab) -> ab.value),
-                    Codec.BOOL.optionalFieldOf("overwrite", true).forGetter((ab) -> ab.overwrite),
                     propertiesCodec(),
                     stateCodec(),
                     energyBarUsagesCodec()).apply(instance, SetBodyFloatAbility::new));
@@ -37,35 +36,32 @@ public class SetBodyFloatAbility extends Ability {
     public final String part;
     public final String key;
     public final Value value;
-    public final boolean overwrite;
 
     public SetBodyFloatAbility(String part, String key, Value value, AbilityProperties properties, AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
-        this(part, key, value, true, properties, conditions, energyBarUsages);
-    }
-
-    public SetBodyFloatAbility(String part, String key, Value value, boolean overwrite, AbilityProperties properties, AbilityStateManager conditions, List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.part = part;
         this.key = key;
         this.value = value;
-        this.overwrite = overwrite;
     }
 
     @Override
-    public void firstTick(LivingEntity entity, AbilityInstance<?> abilityInstance) {
-        if (entity instanceof ServerPlayer player) {
+    public boolean tick(LivingEntity entity, AbilityInstance<?> abilityInstance, boolean enabled) {
+        if (enabled && entity instanceof ServerPlayer player) {
             BodyPart bodyPart = BodyPart.fromId(this.part);
             if (bodyPart == null) {
-                return;
+                return super.tick(entity, abilityInstance, enabled);
             }
+
             IBodyData body = BodyAttachments.get(player);
-            if (!this.overwrite && body.getCustomFloats(player, bodyPart).containsKey(this.key)) {
-                return;
+            float desired = this.value.getAsFloat(DataContext.forEntity(entity));
+            Float stored = body.getCustomFloats(player, bodyPart).get(this.key);
+
+            if (stored == null || stored != desired) {
+                body.setCustomFloat(player, bodyPart, this.key, desired);
+                BodySyncEvents.syncNow(player);
             }
-            DataContext context = DataContext.forEntity(entity);
-            body.setCustomFloat(player, bodyPart, this.key, this.value.getAsFloat(context));
-            BodySyncEvents.syncNow(player);
         }
+        return super.tick(entity, abilityInstance, enabled);
     }
 
     @Override
@@ -79,13 +75,12 @@ public class SetBodyFloatAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, SetBodyFloatAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("Writes a fixed float value into a body part's custom data when the ability becomes enabled.")
-                    .add("part", ModSettingTypes.TYPE_BODY_PART, "The body part to store the string in.")
-                    .add("key", TYPE_STRING, "The key to store the string under.")
-                    .add("value", TYPE_FLOAT_VALUE, "The float value to store.")
-                    .add("overwrite", TYPE_BOOLEAN, "If false, the value is only written when the key is missing. Defaults to true.")
+            builder.setDescription("Writes a float value into a body part's custom data, and updates it when the value changes.")
+                    .add("part", ModSettingTypes.TYPE_BODY_PART, "The body part to store the float in.")
+                    .add("key", TYPE_STRING, "The key to store the float under.")
+                    .add("value", TYPE_FLOAT_VALUE, "The float value to store. Re-evaluated each tick and written only when it changes.")
                     .addExampleObject(new SetBodyFloatAbility(BodyPart.CHEST.getId(), "max_tethers", new StaticValue(1.0f), AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
     }
-    
+
 }

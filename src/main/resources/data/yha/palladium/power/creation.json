@@ -46,8 +46,10 @@
       "type": "yha:set_body_float",
       "part": "chest",
       "key": "max_lipids",
-      "value": 1000,
-      "overwrite": false,
+      "value": {
+        "type": "palladium:molang_float",
+        "molang": "1000 + yha.quirk_factor() * 500"
+      },
       "properties": {
         "title": "Default Lipid Capacity",
         "description": "Your body can store up to 1000 lipids.",
@@ -75,8 +77,10 @@
       "type": "yha:set_body_float",
       "part": "chest",
       "key": "max_lipids",
-      "value": 1500,
-      "overwrite": true,
+      "value": {
+        "type": "palladium:molang_float",
+        "molang": "1500 + yha.quirk_factor() * 500"
+      },
       "properties": {
         "title": "Lipid Capacity - I",
         "description": "Your body can now store up to 1500 lipids.",
@@ -115,8 +119,10 @@
       "type": "yha:set_body_float",
       "part": "chest",
       "key": "max_lipids",
-      "value": 2000,
-      "overwrite": true,
+      "value": {
+        "type": "palladium:molang_float",
+        "molang": "2000 + yha.quirk_factor() * 500"
+      },
       "properties": {
         "title": "Lipid Capacity - II",
         "description": "Your body can now store up to 2000 lipids.",
@@ -155,8 +161,10 @@
       "type": "yha:set_body_float",
       "part": "chest",
       "key": "max_lipids",
-      "value": 3000,
-      "overwrite": true,
+      "value": {
+        "type": "palladium:molang_float",
+        "molang": "3000 + yha.quirk_factor() * 500"
+      },
       "properties": {
         "title": "Lipid Capacity - III",
         "description": "Your body can now store up to 3000 lipids.",
@@ -195,8 +203,10 @@
       "type": "yha:set_body_float",
       "part": "chest",
       "key": "max_lipids",
-      "value": 5000,
-      "overwrite": true,
+      "value": {
+        "type": "palladium:molang_float",
+        "molang": "5000 + yha.quirk_factor() * 500"
+      },
       "properties": {
         "title": "Lipid Capacity - IV",
         "description": "Your body can now store up to 5000 lipids.",
