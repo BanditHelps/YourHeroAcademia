@@ -1,0 +1,40 @@
+{
+  "type": "palladium:multi_column",
+  "layouts": [
+    {
+      "width": 392,
+      "height": 236,
+      "padding": 6,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/default"
+      },
+      "widgets": [
+        {
+          "type": "palladium:text_box",
+          "text": "Research Table",
+          "properties": {
+            "alignment": "top_center",
+            "width": 160,
+            "height": 18,
+            "x": 40,
+            "y": -4
+          }
+        },
+        {
+          "type": "yha:research_table_panel",
+          "frame_color": 7977727,
+          "panel_color": 1714482,
+          "text_color": 15135487,
+          "properties": {
+            "alignment": "top_center",
+            "x": 0,
+            "y": 10,
+            "width": 378,
+            "height": 212
+          }
+        }
+      ]
+    }
+  ]
+}

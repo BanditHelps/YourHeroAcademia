@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @EventBusSubscriber(modid = YourHeroAcademia.MODID)
 public final class BodySyncEvents {
-    private static final Map<UUID, Integer> LAST_SENT_SIGNATURE = new ConcurrentHashMap<>();
+    private static final Map<UUID, CompoundTag> LAST_SENT = new ConcurrentHashMap<>();
 
     private BodySyncEvents() {
     }
@@ -37,8 +37,22 @@ public final class BodySyncEvents {
     }
 
     @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            syncIfChanged(player, true);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            syncIfChanged(player, true);
+        }
+    }
+
+    @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        LAST_SENT_SIGNATURE.remove(event.getEntity().getUUID());
+        LAST_SENT.remove(event.getEntity().getUUID());
     }
 
     public static void syncNow(ServerPlayer player) {
@@ -50,13 +64,12 @@ public final class BodySyncEvents {
         CompoundTag payloadTag = new CompoundTag();
         data.saveNBTData(payloadTag);
 
-        int signature = payloadTag.toString().hashCode();
-        Integer previous = LAST_SENT_SIGNATURE.get(player.getUUID());
-        if (!force && previous != null && previous == signature) {
+        CompoundTag previous = LAST_SENT.get(player.getUUID());
+        if (!force && previous != null && previous.equals(payloadTag)) {
             return;
         }
 
-        LAST_SENT_SIGNATURE.put(player.getUUID(), signature);
+        LAST_SENT.put(player.getUUID(), payloadTag.copy());
         PacketDistributor.sendToPlayer(player, new BodySyncPayload(payloadTag));
     }
 }

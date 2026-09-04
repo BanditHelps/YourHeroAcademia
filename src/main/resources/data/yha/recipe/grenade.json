@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "C": "yha:empty_canister",
+    "G": "minecraft:gunpowder",
+    "N": "minecraft:iron_nugget"
+  },
+  "pattern": [
+    " N ",
+    "GCG",
+    " G "
+  ],
+  "result": {
+    "count": 1,
+    "id": "yha:grenade"
+  }
+}

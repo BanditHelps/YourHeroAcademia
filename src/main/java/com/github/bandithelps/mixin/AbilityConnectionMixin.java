@@ -1,7 +1,9 @@
 package com.github.bandithelps.mixin;
 
 import com.github.bandithelps.gui.tree.TreeConnectionPath;
+import com.github.bandithelps.gui.tree.TreeConnectionPaths;
 import com.github.bandithelps.gui.tree.TreeConnectionRenderer;
+import com.github.bandithelps.gui.tree.TreeEditorStateSync;
 import com.github.bandithelps.gui.tree.TreeConnectionRenderer.Pixel;
 import java.awt.Color;
 import java.util.ArrayList;
@@ -35,7 +37,7 @@ public abstract class AbilityConnectionMixin {
         List<AbilityElement> custom = new ArrayList<>();
         List<AbilityElement> defaults = new ArrayList<>();
         for (AbilityElement child : this.children) {
-            if (yha$pathOf(child).isEmpty()) {
+            if (yha$pathOf(child, this.parent).isEmpty()) {
                 defaults.add(child);
             } else {
                 custom.add(child);
@@ -69,14 +71,21 @@ public abstract class AbilityConnectionMixin {
     }
 
     @Unique
-    private static TreeConnectionPath yha$pathOf(AbilityElement element) {
-        AbilityProperties properties = element.getAbilityInstance().getAbility().getProperties();
-        return TreeConnectionPath.fromProperties(properties);
+    private static TreeConnectionPath yha$pathOf(AbilityElement child, AbilityElement parent) {
+        AbilityProperties properties = child.getAbilityInstance().getAbility().getProperties();
+        TreeConnectionPaths paths = TreeConnectionPaths.fromProperties(properties);
+        String parentKey = parent.getAbilityInstance().getAbility().getKey();
+        TreeConnectionPath path = paths.get(parentKey);
+        if (!path.isEmpty()) {
+            return path;
+        }
+        String local = TreeEditorStateSync.localAbilityKey(parentKey);
+        return local == null || local.equals(parentKey) ? TreeConnectionPath.EMPTY : paths.get(local);
     }
 
     @Unique
     private static List<Pixel> yha$polyline(int originX, int originY, AbilityElement parent, AbilityElement child) {
-        TreeConnectionPath path = yha$pathOf(child);
+        TreeConnectionPath path = yha$pathOf(child, parent);
         int shiftX = yha$layoutShiftX(child);
         int shiftY = yha$layoutShiftY(child);
         List<Pixel> points = new ArrayList<>(path.size() + 2);

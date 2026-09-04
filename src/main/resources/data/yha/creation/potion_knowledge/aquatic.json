@@ -1,0 +1,10 @@
+{
+  "ability": "cr_know_chemical_1",
+  "group": "yha:aquatic",
+  "group_icon": "minecraft:pufferfish",
+  "research_cost": 3,
+  "entries": [
+    { "effect": "minecraft:water_breathing", "lipid_cost": 30, "lipid_cost_per_amplifier": 10 },
+    { "effect": "minecraft:dolphins_grace", "ability": "cr_know_chemical_2", "lipid_cost": 50, "lipid_cost_per_amplifier": 15, "research_cost": 5 }
+  ]
+}

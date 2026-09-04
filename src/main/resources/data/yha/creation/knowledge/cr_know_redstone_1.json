@@ -1,0 +1,21 @@
+{
+  "ability": "cr_know_redstone_1",
+  "tab": "materials",
+  "group": "yha:redstone",
+  "group_icon": "minecraft:repeater",
+  "entries": [
+    { "item": "minecraft:repeater", "lipid_cost": 12},
+    { "item": "minecraft:comparator", "lipid_cost": 12},
+    { "item": "minecraft:target", "lipid_cost": 12},
+    { "item": "minecraft:redstone_torch", "lipid_cost": 12},
+    { "item": "minecraft:piston", "lipid_cost": 12},
+    { "item": "minecraft:sticky_piston", "lipid_cost": 12},
+    { "item": "minecraft:lever", "lipid_cost": 12},
+    { "item": "minecraft:dispenser", "lipid_cost": 12},
+    { "item": "minecraft:dropper", "lipid_cost": 12},
+    { "item": "minecraft:hopper", "lipid_cost": 12},
+    { "item": "minecraft:redstone_lamp", "lipid_cost": 12},
+    { "item": "minecraft:daylight_detector", "lipid_cost": 12},
+    { "item": "minecraft:tnt", "lipid_cost": 12}
+  ]
+}

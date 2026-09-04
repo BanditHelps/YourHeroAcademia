@@ -95,7 +95,7 @@
       "min_value": 0,
       "max_value": {
         "type": "palladium:molang_float",
-        "molang": "yha.quirk_factor() * 400"
+        "molang": "400 + yha.quirk_factor() * 400"
       },
       "parts": [
         "chest"

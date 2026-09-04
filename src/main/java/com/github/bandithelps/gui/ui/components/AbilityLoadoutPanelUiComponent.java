@@ -232,7 +232,7 @@ public class AbilityLoadoutPanelUiComponent extends UiWidget {
             if (instance == null) {
                 return reference.abilityKey();
             }
-            return AbilityLoadoutUtil.displayName(instance).getString();
+            return AbilityLoadoutUtil.displayName(player, instance).getString();
         }
 
         private static String trim(Minecraft minecraft, String text, int maxWidth) {

@@ -1,0 +1,44 @@
+{
+  "ability": "cr_know_item_3",
+  "entries": [
+    { "item": "minecraft:bucket", "tab": "gear", "lipid_cost": 40 },
+    {
+      "item": "minecraft:bundle",
+      "tab": "gear",
+      "lipid_cost": 16,
+      "group": "yha:bundles",
+      "group_icon": "minecraft:bundle",
+      "unlock_ability": "cr_know_dye",
+      "unlock_tag": "minecraft:bundles"
+    },
+    { "item": "minecraft:lead", "tab": "gear", "lipid_cost": 12 },
+    { "item": "minecraft:name_tag", "tab": "gear", "lipid_cost": 20 },
+    { "item": "minecraft:spyglass", "tab": "gear", "lipid_cost": 36 },
+    { "item": "minecraft:compass", "tab": "gear", "lipid_cost": 40 },
+    { "item": "minecraft:clock", "tab": "gear", "lipid_cost": 40 },
+    { "item": "minecraft:saddle", "tab": "gear", "lipid_cost": 48 },
+    {
+      "item": "minecraft:white_harness",
+      "tab": "gear",
+      "lipid_cost": 24,
+      "group": "yha:harnesses",
+      "group_icon": "minecraft:white_harness",
+      "unlock_ability": "cr_know_dye",
+      "unlock_tag": "minecraft:harnesses"
+    },
+    { "item": "minecraft:iron_chain", "tab": "blocks", "lipid_cost": 14, "group": "yha:chains", "group_icon": "minecraft:iron_chain" },
+    { "item": "minecraft:copper_chain", "tab": "blocks", "lipid_cost": 12, "group": "yha:chains" },
+    { "item": "minecraft:lantern", "tab": "blocks", "lipid_cost": 16, "group": "yha:lanterns", "group_icon": "minecraft:lantern" },
+    { "item": "minecraft:soul_lantern", "tab": "blocks", "lipid_cost": 18, "group": "yha:lanterns" },
+    { "item": "minecraft:copper_lantern", "tab": "blocks", "lipid_cost": 16, "group": "yha:lanterns" },
+    { "item": "minecraft:minecart", "tab": "gear", "lipid_cost": 40, "group": "yha:minecarts", "group_icon": "minecraft:minecart" },
+    { "item": "minecraft:chest_minecart", "tab": "gear", "lipid_cost": 48, "group": "yha:minecarts" },
+    { "item": "minecraft:furnace_minecart", "tab": "gear", "lipid_cost": 52, "group": "yha:minecarts" },
+    { "item": "minecraft:hopper_minecart", "tab": "gear", "lipid_cost": 56, "group": "yha:minecarts" },
+    { "item": "minecraft:tnt_minecart", "tab": "gear", "lipid_cost": 56, "group": "yha:minecarts" },
+    { "item": "minecraft:rail", "tab": "blocks", "lipid_cost": 8, "group": "yha:rails", "group_icon": "minecraft:rail" },
+    { "item": "minecraft:powered_rail", "tab": "blocks", "lipid_cost": 16, "group": "yha:rails" },
+    { "item": "minecraft:detector_rail", "tab": "blocks", "lipid_cost": 16, "group": "yha:rails" },
+    { "item": "minecraft:activator_rail", "tab": "blocks", "lipid_cost": 16, "group": "yha:rails" }
+  ]
+}

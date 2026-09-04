@@ -1,0 +1,7 @@
+{
+  "ability": "cr_know_weapon_mace",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:mace", "lipid_cost": 150, "research_cost": 2 }
+  ]
+}

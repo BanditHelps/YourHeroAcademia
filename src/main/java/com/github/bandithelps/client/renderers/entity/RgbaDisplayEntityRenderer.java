@@ -35,6 +35,10 @@ public class RgbaDisplayEntityRenderer extends EntityRenderer<RgbaDisplayEntity,
         poseStack.translate(-0.5f, -0.5f, -0.5f);
         int color = state.argb;
         int a = (color >> 24) & 0xFF;
+        if (a <= 0) {
+            poseStack.popPose();
+            return;
+        }
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
@@ -92,7 +96,9 @@ public class RgbaDisplayEntityRenderer extends EntityRenderer<RgbaDisplayEntity,
     @Override
     public void extractRenderState(RgbaDisplayEntity entity, RgbaDisplayRenderState state, float partialTicks) {
         super.extractRenderState(entity, state, partialTicks);
-        state.argb = entity.getArgbColor();
+        int color = entity.getArgbColor();
+        int alpha = Math.round(((color >> 24) & 0xFF) * entity.getFadeAlpha(partialTicks));
+        state.argb = (Math.max(0, Math.min(255, alpha)) << 24) | (color & 0x00FFFFFF);
         state.scale = entity.getScaleVector();
         state.rotation = entity.getRotationQuaternion();
         state.blendMode = entity.getBlendMode();

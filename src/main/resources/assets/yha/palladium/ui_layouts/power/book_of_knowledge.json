@@ -1,0 +1,27 @@
+{
+  "type": "palladium:multi_column",
+  "layouts": [
+    {
+      "width": 180,
+      "height": 92,
+      "padding": 6,
+      "background": {
+        "type": "palladium:sprite",
+        "sprite": "palladium:background/default"
+      },
+      "widgets": [
+        {
+          "type": "yha:book_of_knowledge",
+          "frame_color": 7977727,
+          "panel_color": 1714482,
+          "text_color": 15135487,
+          "properties": {
+            "alignment": "center",
+            "width": 168,
+            "height": 80
+          }
+        }
+      ]
+    }
+  ]
+}

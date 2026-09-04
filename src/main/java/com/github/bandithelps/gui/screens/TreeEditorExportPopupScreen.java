@@ -1,7 +1,6 @@
 package com.github.bandithelps.gui.screens;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -12,10 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TreeEditorExportPopupScreen extends Screen {
-    private static final int POPUP_WIDTH = 280;
-    private static final int HEADER = 16;
-    private static final int FOOTER = 26;
-    private static final int TEXT_LIGHT = 0xFFFFFFFF;
+    private static final int POPUP_WIDTH = 320;
+    private static final int HEADER = 24;
+    private static final int FOOTER = 34;
+    private static final int TEXT_LIGHT = TreeEditorTheme.TEXT;
 
     private final TreeEditorScreen parent;
     private final String path;
@@ -25,7 +24,7 @@ public class TreeEditorExportPopupScreen extends Screen {
     private List<String> pathLines = List.of();
 
     public TreeEditorExportPopupScreen(TreeEditorScreen parent, String path) {
-        super(Component.literal("Export Successful"));
+        super(Component.literal("Save Successful"));
         this.parent = parent;
         this.path = path == null ? "" : path;
     }
@@ -39,23 +38,18 @@ public class TreeEditorExportPopupScreen extends Screen {
         this.panelH = HEADER + body + FOOTER;
         this.panelX = Math.max(0, (this.width - Math.min(POPUP_WIDTH, this.width)) / 2);
         this.panelY = Math.max(0, (this.height - this.panelH) / 2);
-        this.addRenderableWidget(Button.builder(Component.literal("OK"), button -> this.onClose())
-                .bounds(this.panelX + POPUP_WIDTH - 58, this.panelY + this.panelH - 22, 50, 16)
-                .build());
+        this.addRenderableWidget(new TreeEditorFlatButton(this.panelX + POPUP_WIDTH - 92, this.panelY + this.panelH - 30, 80, 22, "OK", this::onClose));
     }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         this.parent.extractRenderState(graphics, Integer.MIN_VALUE, Integer.MIN_VALUE, partialTick);
-        graphics.fill(0, 0, this.width, this.height, 0x88000000);
+        graphics.fill(0, 0, this.width, this.height, TreeEditorTheme.OVERLAY);
         int x = this.panelX;
         int y = this.panelY;
-        graphics.fill(x, y, x + POPUP_WIDTH, y + this.panelH, 0xFF2B2B2B);
-        graphics.fill(x + 1, y + 1, x + POPUP_WIDTH - 1, y + this.panelH - 1, 0xFFC6C6C6);
-        graphics.fill(x + 4, y + 4, x + POPUP_WIDTH - 4, y + this.panelH - FOOTER, 0xFF000000);
-        graphics.centeredText(this.font, "Export Successful", x + POPUP_WIDTH / 2, y + 6, TEXT_LIGHT);
+        TreeEditorTheme.dialog(graphics, this.font, x, y, POPUP_WIDTH, this.panelH, "Saved");
         int textY = y + HEADER + 8;
-        graphics.text(this.font, "Saved power file to:", x + 10, textY, 0xFFDDDDDD, false);
+        graphics.text(this.font, "Saved power file to:", x + 12, textY, TreeEditorTheme.TEXT_MUTED, false);
         textY += 12;
         for (String line : this.pathLines) {
             graphics.text(this.font, line, x + 10, textY, TEXT_LIGHT, false);

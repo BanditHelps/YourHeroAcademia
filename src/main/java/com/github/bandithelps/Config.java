@@ -51,5 +51,45 @@ public class Config {
             .comment("Bio Printer print duration in ticks (20 ticks = 1 second)")
             .defineInRange("bioPrinterProcessTicks", 240, 20, 72000);
 
+    public static final ModConfigSpec.IntValue CREATION_RESEARCH_SACRIFICES = BUILDER
+            .comment("Default research sacrifices when a knowledge entry omits research_cost")
+            .defineInRange("creationResearchSacrifices", 8, 1, 64);
+
+    public static final ModConfigSpec.DoubleValue CREATION_SATURATION_TO_LIPIDS = BUILDER
+            .comment("Lipids gained per saturation point from food eaten by a Creation user")
+            .defineInRange("creationSaturationToLipids", 1.0D, 0.0D, 100.0D);
+
+    public static final ModConfigSpec.DoubleValue CREATION_QUIRK_FACTOR_LIPID_BONUS = BUILDER
+            .comment("Extra lipid gain per quirk factor point when eating food: gained *= (1 + quirkFactor * this)")
+            .defineInRange("creationQuirkFactorLipidBonus", 0.1D, 0.0D, 10.0D);
+
+    public static final ModConfigSpec.IntValue CREATION_DEFAULT_LIPID_COST = BUILDER
+            .comment("Default lipid cost to create an item when the catalog does not override it")
+            .defineInRange("creationDefaultLipidCost", 10, 1, 10000);
+
+    public static final ModConfigSpec.IntValue CREATION_MAX_LIPIDS = BUILDER
+            .comment("Fallback lipid cap if creation.json has not written max_lipids to the player's chest yet")
+            .defineInRange("creationMaxLipids", 1000, 1, 100000);
+
+    public static final ModConfigSpec.IntValue CREATION_GROW_TICKS = BUILDER
+            .comment("Ticks for a created item to grow out of the body before dropping")
+            .defineInRange("creationGrowTicks", 16, 1, 200);
+
+    public static final ModConfigSpec.DoubleValue CREATION_EXPERIENTIAL_RESEARCH_CHANCE = BUILDER
+            .comment("Chance to gain potion research progress when a new effect is applied, if Field Chemistry is unlocked")
+            .defineInRange("creationExperientialResearchChance", 0.25D, 0.0D, 1.0D);
+
+    public static final ModConfigSpec.DoubleValue CREATION_ENCHANT_EVOLVE_CHANCE = BUILDER
+            .comment("Chance for each selected enchantment to apply one level higher than chosen when Enchant Evolution is unlocked. 0.0 is 0%, 1.0 is 100%.")
+            .defineInRange("creationEnchantEvolveChance", 0.10D, 0.0D, 1.0D);
+
+    public static final ModConfigSpec.DoubleValue CREATION_ENCHANT_RAINBOW_CHANCE = BUILDER
+            .comment("Chance for every selected enchantment to evolve one level and the item name to become rainbow when Enchant Evolution is unlocked. 0.0 is 0%, 1.0 is 100%.")
+            .defineInRange("creationEnchantRainbowChance", 0.0005D, 0.0D, 1.0D);
+
+    public static final ModConfigSpec.DoubleValue CREATION_BOOK_OF_KNOWLEDGE_CHANCE = BUILDER
+            .comment("Chance for a Book of Knowledge to appear in applicable chest loot. 0.0 is 0%, 1.0 is 100%.")
+            .defineInRange("creationBookOfKnowledgeChance", 0.08D, 0.0D, 1.0D);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 }

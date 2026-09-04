@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": "minecraft:writable_book",
+    "C": "minecraft:crafting_table",
+    "P": "#minecraft:planks",
+    "N": "minecraft:iron_nugget"
+  },
+  "pattern": [
+    "PBP",
+    "NCN",
+    "PPP"
+  ],
+  "result": {
+    "count": 1,
+    "id": "yha:research_table"
+  }
+}

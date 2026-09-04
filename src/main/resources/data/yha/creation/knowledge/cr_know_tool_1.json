@@ -1,0 +1,19 @@
+{
+  "ability": "cr_know_tool_1",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:wooden_pickaxe", "lipid_cost": 17},
+    { "item": "minecraft:wooden_axe", "lipid_cost": 17},
+    { "item": "minecraft:wooden_shovel", "lipid_cost": 11},
+    { "item": "minecraft:wooden_hoe", "lipid_cost": 14},
+    { "item": "minecraft:stone_pickaxe", "lipid_cost": 24},
+    { "item": "minecraft:stone_axe", "lipid_cost": 24},
+    { "item": "minecraft:stone_shovel", "lipid_cost": 16},
+    { "item": "minecraft:stone_hoe", "lipid_cost": 20},
+    { "item": "minecraft:copper_pickaxe", "lipid_cost": 86 },
+    { "item": "minecraft:copper_axe", "lipid_cost": 86 },
+    { "item": "minecraft:copper_shovel", "lipid_cost": 34 },
+    { "item": "minecraft:copper_hoe", "lipid_cost": 60 },
+    { "item": "minecraft:fishing_rod", "lipid_cost": 22 }
+  ]
+}

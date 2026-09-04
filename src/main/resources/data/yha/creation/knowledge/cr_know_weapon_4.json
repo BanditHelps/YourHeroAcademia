@@ -1,0 +1,7 @@
+{
+  "ability": "cr_know_weapon_4",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:iron_sword", "lipid_cost": 108 }
+  ]
+}

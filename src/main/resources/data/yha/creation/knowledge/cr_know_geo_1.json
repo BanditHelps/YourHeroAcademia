@@ -1,0 +1,11 @@
+{
+  "ability": "cr_know_geo_1",
+  "tab": "materials",
+  "entries": [
+    { "item": "minecraft:flint", "lipid_cost": 5, "research_cost": 32 },
+    { "item": "minecraft:copper_ingot", "lipid_cost": 26, "research_cost": 64, "nugget": "minecraft:copper_nugget", "block": "minecraft:copper_block" },
+    { "item": "minecraft:coal", "lipid_cost": 13, "research_cost": 64, "block": "minecraft:coal_block" },
+    { "item": "minecraft:charcoal", "lipid_cost": 13, "research_cost": 64 },
+    { "item": "minecraft:copper_torch", "tab": "blocks", "lipid_cost": 3, "group": "yha:torches" }
+  ]
+}

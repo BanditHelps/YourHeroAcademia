@@ -1,0 +1,8 @@
+{
+  "ability": "cr_know_chemical_2",
+  "research_cost": 5,
+  "entries": [
+    { "effect": "minecraft:strength", "lipid_cost": 50, "lipid_cost_per_amplifier": 15 },
+    { "effect": "minecraft:absorption", "lipid_cost": 50, "lipid_cost_per_amplifier": 15 }
+  ]
+}

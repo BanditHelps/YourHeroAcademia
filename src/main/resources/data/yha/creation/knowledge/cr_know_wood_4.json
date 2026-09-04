@@ -1,0 +1,66 @@
+{
+  "ability": "cr_know_wood_4",
+  "tab": "blocks",
+  "entries": [
+    {
+      "item": "minecraft:oak_sign",
+      "group": "yha:signs",
+      "group_icon": "minecraft:oak_sign",
+      "lipid_cost": 8,
+      "unlock_mode": "wood",
+      "unlock_tag": "minecraft:signs"
+    },
+    {
+      "item": "minecraft:oak_hanging_sign",
+      "group": "yha:signs",
+      "lipid_cost": 10,
+      "unlock_mode": "wood",
+      "unlock_tag": "minecraft:hanging_signs"
+    },
+    {
+      "item": "minecraft:oak_shelf",
+      "group": "yha:shelves",
+      "group_icon": "minecraft:oak_shelf",
+      "lipid_cost": 8,
+      "unlock_mode": "wood",
+      "unlock_tag": "minecraft:wooden_shelves"
+    },
+    { "item": "minecraft:ladder", "lipid_cost": 6 },
+    { "item": "minecraft:scaffolding", "lipid_cost": 8 },
+    { "item": "minecraft:barrel", "lipid_cost": 12, "group": "yha:storage", "group_icon": "minecraft:chest" },
+    { "item": "minecraft:chest", "lipid_cost": 16, "group": "yha:storage" },
+    { "item": "minecraft:copper_chest", "lipid_cost": 20, "group": "yha:storage" },
+    {
+      "item": "minecraft:oak_boat",
+      "tab": "gear",
+      "group": "yha:boats",
+      "group_icon": "minecraft:oak_boat",
+      "lipid_cost": 16,
+      "unlock_mode": "wood",
+      "unlock_tag": "yha:boats"
+    },
+    {
+      "item": "minecraft:oak_chest_boat",
+      "tab": "gear",
+      "group": "yha:boats",
+      "lipid_cost": 24,
+      "unlock_mode": "wood",
+      "unlock_tag": "minecraft:chest_boats"
+    },
+    { "item": "minecraft:crafting_table", "lipid_cost": 16, "group": "yha:workstations", "group_icon": "minecraft:crafting_table" },
+    { "item": "minecraft:furnace", "lipid_cost": 20, "group": "yha:workstations" },
+    { "item": "minecraft:blast_furnace", "lipid_cost": 24, "group": "yha:workstations" },
+    { "item": "minecraft:smoker", "lipid_cost": 24, "group": "yha:workstations" },
+    { "item": "minecraft:cartography_table", "lipid_cost": 20, "group": "yha:workstations" },
+    { "item": "minecraft:fletching_table", "lipid_cost": 20, "group": "yha:workstations" },
+    { "item": "minecraft:smithing_table", "lipid_cost": 24, "group": "yha:workstations" },
+    { "item": "minecraft:loom", "lipid_cost": 20, "group": "yha:workstations" },
+    { "item": "minecraft:grindstone", "lipid_cost": 22, "group": "yha:workstations" },
+    { "item": "minecraft:stonecutter", "lipid_cost": 22, "group": "yha:workstations" },
+    { "item": "minecraft:lectern", "lipid_cost": 24, "group": "yha:workstations" },
+    { "item": "minecraft:crafter", "lipid_cost": 28, "group": "yha:workstations" },
+    { "item": "minecraft:brewing_stand", "lipid_cost": 32, "group": "yha:workstations" },
+    { "item": "minecraft:enchanting_table", "lipid_cost": 90, "research_cost": 16, "group": "yha:workstations" },
+    { "item": "minecraft:anvil", "lipid_cost": 80, "group": "yha:workstations" }
+  ]
+}

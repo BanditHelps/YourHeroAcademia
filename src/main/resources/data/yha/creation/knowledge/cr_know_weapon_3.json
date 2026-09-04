@@ -1,0 +1,7 @@
+{
+  "ability": "cr_know_weapon_3",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:golden_sword", "lipid_cost": 108 }
+  ]
+}

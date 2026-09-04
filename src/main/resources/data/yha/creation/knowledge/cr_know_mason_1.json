@@ -1,0 +1,20 @@
+{
+  "ability": "cr_know_mason_1",
+  "tab": "blocks",
+  "entries": [
+    { "item": "minecraft:stone", "lipid_cost": 1, "group": "yha:stone" },
+    { "item": "minecraft:deepslate", "lipid_cost": 2, "group": "yha:deepslate" },
+    { "item": "minecraft:granite", "lipid_cost": 1, "group": "yha:granite" },
+    { "item": "minecraft:diorite", "lipid_cost": 1, "group": "yha:diorite" },
+    { "item": "minecraft:andesite", "lipid_cost": 1, "group": "yha:andesite" },
+    { "item": "minecraft:tuff", "lipid_cost": 1, "group": "yha:tuff" },
+    {
+      "item": "minecraft:sand",
+      "lipid_cost": 2,
+      "group": "yha:sand",
+      "group_icon": "minecraft:sand",
+      "unlock_ability": "cr_know_mason_1",
+      "unlock_items": ["minecraft:red_sand"]
+    }
+  ]
+}

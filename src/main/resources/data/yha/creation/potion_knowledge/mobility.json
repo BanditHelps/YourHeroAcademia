@@ -1,0 +1,11 @@
+{
+  "ability": "cr_know_chemical_1",
+  "group": "yha:mobility",
+  "group_icon": "minecraft:rabbit_foot",
+  "research_cost": 3,
+  "entries": [
+    { "effect": "minecraft:jump_boost", "lipid_cost": 30, "lipid_cost_per_amplifier": 12 },
+    { "effect": "minecraft:slow_falling", "ability": "cr_know_chemical_2", "lipid_cost": 50, "lipid_cost_per_amplifier": 10, "research_cost": 5 },
+    { "effect": "minecraft:levitation", "ability": "cr_know_chemical_2", "lipid_cost": 50, "lipid_cost_per_amplifier": 15, "research_cost": 5 }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "ability": "cr_know_armor_1",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:leather_helmet", "lipid_cost": 65, "research_cost": 2 },
+    { "item": "minecraft:leather_chestplate", "lipid_cost": 104, "research_cost": 2 },
+    { "item": "minecraft:leather_leggings", "lipid_cost": 91, "research_cost": 2 },
+    { "item": "minecraft:leather_boots", "lipid_cost": 52, "research_cost": 2 }
+  ]
+}
