@@ -4,6 +4,7 @@ import com.github.bandithelps.utils.stamina.StaminaProperties;
 import com.github.bandithelps.utils.stamina.StaminaUtil;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.threetag.palladium.logic.context.DataContext;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
 import net.threetag.palladium.power.ability.AbilityProperties;
@@ -44,14 +45,15 @@ public abstract class AbilityInstanceMixin<T extends Ability> {
 
         AbilityProperties properties = this.ability.getProperties();
         StaminaProperties stamina = StaminaProperties.of(properties);
+        DataContext context = DataContext.forAbility(serverPlayer, (AbilityInstance<?>) (Object) this);
 
-        int activationStamina = stamina.yha$getActivationStamina();
+        int activationStamina = stamina.yha$resolveActivationStamina(context);
         if (this.enabledTicks == 1) {
             StaminaUtil.useStamina(serverPlayer, activationStamina);
         }
 
-        int interval = stamina.yha$getStaminaInterval();
-        int intervalCost = stamina.yha$getStaminaIntervalCost();
+        int interval = stamina.yha$resolveStaminaInterval(context);
+        int intervalCost = stamina.yha$resolveStaminaIntervalCost(context);
         if (interval > 0 && this.enabledTicks % interval == 0) {
             StaminaUtil.useStamina(serverPlayer, intervalCost);
         }

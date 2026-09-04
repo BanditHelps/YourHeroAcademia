@@ -1,0 +1,6 @@
+{
+  "screen_layout": "yha:power/float",
+  "animation_controller": {
+    "idle": "yha:float"
+  }
+}

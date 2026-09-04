@@ -178,9 +178,24 @@ public class TreeEditorAbilityEditScreen extends TreeEditorPopupScreen {
         this.addToggle("Hidden in tree", this.hiddenInGui, value -> this.hiddenInGui = value, fieldW);
         this.addToggle("Hidden in bar", this.hiddenInBar, value -> this.hiddenInBar = value, fieldW);
         this.addNumber("List index", this.listIndex, value -> this.listIndex = value, fieldW);
-        this.addNumber("Activation stamina", this.activationStamina, value -> this.activationStamina = value, fieldW);
-        this.addNumber("Stamina interval", this.staminaInterval, value -> this.staminaInterval = value, fieldW);
-        this.addNumber("Interval cost", this.staminaIntervalCost, value -> this.staminaIntervalCost = value, fieldW);
+        if (this.node.hasCustomActivationStamina()) {
+            this.addRow("Activation stamina", this.addRenderableWidget(Button.builder(Component.literal("dynamic Value"), button -> {
+            }).bounds(0, 0, fieldW, FIELD_H).build()));
+        } else {
+            this.addNumber("Activation stamina", this.activationStamina, value -> this.activationStamina = value, fieldW);
+        }
+        if (this.node.hasCustomStaminaInterval()) {
+            this.addRow("Stamina interval", this.addRenderableWidget(Button.builder(Component.literal("dynamic Value"), button -> {
+            }).bounds(0, 0, fieldW, FIELD_H).build()));
+        } else {
+            this.addNumber("Stamina interval", this.staminaInterval, value -> this.staminaInterval = value, fieldW);
+        }
+        if (this.node.hasCustomStaminaIntervalCost()) {
+            this.addRow("Interval cost", this.addRenderableWidget(Button.builder(Component.literal("dynamic Value"), button -> {
+            }).bounds(0, 0, fieldW, FIELD_H).build()));
+        } else {
+            this.addNumber("Interval cost", this.staminaIntervalCost, value -> this.staminaIntervalCost = value, fieldW);
+        }
         this.addRow("Position", this.addRenderableWidget(Button.builder(
                         Component.literal(this.node.getGridX() + ", " + this.node.getGridY()),
                         button -> {
@@ -392,9 +407,15 @@ public class TreeEditorAbilityEditScreen extends TreeEditorPopupScreen {
         this.node.setHiddenInGui(this.hiddenInGui);
         this.node.setHiddenInBar(this.hiddenInBar);
         this.node.setListIndex(parseInt(this.listIndex, 0));
-        this.node.setActivationStamina(parseInt(this.activationStamina, 0));
-        this.node.setStaminaInterval(parseInt(this.staminaInterval, 0));
-        this.node.setStaminaIntervalCost(parseInt(this.staminaIntervalCost, 0));
+        if (!this.node.hasCustomActivationStamina()) {
+            this.node.setActivationStamina(parseInt(this.activationStamina, 0));
+        }
+        if (!this.node.hasCustomStaminaInterval()) {
+            this.node.setStaminaInterval(parseInt(this.staminaInterval, 0));
+        }
+        if (!this.node.hasCustomStaminaIntervalCost()) {
+            this.node.setStaminaIntervalCost(parseInt(this.staminaIntervalCost, 0));
+        }
         this.node.setTypeFields(this.typeFields);
         this.node.setUnlocking(this.unlocking);
         this.node.setEnabling(this.enabling);

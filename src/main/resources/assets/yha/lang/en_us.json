@@ -59,6 +59,8 @@
   "palladium.ability.yha.set_body_float": "Body - Set Float",
   "palladium.ability.yha.set_body_string": "Body - Set String",
 
+  "palladium.ability.yha.float": "Float",
+
   "palladium.ability.yha.dash": "Dash",
   "palladium.ability.yha.play_sound": "Play Sound",
   "palladium.ability.yha.potion_gen": "Spawn Potion Field",

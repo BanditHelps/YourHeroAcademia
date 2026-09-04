@@ -5,7 +5,9 @@
   "mixins": [
     "AbilityPropertiesMixin",
     "AbilityInstanceMixin",
-    "ServerCommonPacketListenerImplMixin"
+    "ServerCommonPacketListenerImplMixin",
+    "PlayerFallFlyingMixin",
+    "FireworkRocketEntityMixin"
   ],
   "client": [
     "AbilityBarMixin",

@@ -1,0 +1,30 @@
+{
+	"initial_state": "off",
+	"blend_transition": 8,
+	"animations": {
+		"hover": "yha:float.hovering",
+		"sit": "yha:float.sitting"
+	},
+	"states": {
+		"off": {
+			"animation": "palladium:empty",
+			"transitions": {
+				"hovering": "yha.float_pose()"
+			}
+		},
+		"hovering": {
+			"animation": "#hover",
+			"transitions": {
+				"off": "yha.float_pose() == false",
+				"sitting": "yha.float_sitting()"
+			}
+		},
+		"sitting": {
+			"animation": "#sit",
+			"transitions": {
+				"off": "yha.float_pose() == false",
+				"hovering": "yha.float_sitting() == false"
+			}
+		}
+	}
+}

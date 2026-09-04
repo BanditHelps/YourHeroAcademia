@@ -1,0 +1,70 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"float.hovering": {
+			"loop": true,
+			"animation_length": 8,
+			"bones": {
+				"body": {
+					"rotation": ["0.5 + yha.float_lean() * 80", 0, 0],
+					"position": [0, "math.sin(query.anim_time * 90) * 0.4 * (1 - yha.float_lean()) - 9 * yha.float_lean()", 0]
+				},
+				"head": {
+					"rotation": ["palladium.head_x_rotation() - (0.5 + yha.float_lean() * 80)", "pal.disabled", "pal.disabled"]
+				},
+				"right_arm": {
+					"rotation": [
+						"5.4245 + yha.float_lean() * 2.15",
+						"8.4547 - yha.float_lean() * 5.38",
+						"15.7351 - yha.float_lean() * 5.26 + math.sin(query.anim_time * 90) * 3 * (1 - yha.float_lean())"
+					]
+				},
+				"left_arm": {
+					"rotation": [
+						"4.3737 + yha.float_lean() * 3.24",
+						"-3.6765 + yha.float_lean() * 5.61",
+						"-12.9169 + yha.float_lean() * 2.55 - math.sin(query.anim_time * 90) * 3 * (1 - yha.float_lean())"
+					]
+				},
+				"right_leg": {
+					"rotation": [
+						"3.1449 + yha.float_lean() * 10.5 + math.sin(query.anim_time * 45) * 4 * (1 - yha.float_lean())",
+						"10.5007 - yha.float_lean() * 8",
+						"6.3952 - yha.float_lean() * 11"
+					]
+				},
+				"left_leg": {
+					"rotation": [
+						"-10.9085 + yha.float_lean() * 26 + math.cos(query.anim_time * 45) * 4 * (1 - yha.float_lean())",
+						"-3.5051 + yha.float_lean() * 8.95",
+						"-6.7681 + yha.float_lean() * 2.85"
+					]
+				}
+			}
+		},
+		"float.sitting": {
+			"loop": true,
+			"animation_length": 8,
+			"bones": {
+				"body": {
+					"rotation": [-12, 0, 0],
+					"position": [0, "math.sin(query.anim_time * 45) * 0.3", 0]
+				},
+				"right_arm": {
+					"rotation": [21.6255, 25.4026, "24.9068 + math.sin(query.anim_time * 90) * 3"]
+				},
+				"left_arm": {
+					"rotation": [20.5461, -28.0856, "-32.8476 - math.sin(query.anim_time * 90) * 3"]
+				},
+				"right_leg": {
+					"rotation": ["-88.1297 + math.sin(query.anim_time * 45) * 3", 7.6944, -3.5216],
+					"position": [0, 0, 1]
+				},
+				"left_leg": {
+					"rotation": ["-88.1922 + math.cos(query.anim_time * 45) * 2", -13.5138, -2.5625],
+					"position": [0, 0, 0]
+				}
+			}
+		}
+	}
+}

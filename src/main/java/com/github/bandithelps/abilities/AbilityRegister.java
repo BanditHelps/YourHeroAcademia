@@ -29,6 +29,7 @@ import com.github.bandithelps.abilities.common.SmokeCanisterChargeAbility;
 import com.github.bandithelps.abilities.creation.CreationQuickSlotAbility;
 import com.github.bandithelps.abilities.creation.OpenCreationMenuAbility;
 import com.github.bandithelps.abilities.common.SprayAttackAbility;
+import com.github.bandithelps.abilities.floatquirk.FloatAbility;
 import com.github.bandithelps.abilities.movement.DashAbility;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -81,6 +82,11 @@ public class AbilityRegister {
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipBlockTossAbility.Serializer> BLACKWHIP_BLOCK_TOSS;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipLimbReinforceAbility.Serializer> BLACKWHIP_LIMB_REINFORCE;
     public static final DeferredHolder<AbilitySerializer<?>, BlackwhipBodyReinforceAbility.Serializer> BLACKWHIP_BODY_REINFORCE;
+
+    /*=========================
+     |    Float               |
+     =========================*/
+    public static final DeferredHolder<AbilitySerializer<?>, FloatAbility.Serializer> FLOAT;
 
     /*=========================
      |    Smokescreen         |
@@ -137,6 +143,7 @@ public class AbilityRegister {
         BLACKWHIP_BLOCK_TOSS = ABILITIES.register("blackwhip_block_toss", BlackwhipBlockTossAbility.Serializer::new);
         BLACKWHIP_LIMB_REINFORCE = ABILITIES.register("blackwhip_limb_reinforce", BlackwhipLimbReinforceAbility.Serializer::new);
         BLACKWHIP_BODY_REINFORCE = ABILITIES.register("blackwhip_body_reinforce", BlackwhipBodyReinforceAbility.Serializer::new);
+        FLOAT = ABILITIES.register("float", FloatAbility.Serializer::new);
     }
 
 }
