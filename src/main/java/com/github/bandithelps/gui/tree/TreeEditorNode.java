@@ -31,6 +31,12 @@ public final class TreeEditorNode {
     private int activationStamina;
     private int staminaInterval;
     private int staminaIntervalCost;
+    @Nullable
+    private JsonElement activationStaminaValue;
+    @Nullable
+    private JsonElement staminaIntervalValue;
+    @Nullable
+    private JsonElement staminaIntervalCostValue;
     private JsonObject typeFields;
     @Nullable
     private JsonElement unlocking;
@@ -86,6 +92,9 @@ public final class TreeEditorNode {
         this.activationStamina = Math.max(0, activationStamina);
         this.staminaInterval = Math.max(0, staminaInterval);
         this.staminaIntervalCost = Math.max(0, staminaIntervalCost);
+        this.activationStaminaValue = null;
+        this.staminaIntervalValue = null;
+        this.staminaIntervalCostValue = null;
         this.typeFields = typeFields == null ? new JsonObject() : typeFields.deepCopy();
         this.enabling = copy(enabling);
         this.created = created;
@@ -96,7 +105,7 @@ public final class TreeEditorNode {
     }
 
     public TreeEditorNode copy(String key, float gridX, float gridY) {
-        return new TreeEditorNode(
+        TreeEditorNode copy = new TreeEditorNode(
                 key,
                 this.typeId,
                 this.title,
@@ -119,6 +128,10 @@ public final class TreeEditorNode {
                 copy(this.enabling),
                 true
         );
+        copy.activationStaminaValue = copy(this.activationStaminaValue);
+        copy.staminaIntervalValue = copy(this.staminaIntervalValue);
+        copy.staminaIntervalCostValue = copy(this.staminaIntervalCostValue);
+        return copy;
     }
 
     public static TreeEditorNode created(String key, String typeId, String title, float gridX, float gridY) {
@@ -163,7 +176,7 @@ public final class TreeEditorNode {
                 typeFields.add(entry.getKey(), entry.getValue().deepCopy());
             }
         }
-        return new TreeEditorNode(
+        TreeEditorNode node = new TreeEditorNode(
                 key,
                 typeId,
                 string(properties, "title", key),
@@ -179,14 +192,16 @@ public final class TreeEditorNode {
                 bool(properties, "hidden_in_gui", false),
                 bool(properties, "hidden_in_bar", false),
                 integer(properties, "list_index", 0),
-                integer(properties, "activation_stamina", 0),
-                integer(properties, "stamina_interval", 0),
-                integer(properties, "stamina_interval_cost", 0),
+                0,
+                0,
+                0,
                 typeFields,
                 unlocking,
                 enabling,
                 false
         );
+        node.readStaminaProperties(properties);
+        return node;
     }
 
     public JsonObject toAbilityJson() {
@@ -209,15 +224,9 @@ public final class TreeEditorNode {
         if (this.listIndex != 0) {
             properties.addProperty("list_index", this.listIndex);
         }
-        if (this.activationStamina > 0) {
-            properties.addProperty("activation_stamina", this.activationStamina);
-        }
-        if (this.staminaInterval > 0) {
-            properties.addProperty("stamina_interval", this.staminaInterval);
-        }
-        if (this.staminaIntervalCost > 0) {
-            properties.addProperty("stamina_interval_cost", this.staminaIntervalCost);
-        }
+        writeStamina(properties, "activation_stamina", this.activationStaminaValue, this.activationStamina);
+        writeStamina(properties, "stamina_interval", this.staminaIntervalValue, this.staminaInterval);
+        writeStamina(properties, "stamina_interval_cost", this.staminaIntervalCostValue, this.staminaIntervalCost);
         if (!this.connectionPaths.isEmpty()) {
             properties.add(TreeConnectionPaths.JSON_KEY, this.connectionPaths.toJson(this.parentKeys.size()));
         }
@@ -442,6 +451,11 @@ public final class TreeEditorNode {
 
     public void setActivationStamina(int activationStamina) {
         this.activationStamina = Math.max(0, activationStamina);
+        this.activationStaminaValue = null;
+    }
+
+    public boolean hasCustomActivationStamina() {
+        return this.activationStaminaValue != null;
     }
 
     public int getStaminaInterval() {
@@ -450,6 +464,11 @@ public final class TreeEditorNode {
 
     public void setStaminaInterval(int staminaInterval) {
         this.staminaInterval = Math.max(0, staminaInterval);
+        this.staminaIntervalValue = null;
+    }
+
+    public boolean hasCustomStaminaInterval() {
+        return this.staminaIntervalValue != null;
     }
 
     public int getStaminaIntervalCost() {
@@ -458,6 +477,11 @@ public final class TreeEditorNode {
 
     public void setStaminaIntervalCost(int staminaIntervalCost) {
         this.staminaIntervalCost = Math.max(0, staminaIntervalCost);
+        this.staminaIntervalCostValue = null;
+    }
+
+    public boolean hasCustomStaminaIntervalCost() {
+        return this.staminaIntervalCostValue != null;
     }
 
     public JsonObject getTypeFields() {
@@ -553,6 +577,53 @@ public final class TreeEditorNode {
             return fallback;
         }
         return object.get(key).getAsString();
+    }
+
+    private void readStaminaProperties(@Nullable JsonObject properties) {
+        this.activationStaminaValue = readCustomStamina(properties, "activation_stamina");
+        this.activationStamina = this.activationStaminaValue == null
+                ? Math.max(0, integer(properties, "activation_stamina", 0))
+                : 0;
+        this.staminaIntervalValue = readCustomStamina(properties, "stamina_interval");
+        this.staminaInterval = this.staminaIntervalValue == null
+                ? Math.max(0, integer(properties, "stamina_interval", 0))
+                : 0;
+        this.staminaIntervalCostValue = readCustomStamina(properties, "stamina_interval_cost");
+        this.staminaIntervalCost = this.staminaIntervalCostValue == null
+                ? Math.max(0, integer(properties, "stamina_interval_cost", 0))
+                : 0;
+    }
+
+    @Nullable
+    private static JsonElement readCustomStamina(@Nullable JsonObject properties, String key) {
+        if (properties == null || !properties.has(key)) {
+            return null;
+        }
+        JsonElement element = properties.get(key);
+        return isPlainInt(element) ? null : copy(element);
+    }
+
+    private static void writeStamina(JsonObject properties, String key, @Nullable JsonElement custom, int amount) {
+        if (custom != null) {
+            properties.add(key, custom.deepCopy());
+            return;
+        }
+        if (amount > 0) {
+            properties.addProperty(key, amount);
+        }
+    }
+
+    private static boolean isPlainInt(@Nullable JsonElement element) {
+        if (element == null || !element.isJsonPrimitive() || !element.getAsJsonPrimitive().isNumber()) {
+            return false;
+        }
+        try {
+            double value = element.getAsDouble();
+            int truncated = (int) value;
+            return value == truncated && truncated >= 0;
+        } catch (RuntimeException ignored) {
+            return false;
+        }
     }
 
     private static boolean bool(@Nullable JsonObject object, String key, boolean fallback) {

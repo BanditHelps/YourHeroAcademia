@@ -42,10 +42,6 @@ public class FloatAbility extends Ability {
             instance.group(
                     Value.CODEC.optionalFieldOf("max_height", new StaticValue((float) FloatPhysics.DEFAULT_MAX_HEIGHT))
                             .forGetter((ab) -> ab.maxHeight),
-                    Value.CODEC.optionalFieldOf("stamina_interval", new StaticValue(20.0f))
-                            .forGetter((ab) -> ab.staminaInterval),
-                    Value.CODEC.optionalFieldOf("stamina_interval_cost", new StaticValue(3.0f))
-                            .forGetter((ab) -> ab.staminaCost),
                     Value.CODEC.optionalFieldOf("max_speed", new StaticValue((float) FloatPhysics.DEFAULT_MAX_SPEED))
                             .forGetter((ab) -> ab.maxSpeed),
                     propertiesCodec(),
@@ -53,17 +49,13 @@ public class FloatAbility extends Ability {
                     energyBarUsagesCodec()).apply(instance, FloatAbility::new));
 
     public final Value maxHeight;
-    public final Value staminaInterval;
-    public final Value staminaCost;
     public final Value maxSpeed;
 
-    public FloatAbility(Value maxHeight, Value staminaInterval, Value staminaCost, Value maxSpeed,
+    public FloatAbility(Value maxHeight, Value maxSpeed,
                         AbilityProperties properties, AbilityStateManager conditions,
                         List<EnergyBarUsage> energyBarUsages) {
         super(properties, conditions, energyBarUsages);
         this.maxHeight = maxHeight;
-        this.staminaInterval = staminaInterval;
-        this.staminaCost = staminaCost;
         this.maxSpeed = maxSpeed;
     }
 
@@ -93,7 +85,6 @@ public class FloatAbility extends Ability {
             double speed = resolveMaxSpeed(entity, abilityInstance);
             FloatPhysics.rememberLimits(entity, height, speed);
             FloatPhysics.tick(entity, height, speed);
-            drainStamina(entity, abilityInstance);
         }
         return super.tick(entity, abilityInstance, enabled);
     }
@@ -112,22 +103,6 @@ public class FloatAbility extends Ability {
         return Math.max(0.0d, this.maxSpeed.getAsFloat(DataContext.forAbility(entity, abilityInstance)));
     }
 
-    private void drainStamina(LivingEntity entity, AbilityInstance<?> abilityInstance) {
-        if (!(entity instanceof ServerPlayer player)) {
-            return;
-        }
-        FloatPhysics.Session session = FloatPhysics.sessionOf(entity);
-        if (session == null) {
-            return;
-        }
-        DataContext context = DataContext.forAbility(entity, abilityInstance);
-        int interval = Math.max(1, this.staminaInterval.getAsInt(context));
-        int cost = Math.max(0, this.staminaCost.getAsInt(context));
-        if (cost > 0 && session.ticks > 0 && session.ticks % interval == 0) {
-            StaminaUtil.useStamina(player, cost);
-        }
-    }
-
     @Override
     public AbilitySerializer<?> getSerializer() {
         return AbilityRegister.FLOAT.get();
@@ -143,13 +118,9 @@ public class FloatAbility extends Ability {
         public void addDocumentation(CodecDocumentationBuilder<Ability, FloatAbility> builder, HolderLookup.Provider provider) {
             builder.setDescription("Toggle zero gravity. Preserves momentum, eases falls to a stop, and only self-moves up or down.")
                     .add("max_height", TYPE_VALUE, "Blocks above the solid ground underfoot. Space-bar self-ascent fades exponentially past this; fireworks and other quirks can overshoot.")
-                    .add("stamina_interval", TYPE_VALUE, "Ticks between stamina drains while floating.")
-                    .add("stamina_interval_cost", TYPE_VALUE, "Stamina drained each interval. Leave mixin stamina fields at 0 to avoid double-charging.")
                     .add("max_speed", TYPE_VALUE, "Safety speed cap in blocks per tick. Fireworks use a separate lower cap.")
                     .addExampleObject(new FloatAbility(
                             new StaticValue(8.0f),
-                            new StaticValue(20.0f),
-                            new StaticValue(3.0f),
                             new StaticValue(8.0f),
                             AbilityProperties.BASIC,
                             AbilityStateManager.EMPTY,

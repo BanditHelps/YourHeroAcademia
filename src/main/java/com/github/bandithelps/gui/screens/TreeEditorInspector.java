@@ -178,18 +178,30 @@ public final class TreeEditorInspector {
             node.setListIndex(parseInt(value, 0));
             draft.markDirty();
         });
-        this.numberField("Activation stamina", Integer.toString(node.getActivationStamina()), value -> {
-            node.setActivationStamina(parseInt(value, 0));
-            draft.markDirty();
-        });
-        this.numberField("Stamina interval", Integer.toString(node.getStaminaInterval()), value -> {
-            node.setStaminaInterval(parseInt(value, 0));
-            draft.markDirty();
-        });
-        this.numberField("Interval cost", Integer.toString(node.getStaminaIntervalCost()), value -> {
-            node.setStaminaIntervalCost(parseInt(value, 0));
-            draft.markDirty();
-        });
+        if (node.hasCustomActivationStamina()) {
+            this.note("Activation stamina  (dynamic Value)");
+        } else {
+            this.numberField("Activation stamina", Integer.toString(node.getActivationStamina()), value -> {
+                node.setActivationStamina(parseInt(value, 0));
+                draft.markDirty();
+            });
+        }
+        if (node.hasCustomStaminaInterval()) {
+            this.note("Stamina interval  (dynamic Value)");
+        } else {
+            this.numberField("Stamina interval", Integer.toString(node.getStaminaInterval()), value -> {
+                node.setStaminaInterval(parseInt(value, 0));
+                draft.markDirty();
+            });
+        }
+        if (node.hasCustomStaminaIntervalCost()) {
+            this.note("Interval cost  (dynamic Value)");
+        } else {
+            this.numberField("Interval cost", Integer.toString(node.getStaminaIntervalCost()), value -> {
+                node.setStaminaIntervalCost(parseInt(value, 0));
+                draft.markDirty();
+            });
+        }
         this.note("Position  " + node.getGridX() + ", " + node.getGridY());
 
         this.section("ABILITY");
@@ -247,9 +259,21 @@ public final class TreeEditorInspector {
         this.sharedToggle("Hidden in tree", nodes, TreeEditorNode::isHiddenInGui, value -> this.screen.setNodesHiddenInTree(nodes, value));
         this.sharedToggle("Hidden in bar", nodes, TreeEditorNode::isHiddenInBar, value -> this.screen.setNodesHiddenInBar(nodes, value));
         this.sharedTextField("List index", nodes, node -> Integer.toString(node.getListIndex()), 8, (node, value) -> node.setListIndex(parseInt(value, 0)));
-        this.sharedTextField("Activation stamina", nodes, node -> Integer.toString(node.getActivationStamina()), 8, (node, value) -> node.setActivationStamina(parseInt(value, 0)));
-        this.sharedTextField("Stamina interval", nodes, node -> Integer.toString(node.getStaminaInterval()), 8, (node, value) -> node.setStaminaInterval(parseInt(value, 0)));
-        this.sharedTextField("Interval cost", nodes, node -> Integer.toString(node.getStaminaIntervalCost()), 8, (node, value) -> node.setStaminaIntervalCost(parseInt(value, 0)));
+        this.sharedTextField("Activation stamina", nodes, node -> node.hasCustomActivationStamina() ? "Value" : Integer.toString(node.getActivationStamina()), 8, (node, value) -> {
+            if (!node.hasCustomActivationStamina()) {
+                node.setActivationStamina(parseInt(value, 0));
+            }
+        });
+        this.sharedTextField("Stamina interval", nodes, node -> node.hasCustomStaminaInterval() ? "Value" : Integer.toString(node.getStaminaInterval()), 8, (node, value) -> {
+            if (!node.hasCustomStaminaInterval()) {
+                node.setStaminaInterval(parseInt(value, 0));
+            }
+        });
+        this.sharedTextField("Interval cost", nodes, node -> node.hasCustomStaminaIntervalCost() ? "Value" : Integer.toString(node.getStaminaIntervalCost()), 8, (node, value) -> {
+            if (!node.hasCustomStaminaIntervalCost()) {
+                node.setStaminaIntervalCost(parseInt(value, 0));
+            }
+        });
         this.note(nodes.size() + " nodes selected");
 
         this.section("ABILITY");

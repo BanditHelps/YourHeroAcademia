@@ -8,6 +8,8 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.MapLike;
+import net.threetag.palladium.logic.value.StaticValue;
+import net.threetag.palladium.logic.value.Value;
 import net.threetag.palladium.power.ability.AbilityProperties;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -40,13 +42,13 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties, Conne
     private static final String YHA_STAMINA_INTERVAL_COST_KEY = "stamina_interval_cost";
 
     @Unique
-    private int yha$activationStamina = 0;
+    private Value yha$activationStamina = new StaticValue(0);
 
     @Unique
-    private int yha$staminaInterval = 0;
+    private Value yha$staminaInterval = new StaticValue(0);
 
     @Unique
-    private int yha$staminaIntervalCost = 0;
+    private Value yha$staminaIntervalCost = new StaticValue(0);
 
     @Unique
     private TreeConnectionPaths yha$guiConnections = TreeConnectionPaths.EMPTY;
@@ -60,9 +62,9 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties, Conne
                 return baseCodec.decode(ops, input).map((decoded) -> {
                     AbilityProperties properties = decoded.getFirst();
                     StaminaProperties staminaProperties = StaminaProperties.of(properties);
-                    staminaProperties.yha$setActivationStamina(yha$readInt(ops, input, YHA_ACTIVATION_STAMINA_KEY, 0));
-                    staminaProperties.yha$setStaminaInterval(yha$readInt(ops, input, YHA_STAMINA_INTERVAL_KEY, 0));
-                    staminaProperties.yha$setStaminaIntervalCost(yha$readInt(ops, input, YHA_STAMINA_INTERVAL_COST_KEY, 0));
+                    staminaProperties.yha$setActivationStamina(yha$readValue(ops, input, YHA_ACTIVATION_STAMINA_KEY, new StaticValue(0)));
+                    staminaProperties.yha$setStaminaInterval(yha$readValue(ops, input, YHA_STAMINA_INTERVAL_KEY, new StaticValue(0)));
+                    staminaProperties.yha$setStaminaIntervalCost(yha$readValue(ops, input, YHA_STAMINA_INTERVAL_COST_KEY, new StaticValue(0)));
                     ConnectionPathProperties.of(properties).yha$setGuiConnections(yha$readConnections(ops, input));
                     return decoded;
                 });
@@ -73,11 +75,11 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties, Conne
                 StaminaProperties staminaProperties = StaminaProperties.of(input);
                 ConnectionPathProperties connectionProperties = ConnectionPathProperties.of(input);
                 return baseCodec.encode(input, ops, prefix).flatMap((encoded) ->
-                        yha$writeInt(ops, encoded, YHA_ACTIVATION_STAMINA_KEY, staminaProperties.yha$getActivationStamina())
+                        yha$writeValue(ops, encoded, YHA_ACTIVATION_STAMINA_KEY, staminaProperties.yha$getActivationStamina())
                                 .flatMap((withInitial) ->
-                                        yha$writeInt(ops, withInitial, YHA_STAMINA_INTERVAL_KEY, staminaProperties.yha$getStaminaInterval())
+                                        yha$writeValue(ops, withInitial, YHA_STAMINA_INTERVAL_KEY, staminaProperties.yha$getStaminaInterval())
                                                 .flatMap((withInterval) ->
-                                                        yha$writeInt(ops, withInterval, YHA_STAMINA_INTERVAL_COST_KEY, staminaProperties.yha$getStaminaIntervalCost())
+                                                        yha$writeValue(ops, withInterval, YHA_STAMINA_INTERVAL_COST_KEY, staminaProperties.yha$getStaminaIntervalCost())
                                                                 .flatMap((withCost) ->
                                                                         yha$writeConnections(ops, withCost, connectionProperties.yha$getGuiConnections())
                                                                 )
@@ -89,21 +91,26 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties, Conne
     }
 
     @Unique
-    private static <T> int yha$readInt(DynamicOps<T> ops, T input, String key, int fallback) {
+    private static <T> Value yha$readValue(DynamicOps<T> ops, T input, String key, Value fallback) {
         DataResult<MapLike<T>> mapResult = ops.getMap(input);
         if (mapResult.isError()) {
             return fallback;
         }
 
-        return mapResult.result()
-                .map((map) -> map.get(key))
-                .map((value) -> ops.getNumberValue(value).result().map(Number::intValue).orElse(fallback))
-                .orElse(fallback);
+        T raw = mapResult.result().map((map) -> map.get(key)).orElse(null);
+        if (raw == null) {
+            return fallback;
+        }
+        return Value.CODEC.parse(ops, raw).result().orElse(fallback);
     }
 
     @Unique
-    private static <T> DataResult<T> yha$writeInt(DynamicOps<T> ops, T input, String key, int value) {
-        return ops.mergeToMap(input, ops.createString(key), ops.createInt(value));
+    private static <T> DataResult<T> yha$writeValue(DynamicOps<T> ops, T input, String key, Value value) {
+        if (value == null) {
+            return DataResult.success(input);
+        }
+        return Value.CODEC.encodeStart(ops, value)
+                .flatMap((encoded) -> ops.mergeToMap(input, ops.createString(key), encoded));
     }
 
     @Unique
@@ -129,33 +136,33 @@ public abstract class AbilityPropertiesMixin implements StaminaProperties, Conne
     }
 
     @Override
-    public int yha$getActivationStamina() {
+    public Value yha$getActivationStamina() {
         return this.yha$activationStamina;
     }
 
     @Override
-    public void yha$setActivationStamina(int value) {
-        this.yha$activationStamina = Math.max(0, value);
+    public void yha$setActivationStamina(Value value) {
+        this.yha$activationStamina = value == null ? new StaticValue(0) : value;
     }
 
     @Override
-    public int yha$getStaminaInterval() {
+    public Value yha$getStaminaInterval() {
         return this.yha$staminaInterval;
     }
 
     @Override
-    public void yha$setStaminaInterval(int value) {
-        this.yha$staminaInterval = Math.max(0, value);
+    public void yha$setStaminaInterval(Value value) {
+        this.yha$staminaInterval = value == null ? new StaticValue(0) : value;
     }
 
     @Override
-    public int yha$getStaminaIntervalCost() {
+    public Value yha$getStaminaIntervalCost() {
         return this.yha$staminaIntervalCost;
     }
 
     @Override
-    public void yha$setStaminaIntervalCost(int value) {
-        this.yha$staminaIntervalCost = Math.max(0, value);
+    public void yha$setStaminaIntervalCost(Value value) {
+        this.yha$staminaIntervalCost = value == null ? new StaticValue(0) : value;
     }
 
     @Override

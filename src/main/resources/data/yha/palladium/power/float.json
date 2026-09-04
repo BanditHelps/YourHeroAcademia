@@ -42,34 +42,6 @@
         ],
         "fallback": 8
       },
-      "stamina_interval": {
-        "type": "yha:upgrade_switch",
-        "cases": [
-          {
-            "ability": "fl_tree_stamina_3",
-            "value": 40
-          }
-        ],
-        "fallback": 20
-      },
-      "stamina_interval_cost": {
-        "type": "yha:upgrade_switch",
-        "cases": [
-          {
-            "ability": "fl_tree_stamina_1",
-            "value": 2
-          },
-          {
-            "ability": "fl_tree_stamina_2",
-            "value": 1
-          },
-          {
-            "ability": "fl_tree_stamina_3",
-            "value": 1
-          }
-        ],
-        "fallback": 3
-      },
       "max_speed": 8.0,
       "properties": {
         "title": "Toggle Float",
@@ -80,7 +52,35 @@
         "gui_position": [
           0,
           -1
-        ]
+        ],
+        "stamina_interval": {
+          "type": "yha:upgrade_switch",
+          "cases": [
+            {
+              "ability": "fl_tree_stamina_3",
+              "value": 40
+            }
+          ],
+          "fallback": 20
+        },
+        "stamina_interval_cost": {
+          "type": "yha:upgrade_switch",
+          "cases": [
+            {
+              "ability": "fl_tree_stamina_1",
+              "value": 2
+            },
+            {
+              "ability": "fl_tree_stamina_2",
+              "value": 1
+            },
+            {
+              "ability": "fl_tree_stamina_3",
+              "value": 1
+            }
+          ],
+          "fallback": 3
+        }
       },
       "state": {
         "unlocking": {
