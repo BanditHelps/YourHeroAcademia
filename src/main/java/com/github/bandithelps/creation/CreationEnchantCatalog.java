@@ -19,6 +19,9 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 
+/**
+ * Handles the registration of valid Enchants from the data files
+ */
 public final class CreationEnchantCatalog {
     private static final CreationEnchantCatalog INSTANCE = new CreationEnchantCatalog();
 

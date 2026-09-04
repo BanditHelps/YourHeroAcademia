@@ -58,7 +58,7 @@ public final class ImpulseDetonation implements ThrowableDetonation {
         Vec3 origin = new Vec3(x, y, z);
 
         ThrowableExplosionDamageCalculator calculator = new ThrowableExplosionDamageCalculator(
-                spec.shouldBreakBlocks(),
+                spec.shouldBreakBlocks(level),
                 spec.scaledExplosionDamage() != 0.0f,
                 spec.explosionKnockback(),
                 spec.scaledExplosionDamage()

@@ -1,6 +1,9 @@
 {
   "itemGroup.yourheroacademia": "Your Hero Academia",
 
+  "gamerule.yha.throwable_block_damage": "Throwable Block Damage",
+  "gamerule.yha.throwable_block_damage.description": "Whether explosive throwables can break blocks and damage the environment.",
+
   "block.yourheroacademia.example_block": "Example Block",
   "block.yha.treadmill": "Treadmill",
   "block.yha.dna_analyzer": "DNA Analyzer",

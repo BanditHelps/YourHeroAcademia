@@ -1,5 +1,5 @@
 {
-  "message_id": "decay",
+  "message_id": "all",
   "scaling": "never",
   "exhaustion": 0.0,
   "effects": "hurt",

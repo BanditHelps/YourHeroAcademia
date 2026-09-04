@@ -88,7 +88,6 @@ public class CreationNotebookUiComponent extends UiWidget {
     private static final int MAT_Y = 39;
     private static final int MAT_COLS = 3;
     private static final int MAT_ROWS = 8;
-    private static final int MAT_PER_PAGE = MAT_COLS * MAT_ROWS;
     private static final int BLOCKS_X = 76;
     private static final int BLOCKS_Y = 39;
     private static final int BLOCKS_COLS = 5;

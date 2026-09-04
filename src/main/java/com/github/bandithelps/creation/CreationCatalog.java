@@ -25,6 +25,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
+/**
+ * Parses and registers all the data files for Creation into one place.
+ */
 public final class CreationCatalog {
     private static final CreationCatalog INSTANCE = new CreationCatalog();
 

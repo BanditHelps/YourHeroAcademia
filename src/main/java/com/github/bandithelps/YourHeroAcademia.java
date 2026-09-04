@@ -222,6 +222,7 @@ public final class YourHeroAcademia {
 
         ITEMS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
+        ModGameRules.GAME_RULES.register(modEventBus);
 
         // Custom palladium stuff
         AbilityRegister.ABILITIES.register(modEventBus);

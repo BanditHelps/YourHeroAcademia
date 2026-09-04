@@ -91,9 +91,5 @@ public class Config {
             .comment("Chance for a Book of Knowledge to appear in applicable chest loot. 0.0 is 0%, 1.0 is 100%.")
             .defineInRange("creationBookOfKnowledgeChance", 0.08D, 0.0D, 1.0D);
 
-    public static final ModConfigSpec.BooleanValue THROWABLE_BLOCK_DAMAGE = BUILDER
-            .comment("Master switch for throwable weapons breaking blocks. If false, no throwable (including grenades) destroys terrain, even when the item itself enables world damage.")
-            .define("throwableBlockDamage", true);
-
     static final ModConfigSpec SPEC = BUILDER.build();
 }

@@ -17,11 +17,12 @@ public final class ExplosionDetonation implements ThrowableDetonation {
             return;
         }
 
-        Level.ExplosionInteraction interaction = spec.shouldBreakBlocks()
+        boolean breakBlocks = spec.shouldBreakBlocks(level);
+        Level.ExplosionInteraction interaction = breakBlocks
                 ? Level.ExplosionInteraction.TNT
                 : Level.ExplosionInteraction.NONE;
         ThrowableExplosionDamageCalculator calculator = new ThrowableExplosionDamageCalculator(
-                spec.shouldBreakBlocks(),
+                breakBlocks,
                 spec.scaledExplosionDamage() != 0.0f,
                 spec.explosionKnockback(),
                 spec.scaledExplosionDamage()

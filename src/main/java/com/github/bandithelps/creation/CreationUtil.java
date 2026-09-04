@@ -224,7 +224,7 @@ public final class CreationUtil {
         if (stored == null || stored <= 0.0f) {
             return Config.CREATION_MAX_LIPIDS.get();
         }
-        return stored;
+        return Math.max(Config.CREATION_MAX_LIPIDS.get(), stored);
     }
 
     public static void setLipids(ServerPlayer player, float value) {

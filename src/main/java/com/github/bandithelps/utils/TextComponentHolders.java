@@ -5,6 +5,10 @@ import net.threetag.palladium.logic.context.DataContext;
 import net.threetag.palladium.logic.value.holder.TextComponentValueHolder;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Resolves the new TextComponentValue from palladium that allows power and ability names to be dynamic.
+ * Used primarily for the power tree editor
+ */
 public final class TextComponentHolders {
     private TextComponentHolders() {
     }

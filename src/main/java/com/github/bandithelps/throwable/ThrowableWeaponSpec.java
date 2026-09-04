@@ -1,6 +1,7 @@
 package com.github.bandithelps.throwable;
 
-import com.github.bandithelps.Config;
+import com.github.bandithelps.ModGameRules;
+import net.minecraft.server.level.ServerLevel;
 
 /**
  * Per-item configuration for a {@link ThrowableWeaponItem}. Set these values at item
@@ -100,8 +101,8 @@ public final class ThrowableWeaponSpec {
         return breaksBlocks;
     }
 
-    public boolean shouldBreakBlocks() {
-        return breaksBlocks && Config.THROWABLE_BLOCK_DAMAGE.get();
+    public boolean shouldBreakBlocks(ServerLevel level) {
+        return breaksBlocks && ModGameRules.throwableBlockDamage(level);
     }
 
     public float explosionRadius() {
