@@ -2,12 +2,10 @@ package com.github.bandithelps.abilities.floatquirk;
 
 import com.github.bandithelps.YourHeroAcademia;
 import com.github.bandithelps.abilities.AbilityRegister;
-import com.github.bandithelps.utils.stamina.StaminaUtil;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.threetag.palladium.documentation.CodecDocumentationBuilder;
 import net.threetag.palladium.logic.context.DataContext;
