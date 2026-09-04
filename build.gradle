@@ -6,46 +6,30 @@ plugins {
 }
 
 tasks.named('wrapper', Wrapper).configure {
-    // Define wrapper values here so as to not have to always do so when updating gradlew.properties.
-    // Switching this to Wrapper.DistributionType.ALL will download the full gradle sources that comes with
-    // documentation attached on cursor hover of gradle classes and methods. However, this comes with increased
-    // file size for Gradle. If you do switch this to ALL, run the Gradle wrapper task twice afterwards.
-    // (Verify by checking gradle/wrapper/gradle-wrapper.properties to see if distributionUrl now points to `-all`)
     distributionType = Wrapper.DistributionType.BIN
 }
 
-version = mod_version
+version = "${mod_version}+${minecraft_version}" as Object
 group = mod_group_id
 
 repositories {
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "Modrinth"
-                url = "https://api.modrinth.com/maven"
-            }
-        }
-        filter {
-            includeGroup "maven.modrinth"
-        }
+    mavenCentral()
+
+    maven {
+        name = "NeoForged"
+        url = "https://maven.neoforged.net/releases"
     }
 
-    // player animation
+    // PlayerAnimationLibrary
     maven {
         name = "RedlanceMinecraft"
         url = "https://repo.redlance.org/public"
     }
 
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "CurseForge"
-                url = "https://cursemaven.com"
-            }
-        }
-        filter {
-            includeGroup "curse.maven"
-        }
+    // Curios
+    maven {
+        name = "Illusive Soulworks maven"
+        url = "https://maven.theillusivec4.top/"
     }
 
     // GeckoLib
@@ -59,22 +43,32 @@ repositories {
         filter { includeGroupAndSubgroups('com.geckolib') }
     }
 
-    // Curios
-    maven {
-        name = "Illusive Soulworks maven"
-        url = "https://maven.theillusivec4.top/"
-    }
-
     // JEI
     maven {
         // location of the maven that hosts JEI files since January 2023
         name = "Jared's maven"
         url = "https://maven.blamejared.com/"
     }
+    maven {
+        // location of a maven mirror for JEI files, as a fallback
+        name = "ModMaven"
+        url = "https://modmaven.dev"
+    }
 
     // Terrablender
-    repositories {
-        maven { url = 'https://maven.minecraftforge.net/' }
+    maven { url = 'https://maven.minecraftforge.net/' }
+
+    // Modrinth (Palladium previews, FancyTabSections)
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
     }
 }
 
@@ -82,7 +76,6 @@ base {
     archivesName = mod_id
 }
 
-// Minecraft 26.1 uses Java 25, so mods should target Java 25.
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 neoForge {
@@ -90,18 +83,11 @@ neoForge {
     version = project.neo_version
 
     // This line is optional. Access Transformers are automatically detected
-    // accessTransformers = project.files('src/main/resources/META-INF/accesstransformer.cfg')
+    accessTransformers = project.files('src/main/resources/META-INF/accesstransformer.cfg')
 
     // Default run configurations.
     // These can be tweaked, removed, or duplicated as needed.
     runs {
-//        client {
-//            client()
-//
-//            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
-//            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-//        }
-
         client1 {
             client()
 
@@ -112,6 +98,7 @@ neoForge {
             programArgument 'Dev'
 
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            jvmArgument '-Dnet.minecraft.client.tts=false'
         }
 
         client2 {
@@ -120,10 +107,12 @@ neoForge {
             ideName = "Minecraft Client Bandit"
 
             gameDirectory = project.file('run/client2')
-            programArgument '--username'
-            programArgument 'B4nditHelps'
+            // Real Microsoft/Minecraft login via DevLogin (not --username).
+            // First launch: the console will ask you to visit https://www.microsoft.com/link
+            devLogin = true
 
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            jvmArgument '-Dnet.minecraft.client.tts=false'
         }
 
         server {
@@ -132,9 +121,6 @@ neoForge {
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
-        // This run config launches GameTestServer and runs all registered gametests, then exits.
-        // By default, the server will crash when no gametests are provided.
-        // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
             type = "gameTestServer"
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
@@ -142,34 +128,16 @@ neoForge {
 
         data {
             clientData()
-
-            // example of overriding the workingDirectory set in configureEach above, uncomment if you want to use it
-            // gameDirectory = project.file('run-data')
-
-            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
             programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
         }
 
-        // applies to all the run configs above
         configureEach {
-            // Recommended logging data for a userdev environment
-            // The markers can be added/remove as needed separated by commas.
-            // "SCAN": For mods scan.
-            // "REGISTRIES": For firing of registry events.
-            // "REGISTRYDUMP": For getting the contents of all registries.
             systemProperty 'forge.logging.markers', 'REGISTRIES'
-
-            // Recommended logging level for the console
-            // You can set various levels here.
-            // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
             logLevel = org.slf4j.event.Level.DEBUG
         }
     }
 
     mods {
-        // define mod <-> source bindings
-        // these are used to tell the game which sources are for which mod
-        // multi mod projects should define one per mod
         "${mod_id}" {
             sourceSet(sourceSets.main)
         }
@@ -179,46 +147,46 @@ neoForge {
 // Include resources generated by data generators.
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
-// Sets up a dependency configuration called 'localRuntime'.
-// This configuration should be used instead of 'runtimeOnly' to declare
-// a dependency that will be present for runtime testing but that is
-// "optional", meaning it will not be pulled by dependents of this mod.
 configurations {
     runtimeClasspath.extendsFrom localRuntime
+    all {
+        // Player Animation Library's POM requests newer gson/netty/slf4j/joml than Minecraft 26.1.2 allows.
+        // Force Minecraft's pinned versions so Gradle can resolve PAL from Maven (no local fat jar).
+        resolutionStrategy.force 'com.google.code.gson:gson:2.13.2'
+        resolutionStrategy.force 'io.netty:netty-buffer:4.2.7.Final'
+        resolutionStrategy.force 'org.slf4j:slf4j-api:2.0.16'
+        resolutionStrategy.force 'org.joml:joml:1.10.8'
+    }
 }
 
 dependencies {
-
     // Development Palladium Version
 //    implementation files('libs/palladium-5.0.0+26.1.2.jar')
     implementation "maven.modrinth:palladium-previews:$palladium_version"
 
-
-    // Player Animation Library
-    // temporary fix
-    compileOnly("com.zigythebird.playeranim:PlayerAnimationLibNeo:$player_animation_lib_version") {
-        exclude group: 'com.zigythebird', module: 'mochafloats'
-    }
-    implementation("com.zigythebird:mochafloats:4.1.1") {
-        exclude group: 'io.netty', module: 'netty-buffer'
-    }
-    implementation files('libs/PlayerAnimationLibNeo-bigjar.jar')
+    // Player Animation Library (Maven; Palladium already jar-jars this for players)
+    implementation "com.zigythebird.playeranim:PlayerAnimationLibNeo:$player_animation_lib_version"
 
     // Curios
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
     runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
 
     // Terrablender
-    jarJar(implementation("com.github.glitchfiend:TerraBlender-neoforge:${minecraft_version}-${terrablender_version}"))
+    implementation "com.github.glitchfiend:TerraBlender-neoforge:${terrablender_version}"
+
+    // FancyTabSections
+    implementation "maven.modrinth:fancytabsections:${fancytabsections_version}"
 
     // GeckoLib
     implementation "com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
     interfaceInjectionData "com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 
+    // JEI
+    compileOnly("mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}")
+    runtimeOnly("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
-// A missing property will result in an error. Properties are expanded using ${} Groovy notation.
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
@@ -255,7 +223,7 @@ publishing {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.encoding = 'UTF-8'
 }
 
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.

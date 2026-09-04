@@ -13,8 +13,10 @@ public final class ModRecipeSerializers {
     public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
             DeferredRegister.create(Registries.RECIPE_SERIALIZER, YourHeroAcademia.MODID);
 
-    private static final MapCodec<SmokeCanisterInfusionRecipe> SMOKE_CANISTER_INFUSION_CODEC = MapCodec.unit(new SmokeCanisterInfusionRecipe());
-    private static final StreamCodec<RegistryFriendlyByteBuf, SmokeCanisterInfusionRecipe> SMOKE_CANISTER_INFUSION_STREAM_CODEC = StreamCodec.unit(new SmokeCanisterInfusionRecipe());
+    // StreamCodec.unit() encodes by identity. JSON load and network sync must share one instance.
+    private static final SmokeCanisterInfusionRecipe SMOKE_CANISTER_INFUSION_RECIPE = new SmokeCanisterInfusionRecipe();
+    private static final MapCodec<SmokeCanisterInfusionRecipe> SMOKE_CANISTER_INFUSION_CODEC = MapCodec.unit(SMOKE_CANISTER_INFUSION_RECIPE);
+    private static final StreamCodec<RegistryFriendlyByteBuf, SmokeCanisterInfusionRecipe> SMOKE_CANISTER_INFUSION_STREAM_CODEC = StreamCodec.unit(SMOKE_CANISTER_INFUSION_RECIPE);
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<SmokeCanisterInfusionRecipe>> SMOKE_CANISTER_INFUSION =
             RECIPE_SERIALIZERS.register("smoke_canister_infusion", () -> new RecipeSerializer<>(SMOKE_CANISTER_INFUSION_CODEC, SMOKE_CANISTER_INFUSION_STREAM_CODEC));
 
