@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "C": "yha:empty_canister",
+    "G": "minecraft:glowstone_dust",
+    "R": "minecraft:redstone"
+  },
+  "pattern": [
+    " R ",
+    "GCG",
+    " G "
+  ],
+  "result": {
+    "count": 1,
+    "id": "yha:flashbang"
+  }
+}

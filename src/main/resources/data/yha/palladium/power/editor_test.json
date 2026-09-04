@@ -1,0 +1,78 @@
+{
+  "name": "Editor Test",
+  "parent": "yha:quirk",
+  "icon": "minecraft:crafting_table",
+  "gui_display_type": "tree",
+  "abilities": {
+    "quirk_info": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Creation",
+        "description": "A quirk that is supposed to be super good.",
+        "icon": "minecraft:crafting_table",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          0
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:true"
+        }
+      }
+    },
+    "aim_test": {
+      "type": "palladium:aim",
+      "arm": "main_arm",
+      "properties": {
+        "title": "Aim test",
+        "description": "Aim at stuff",
+        "icon": "minecraft:birch_sapling",
+        "hidden_in_gui": false,
+        "hidden_in_bar": false,
+        "gui_position": [
+          0,
+          -1
+        ]
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "held",
+          "cooldown": 100
+        }
+      }
+    },
+    "say_hi": {
+      "type": "palladium:command",
+      "commands": [
+        "say 1",
+        "say 2",
+        "say 3",
+        "say 4",
+        "say 5",
+        "say 6",
+        "say 7"
+      ],
+      "properties": {
+        "title": "say hi",
+        "description": "Test command",
+        "icon": "minecraft:paper",
+        "hidden_in_gui": false,
+        "hidden_in_bar": false,
+        "gui_position": [
+          1,
+          0
+        ]
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:key_bind",
+          "behaviour": "activation"
+        }
+      }
+    }
+  }
+}

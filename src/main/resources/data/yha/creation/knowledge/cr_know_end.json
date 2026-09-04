@@ -1,0 +1,16 @@
+{
+  "ability": "cr_know_end",
+  "tab": "blocks",
+  "entries": [
+    { "item": "minecraft:end_stone", "lipid_cost": 16, "group": "yha:end_stone", "group_icon": "minecraft:end_stone" },
+    { "item": "minecraft:end_stone_bricks", "lipid_cost": 18, "group": "yha:end_stone" },
+    { "item": "minecraft:end_stone_brick_stairs", "lipid_cost": 22, "group": "yha:stairs" },
+    { "item": "minecraft:end_stone_brick_slab", "lipid_cost": 12, "group": "yha:slabs" },
+    { "item": "minecraft:end_stone_brick_wall", "lipid_cost": 22, "group": "yha:walls" },
+    { "item": "minecraft:purpur_block", "lipid_cost": 18, "group": "yha:purpur", "group_icon": "minecraft:purpur_block" },
+    { "item": "minecraft:purpur_pillar", "lipid_cost": 18, "group": "yha:purpur" },
+    { "item": "minecraft:purpur_stairs", "lipid_cost": 22, "group": "yha:stairs" },
+    { "item": "minecraft:purpur_slab", "lipid_cost": 12, "group": "yha:slabs" },
+    { "item": "minecraft:ender_pearl", "tab": "materials", "lipid_cost": 48, "research_cost": 16 }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "ability": "cr_know_enchant_1",
+  "research_cost": 2,
+  "entries": [
+    { "enchant": "minecraft:aqua_affinity", "lipid_cost_per_level": 65 },
+    { "enchant": "minecraft:bane_of_arthropods", "lipid_cost_per_level": 65 },
+    { "enchant": "minecraft:fire_protection", "lipid_cost_per_level": 65 },
+    { "enchant": "minecraft:lure", "lipid_cost_per_level": 65 },
+    { "enchant": "minecraft:punch", "lipid_cost_per_level": 65 }
+  ]
+}

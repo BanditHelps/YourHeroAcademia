@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "yha:block/research_table" },
+    "facing=south": { "model": "yha:block/research_table", "y": 180 },
+    "facing=west":  { "model": "yha:block/research_table", "y": 270 },
+    "facing=east":  { "model": "yha:block/research_table", "y": 90 }
+  }
+}

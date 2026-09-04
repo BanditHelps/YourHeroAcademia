@@ -1,0 +1,2948 @@
+{
+  "name": "Creation",
+  "parent": "yha:quirk",
+  "icon": "minecraft:crafting_table",
+  "gui_display_type": "tree",
+  "abilities": {
+    "quirk_info": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Creation",
+        "description": "Convert your bodies internal lipids into real world objects. The only limits are your understanding of the world.",
+        "icon": "minecraft:crafting_table",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          -2.1
+        ]
+      }
+    },
+    "cr_open_menu": {
+      "type": "yha:open_creation_menu",
+      "properties": {
+        "title": "Open Creation Menu",
+        "description": "Opens your notebook to manage all of your known recipes, quick slots, and lipid count",
+        "icon": "yha:textures/icons/creation/creation_shop.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": false,
+        "list_index": 0,
+        "gui_position": [
+          0,
+          -2.8
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "quirk_info"
+        },
+        "enabling": {
+          "type": "palladium:key_bind"
+        }
+      }
+    },
+    "cr_max_lipids_default": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "max_lipids",
+      "value": {
+        "type": "palladium:molang_float",
+        "molang": "1000 + yha.quirk_factor() * 500"
+      },
+      "properties": {
+        "title": "Default Lipid Capacity",
+        "description": "Your body can store up to 1000 lipids.",
+        "icon": "yha:textures/gui/creation/lipid_icon.png",
+        "hidden_in_gui": true,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          0
+        ]
+      },
+      "state": {
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:creation#cr_max_lipids_1"
+            }
+          ]
+        }
+      }
+    },
+    "cr_max_lipids_1": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "max_lipids",
+      "value": {
+        "type": "palladium:molang_float",
+        "molang": "1500 + yha.quirk_factor() * 500"
+      },
+      "properties": {
+        "title": "Lipid Capacity - I",
+        "description": "Your body can now store up to 1500 lipids.",
+        "icon": "yha:textures/gui/creation/lipid_icon.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0.8,
+          -3.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "quirk_info"
+          }
+        },
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:creation#cr_max_lipids_2"
+            }
+          ]
+        }
+      }
+    },
+    "cr_max_lipids_2": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "max_lipids",
+      "value": {
+        "type": "palladium:molang_float",
+        "molang": "2000 + yha.quirk_factor() * 500"
+      },
+      "properties": {
+        "title": "Lipid Capacity - II",
+        "description": "Your body can now store up to 2000 lipids.",
+        "icon": "yha:textures/gui/creation/lipid_icon.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          1.4,
+          -3.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 5
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_max_lipids_1"
+          }
+        },
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:creation#cr_max_lipids_3"
+            }
+          ]
+        }
+      }
+    },
+    "cr_max_lipids_3": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "max_lipids",
+      "value": {
+        "type": "palladium:molang_float",
+        "molang": "3000 + yha.quirk_factor() * 500"
+      },
+      "properties": {
+        "title": "Lipid Capacity - III",
+        "description": "Your body can now store up to 3000 lipids.",
+        "icon": "yha:textures/gui/creation/lipid_icon.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2,
+          -3.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 8
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_max_lipids_2"
+          }
+        },
+        "enabling": {
+          "type": "palladium:not",
+          "conditions": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "yha:creation#cr_max_lipids_4"
+            }
+          ]
+        }
+      }
+    },
+    "cr_max_lipids_4": {
+      "type": "yha:set_body_float",
+      "part": "chest",
+      "key": "max_lipids",
+      "value": {
+        "type": "palladium:molang_float",
+        "molang": "5000 + yha.quirk_factor() * 500"
+      },
+      "properties": {
+        "title": "Lipid Capacity - IV",
+        "description": "Your body can now store up to 5000 lipids.",
+        "icon": "yha:textures/gui/creation/lipid_icon.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.6,
+          -3.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 10
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_max_lipids_3"
+          }
+        }
+      }
+    },
+    "cr_know_armor_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Armor Knowledge - I",
+        "description": "Unlocks the ability to study different armor compositions.",
+        "icon": "minecraft:leather_chestplate",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0.8,
+          0.7
+        ],
+        "gui_connection": [
+          [
+            0.2,
+            0.1
+          ],
+          [
+            0.4,
+            0.1
+          ],
+          [
+            0.4,
+            0.7
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_item_1"
+          }
+        }
+      }
+    },
+    "cr_know_armor_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Armor Knowledge - II",
+        "description": "Unlocks the knowledge required to create copper based armor. (copper)",
+        "icon": "minecraft:copper_chestplate",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          1.45,
+          2.7
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_geo_1"
+          }
+        }
+      }
+    },
+    "cr_know_armor_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Armor Knowledge - III",
+        "description": "Unlocks the knowledge required to create iron based armor. (gold)",
+        "icon": "minecraft:golden_chestplate",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.15,
+          2.7
+        ],
+        "gui_connection": {
+          "cr_know_geo_2": [
+            [
+              0.2,
+              3.9
+            ],
+            [
+              2.15,
+              3.9
+            ],
+            [
+              2.15,
+              2.9
+            ]
+          ]
+        }
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_armor_2"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_2"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_armor_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Armor Knowledge - IV",
+        "description": "Unlocks the knowledge required to create gold based armor. (iron)",
+        "icon": "minecraft:iron_chestplate",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.85,
+          2.7
+        ],
+        "gui_connection": {
+          "cr_know_geo_3": [
+            [
+              0.2,
+              4.7
+            ],
+            [
+              0.85,
+              4.7
+            ],
+            [
+              2.85,
+              4.7
+            ],
+            [
+              2.85,
+              3
+            ]
+          ],
+          "cr_know_armor_3": [
+            [
+              2.5,
+              2.7
+            ]
+          ]
+        }
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_armor_3"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_3"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_armor_5": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Armor Knowledge - V",
+        "description": "Unlocks the knowledge required to create diamond based armor. (diamond)",
+        "icon": "minecraft:diamond_chestplate",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          3.55,
+          2.7
+        ],
+        "gui_connection": {
+          "cr_know_geo_4": [
+            [
+              0.2,
+              5.5
+            ],
+            [
+              0.85,
+              5.5
+            ],
+            [
+              3.55,
+              5.5
+            ],
+            [
+              3.55,
+              2.9
+            ]
+          ]
+        }
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_armor_4"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_4"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_armor_6": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Armor Knowledge - VI",
+        "description": "You have the power to create any set of armor, but at great cost to your body.",
+        "icon": "minecraft:netherite_chestplate",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          4.25,
+          2.7
+        ],
+        "gui_connection": {
+          "cr_know_geo_5": [
+            [
+              0.2,
+              6.35
+            ],
+            [
+              0.85,
+              6.35
+            ],
+            [
+              4.25,
+              6.35
+            ],
+            [
+              4.25,
+              3.1
+            ]
+          ]
+        }
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_armor_5"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_5"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_chemical_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Basic Chemical Knowledge",
+        "description": "Unlocks the ability to research chemical elements, including potions. Basic potions only that are drinkable. No splash or lingering. NO POTIONS THAT REQUIRE MORE THAN 1 CRAFTING STEP!",
+        "icon": "minecraft:potion",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.2,
+          -0.8
+        ],
+        "gui_connection": [
+          [
+            0.1,
+            -0.2
+          ],
+          [
+            0.1,
+            -0.8
+          ],
+          [
+            1.5,
+            -0.8
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_item_1"
+          }
+        }
+      }
+    },
+    "cr_know_chemical_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Adv. Chemical Knowledge",
+        "description": "Further increases your alchemical prowess, to unlock more complex potions. UNLOCKS COMPLICATED POTION STEPS, i.e potions that take more than 1 time in the brewing stand.",
+        "icon": "minecraft:brewing_stand",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          3.6,
+          1.1
+        ],
+        "gui_connection": {
+          "cr_know_geo_1": [
+            [
+              0.1,
+              2.1
+            ],
+            [
+              0.1,
+              1.2
+            ],
+            [
+              2.7,
+              1.2
+            ],
+            [
+              3.2,
+              1.2
+            ],
+            [
+              3.4,
+              1.2
+            ]
+          ]
+        }
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_chemical_1"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_1"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_chemical_experience": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Field Chemistry",
+        "description": "When a potion effect is applied to you, there is a chance you gain research progress for that effect.",
+        "icon": "minecraft:fermented_spider_eye",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          6.7,
+          1.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_chemical_3"
+          }
+        }
+      }
+    },
+    "cr_know_chemical_splash": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Chemical Knowledge - Splash",
+        "description": "User can now (without relearning) create the splash variants of potions.",
+        "icon": "minecraft:splash_potion",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          4.3,
+          1.5
+        ],
+        "gui_connection": [
+          [
+            3.6,
+            1.2
+          ],
+          [
+            3.6,
+            1.5
+          ],
+          [
+            3.9,
+            1.5
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_chemical_2"
+          }
+        }
+      }
+    },
+    "cr_know_chemical_linger": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Chemical Knowledge - Lingering",
+        "description": "User can now (without relearning) create the lingering variants of potions.",
+        "icon": "minecraft:lingering_potion",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          4.3,
+          0.7
+        ],
+        "gui_connection": [
+          [
+            3.6,
+            0.9
+          ],
+          [
+            3.6,
+            0.7
+          ],
+          [
+            3.9,
+            0.7
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_chemical_2"
+          }
+        }
+      }
+    },
+    "cr_know_chemical_timing": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Chemical Knowledge - Timings",
+        "description": "Master the knowledge for understanding chemical timings. UNLOCKS THE ABILITY TO SET CUSTOM TIMES FOR THE POTIONS.",
+        "icon": "minecraft:clock",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          5.4,
+          1.5
+        ],
+        "gui_connection": [
+          [
+            3.8,
+            1.2
+          ],
+          [
+            4.75,
+            1.2
+          ],
+          [
+            4.75,
+            1.5
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_chemical_2"
+          }
+        }
+      }
+    },
+    "cr_know_chemical_potentcy": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Chemical Knowledge - Potency",
+        "description": "Master the knowledge for understanding chemical potency. UNLOCKS THE ABILITY TO CHANGE AMPLIFIER OF POTION TO +1 of VANILLA!",
+        "icon": "minecraft:glowstone_dust",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          5.4,
+          0.7
+        ],
+        "gui_connection": [
+          [
+            3.8,
+            1
+          ],
+          [
+            4.75,
+            1
+          ],
+          [
+            4.75,
+            0.7
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_chemical_2"
+          }
+        }
+      }
+    },
+    "cr_know_fletcher_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Advanced Fletching Knowledge ",
+        "description": "You are now able to research stronger mechanisms for shooting arrows, primarily crossbows.",
+        "icon": "minecraft:crossbow",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          1.5,
+          0
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_fletcher_1"
+          }
+        }
+      }
+    },
+    "cr_know_fletcher_arrow_effects": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tipped Arrows Knowledge ",
+        "description": "Combining your knowledge of potions with the creation of arrows allows you to tip those arrows with different chemical effects.",
+        "icon": "minecraft:tipped_arrow",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.2,
+          0
+        ],
+        "gui_connection": {
+          "cr_know_chemical_1": [
+            [
+              2.2,
+              -0.4
+            ]
+          ]
+        }
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_fletcher_2"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_chemical_1"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_enchant_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Enchant Knowledge - I",
+        "description": "Unlocks Unbreaking, Protection, Sharpness, Efficiency, Power, and Feather Falling for research.",
+        "icon": "yha:textures/icons/creation/creation_enchant_knowledge_1.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          6.2,
+          2.7
+        ],
+        "gui_connection": {
+          "cr_know_armor_2": [
+            [
+              1.45,
+              2.25
+            ],
+            [
+              4.85,
+              2.25
+            ],
+            [
+              6.2,
+              2.25
+            ],
+            [
+              6.2,
+              2.5
+            ]
+          ],
+          "cr_know_tool_1": [
+            [
+              1.8,
+              2.4
+            ],
+            [
+              4.65,
+              2.4
+            ],
+            [
+              4.65,
+              2.7
+            ]
+          ]
+        }
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_armor_2"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_tool_1"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_enchant_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Enchant Knowledge - II",
+        "description": "Unlocks Knockback, Punch, Fire Protection, Projectile Protection, Fire Aspect, and Flame for research.",
+        "icon": "yha:textures/icons/creation/creation_enchant_knowledge_2.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          6.2,
+          3.3
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_enchant_1"
+          }
+        }
+      }
+    },
+    "cr_know_enchant_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Enchant Knowledge - III",
+        "description": "Unlocks Fortune, Looting, Respiration, Aqua Affinity, Depth Strider, and Quick Charge for research.",
+        "icon": "yha:textures/icons/creation/creation_enchant_knowledge_3.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          6.2,
+          3.9
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_enchant_2"
+          }
+        }
+      }
+    },
+    "cr_know_enchant_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Enchant Knowledge - IV",
+        "description": "Unlocks Silk Touch, Smite, Bane of Arthropods, Blast Protection, Sweeping Edge, and Impaling for research.",
+        "icon": "yha:textures/icons/creation/creation_enchant_knowledge_4.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          6.2,
+          4.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_enchant_3"
+          }
+        }
+      }
+    },
+    "cr_know_enchant_5": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Enchant Knowledge - V",
+        "description": "Unlocks Thorns, Piercing, Multishot, Loyalty, Infinity, and Luck of the Sea for research.",
+        "icon": "yha:textures/icons/creation/creation_enchant_knowledge_5.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          6.2,
+          5.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_enchant_4"
+          }
+        }
+      }
+    },
+    "cr_know_enchant_6": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Enchant Knowledge - VI",
+        "description": "Unlocks Channeling, Riptide, Density, Breach, and Lure for research.",
+        "icon": "yha:textures/icons/creation/creation_enchant_knowledge_6.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          6.2,
+          5.7
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_enchant_5"
+          }
+        }
+      }
+    },
+    "cr_know_enchant_7": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Master Enchant Knowledge",
+        "description": "Unlocks Mending, Frost Walker, Soul Speed, Swift Sneak, and Wind Burst for research.",
+        "icon": "minecraft:enchanted_book",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          6.2,
+          6.3
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_enchant_6"
+          }
+        }
+      }
+    },
+    "cr_know_enchant_conflicts": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Conflicting Enchant Knowledge",
+        "description": "You can apply enchantments that normally cannot coexist, such as Protection and Blast Protection. Enchantments that conflict with another selected enchantment cost twice as many lipids.",
+        "icon": "minecraft:anvil",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          6.9,
+          6.3
+        ],
+        "gui_connection": [
+          [
+            6.4,
+            6.3
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_enchant_7"
+          }
+        }
+      }
+    },
+    "cr_know_enchant_evolve": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Enchant Evolution",
+        "description": "When you create an enchanted item, each selected enchantment has a chance to apply one level higher than chosen for free. There is also a rare chance that every enchantment evolves, and the item's name becomes rainbow.",
+        "icon": "minecraft:enchanted_golden_apple",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          5.5,
+          6.3
+        ],
+        "gui_connection": [
+          [
+            6,
+            6.3
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_enchant_7"
+          }
+        }
+      }
+    },
+    "cr_know_chemical_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Master Chemical Knowledge",
+        "description": "You are now able to create potion effects with +1 higher amplifier than normal minecraft",
+        "icon": "minecraft:torchflower",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          6.1,
+          1.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_chemical_2"
+          }
+        }
+      }
+    },
+    "cr_know_mason_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Masonry Knowledge - I",
+        "description": "Gives your body the ability to create simple stone blocks, including sand.",
+        "icon": "minecraft:stone",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.1,
+          -2.1
+        ],
+        "gui_connection": [
+          [
+            -0.2,
+            -1.5
+          ],
+          [
+            -1.2,
+            -1.5
+          ],
+          [
+            -1.6,
+            -1.5
+          ],
+          [
+            -1.6,
+            -2.1
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_dirt"
+          }
+        }
+      }
+    },
+    "cr_know_mason_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Masonry Knowledge - II",
+        "description": "Gives your body the ability to create more advanced stone blocks, glass, terracotta, concrete, sandstone, and prismarine.",
+        "icon": "minecraft:stone_bricks",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.7,
+          -2.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_mason_1"
+          }
+        }
+      }
+    },
+    "cr_know_mason_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Masonry Knowledge - III",
+        "description": "Gives your body the ability to create non-block shapes: stairs, slabs, and walls for stone families.",
+        "icon": "minecraft:stone_brick_stairs",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -3.3,
+          -2.1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_mason_2"
+          }
+        }
+      }
+    },
+    "cr_know_wood_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Woodworking Knowledge - I",
+        "description": {
+          "unlocked": "Gives your body the ability to create logs of any type, including bamboo blocks.",
+          "locked": "u can't see me"
+        },
+        "icon": "minecraft:oak_log",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.1,
+          -0.7
+        ],
+        "gui_connection": [
+          [
+            -0.2,
+            -1.3
+          ],
+          [
+            -1.2,
+            -1.3
+          ],
+          [
+            -1.6,
+            -1.3
+          ],
+          [
+            -1.6,
+            -0.7
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_dirt"
+          }
+        }
+      }
+    },
+    "cr_know_wood_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Woodworking Knowledge - II",
+        "description": "Gives your body the ability to create more advanced wood of any type. (Planks, stripped, mosaic, etc.)",
+        "icon": "minecraft:oak_planks",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.7,
+          -0.7
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_wood_1"
+          }
+        }
+      }
+    },
+    "cr_know_wood_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Woodworking Knowledge - III",
+        "description": "Learn wood shapes: stairs, slabs, fences, doors, and fence gates. Any wood you have researched can be used.",
+        "icon": "minecraft:oak_stairs",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -3.3,
+          -0.7
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_wood_2"
+          }
+        }
+      }
+    },
+    "cr_know_wood_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Woodworking Knowledge - IV",
+        "description": "Learn carpentry: signs, shelves, storage, boats, scaffolding, and workstations.",
+        "icon": "minecraft:crafting_table",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -3.9,
+          -0.7
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_wood_3"
+          }
+        }
+      }
+    },
+    "cr_know_dirt": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Basic Material Creation",
+        "description": "Currently, your body is only able to create the most basic of minecraft materials. (stick, dirt, and cobblestone)",
+        "icon": "minecraft:dirt",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          -1.4
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "quirk_info"
+        }
+      }
+    },
+    "cr_know_nether_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Nether Knowledge - I",
+        "description": "You body is now able to learn the composition of materials based in the nether. (Netherack, nether wood, etc.)",
+        "icon": "minecraft:netherrack",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.7,
+          -1.4
+        ],
+        "gui_connection": {
+          "cr_know_wood_1": [
+            [
+              -2.1,
+              -0.9
+            ],
+            [
+              -2.1,
+              -1.3
+            ],
+            [
+              -2.5,
+              -1.3
+            ]
+          ],
+          "cr_know_mason_1": [
+            [
+              -2.1,
+              -1.9
+            ],
+            [
+              -2.1,
+              -1.5
+            ],
+            [
+              -2.5,
+              -1.5
+            ]
+          ]
+        }
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_mason_1"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_wood_1"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_nether_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Nether Knowledge - III",
+        "description": "You can better shape nether blocks: nether brick, blackstone, and quartz stairs, slabs, and walls.",
+        "icon": "minecraft:nether_brick_stairs",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -3.9,
+          -1.4
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_nether_2"
+          }
+        }
+      }
+    },
+    "cr_know_nether_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Nether Knowledge - II",
+        "description": "You are now able to create more complicated blocks, like nether bricks, blackstone, quartz, and glowstone.",
+        "icon": "minecraft:nether_bricks",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -3.3,
+          -1.4
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_nether_1"
+          }
+        }
+      }
+    },
+    "cr_know_tailor_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tailoring Knowledge - I",
+        "description": "Begin to understand the basics of synthetic wools, beds, and candles.",
+        "icon": "minecraft:white_wool",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.7,
+          1.8
+        ],
+        "gui_connection": [
+          [
+            -0.1,
+            0.2
+          ],
+          [
+            -0.1,
+            0.8
+          ],
+          [
+            -0.8,
+            0.8
+          ],
+          [
+            -0.8,
+            1.8
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_item_1"
+          }
+        }
+      }
+    },
+    "cr_know_tailor_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tailoring Knowledge - II",
+        "description": "You can now create fabrics directly, useful for creating super suits.",
+        "icon": "palladium:white_fabric",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -3.3,
+          1.8
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_tailor_1"
+          }
+        }
+      }
+    },
+    "cr_know_dye": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Dye Knowledge",
+        "description": "Unlocks the ability to apply dyes to any available recipes automatically.",
+        "icon": "minecraft:cyan_dye",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.7,
+          2.4
+        ],
+        "gui_connection": [
+          [
+            -2.7,
+            2.2
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_tailor_1"
+          }
+        }
+      }
+    },
+    "cr_efficiency_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Efficient Creation - I",
+        "description": "Your body is able to convert lipids at a more efficient rate. 1.2x",
+        "icon": "yha:textures/icons/creation/creation_gain_upgrade_1.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.7,
+          -3.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 5
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "quirk_info"
+          }
+        }
+      }
+    },
+    "cr_efficiency_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Efficient Creation - II",
+        "description": "Your lipid conversion rate becomes even more efficient. 1.45x",
+        "icon": "yha:textures/icons/creation/creation_gain_upgrade_2.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -1.3,
+          -3.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 8
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_efficiency_1"
+          }
+        }
+      }
+    },
+    "cr_efficiency_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Efficient Creation - III",
+        "description": "Your lipid conversion rate becomes even more efficient. 1.7x",
+        "icon": "yha:textures/icons/creation/creation_gain_upgrade_3.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -1.9,
+          -3.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 10
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_efficiency_2"
+          }
+        }
+      }
+    },
+    "cr_efficiency_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Efficient Creation - IV",
+        "description": "You have reached the max lipid conversion rate your body can handle. 2x",
+        "icon": "yha:textures/icons/creation/creation_gain_upgrade_4.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.5,
+          -3.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 10
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_efficiency_3"
+          }
+        }
+      }
+    },
+    "cr_knowledge_boost_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Knowledge Boost",
+        "description": "Maxing out your enchantment knowledge has unlocked a bonus to learning points. +25% Chance for double learn points",
+        "icon": "minecraft:nether_star",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          6.2,
+          6.95
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_enchant_7"
+          }
+        }
+      }
+    },
+    "cr_knowledge_boost_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Knowledge Boost",
+        "description": "Maxing out your masonry knowledge has unlocked a bonus to learning points. +25% Chance for double learn points",
+        "icon": "minecraft:nether_star",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -4.6,
+          -1.4
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_nether_3"
+          }
+        }
+      }
+    },
+    "cr_know_fletcher_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Basic Fletching Knowledge ",
+        "description": "You are now capable of learning simple ranged weapons like the bow and arrow. ",
+        "icon": "minecraft:bow",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0.8,
+          0
+        ],
+        "gui_connection": [
+          [
+            0.5,
+            0
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_item_1"
+          }
+        }
+      }
+    },
+    "cr_know_item_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Item Knowledge - I",
+        "description": "You are able to understand the most basic of materials, plus clay and torches.",
+        "icon": "minecraft:leather",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          0
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_dirt"
+          }
+        }
+      }
+    },
+    "cr_know_geo_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Geology knowledge - I",
+        "description": "You are able to obtain knowledge of basic minerals found in the world. (copper, coal)",
+        "icon": "yha:textures/icons/creation/creation_basic_knowledge.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          2.3
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_dirt"
+          }
+        }
+      }
+    },
+    "cr_know_tool_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tooling Knowledge - I",
+        "description": "You can obtain the knowledge required to create copper-level tools, plus fishing rods.",
+        "icon": "minecraft:copper_pickaxe",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          1.8,
+          3.3
+        ],
+        "gui_connection": [
+          [
+            0.2,
+            2.4
+          ],
+          [
+            0.5,
+            2.4
+          ],
+          [
+            0.5,
+            3.3
+          ],
+          [
+            0.95,
+            3.3
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_geo_1"
+          }
+        }
+      }
+    },
+    "cr_know_geo_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Geology knowledge - II",
+        "description": "You are able to obtain knowledge of rare minerals found in the world. (Iron, lead, redstone)",
+        "icon": "yha:textures/icons/creation/creation_advanced_knowledge.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          4
+        ],
+        "gui_connection": [
+          [
+            0,
+            2.9
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_geo_1"
+          }
+        }
+      }
+    },
+    "cr_know_tool_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tooling Knowledge - II",
+        "description": "You can obtain the knowledge required to create gold-level tools.",
+        "icon": "minecraft:golden_pickaxe",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.5,
+          3.3
+        ],
+        "gui_connection": {
+          "cr_know_geo_2": [
+            [
+              0.2,
+              4.1
+            ],
+            [
+              1.9,
+              4.1
+            ],
+            [
+              2.5,
+              4.1
+            ],
+            [
+              2.5,
+              3.5
+            ]
+          ]
+        }
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_2"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_tool_1"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_tool_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tooling Knowledge - III",
+        "description": "You can obtain the knowledge required to create iron-level tools, plus shears.",
+        "icon": "minecraft:iron_pickaxe",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          3.2,
+          3.3
+        ],
+        "gui_connection": {
+          "cr_know_geo_3": [
+            [
+              0.2,
+              4.9
+            ],
+            [
+              0.85,
+              4.9
+            ],
+            [
+              3.2,
+              4.9
+            ]
+          ]
+        }
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_tool_2"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_3"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_geo_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Geology knowledge - III",
+        "description": "You are able to obtain knowledge of slightly more rare minerals found in the world. (Gold, Lapis)",
+        "icon": "yha:textures/icons/creation/creation_basic_knowledge.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          4.8
+        ],
+        "gui_connection": [
+          [
+            0,
+            4.4
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_geo_2"
+          }
+        }
+      }
+    },
+    "cr_know_geo_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Geology knowledge - IV",
+        "description": "You are able to obtain knowledge of precious minerals found in the world. (Diamond, Emeralds)",
+        "icon": "yha:textures/icons/creation/creation_expert_knowledge.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          5.6
+        ],
+        "gui_connection": [
+          [
+            0,
+            5.2
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_geo_3"
+          }
+        }
+      }
+    },
+    "cr_know_tool_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tooling Knowledge - IV",
+        "description": "You can obtain the knowledge required to create diamond-level tools.",
+        "icon": "minecraft:diamond_pickaxe",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          3.9,
+          3.3
+        ],
+        "gui_connection": {
+          "cr_know_geo_4": [
+            [
+              0.2,
+              5.7
+            ],
+            [
+              0.85,
+              5.7
+            ],
+            [
+              2.45,
+              5.7
+            ],
+            [
+              3.9,
+              5.7
+            ]
+          ]
+        }
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_tool_3"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_4"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_geo_5": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Geology knowledge - V",
+        "description": "You are able to obtain knowledge of extremely rare minerals found in the world. (Netherite, Vibranium)",
+        "icon": "minecraft:netherite_scrap",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          6.45
+        ],
+        "gui_connection": [
+          [
+            0,
+            6.15
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_geo_4"
+          }
+        }
+      }
+    },
+    "cr_know_tool_5": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tooling Knowledge - V",
+        "description": "You can obtain the knowledge required to create netherite-level tools.",
+        "icon": "minecraft:netherite_pickaxe",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          4.6,
+          3.3
+        ],
+        "gui_connection": {
+          "cr_know_geo_5": [
+            [
+              0.2,
+              6.55
+            ],
+            [
+              0.85,
+              6.55
+            ],
+            [
+              4.6,
+              6.55
+            ],
+            [
+              4.6,
+              3.65
+            ]
+          ]
+        }
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_tool_4"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_5"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_weapon_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - I",
+        "description": "Gain the starting knowledge of weapons. ",
+        "icon": "minecraft:stone_pickaxe",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -1.6,
+          0
+        ],
+        "gui_connection": [
+          [
+            -0.2,
+            0
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_item_1"
+          }
+        }
+      }
+    },
+    "cr_quick_slot_1": {
+      "type": "yha:creation_quick_slot",
+      "slot": 0,
+      "properties": {
+        "title": "Quick Craft - I",
+        "description": "Adds a quick craft slot that allows you to save an item and quickly recal it.",
+        "icon": "yha:textures/icons/creation/creation_slot_1.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": false,
+        "gui_position": [
+          0.8,
+          -2.1
+        ],
+        "list_index": 1
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "quirk_info"
+          }
+        },
+        "enabling": {
+          "type": "palladium:key_bind"
+        }
+      }
+    },
+    "cr_quick_slot_2": {
+      "type": "yha:creation_quick_slot",
+      "slot": 1,
+      "properties": {
+        "title": "Quick Craft - II",
+        "description": "Adds a secondary quick craft slot that allows you to save an item and quickly recall it.",
+        "icon": "yha:textures/icons/creation/creation_slot_2.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": false,
+        "gui_position": [
+          1.4,
+          -2.1
+        ],
+        "list_index": 2
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_quick_slot_1"
+          }
+        },
+        "enabling": {
+          "type": "palladium:key_bind"
+        }
+      }
+    },
+    "cr_quick_slot_3": {
+      "type": "yha:creation_quick_slot",
+      "slot": 2,
+      "properties": {
+        "title": "Quick Craft - III",
+        "description": "Adds a third quick craft slot that allows you to save an item and quickly recall it.",
+        "icon": "yha:textures/icons/creation/creation_slot_3.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": false,
+        "gui_position": [
+          2,
+          -2.1
+        ],
+        "list_index": 3
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_quick_slot_2"
+          }
+        },
+        "enabling": {
+          "type": "palladium:key_bind"
+        }
+      }
+    },
+    "cr_know_weapon_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - II",
+        "description": "Gain the knowledge to make stronger weapons. (copper) ",
+        "icon": "minecraft:copper_sword",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.7,
+          2.3
+        ],
+        "gui_connection": [
+          [
+            -0.2,
+            2.3
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_geo_1"
+          }
+        }
+      }
+    },
+    "cr_know_weapon_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - III",
+        "description": "Gain the knowledge to make stronger weapons. (gold) ",
+        "icon": "minecraft:golden_sword",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.7,
+          4
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_2"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_weapon_2"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_weapon_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - IV",
+        "description": "Gain the knowledge to make stronger weapons. (iron) ",
+        "icon": "minecraft:iron_sword",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.7,
+          4.8
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_3"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_weapon_3"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_weapon_5": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - V",
+        "description": "Gain the knowledge to make stronger weapons. (diamond) ",
+        "icon": "minecraft:diamond_sword",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.7,
+          5.6
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_4"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_weapon_4"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_weapon_6": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - VI",
+        "description": "Gain the knowledge to make stronger weapons. (netherite) ",
+        "icon": "minecraft:netherite_sword",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.7,
+          6.45
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": [
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_weapon_5"
+            },
+            {
+              "type": "palladium:ability_unlocked",
+              "ability": "cr_know_geo_5"
+            }
+          ]
+        }
+      }
+    },
+    "cr_know_weapon_spear": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - Spears",
+        "description": "Unlocks the knowledge required to make spears.",
+        "icon": "minecraft:copper_spear",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -1.7,
+          2.3
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_weapon_2"
+          }
+        }
+      }
+    },
+    "cr_know_weapon_mace": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - Mace",
+        "description": "Unlocks the knowledge required to make maces..",
+        "icon": "minecraft:mace",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -1.7,
+          6.45
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 5
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_weapon_6"
+          }
+        }
+      }
+    },
+    "cr_know_weapon_shield": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Weapon Knowledge - Sheilds",
+        "description": "Unlocks the knowledge required to make shields.",
+        "icon": "minecraft:shield",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -1.7,
+          4.8
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_weapon_4"
+          }
+        }
+      }
+    },
+    "cr_know_end": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "End Knowledge",
+        "description": "You can now analyze items from the End: end stone, purpur, and ender pearls.",
+        "icon": "minecraft:end_stone",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -5.3,
+          -1.4
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 4
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_knowledge_boost_2"
+          }
+        }
+      }
+    },
+    "cr_know_tech_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Technologist Knowledge - I",
+        "description": "Learn to fabricate grenades and flashbangs from canisters and common explosives.",
+        "icon": "yha:grenade",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.5,
+          4.8
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_weapon_shield"
+          }
+        }
+      }
+    },
+    "cr_quick_slot_4": {
+      "type": "yha:creation_quick_slot",
+      "slot": 3,
+      "properties": {
+        "title": "Quick Craft - IV",
+        "description": "Adds a fourth quick craft slot that allows you to save an item and quickly recall it.",
+        "icon": "yha:textures/icons/creation/creation_slot_4.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": false,
+        "gui_position": [
+          2.6,
+          -2.1
+        ],
+        "list_index": 1
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_quick_slot_3"
+          }
+        },
+        "enabling": {
+          "type": "palladium:key_bind"
+        }
+      }
+    },
+    "cr_quick_slot_5": {
+      "type": "yha:creation_quick_slot",
+      "slot": 4,
+      "properties": {
+        "title": "Quick Craft - V",
+        "description": "Adds a fifth quick craft slot that allows you to save an item and quickly recall it.",
+        "icon": "yha:textures/icons/creation/creation_slot_5.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": false,
+        "gui_position": [
+          3.2,
+          -2.1
+        ],
+        "list_index": 2
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_quick_slot_4"
+          }
+        },
+        "enabling": {
+          "type": "palladium:key_bind"
+        }
+      }
+    },
+    "cr_quick_slot_6": {
+      "type": "yha:creation_quick_slot",
+      "slot": 5,
+      "properties": {
+        "title": "Quick Craft - VI",
+        "description": "Adds a sixth quick craft slot that allows you to save an item and quickly recall it.",
+        "icon": "yha:textures/icons/creation/creation_slot_6.png",
+        "hidden_in_gui": false,
+        "hidden_in_bar": false,
+        "gui_position": [
+          3.8,
+          -2.1
+        ],
+        "list_index": 3
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_quick_slot_5"
+          }
+        },
+        "enabling": {
+          "type": "palladium:key_bind"
+        }
+      }
+    },
+    "cr_know_item_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Item Knowledge - II",
+        "description": "You can further understand slightly more complex items, including slime, prismarine shards, fireworks, and echo shards.",
+        "icon": "minecraft:phantom_membrane",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.1,
+          0.6
+        ],
+        "gui_connection": [
+          [
+            -0.2,
+            0.1
+          ],
+          [
+            -0.8,
+            0.1
+          ],
+          [
+            -0.8,
+            0.6
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_item_1"
+          }
+        }
+      }
+    },
+    "cr_know_item_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Item Knowledge - III",
+        "description": "Learn manufactured utilities: buckets, bundles, lighting, rails, minecarts, saddles, and similar tools.",
+        "icon": "minecraft:bucket",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.1,
+          1.2
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_item_2"
+          }
+        }
+      }
+    },
+    "cr_know_redstone_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Redstone Knowledge",
+        "description": "You are able to understand the complexities of redstone design. Unlocks numerous redstone components.",
+        "icon": "minecraft:repeater",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -2.7,
+          0.6
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_item_2"
+          }
+        }
+      }
+    },
+    "cr_know_circuit": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Circuit Knowledge",
+        "description": "Circuitry is something you can get your hands on.",
+        "icon": "palladium:quartz_circuit",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -3.3,
+          0.6
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "cr_know_redstone_1"
+          }
+        }
+      }
+    }
+  }
+}

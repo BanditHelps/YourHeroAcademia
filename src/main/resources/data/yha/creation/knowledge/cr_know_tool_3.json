@@ -1,0 +1,11 @@
+{
+  "ability": "cr_know_tool_3",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:iron_pickaxe", "lipid_cost": 164 },
+    { "item": "minecraft:iron_axe", "lipid_cost": 164 },
+    { "item": "minecraft:iron_shovel", "lipid_cost": 60 },
+    { "item": "minecraft:iron_hoe", "lipid_cost": 112 },
+    { "item": "minecraft:shears", "lipid_cost": 80 }
+  ]
+}

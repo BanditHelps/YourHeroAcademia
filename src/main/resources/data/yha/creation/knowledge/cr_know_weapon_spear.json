@@ -1,0 +1,13 @@
+{
+  "ability": "cr_know_weapon_spear",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:wooden_spear", "lipid_cost": 11 },
+    { "item": "minecraft:stone_spear", "lipid_cost": 12 },
+    { "item": "minecraft:copper_spear", "lipid_cost": 34 },
+    { "item": "minecraft:iron_spear", "lipid_cost": 60 },
+    { "item": "minecraft:golden_spear", "lipid_cost": 60 },
+    { "item": "minecraft:diamond_spear", "lipid_cost": 138 },
+    { "item": "minecraft:netherite_spear", "lipid_cost": 268 }
+  ]
+}

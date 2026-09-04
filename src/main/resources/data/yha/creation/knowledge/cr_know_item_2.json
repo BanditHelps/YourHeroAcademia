@@ -1,0 +1,18 @@
+{
+  "ability": "cr_know_item_2",
+  "tab": "materials",
+  "entries": [
+    { "item": "minecraft:ghast_tear", "group": "yha:hostile" },
+    { "item": "minecraft:magma_cream", "group": "yha:hostile" },
+    { "item": "minecraft:blaze_rod", "group": "yha:hostile" },
+    { "item": "minecraft:blaze_powder", "group": "yha:hostile" },
+    { "item": "minecraft:gunpowder", "group": "yha:hostile" },
+    { "item": "minecraft:glowstone_dust", "group": "yha:dusts" },
+    { "item": "minecraft:slime_ball", "lipid_cost": 8, "group": "yha:hostile" },
+    { "item": "minecraft:prismarine_shard", "lipid_cost": 8, "group": "yha:prismarine_items", "group_icon": "minecraft:prismarine_shard" },
+    { "item": "minecraft:prismarine_crystals", "lipid_cost": 12, "group": "yha:prismarine_items" },
+    { "item": "minecraft:wind_charge", "lipid_cost": 16 },
+    { "item": "minecraft:firework_rocket", "lipid_cost": 12 },
+    { "item": "minecraft:echo_shard", "lipid_cost": 90, "research_cost": 16 }
+  ]
+}

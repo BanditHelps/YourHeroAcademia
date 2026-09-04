@@ -67,6 +67,14 @@ public final class ModBlocks {
                     .noOcclusion()
     );
 
+    public static final DeferredBlock<ResearchTableBlock> RESEARCH_TABLE = BLOCKS.registerBlock(
+            "research_table",
+            ResearchTableBlock::new,
+            p -> p.mapColor(MapColor.WOOD)
+                    .strength(2.5f)
+                    .sound(SoundType.WOOD)
+    );
+
     private ModBlocks() {
     }
 }

@@ -4,6 +4,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -24,6 +25,8 @@ public class RgbaDisplayEntity extends Entity {
     private static final EntityDataAccessor<Float> DATA_ROT_Z = SynchedEntityData.defineId(RgbaDisplayEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_ROT_W = SynchedEntityData.defineId(RgbaDisplayEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> DATA_BLEND_MODE = SynchedEntityData.defineId(RgbaDisplayEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_TOTAL_LIFETIME = SynchedEntityData.defineId(RgbaDisplayEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_FADE_TICKS = SynchedEntityData.defineId(RgbaDisplayEntity.class, EntityDataSerializers.INT);
 
     private int lifetime = -1;
     private int animationTicksRemaining;
@@ -70,6 +73,8 @@ public class RgbaDisplayEntity extends Entity {
         builder.define(DATA_ROT_Z, 0.0f);
         builder.define(DATA_ROT_W, 1.0f);
         builder.define(DATA_BLEND_MODE, RgbaBlendMode.NORMAL.ordinal());
+        builder.define(DATA_TOTAL_LIFETIME, 0);
+        builder.define(DATA_FADE_TICKS, 0);
     }
 
     @Override
@@ -84,6 +89,8 @@ public class RgbaDisplayEntity extends Entity {
         this.getEntityData().set(DATA_ROT_Z, input.getFloatOr("RotZ", 0.0f));
         this.getEntityData().set(DATA_ROT_W, input.getFloatOr("RotW", 1.0f));
         this.getEntityData().set(DATA_BLEND_MODE, input.getIntOr("BlendMode", RgbaBlendMode.NORMAL.ordinal()));
+        this.getEntityData().set(DATA_TOTAL_LIFETIME, input.getIntOr("TotalLifetime", 0));
+        this.getEntityData().set(DATA_FADE_TICKS, input.getIntOr("FadeTicks", 0));
     }
 
     @Override
@@ -99,6 +106,8 @@ public class RgbaDisplayEntity extends Entity {
         output.putFloat("RotZ", rotation.z);
         output.putFloat("RotW", rotation.w);
         output.putInt("BlendMode", this.getEntityData().get(DATA_BLEND_MODE));
+        output.putInt("TotalLifetime", this.getEntityData().get(DATA_TOTAL_LIFETIME));
+        output.putInt("FadeTicks", this.getEntityData().get(DATA_FADE_TICKS));
     }
 
     @Override
@@ -106,14 +115,16 @@ public class RgbaDisplayEntity extends Entity {
         super.tick();
 
         if (!this.level().isClientSide()) {
-            if (this.animationTicksRemaining > 0) {
+            if (this.animationTicksRemaining > 0 || this.shouldCoastThroughFade()) {
                 this.setPos(this.getX() + this.motionXPerTick, this.getY() + this.motionYPerTick, this.getZ() + this.motionZPerTick);
                 this.setScale(new Vector3f(
                         this.getScaleXValue() + this.scaleXPerTick,
                         this.getScaleYValue() + this.scaleYPerTick,
                         this.getScaleZValue() + this.scaleZPerTick
                 ));
-                this.animationTicksRemaining--;
+                if (this.animationTicksRemaining > 0) {
+                    this.animationTicksRemaining--;
+                }
             }
 
             this.tickIdleRotation();
@@ -172,6 +183,45 @@ public class RgbaDisplayEntity extends Entity {
 
     public void setLifetime(int lifetime) {
         this.lifetime = lifetime;
+        if (lifetime > 0) {
+            this.getEntityData().set(DATA_TOTAL_LIFETIME, lifetime);
+            int fadeTicks = Math.min(12, Math.max(3, lifetime / 2));
+            this.getEntityData().set(DATA_FADE_TICKS, fadeTicks);
+        }
+    }
+
+    public void setFadeTicks(int fadeTicks) {
+        this.getEntityData().set(DATA_FADE_TICKS, Math.max(0, fadeTicks));
+    }
+
+    /**
+     * 1 while fully visible, 0 at the end of the fade. Uses entity age so the client
+     * can interpolate between ticks.
+     */
+    public float getFadeAlpha(float partialTicks) {
+        int fadeTicks = this.getEntityData().get(DATA_FADE_TICKS);
+        int totalLifetime = this.getEntityData().get(DATA_TOTAL_LIFETIME);
+        if (fadeTicks <= 0 || totalLifetime <= 0) {
+            return 1.0f;
+        }
+
+        float remaining = totalLifetime - (this.tickCount + partialTicks);
+        if (remaining >= fadeTicks) {
+            return 1.0f;
+        }
+        return Mth.clamp(remaining / fadeTicks, 0.0f, 1.0f);
+    }
+
+    private boolean shouldCoastThroughFade() {
+        if (this.lifetime <= 0 || this.animationTicksRemaining > 0) {
+            return false;
+        }
+        if (this.motionXPerTick == 0.0 && this.motionYPerTick == 0.0 && this.motionZPerTick == 0.0
+                && this.scaleXPerTick == 0.0f && this.scaleYPerTick == 0.0f && this.scaleZPerTick == 0.0f) {
+            return false;
+        }
+        int fadeTicks = this.getEntityData().get(DATA_FADE_TICKS);
+        return fadeTicks > 0 && this.lifetime <= fadeTicks + 4;
     }
 
     public void setBlendMode(RgbaBlendMode blendMode) {

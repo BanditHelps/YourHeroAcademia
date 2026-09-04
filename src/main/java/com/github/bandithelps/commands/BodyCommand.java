@@ -7,6 +7,7 @@ import com.github.bandithelps.capabilities.body.BodyDisplayBarType;
 import com.github.bandithelps.capabilities.body.BodyPart;
 import com.github.bandithelps.capabilities.body.BodyPartData;
 import com.github.bandithelps.capabilities.body.BodySyncEvents;
+import com.github.bandithelps.creation.CreationUtil;
 import com.github.bandithelps.network.OpenBodyDebugScreenPayload;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.FloatArgumentType;
@@ -342,9 +343,19 @@ public final class BodyCommand {
     }
 
     private static int setCustomFloat(CommandSourceStack source, ServerPlayer player, BodyPart part, String key, float value) {
-        BodyAttachments.get(player).setCustomFloat(player, part, key, value);
-        BodySyncEvents.syncNow(player);
-        source.sendSuccess(() -> Component.literal("Set float key '" + key + "' on " + part.getId() + " to " + value + " for " + player.getName().getString() + "."), true);
+        float stored = value;
+        if (part == BodyPart.CHEST && CreationUtil.LIPIDS_KEY.equals(key)) {
+            CreationUtil.setLipids(player, value);
+            stored = CreationUtil.getLipids(player);
+        } else if (part == BodyPart.CHEST && CreationUtil.MAX_LIPIDS_KEY.equals(key)) {
+            CreationUtil.setMaxLipids(player, value);
+            stored = CreationUtil.getMaxLipids(player);
+        } else {
+            BodyAttachments.get(player).setCustomFloat(player, part, key, value);
+            BodySyncEvents.syncNow(player);
+        }
+        float applied = stored;
+        source.sendSuccess(() -> Component.literal("Set float key '" + key + "' on " + part.getId() + " to " + applied + " for " + player.getName().getString() + "."), true);
         return 1;
     }
 

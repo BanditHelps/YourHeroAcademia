@@ -1,6 +1,7 @@
 package com.github.bandithelps.entities;
 
 import com.github.bandithelps.YourHeroAcademia;
+import com.github.bandithelps.throwable.ThrownWeaponEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -95,18 +96,18 @@ public class ModEntities {
                     ))
     );
 
-    public static final Supplier<EntityType<SmokeCanisterProjectileEntity>> SMOKE_CANISTER_PROJECTILE = ENTITY_TYPES.register(
-            "smoke_canister_projectile",
-            () -> EntityType.Builder.<SmokeCanisterProjectileEntity>of(
-                            SmokeCanisterProjectileEntity::new,
+    public static final Supplier<EntityType<ThrownWeaponEntity>> THROWN_WEAPON = ENTITY_TYPES.register(
+            "thrown_weapon",
+            () -> EntityType.Builder.<ThrownWeaponEntity>of(
+                            ThrownWeaponEntity::new,
                             MobCategory.MISC
                     )
                     .sized(0.25f, 0.25f)
                     .clientTrackingRange(8)
-                    .updateInterval(10)
+                    .updateInterval(1)
                     .build(ResourceKey.create(
                             Registries.ENTITY_TYPE,
-                            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "smoke_canister_projectile")
+                            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "thrown_weapon")
                     ))
     );
 
@@ -122,6 +123,22 @@ public class ModEntities {
                     .build(ResourceKey.create(
                             Registries.ENTITY_TYPE,
                             Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "blackwhip_tossed_block")
+                    ))
+    );
+
+    public static final Supplier<EntityType<CreationProductEntity>> CREATION_PRODUCT = ENTITY_TYPES.register(
+            "creation_product",
+            () -> EntityType.Builder.<CreationProductEntity>of(
+                            CreationProductEntity::new,
+                            MobCategory.MISC
+                    )
+                    .noSave()
+                    .sized(0.35f, 0.35f)
+                    .clientTrackingRange(16)
+                    .updateInterval(1)
+                    .build(ResourceKey.create(
+                            Registries.ENTITY_TYPE,
+                            Identifier.fromNamespaceAndPath(YourHeroAcademia.MODID, "creation_product")
                     ))
     );
 

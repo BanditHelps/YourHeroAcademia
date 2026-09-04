@@ -1,0 +1,10 @@
+{
+  "ability": "cr_know_chemical_1",
+  "group": "yha:visibility",
+  "group_icon": "minecraft:glow_ink_sac",
+  "research_cost": 3,
+  "entries": [
+    { "effect": "minecraft:glowing", "lipid_cost": 30, "lipid_cost_per_amplifier": 10 },
+    { "effect": "minecraft:invisibility", "lipid_cost": 30, "lipid_cost_per_amplifier": 10 }
+  ]
+}

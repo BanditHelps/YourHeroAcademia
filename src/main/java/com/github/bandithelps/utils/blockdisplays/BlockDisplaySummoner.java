@@ -184,8 +184,6 @@ public class BlockDisplaySummoner {
                     );
 
             rotation = new Quaternionf(playerRotation).mul(rotation);
-
-
         } else {
             centerX = player.getX() + locationOffset.get(0);
             centerY = player.getY() + locationOffset.get(1);
@@ -199,34 +197,147 @@ public class BlockDisplaySummoner {
                     );
         }
 
+        spawnShockwaveRing(
+                level,
+                random,
+                centerX,
+                centerY,
+                centerZ,
+                rotation,
+                endRadius,
+                tickSpeed,
+                density,
+                palette,
+                initialScale,
+                finalScale,
+                lifetime,
+                randomDecay,
+                randomRotation,
+                visualOptions
+        );
+    }
 
+    /**
+     * Expanding ring at a world position. {@code rotationOffset} is degrees on each axis.
+     */
+    public static void summonShockwave(
+            ServerLevel level,
+            Vec3 center,
+            RandomSource random,
+            float endRadius,
+            int tickSpeed,
+            double density,
+            List<BlockState> palette,
+            Vector3f rotationOffset,
+            Vector3f initialScale,
+            Vector3f finalScale,
+            int lifetime,
+            boolean randomDecay,
+            boolean randomRotation,
+            BlockDisplayVisualOptions visualOptions) {
+        if (level == null || center == null) {
+            return;
+        }
 
-        double endPoint = 2 * Math.PI; // Full rotation of the circle
-        double step = endPoint / density;
+        RandomSource rng = random != null ? random : level.getRandom();
+        Vector3f rotOff = rotationOffset == null ? new Vector3f() : rotationOffset;
+        Quaternionf rotation = new Quaternionf()
+                .rotateXYZ(
+                        (float) Math.toRadians(rotOff.x()),
+                        (float) Math.toRadians(rotOff.y()),
+                        (float) Math.toRadians(rotOff.z())
+                );
+        spawnShockwaveRing(
+                level,
+                rng,
+                center.x,
+                center.y,
+                center.z,
+                rotation,
+                endRadius,
+                tickSpeed,
+                density,
+                palette,
+                initialScale,
+                finalScale,
+                lifetime,
+                randomDecay,
+                randomRotation,
+                visualOptions
+        );
+    }
 
+    /**
+     * Single RGBA cube that scales in place. Used for a fast center pulse.
+     */
+    public static void summonRgbaPulse(
+            ServerLevel level,
+            Vec3 center,
+            Vector3f initialScale,
+            Vector3f finalScale,
+            int interpolationTicks,
+            int lifetime,
+            BlockDisplayVisualOptions visualOptions) {
+        if (level == null || center == null || !shouldUseRgbaRenderer(visualOptions)) {
+            return;
+        }
 
+        RgbaDisplayEntity display = createRgbaDisplay(
+                level,
+                level.getRandom(),
+                center.x,
+                center.y,
+                center.z,
+                initialScale,
+                lifetime,
+                false,
+                true,
+                visualOptions
+        );
+        level.addFreshEntity(display);
+        PENDING_RGBA_TRANSFORMS.add(new PendingRgbaTransform(
+                display,
+                new Vector3f(),
+                finalScale == null ? new Vector3f(1.0f, 1.0f, 1.0f) : new Vector3f(finalScale),
+                level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS,
+                Math.max(1, interpolationTicks)
+        ));
+    }
 
-
-
-        // h = horizontal distance from the center - center point of x
-        // k = vertical distance from the center - center point of z
-        // x = h + r*cos(theta)
-        // z = k + r * sin(theta)
+    private static void spawnShockwaveRing(
+            ServerLevel level,
+            RandomSource random,
+            double centerX,
+            double centerY,
+            double centerZ,
+            Quaternionf rotation,
+            float endRadius,
+            int tickSpeed,
+            double density,
+            List<BlockState> palette,
+            Vector3f initialScale,
+            Vector3f finalScale,
+            int lifetime,
+            boolean randomDecay,
+            boolean randomRotation,
+            BlockDisplayVisualOptions visualOptions) {
+        double pointCount = Double.isFinite(density) ? Math.max(1.0, density) : 1.0;
+        double endPoint = 2 * Math.PI;
+        double step = endPoint / pointCount;
 
         // Spawn on the inner ring and apply transform one tick later.
-        // This gives clients a true "previous" state to interpolate from.
+        // This gives clients a true previous state to interpolate from.
         for (double theta = 0; theta < endPoint; theta += step) {
-            // Define these offsets in able to rotate them by the rotational offset passed above
             Vector3f beginningOffset = new Vector3f(
-                    (float)(INITIAL_RADIUS * Math.cos(theta)),
+                    (float) (INITIAL_RADIUS * Math.cos(theta)),
                     0f,
-                    (float)(INITIAL_RADIUS * Math.sin(theta))
+                    (float) (INITIAL_RADIUS * Math.sin(theta))
             );
 
             Vector3f endingOffset = new Vector3f(
-                    (float)(endRadius * Math.cos(theta)),
+                    (float) (endRadius * Math.cos(theta)),
                     0f,
-                    (float)(endRadius * Math.sin(theta))
+                    (float) (endRadius * Math.sin(theta))
             );
 
             beginningOffset.rotate(rotation);
@@ -240,10 +351,9 @@ public class BlockDisplaySummoner {
             double endY = centerY + endingOffset.y;
             double endZ = centerZ + endingOffset.z;
 
-            Vector3f startPos = new Vector3f((float)initialX, (float)initialY, (float)initialZ);
-            Vector3f endPos = new Vector3f((float)endX, (float)endY, (float)endZ);
-
-            Vector3f translation = endPos.sub(startPos, new Vector3f()); // the movement required to get from the inner radius to the outer radius
+            Vector3f startPos = new Vector3f((float) initialX, (float) initialY, (float) initialZ);
+            Vector3f endPos = new Vector3f((float) endX, (float) endY, (float) endZ);
+            Vector3f translation = endPos.sub(startPos, new Vector3f());
 
             if (shouldUseRgbaRenderer(visualOptions)) {
                 RgbaDisplayEntity rgbaDisplay = createRgbaDisplay(
@@ -259,7 +369,13 @@ public class BlockDisplaySummoner {
                         visualOptions
                 );
                 level.addFreshEntity(rgbaDisplay);
-                PENDING_RGBA_TRANSFORMS.add(new PendingRgbaTransform(rgbaDisplay, translation, finalScale, level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS, tickSpeed));
+                PENDING_RGBA_TRANSFORMS.add(new PendingRgbaTransform(
+                        rgbaDisplay,
+                        translation,
+                        finalScale,
+                        level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS,
+                        tickSpeed
+                ));
                 continue;
             }
 
@@ -274,14 +390,18 @@ public class BlockDisplaySummoner {
             display.setInterpolation(tickSpeed);
             applyVisualOptions(display, visualOptions);
             if (randomDecay) {
-                display.setLifetime(random.nextInt(lifetime));
+                display.setLifetime(random.nextInt(Math.max(1, lifetime)));
             } else {
                 display.setLifetime(lifetime);
             }
 
             level.addFreshEntity(display);
-
-            PENDING_TRANSFORMS.add(new PendingTransform(display, translation, finalScale,level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS));
+            PENDING_TRANSFORMS.add(new PendingTransform(
+                    display,
+                    translation,
+                    finalScale,
+                    level.getServer().getTickCount() + TRANSFORM_APPLY_DELAY_TICKS
+            ));
         }
     }
 

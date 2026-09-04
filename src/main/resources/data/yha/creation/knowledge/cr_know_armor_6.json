@@ -1,0 +1,10 @@
+{
+  "ability": "cr_know_armor_6",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:netherite_helmet", "lipid_cost": 1300 },
+    { "item": "minecraft:netherite_chestplate", "lipid_cost": 2080 },
+    { "item": "minecraft:netherite_leggings", "lipid_cost": 1820 },
+    { "item": "minecraft:netherite_boots", "lipid_cost": 1040 }
+  ]
+}

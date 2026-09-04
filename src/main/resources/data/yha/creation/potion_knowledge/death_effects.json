@@ -1,0 +1,12 @@
+{
+  "ability": "cr_know_chemical_1",
+  "group": "yha:death_effects",
+  "group_icon": "minecraft:skeleton_skull",
+  "research_cost": 3,
+  "entries": [
+    { "effect": "minecraft:oozing", "lipid_cost": 30, "lipid_cost_per_amplifier": 10 },
+    { "effect": "minecraft:infested", "lipid_cost": 30, "lipid_cost_per_amplifier": 10 },
+    { "effect": "minecraft:wind_charged", "ability": "cr_know_chemical_2", "lipid_cost": 50, "lipid_cost_per_amplifier": 15, "research_cost": 5 },
+    { "effect": "minecraft:weaving", "ability": "cr_know_chemical_2", "lipid_cost": 50, "lipid_cost_per_amplifier": 15, "research_cost": 5 }
+  ]
+}

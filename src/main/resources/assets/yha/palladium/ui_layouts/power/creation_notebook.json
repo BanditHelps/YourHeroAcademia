@@ -1,0 +1,23 @@
+{
+  "type": "palladium:multi_column",
+  "layouts": [
+    {
+      "width": 240,
+      "height": 193,
+      "padding": 0,
+      "background": {
+        "type": "palladium:empty"
+      },
+      "widgets": [
+        {
+          "type": "yha:creation_notebook",
+          "properties": {
+            "alignment": "center",
+            "width": 240,
+            "height": 193
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "ability": "cr_know_weapon_5",
+  "tab": "gear",
+  "entries": [
+    { "item": "minecraft:diamond_sword", "lipid_cost": 264 }
+  ]
+}

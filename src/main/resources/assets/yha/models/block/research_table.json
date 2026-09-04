@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "yha:block/research_table_north",
+    "north": "yha:block/research_table_north",
+    "south": "yha:block/research_table_south",
+    "east": "yha:block/research_table_east",
+    "west": "yha:block/research_table_west",
+    "up": "yha:block/research_table_top",
+    "down": "yha:block/research_table_bottom"
+  }
+}

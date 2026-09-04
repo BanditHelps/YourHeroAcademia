@@ -7,15 +7,17 @@ import com.github.bandithelps.attributes.StrengthAttributes;
 import com.github.bandithelps.blocks.*;
 import com.github.bandithelps.capabilities.body.BodyAttachments;
 import com.github.bandithelps.capabilities.dna.DNAAttachments;
+import com.github.bandithelps.capabilities.creation.CreationAttachments;
 import com.github.bandithelps.capabilities.loadout.AbilityLoadoutAttachments;
 import com.github.bandithelps.capabilities.stamina.StaminaAttachments;
 import com.github.bandithelps.client.renderers.entity.BlackwhipChainEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.BlackwhipEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.BlackwhipSegmentEntityRenderer;
+import com.github.bandithelps.client.renderers.entity.BlackwhipTossedBlockRenderer;
 import com.github.bandithelps.client.renderers.entity.PotionGeneratorEntityRenderer;
 import com.github.bandithelps.client.renderers.entity.RgbaDisplayEntityRenderer;
-import com.github.bandithelps.client.renderers.entity.BlackwhipTossedBlockRenderer;
-import com.github.bandithelps.client.renderers.entity.SmokeCanisterProjectileRenderer;
+import com.github.bandithelps.client.renderers.entity.CreationProductRenderer;
+import com.github.bandithelps.client.renderers.entity.ThrownWeaponRenderer;
 import com.github.bandithelps.commands.*;
 import com.github.bandithelps.conditions.ConditionRegister;
 import com.github.bandithelps.conditions.cost.CostRegister;
@@ -23,15 +25,26 @@ import com.github.bandithelps.values.ValueRegister;
 import com.github.bandithelps.effects.ModEffects;
 import com.github.bandithelps.entities.ModEntities;
 import com.github.bandithelps.entities.PotionEffectGeneratorEntity;
+import com.github.bandithelps.creation.CreationCatalog;
+import com.github.bandithelps.creation.CreationEnchantCatalog;
+import com.github.bandithelps.creation.CreationPotionCatalog;
 import com.github.bandithelps.gene.GeneRegistry;
 import com.github.bandithelps.gene.combination.CombinationManager;
 import com.github.bandithelps.gui.menu.ModMenus;
 import com.github.bandithelps.gui.actions.YhaDialogActions;
+import com.github.bandithelps.items.BookOfKnowledgeItem;
 import com.github.bandithelps.items.SmokeCanisterItem;
 import com.github.bandithelps.items.TissueExtractorItem;
 import com.github.bandithelps.items.TissueSampleItem;
 import com.github.bandithelps.items.GeneVialItem;
 import com.github.bandithelps.items.DNAInjectorItem;
+import com.github.bandithelps.loot.ModLootModifiers;
+import com.github.bandithelps.throwable.EffectBurstDetonation;
+import com.github.bandithelps.throwable.ExplosionDetonation;
+import com.github.bandithelps.throwable.FuseMode;
+import com.github.bandithelps.throwable.ImpulseDetonation;
+import com.github.bandithelps.throwable.ThrowableWeaponItem;
+import com.github.bandithelps.throwable.ThrowableWeaponSpec;
 import com.github.bandithelps.network.YhaNetwork;
 import com.github.bandithelps.particles.ModParticles;
 import com.github.bandithelps.recipes.ModRecipeSerializers;
@@ -78,6 +91,7 @@ public final class YourHeroAcademia {
     public static final DeferredItem<BlockItem> DNA_SPLICER_ITEM = ITEMS.registerSimpleBlockItem("dna_splicer", ModBlocks.DNA_SPLICER);
     public static final DeferredItem<BlockItem> GENE_COMBINER_ITEM = ITEMS.registerSimpleBlockItem("gene_combiner", ModBlocks.GENE_COMBINER);
     public static final DeferredItem<BlockItem> BIO_PRINTER_ITEM = ITEMS.registerSimpleBlockItem("bio_printer", ModBlocks.BIO_PRINTER);
+    public static final DeferredItem<BlockItem> RESEARCH_TABLE_ITEM = ITEMS.registerSimpleBlockItem("research_table", ModBlocks.RESEARCH_TABLE);
 
     public static final DeferredItem<Item> EMPTY_CANISTER = ITEMS.registerSimpleItem("empty_canister");
     public static final DeferredItem<Item> FILLED_SMOKE_CANISTER = ITEMS.register("filled_smoke_canister", () -> new SmokeCanisterItem(new Item.Properties()
@@ -86,6 +100,67 @@ public final class YourHeroAcademia {
     public static final DeferredItem<Item> INFUSED_SMOKE_CANISTER = ITEMS.register("infused_smoke_canister", () -> new SmokeCanisterItem(new Item.Properties()
             .stacksTo(16)
             .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "infused_smoke_canister")))));
+    public static final DeferredItem<Item> GRENADE = ITEMS.register("grenade", () -> new ThrowableWeaponItem(new Item.Properties()
+            .stacksTo(16)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "grenade"))),
+            ThrowableWeaponSpec.builder()
+                    .scale(1.0f)
+                    .minThrowSpeed(0.4f)
+                    .maxThrowSpeed(1.6f)
+                    .maxChargeTicks(20)
+                    .fuseTicks(40)
+                    .fuseMode(FuseMode.FROM_THROW)
+                    .bounce(true)
+                    .bounceDamping(0.25f)
+                    .stickOnImpact(false)
+                    .breaksBlocks(true)
+                    .explosionRadius(5.0f)
+                    .explosionDamage(12.0f)
+                    .explosionKnockback(1.0f)
+                    .cooldownTicks(20)
+                    .detonation(ExplosionDetonation.INSTANCE)
+                    .build()));
+    public static final DeferredItem<Item> FLASHBANG = ITEMS.register("flashbang", () -> new ThrowableWeaponItem(new Item.Properties()
+            .stacksTo(16)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "flashbang"))),
+            ThrowableWeaponSpec.builder()
+                    .scale(1.0f)
+                    .minThrowSpeed(0.4f)
+                    .maxThrowSpeed(1.6f)
+                    .maxChargeTicks(20)
+                    .fuseTicks(8)
+                    .fuseMode(FuseMode.FROM_IMPACT)
+                    .bounce(true)
+                    .stickOnImpact(false)
+                    .breaksBlocks(false)
+                    .effectRadius(9.0f)
+                    .effectDurationTicks(80)
+                    .effectAmplifier(0)
+                    .cooldownTicks(20)
+                    .detonation(EffectBurstDetonation.FLASHBANG)
+                    .build()));
+
+    public static final DeferredItem<Item> IMPULSE = ITEMS.register("impulse", () -> new ThrowableWeaponItem(new Item.Properties()
+            .stacksTo(16)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "impulse"))),
+            ThrowableWeaponSpec.builder()
+                    .scale(1.0f)
+                    .minThrowSpeed(0.4f)
+                    .maxThrowSpeed(1.6f)
+                    .maxChargeTicks(20)
+                    .fuseTicks(8)
+                    .fuseMode(FuseMode.FROM_IMPACT)
+                    .bounce(true)
+                    .stickOnImpact(true)
+                    .breaksBlocks(false)
+                    .explosionRadius(6.0f)
+                    .explosionDamage(0.0f)
+                    .explosionKnockback(2.5f)
+                    .cooldownTicks(20)
+                    .detonation(ImpulseDetonation.INSTANCE)
+                    .build()));
+
+
     public static final DeferredItem<Item> PIPETTE = ITEMS.registerSimpleItem("pipette");
     public static final DeferredItem<Item> TISSUE_EXTRACTOR = ITEMS.register("tissue_extractor", () -> new TissueExtractorItem(new Item.Properties()
             .stacksTo(1)
@@ -105,6 +180,9 @@ public final class YourHeroAcademia {
     public static final DeferredItem<Item> GENETIC_SLOP = ITEMS.register("genetic_slop", () -> new Item(new Item.Properties()
             .stacksTo(64)
             .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "genetic_slop")))));
+    public static final DeferredItem<Item> BOOK_OF_KNOWLEDGE = ITEMS.register("book_of_knowledge", () -> new BookOfKnowledgeItem(new Item.Properties()
+            .stacksTo(1)
+            .setId(ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "book_of_knowledge")))));
     public static final DeferredItem<BlockItem> SAMPLE_REFRIGERATOR = ITEMS.registerSimpleBlockItem("sample_refrigerator", ModBlocks.EXAMPLE_BLOCK);
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> YHA_MAIN_TAB = CREATIVE_MODE_TABS.register("yha_main_tab", () -> CreativeModeTab.builder()
@@ -117,9 +195,13 @@ public final class YourHeroAcademia {
                 output.accept(DNA_SPLICER_ITEM.get());
                 output.accept(GENE_COMBINER_ITEM.get());
                 output.accept(BIO_PRINTER_ITEM.get());
+                output.accept(RESEARCH_TABLE_ITEM.get());
                 output.accept(EMPTY_CANISTER.get());
                 output.accept(FILLED_SMOKE_CANISTER.get());
                 output.accept(INFUSED_SMOKE_CANISTER.get());
+                output.accept(GRENADE.get());
+                output.accept(FLASHBANG.get());
+                output.accept(IMPULSE.get());
                 output.accept(PIPETTE.get());
                 output.accept(TISSUE_EXTRACTOR.get());
                 output.accept(TISSUE_SAMPLE.get());
@@ -127,6 +209,7 @@ public final class YourHeroAcademia {
                 output.accept(GENE_VIAL.get());
                 output.accept(DNA_INJECTOR.get());
                 output.accept(GENETIC_SLOP.get());
+                output.accept(BOOK_OF_KNOWLEDGE.get());
                 output.accept(SAMPLE_REFRIGERATOR.get());
             }).build());
 
@@ -139,6 +222,7 @@ public final class YourHeroAcademia {
 
         ITEMS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
+        ModGameRules.GAME_RULES.register(modEventBus);
 
         // Custom palladium stuff
         AbilityRegister.ABILITIES.register(modEventBus);
@@ -155,6 +239,7 @@ public final class YourHeroAcademia {
         BodyAttachments.ATTACHMENTS.register(modEventBus);
         DNAAttachments.ATTACHMENTS.register(modEventBus);
         AbilityLoadoutAttachments.ATTACHMENTS.register(modEventBus);
+        CreationAttachments.ATTACHMENTS.register(modEventBus);
 
         ModEffects.MOD_EFFECTS.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
@@ -163,6 +248,7 @@ public final class YourHeroAcademia {
         ModRecipeSerializers.RECIPE_SERIALIZERS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModMenus.MENUS.register(modEventBus);
+        ModLootModifiers.SERIALIZERS.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in.
         // Note that this is necessary if and only if we want *this* class (YourHeroAcademia) to respond directly to events.
@@ -184,6 +270,9 @@ public final class YourHeroAcademia {
         // Do something when the server starts
         LOGGER.info("Server Starting...");
         GeneRegistry.getInstance().reload(event.getServer().getResourceManager());
+        CreationCatalog.getInstance().reload(event.getServer().getResourceManager());
+        CreationEnchantCatalog.getInstance().reload(event.getServer().getResourceManager());
+        CreationPotionCatalog.getInstance().reload(event.getServer().getResourceManager());
         CombinationManager.rebuildForServer(event.getServer());
     }
 
@@ -209,6 +298,7 @@ public final class YourHeroAcademia {
         FloatCommand.register(event.getBuilder(), event.getBuildContext());
         LoadoutCommand.register(event.getBuilder(), event.getBuildContext());
         TreeEditorCommand.register(event.getBuilder(), event.getBuildContext());
+        CreationCommand.register(event.getBuilder(), event.getBuildContext());
     }
 
     @SubscribeEvent
@@ -220,10 +310,11 @@ public final class YourHeroAcademia {
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.POTION_GENERATOR.get(), PotionGeneratorEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.RGBA_DISPLAY.get(), RgbaDisplayEntityRenderer::new);
-        event.registerEntityRenderer(ModEntities.SMOKE_CANISTER_PROJECTILE.get(), SmokeCanisterProjectileRenderer::new);
+        event.registerEntityRenderer(ModEntities.THROWN_WEAPON.get(), ThrownWeaponRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACKWHIP_TOSSED_BLOCK.get(), BlackwhipTossedBlockRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACKWHIP.get(), BlackwhipEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACKWHIP_CHAIN.get(), BlackwhipChainEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACKWHIP_SEGMENT.get(), BlackwhipSegmentEntityRenderer::new);
+        event.registerEntityRenderer(ModEntities.CREATION_PRODUCT.get(), CreationProductRenderer::new);
     }
 }

@@ -45,17 +45,23 @@ public class SetBodyFloatAbility extends Ability {
     }
 
     @Override
-    public void firstTick(LivingEntity entity, AbilityInstance<?> abilityInstance) {
-        if (entity instanceof ServerPlayer player) {
+    public boolean tick(LivingEntity entity, AbilityInstance<?> abilityInstance, boolean enabled) {
+        if (enabled && entity instanceof ServerPlayer player) {
             BodyPart bodyPart = BodyPart.fromId(this.part);
             if (bodyPart == null) {
-                return;
+                return super.tick(entity, abilityInstance, enabled);
             }
-            DataContext context = DataContext.forEntity(entity);
+
             IBodyData body = BodyAttachments.get(player);
-            body.setCustomFloat(player, bodyPart, this.key, this.value.getAsFloat(context));
-            BodySyncEvents.syncNow(player);
+            float desired = this.value.getAsFloat(DataContext.forEntity(entity));
+            Float stored = body.getCustomFloats(player, bodyPart).get(this.key);
+
+            if (stored == null || stored != desired) {
+                body.setCustomFloat(player, bodyPart, this.key, desired);
+                BodySyncEvents.syncNow(player);
+            }
         }
+        return super.tick(entity, abilityInstance, enabled);
     }
 
     @Override
@@ -69,12 +75,12 @@ public class SetBodyFloatAbility extends Ability {
         }
 
         public void addDocumentation(CodecDocumentationBuilder<Ability, SetBodyFloatAbility> builder, HolderLookup.Provider provider) {
-            builder.setDescription("Writes a fixed float value into a body part's custom data when the ability becomes enabled.")
-                    .add("part", ModSettingTypes.TYPE_BODY_PART, "The body part to store the string in.")
-                    .add("key", TYPE_STRING, "The key to store the string under.")
-                    .add("value", TYPE_FLOAT_VALUE, "The float value to store.")
+            builder.setDescription("Writes a float value into a body part's custom data, and updates it when the value changes.")
+                    .add("part", ModSettingTypes.TYPE_BODY_PART, "The body part to store the float in.")
+                    .add("key", TYPE_STRING, "The key to store the float under.")
+                    .add("value", TYPE_FLOAT_VALUE, "The float value to store. Re-evaluated each tick and written only when it changes.")
                     .addExampleObject(new SetBodyFloatAbility(BodyPart.CHEST.getId(), "max_tethers", new StaticValue(1.0f), AbilityProperties.BASIC, AbilityStateManager.EMPTY, Collections.emptyList()));
         }
     }
-    
+
 }
