@@ -297,7 +297,6 @@ public final class YourHeroAcademia {
         BlackwhipCommand.register(event.getBuilder(), event.getBuildContext());
         FloatCommand.register(event.getBuilder(), event.getBuildContext());
         LoadoutCommand.register(event.getBuilder(), event.getBuildContext());
-        TreeEditorCommand.register(event.getBuilder(), event.getBuildContext());
         CreationCommand.register(event.getBuilder(), event.getBuildContext());
     }
 
