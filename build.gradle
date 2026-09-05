@@ -70,6 +70,25 @@ repositories {
             includeGroup "maven.modrinth"
         }
     }
+
+    // Palladium Power Designer (Forgejo releases)
+    exclusiveContent {
+        forRepository {
+            ivy {
+                name = "PPD Releases"
+                url = "https://git.threetag.net/BanditHelps/Palladium-Power-Designer/releases/download"
+                patternLayout {
+                    artifact "[revision]/[module]-[revision].[ext]"
+                }
+                metadataSources {
+                    artifact()
+                }
+            }
+        }
+        filter {
+            includeModule "net.threetag", "ppd"
+        }
+    }
 }
 
 base {
@@ -184,6 +203,9 @@ dependencies {
     // JEI
     compileOnly("mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}")
     runtimeOnly("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
+
+    // Palladium Power Designer (dev runtime only; not bundled into YHA)
+    localRuntime "net.threetag:ppd:$ppd_version"
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
