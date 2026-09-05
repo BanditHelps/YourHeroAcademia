@@ -14,8 +14,7 @@
     "AbilityBarAbilityListMixin",
     "AbilityListComponentMixin",
     "IconRendererMixin",
-    "PalladiumKeyMappingsMixin",
-    "AbilityConnectionMixin"
+    "PalladiumKeyMappingsMixin"
   ],
   "injectors": {
     "defaultRequire": 1
