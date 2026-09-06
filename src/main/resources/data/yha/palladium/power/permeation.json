@@ -1,0 +1,655 @@
+{
+  "name": "Permeation",
+  "parent": "yha:quirk",
+  "icon": "minecraft:axolotl_bucket",
+  "gui_display_type": "tree",
+  "abilities": {
+    "quirk_info": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Permeation",
+        "description": "Permeation is an incredibly powerful ability that allows the user to make parts, or even their full body intangible. Although difficult to master, it is the quirk of a number 1 hero for a reason!",
+        "icon": "minecraft:axolotl_bucket",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0,
+          0
+        ]
+      }
+    },
+    "permeate_total": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Total Permeation",
+        "description": "Toggles on the permeation of the user's entire body. With out learning control..you might just fall out of the world...",
+        "icon": "minecraft:weathered_copper_bars",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0.75,
+          -1.25
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "quirk_info"
+        }
+      }
+    },
+    "perm_partial_feet": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Partial Permeation - Feet",
+        "description": "You learn to limit your permeation to just up to your ankles. Doing this allows you to take advantage of the buoyancy for a speed boost!",
+        "icon": "minecraft:iron_boots",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          1.75,
+          -1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "permeate_total"
+          }
+        }
+      }
+    },
+    "perm_partial_legs": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Partial Permeation - Legs",
+        "description": "Your permeation can now go to the waist, increasing the speed in which your body moves, while also providing other benefits. ",
+        "icon": "minecraft:iron_leggings",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.75,
+          -0.75
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_partial_feet"
+          }
+        }
+      }
+    },
+    "perm_partial_chest": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Partial Permeation - Chest",
+        "description": "Your permeation now is limited up to the neck. While like this, you may get some benefits, or you may just be a head...",
+        "icon": "minecraft:iron_chestplate",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          3.75,
+          -0.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_partial_legs"
+          }
+        }
+      }
+    },
+    "perm_partial_head": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Partial Permeation - Head",
+        "description": "You can now fully permeate under the ground, and move undetected. Careful, you can't see very well like this...",
+        "icon": "minecraft:iron_helmet",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          4.75,
+          -0.25
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_partial_chest"
+          }
+        }
+      }
+    },
+    "perm_tough_lungs_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tough Lungs - I",
+        "description": "Training has increased the amount of time you can stay permeated.",
+        "icon": "minecraft:glass_bottle",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0.75,
+          0.75
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "quirk_info"
+          }
+        }
+      }
+    },
+    "perm_tough_lungs_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tough Lungs - II",
+        "description": "Further increase the amount of time you can stay under.",
+        "icon": "minecraft:glass_bottle",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          1.75,
+          1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_tough_lungs_1"
+          }
+        }
+      }
+    },
+    "perm_tough_lungs_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Tough Lungs - III",
+        "description": "You can assume what this is gonna do at this point.",
+        "icon": "minecraft:glass_bottle",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.75,
+          1.25
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_tough_lungs_2"
+          }
+        }
+      }
+    },
+    "perm_clothing_catch": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Clothing Catch",
+        "description": "Instead of dropping all your armor on the ground, try putting it in your inventory for once.",
+        "icon": "minecraft:cobweb",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          -0.75,
+          -1
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 5
+          }
+        }
+      }
+    },
+    "perm_uppercut": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Uppercut!!",
+        "description": "When permeating up to the chest, gain the option to pop out at a high speed, uppercutting enemies in your way!",
+        "icon": "minecraft:wooden_sword",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          3.75,
+          -1.25
+        ],
+        "gui_connection": [
+          [
+            3.75,
+            -0.75
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:ability_unlocked",
+          "ability": "perm_partial_chest"
+        }
+      }
+    },
+    "perm_explosive_exit": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Explosive Exit",
+        "description": "You can now exit permeation from walls using a dash to quickly pop out and gain some distance.",
+        "icon": "minecraft:netherite_spear",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          5.75,
+          1.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 2
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_intangibility_5"
+          }
+        }
+      }
+    },
+    "perm_intangibility_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Intangibility",
+        "description": "You are now able to become intangible at will. Not only will you remain on the ground, but physical damage is nullified. You can't do damage though...or hold stuff....also your eyes don't work......and if you move, your concentration breaks, and you fall through the ground....maybe try training?",
+        "icon": "minecraft:iron_bars",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          1.75,
+          0
+        ],
+        "gui_connection": [
+          [
+            1.75,
+            -0.75
+          ],
+          [
+            1.75,
+            -0.25
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_partial_feet"
+          }
+        }
+      }
+    },
+    "perm_permeation_punch": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Permeation Punch",
+        "description": "You control is so precise, you can phase through the armor of your enemies, ignoring it during damage calculation. Only with your bare hands of course.",
+        "icon": "minecraft:heavy_core",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          6.75,
+          1
+        ],
+        "gui_connection": [
+          [
+            6,
+            0.75
+          ],
+          [
+            6.25,
+            0.75
+          ],
+          [
+            6.25,
+            1
+          ]
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 5
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_intangibility_5"
+          }
+        }
+      }
+    },
+    "perm_intangibility_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Controlled Intangibility",
+        "description": "With training, you are now able to maintain key points along your feet to move around while intangible. Still can't see very well though.",
+        "icon": "minecraft:paper",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.75,
+          0
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 3
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_intangibility_1"
+          }
+        }
+      }
+    },
+    "perm_intangibility_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Vision Control",
+        "description": "You have mastered your timing, allowing you to keep your eyes tangible, allowing you to see.",
+        "icon": "minecraft:spyglass",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          3.75,
+          0.25
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 5
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_intangibility_2"
+          }
+        }
+      }
+    },
+    "perm_no_clip": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "No Clip",
+        "description": "While fully submerged, you can travel vertically , instead of only horizontally",
+        "icon": "minecraft:paper",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          5.75,
+          0
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_partial_head"
+          }
+        }
+      }
+    },
+    "perm_intangibility_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Wall Walking",
+        "description": "You now have an idea of the sequence required to allow you to walk through walls, albeit, pretty slowly. ",
+        "icon": "minecraft:stone",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          4.75,
+          0.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_intangibility_3"
+          }
+        }
+      }
+    },
+    "perm_intangibility_5": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Speedy Wall Walking",
+        "description": "You are pretty skilled with the sequnce for wall phasing, so now it is second nature to you.",
+        "icon": "minecraft:stone",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          5.75,
+          0.75
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_intangibility_4"
+          }
+        }
+      }
+    },
+    "perm_buoyancy_1": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Buoyancy - I",
+        "description": "Increases the speed in which your body repels the ground, granting speed when phasing in a block.",
+        "icon": "minecraft:leather_horse_armor",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          0.75,
+          1.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "quirk_info"
+          }
+        }
+      }
+    },
+    "perm_buoyancy_2": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Buoyancy - II",
+        "description": "Increases the speed in which your body repels the ground, granting speed when phasing in a block.",
+        "icon": "minecraft:iron_horse_armor",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          1.75,
+          1.75
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_buoyancy_1"
+          }
+        }
+      }
+    },
+    "perm_buoyancy_3": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Buoyancy - III",
+        "description": "Increases the speed in which your body repels the ground, granting speed when phasing in a block.",
+        "icon": "minecraft:golden_horse_armor",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          2.75,
+          2
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_buoyancy_2"
+          }
+        }
+      }
+    },
+    "perm_buoyancy_4": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Buoyancy - IV",
+        "description": "Increases the speed in which your body repels the ground, granting speed when phasing in a block.",
+        "icon": "minecraft:diamond_horse_armor",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          3.75,
+          2.25
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_buoyancy_3"
+          }
+        }
+      }
+    },
+    "perm_buoyancy_5": {
+      "type": "palladium:dummy",
+      "properties": {
+        "title": "Buoyancy - V",
+        "description": "Increases the speed in which your body repels the ground, granting speed when phasing in a block.",
+        "icon": "minecraft:netherite_horse_armor",
+        "hidden_in_gui": false,
+        "hidden_in_bar": true,
+        "gui_position": [
+          4.75,
+          2.5
+        ]
+      },
+      "state": {
+        "unlocking": {
+          "type": "palladium:buyable",
+          "cost": {
+            "type": "yha:upgrade_point",
+            "points": 1
+          },
+          "requires": {
+            "type": "palladium:ability_unlocked",
+            "ability": "perm_buoyancy_4"
+          }
+        }
+      }
+    }
+  }
+}
